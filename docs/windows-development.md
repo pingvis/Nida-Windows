@@ -52,9 +52,14 @@ Use the same feature selection for validation:
 ```powershell
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets --no-default-features --features screen-capture -- -D warnings
-cargo test --locked --no-default-features --features screen-capture --lib
-cargo test --locked --no-default-features --features screen-capture --test ui_integration
+cargo test --locked --no-default-features --features screen-capture --lib -- --test-threads=1
+cargo test --locked --no-default-features --features screen-capture --test ui_integration -- --test-threads=1
 ```
+
+Run the GPU-heavy Windows suites serially. On the tested RTX 3060 Ti setup,
+parallel tests hit native access violations while the serial library
+suite completed. Tests create many independent GPU devices; this is a test-run
+limitation, not evidence that ordinary application playback is affected.
 
 Recording and streaming integration tests also require working FFmpeg tools and
 their codecs. Screen-capture smoke tests need an interactive Windows desktop;
