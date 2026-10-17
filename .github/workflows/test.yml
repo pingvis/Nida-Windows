@@ -69,7 +69,7 @@ jobs:
           sudo apt-get install -y \
             build-essential cmake pkg-config \
             libvulkan-dev \
-            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev \
+            ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev \
             libsrt-gnutls-dev \
             libasound2-dev \
             libv4l-dev \
@@ -112,6 +112,23 @@ jobs:
           vulkaninfo --summary | tee /tmp/vulkaninfo.txt
           grep -qi llvmpipe /tmp/vulkaninfo.txt \
             || { echo "::error::lavapipe did not enumerate as a Vulkan device"; exit 1; }
+
+      # Hosted runners lack the desktop authorization needed by the real
+      # login1 integration test. Grant just its two inhibitor actions.
+      - name: Authorize the test user's idle and sleep inhibitor
+        run: |
+          sudo install -d /etc/polkit-1/rules.d
+          sudo tee /etc/polkit-1/rules.d/49-varda-ci-inhibit.rules > /dev/null <<RULE
+          polkit.addRule(function(action, subject) {
+            if (subject.user === "$(id -un)" &&
+                (action.id === "org.freedesktop.login1.inhibit-block-idle" ||
+                 action.id === "org.freedesktop.login1.inhibit-block-sleep")) {
+              return polkit.Result.YES;
+            }
+          });
+          RULE
+          sudo systemctl restart polkit
+          systemd-inhibit --what=idle:sleep --mode=block true
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
