@@ -230,8 +230,8 @@ mod tests {
     #[test]
     fn nothing_before_the_configuration_record() {
         let mut flv = FlvWriter::new(VideoCodec::H264);
-        assert!(flv.frame(0, false, &[0, 0, 0, 1, 0x41], None).is_empty());
-        assert!(!flv.frame(20, true, &[0, 0, 0, 1, 0x65], Some(&[1])).is_empty());
+        assert_eq!(flv.frame(0, false, &[0, 0, 0, 1, 0x41], None).len(), 0);
+        assert_ne!(flv.frame(20, true, &[0, 0, 0, 1, 0x65], Some(&[1])).len(), 0);
     }
 
     /// Times past 2^24 ms use the extended byte.
