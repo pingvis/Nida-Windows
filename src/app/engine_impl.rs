@@ -2103,7 +2103,7 @@ mod tests {
         let b = app.add_solid_color_deck(&ch1, [1.0; 4]).unwrap();
         app.move_deck(&moving, &ch1, Some(&b)).unwrap();
         assert_eq!(order(&app, 1), [a, moving, b]);
-        assert!(order(&app, 0).is_empty());
+        assert_eq!(order(&app, 0).len(), 0);
     }
 
     #[test]

@@ -262,7 +262,7 @@ fn transitioning_one_bus_does_not_advance_another() {
         .expect("take should start");
 
     let completed = bank.tick(T0 + 0.5);
-    assert!(completed.is_empty());
+    assert_eq!(completed.len(), 0);
     assert!(bank.get(&a).unwrap().is_transitioning());
     assert!(
         !bank.get(&b).unwrap().is_transitioning(),
@@ -612,7 +612,7 @@ fn a_recovered_scene_restores_the_retained_route() {
 
     // The correct scene is loaded later.
     let unresolved = bank.reconcile(&known(&["cam1"]));
-    assert!(unresolved.is_empty());
+    assert_eq!(unresolved.len(), 0);
     let bus = bank.get(&id).unwrap();
     assert!(bus.program_resolved());
     assert_eq!(bus.effective_program(), &ch("cam1"), "routing came back");
@@ -657,7 +657,7 @@ fn a_deck_reference_resolves_against_decks() {
         .unwrap()
         .set_preview(BusInputRef::Deck("deck1".into()));
 
-    assert!(bank.reconcile(&known_decks(&["deck1"])).is_empty());
+    assert_eq!(bank.reconcile(&known_decks(&["deck1"])).len(), 0);
     assert!(bank.get(&id).unwrap().preview_resolved());
 }
 
@@ -1290,7 +1290,7 @@ fn hidden_layers_toggle_and_survive_a_save() {
     assert_eq!(restored.hidden_layers(), ["ovl00001".to_string()]);
 
     assert!(bus.set_layer_hidden("ovl00001", false));
-    assert!(bus.hidden_layers().is_empty());
+    assert_eq!(bus.hidden_layers().len(), 0);
     let json = serde_json::to_string(&bus.to_config()).expect("serialize");
     assert!(
         !json.contains("hidden_layers"),

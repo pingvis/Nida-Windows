@@ -198,7 +198,7 @@ void main() {
         }
         assert!(spirv.is_ok());
         let spirv_data = spirv.unwrap();
-        assert!(!spirv_data.is_empty());
+        assert_ne!(spirv_data.len(), 0);
 
         // SPIR-V magic number check
         assert_eq!(spirv_data[0], 0x0723_0203);
@@ -345,7 +345,7 @@ void main() {
         }
         assert!(spirv.is_ok());
         let spirv_data = spirv.unwrap();
-        assert!(!spirv_data.is_empty());
+        assert_ne!(spirv_data.len(), 0);
         assert_eq!(spirv_data[0], 0x0723_0203);
     }
 

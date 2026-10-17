@@ -111,7 +111,7 @@ mod tests {
                 "{mode:?} is missing from the preset list"
             );
             assert_ne!(tonemap_name(mode), "Unknown");
-            assert!(!tonemap_description(mode).is_empty());
+            assert_ne!(tonemap_description(mode).len(), 0);
         }
     }
 

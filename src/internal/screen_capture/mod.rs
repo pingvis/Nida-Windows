@@ -781,9 +781,9 @@ mod tests {
     fn disabled_manager_reports_unavailable_and_enumerates_nothing() {
         let mut mgr = ScreenCaptureManager::new_disabled();
         assert!(!mgr.is_available());
-        assert!(mgr.targets().is_empty());
+        assert_eq!(mgr.targets().len(), 0);
         mgr.scan_targets();
-        assert!(mgr.targets().is_empty());
+        assert_eq!(mgr.targets().len(), 0);
         assert_eq!(mgr.backend_name(), "disabled");
     }
 
@@ -796,14 +796,14 @@ mod tests {
         assert!(mgr.config(7).is_none());
         assert!(!mgr.is_active(7));
         assert!(!mgr.is_connected(7));
-        assert!(mgr.active_ids().is_empty());
+        assert_eq!(mgr.active_ids().len(), 0);
     }
 
     #[test]
     fn release_of_unknown_id_is_a_noop() {
         let mut mgr = ScreenCaptureManager::new_disabled();
         mgr.release(123);
-        assert!(mgr.active_ids().is_empty());
+        assert_eq!(mgr.active_ids().len(), 0);
     }
 
     #[test]
@@ -896,7 +896,7 @@ mod tests {
         );
         mgr.release(id);
         assert!(!mgr.is_active(id), "session must stop at zero references");
-        assert!(mgr.active_ids().is_empty());
+        assert_eq!(mgr.active_ids().len(), 0);
     }
 
     #[test]

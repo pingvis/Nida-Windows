@@ -741,7 +741,7 @@ mod tests {
         let sliced = region_slice(&region, 0.0, 20.0).expect("the selection contains the region");
 
         assert_eq!(sliced.selected, region);
-        assert!(sliced.remainders.is_empty());
+        assert_eq!(sliced.remainders.len(), 0);
     }
 
     /// The synthesized edges have to read the same value the renderer would draw

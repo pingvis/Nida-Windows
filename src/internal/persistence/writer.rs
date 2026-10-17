@@ -854,7 +854,7 @@ mod tests {
             landed[0].errors,
             vec!["the save stopped half way".to_string()]
         );
-        assert!(landed[1].errors.is_empty());
+        assert_eq!(landed[1].errors.len(), 0);
         assert_eq!(read(tmp.path(), "scene.json"), "next");
     }
 
@@ -914,7 +914,7 @@ mod tests {
             said.starts_with("Failed to save preset: cannot make"),
             "{said}"
         );
-        assert!(!landed[1].errors.is_empty());
+        assert_ne!(landed[1].errors.len(), 0);
         assert_eq!(landed[1].error_message(), None, "only the log hears");
     }
 
@@ -1040,7 +1040,7 @@ mod tests {
         assert_eq!(read(&a, "scene.json"), "after");
         assert_eq!(read(&b, "scene.json"), "b", "what was written stays");
         let landed = writer.landed();
-        assert!(!landed[1].errors.is_empty());
+        assert_ne!(landed[1].errors.len(), 0);
     }
 
     /// Only what names the folder the show left follows it: another show,
@@ -1116,6 +1116,6 @@ mod tests {
         assert_eq!(read(&a, "scene.json"), "after");
         let landed = writer.landed();
         assert_eq!(landed[1].errors, vec!["B already holds other files"]);
-        assert!(landed[2].errors.is_empty());
+        assert_eq!(landed[2].errors.len(), 0);
     }
 }

@@ -246,7 +246,7 @@ fn an_inputs_own_sound_goes_on_and_off_air_with_its_picture() {
             channel_uuid: input,
         },
     );
-    assert!(app.audio_mix().config().inputs.is_empty());
+    assert_eq!(app.audio_mix().config().inputs, [] as [varda::audio_mix::AudioInputConfig; 0]);
 }
 
 /// A generator is an input of its own, named after it; another input can be

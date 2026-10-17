@@ -488,7 +488,7 @@ mod tests {
         assert!((out.params[0].1 - 0.75).abs() < 1e-6);
         assert_eq!(out.params[1].0, "deck/BBBB/effect/fx2/param/warp");
         assert!((out.params[1].1 - 0.25).abs() < 1e-6); // inverted
-        assert!(out.actions.is_empty());
+        assert_eq!(out.actions.len(), 0);
         assert!((m.value - 0.75).abs() < 1e-6);
     }
 
@@ -524,7 +524,7 @@ mod tests {
     fn modulated_fanout_empty_for_buttons() {
         let mut m = Macro::new(MacroKind::Button, "Drop");
         m.targets.push(MacroTarget::new("crossfader"));
-        assert!(m.modulated_fanout(0.5).is_empty());
+        assert_eq!(m.modulated_fanout(0.5).len(), 0);
     }
 
     #[test]
@@ -573,7 +573,7 @@ mod tests {
         assert!((p1.params[0].1 - 1.0).abs() < 1e-6);
         // Release → no change (toggle ignores falling edge)
         let r1 = m.apply_input(0.0);
-        assert!(r1.params.is_empty());
+        assert_eq!(r1.params.len(), 0);
         // Second press → off (0.0)
         let p2 = m.apply_input(1.0);
         assert!((p2.params[0].1 - 0.0).abs() < 1e-6);
@@ -619,7 +619,7 @@ mod tests {
             }],
         });
         let press = m.apply_input(1.0);
-        assert!(press.params.is_empty());
+        assert_eq!(press.params.len(), 0);
     }
 
     // ── MacroBank ─────────────────────────────────────────────────────
@@ -655,10 +655,10 @@ mod tests {
             });
         }
         let params = bank.apply_input(&uuid, 1.0).unwrap();
-        assert!(params.is_empty());
+        assert_eq!(params.len(), 0);
         assert_eq!(bank.take_pending_actions(), vec![GlobalAction::Save]);
         // Drained.
-        assert!(bank.take_pending_actions().is_empty());
+        assert_eq!(bank.take_pending_actions().len(), 0);
     }
 
     #[test]
@@ -691,6 +691,6 @@ mod tests {
     fn empty_bank_deserializes_from_missing_fields() {
         // Graceful default: an object with no macros array yields an empty bank.
         let bank: MacroBank = serde_json::from_str("{}").unwrap();
-        assert!(bank.macros().is_empty());
+        assert_eq!(bank.macros().len(), 0);
     }
 }

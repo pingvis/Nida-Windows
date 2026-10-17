@@ -1082,7 +1082,7 @@ mod tests {
             .relay_target()
             .unwrap();
         assert_eq!(t.url, "rtmp://ingest.example.com/live2/xxxx-yyyy");
-        assert!(t.args.is_empty());
+        assert_eq!(t.args.len(), 0);
         assert_eq!(
             dest("rtmp://ingest.example.com/live2", "")
                 .problem()

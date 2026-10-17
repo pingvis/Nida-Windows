@@ -556,7 +556,7 @@ mod tests {
         let mut h = harness(data);
         h.key_press(egui::Key::Space);
         h.run();
-        assert!(takes(&h).is_empty());
+        assert_eq!(takes(&h).len(), 0);
     }
 
     #[test]

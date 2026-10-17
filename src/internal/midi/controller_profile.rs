@@ -826,7 +826,7 @@ mod tests {
   ]
 }"#;
         let profile: ControllerProfileData = serde_json::from_str(json_str).unwrap();
-        assert!(profile.validate().is_empty());
+        assert_eq!(profile.validate().len(), 0);
         assert_eq!(profile.profile.name, "Test Controller");
         assert_eq!(profile.led_method(), "cc_value");
         assert_eq!(profile.led_channel(), 1);
@@ -838,7 +838,7 @@ mod tests {
     #[test]
     fn test_validate_valid_profile() {
         let profile = builtin_apc_mini();
-        assert!(profile.validate().is_empty());
+        assert_eq!(profile.validate().len(), 0);
     }
 
     #[test]
@@ -952,7 +952,7 @@ mod tests {
 }"#;
         let profile: ControllerProfileData = serde_json::from_str(json).unwrap();
         assert!(profile.auto_map.is_none());
-        assert!(profile.validate().is_empty());
+        assert_eq!(profile.validate().len(), 0);
     }
 
     #[test]

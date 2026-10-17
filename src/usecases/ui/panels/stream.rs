@@ -2000,7 +2000,7 @@ mod tests {
         let cloudflare = [dest("rtmps://user:pw@live.cloudflare.com:443/live/")];
         options.rate_mode = RateMode::Constant;
         options.video_kbps = 6000;
-        assert!(platform_notes(&options, &cloudflare).is_empty());
+        assert_eq!(platform_notes(&options, &cloudflare).len(), 0);
         options.video_kbps = 1500;
         options.audio_kbps = 160;
         let said = platform_notes(&options, &cloudflare);

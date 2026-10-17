@@ -103,7 +103,7 @@ fn main_takes_channels_and_switches_overlays() {
             fade: false,
         },
     ));
-    assert!(main_state(&app).overlays_on.is_empty());
+    assert_eq!(main_state(&app).overlays_on, [] as [std::string::String; 0]);
 
     // Wrong addresses are refused with a reason.
     match send_cmd(

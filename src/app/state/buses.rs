@@ -976,7 +976,7 @@ mod tests {
             uuid: projector.clone(),
             monitor_name: Some("LG TV".into()),
         });
-        assert!(blackmagic(&app).is_empty());
+        assert_eq!(blackmagic(&app).len(), 0);
         assert_eq!(app.bus_screen(&projector).as_deref(), Some("LG TV"));
 
         // The device chosen: off the screen.
@@ -990,13 +990,13 @@ mod tests {
             uuid: projector.clone(),
             monitor_name: None,
         });
-        assert!(blackmagic(&app).is_empty());
+        assert_eq!(blackmagic(&app).len(), 0);
         assert_eq!(app.bus_screen(&projector), None);
 
         // A device not connected: nothing made.
         let missing = app.show_bus_on_blackmagic_among(&tv, Some("Gone Box"), &devices);
         assert!(matches!(missing, CommandResult::Err { .. }));
-        assert!(blackmagic(&app).is_empty());
+        assert_eq!(blackmagic(&app).len(), 0);
     }
 
     /// A bus rename undone puts its Blackmagic output's name back too, as it

@@ -425,7 +425,7 @@ mod channel_move_tests {
         layout.apply_selections(&actions);
         assert_eq!(layout.collapsed_channels, vec!["ch1".to_string()]);
         layout.apply_selections(&actions);
-        assert!(layout.collapsed_channels.is_empty());
+        assert_eq!(layout.collapsed_channels.len(), 0);
     }
 }
 
@@ -457,13 +457,13 @@ mod preview_channel_tests {
             selected_master: true,
             ..Default::default()
         };
-        assert!(layout.preview_channels().is_empty());
+        assert_eq!(layout.preview_channels().len(), 0);
     }
 
     #[test]
     fn no_selection_cues_nothing() {
         let layout = UILayoutState::default();
-        assert!(layout.preview_channels().is_empty());
+        assert_eq!(layout.preview_channels().len(), 0);
     }
 
     #[test]

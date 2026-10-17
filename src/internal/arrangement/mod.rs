@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn an_empty_lane_compiles_to_an_inert_envelope() {
-        assert!(compile_regions(&[]).is_empty());
+        assert_eq!(compile_regions(&[]).len(), 0);
     }
 
     #[test]
@@ -503,9 +503,9 @@ mod tests {
 
     #[test]
     fn degenerate_regions_are_dropped() {
-        assert!(compile_regions(&[RegionConfig::new(5.0, 5.0)]).is_empty());
-        assert!(compile_regions(&[RegionConfig::new(9.0, 1.0)]).is_empty());
-        assert!(compile_regions(&[RegionConfig::new(f64::NAN, 1.0)]).is_empty());
+        assert_eq!(compile_regions(&[RegionConfig::new(5.0, 5.0)]).len(), 0);
+        assert_eq!(compile_regions(&[RegionConfig::new(9.0, 1.0)]).len(), 0);
+        assert_eq!(compile_regions(&[RegionConfig::new(f64::NAN, 1.0)]).len(), 0);
     }
 
     /// The property automation is built on: how you reached a position cannot

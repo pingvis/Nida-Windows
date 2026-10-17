@@ -1873,7 +1873,7 @@ mod tests {
         if std::path::Path::new("/Library/Frameworks/DeckLinkAPI.framework").exists() {
             return;
         }
-        assert!(devices().is_empty());
+        assert_eq!(devices().len(), 0);
         assert!(DeckLinkSender::start("Test", "UltraStudio Monitor 3G", "1080p60", false).is_err());
     }
 }

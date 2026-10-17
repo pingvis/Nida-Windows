@@ -620,7 +620,7 @@ fn a_step_that_names_something_gone_is_refused_and_says_what() {
     ] {
         ok(send(&mut show.app, cmd));
     }
-    assert!(step_named(&show.app, "B").missing.is_empty());
+    assert_eq!(step_named(&show.app, "B").missing, [] as [std::string::String; 0]);
     let before = (wall_shows(&show), on_main(&show.app));
 
     // Each on its own, then put right.
@@ -1209,7 +1209,7 @@ fn a_step_takes_main_and_switches_overlays() {
     ok(take(&mut show.app, &to_c, false));
     let main = show.app.build_engine_state().mixer.main;
     assert_eq!((main.program, main.fade.is_none()), (MainSource::Channel(c), true));
-    assert!(main.overlays_on.is_empty());
+    assert_eq!(main.overlays_on, [] as [std::string::String; 0]);
     // An overlay fading on is part of the step's own fade: its wait is not
     // shorter than what its fade takes — Main's fade time.
     let logo_only = id(send(
@@ -1244,7 +1244,7 @@ fn a_step_takes_main_and_switches_overlays() {
     assert_eq!(step_named(&show.app, "C").fading.len(), 1);
     refused(take(&mut show.app, &to_c, true));
     ok(take(&mut show.app, &to_c, false));
-    assert!(show.app.build_engine_state().mixer.main.overlays_on.is_empty());
+    assert_eq!(show.app.build_engine_state().mixer.main.overlays_on, [] as [std::string::String; 0]);
 }
 
 // ── Making steps ───────────────────────────────────────────────────
@@ -1441,7 +1441,7 @@ fn what_is_deleted_leaves_the_steps_and_undo_puts_it_back() {
     assert!(without.missing.is_empty(), "it can still be taken: {:?}", without.missing);
     ok(send(&mut show.app, EngineCommand::Undo));
     assert_eq!(step_named(&show.app, "A").step, whole);
-    assert!(step_named(&show.app, "A").missing.is_empty());
+    assert_eq!(step_named(&show.app, "A").missing, [] as [std::string::String; 0]);
 
     ok(send(
         &mut show.app,
@@ -1451,7 +1451,7 @@ fn what_is_deleted_leaves_the_steps_and_undo_puts_it_back() {
     ));
     let without = step_named(&show.app, "A");
     assert_eq!(without.step.screens.len(), 2);
-    assert!(without.missing.is_empty());
+    assert_eq!(without.missing, [] as [std::string::String; 0]);
     ok(send(&mut show.app, EngineCommand::Undo));
     assert_eq!(step_named(&show.app, "A").step, whole);
 }

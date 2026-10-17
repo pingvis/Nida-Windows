@@ -507,7 +507,7 @@ fn a_step_sets_each_thing_once() {
         [OverlaySet { channel: "title".into(), on: false }]
     );
     rundown.set_overlay(a, "title", None);
-    assert!(rundown.step(a).unwrap().overlays.is_empty());
+    assert_eq!(rundown.step(a).unwrap().overlays.len(), 0);
 
     rundown.set_play(a, "sting", Some(PlayAction::Start));
     rundown.set_play(a, "sting", Some(PlayAction::Pause));
@@ -559,7 +559,7 @@ fn steps_let_go_of_what_is_deleted() {
     assert_eq!(rundown.step(&ids[1]).unwrap().main, None);
 
     assert!(rundown.forget_bus("middle"));
-    assert!(rundown.step(a).unwrap().screens.is_empty());
+    assert_eq!(rundown.step(a).unwrap().screens.len(), 0);
     assert!(!rundown.forget_bus("middle"));
 }
 

@@ -83,7 +83,7 @@ mod tests {
     #[test]
     fn unsupported_provider_reports_no_targets_and_refuses_to_open() {
         let targets = super::unsupported::enumerate().expect("enumerate never fails");
-        assert!(targets.is_empty());
+        assert_eq!(targets.len(), 0);
 
         let target = super::super::backend::mock_targets().remove(0);
         let err = super::unsupported::open(&target, &super::CaptureConfig::default())
@@ -95,6 +95,6 @@ mod tests {
         );
         // The message must name a cause — a bare "unavailable" is what makes a
         // black deck unexplainable in the field.
-        assert!(!err.to_string().is_empty());
+        assert_ne!(err.to_string().len(), 0);
     }
 }

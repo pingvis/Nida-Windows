@@ -351,7 +351,7 @@ mod tests {
         let again = bank
             .take_together(&want, Together::Fade(9.0), T0 + 0.5, &all())
             .expect("nothing to do is not a refusal");
-        assert!(again.taken.is_empty());
+        assert_eq!(again.taken.len(), 0);
         // The picture lands when the fade already running does: a second and
         // a half from now, whatever fade time was asked for this time.
         assert_eq!(again.settle_secs, 1.5);
@@ -374,7 +374,7 @@ mod tests {
         let taken = bank
             .take_together(&two, Together::Fade(2.0), T0 + 0.5, &all())
             .expect("nothing to do");
-        assert!(taken.taken.is_empty());
+        assert_eq!(taken.taken.len(), 0);
         assert_eq!(taken.settle_secs, 3.5, "Left's, the longer — not Right's 8.5");
     }
 

@@ -1476,7 +1476,7 @@ mod tests {
             source: TapSourceConfig::Channel { uuid: "  ".into() },
             scaling_mode: crate::deck::ScalingMode::default(),
         };
-        assert!(!empty.validate("d").is_empty());
+        assert_ne!(empty.validate("d").len(), 0);
 
         let absent = SourceConfig::Tap {
             source: TapSourceConfig::Channel {
@@ -2130,7 +2130,7 @@ mod tests {
             arrangement: None,
             transport: crate::scene::TransportConfig::default(),
         };
-        assert!(scene.validate().is_empty());
+        assert_eq!(scene.validate().len(), 0);
     }
 
     #[test]
@@ -2237,7 +2237,7 @@ mod tests {
             params: HashMap::new(),
             depth_prepro: None,
         };
-        assert!(!s.validate("src").is_empty());
+        assert_ne!(s.validate("src").len(), 0);
         let s = SourceConfig::Video {
             path: " ".into(),
             loop_mode: crate::video::LoopMode::default(),
@@ -2248,12 +2248,12 @@ mod tests {
             transport_sync: crate::video::DeckTransportSync::default(),
             auto: crate::engine::value::video::AutoPlayback::default(),
         };
-        assert!(!s.validate("src").is_empty());
+        assert_ne!(s.validate("src").len(), 0);
         let s = SourceConfig::Image {
             path: String::new(),
             scaling_mode: crate::deck::ScalingMode::default(),
         };
-        assert!(!s.validate("src").is_empty());
+        assert_ne!(s.validate("src").len(), 0);
     }
 
     #[test]
@@ -2275,7 +2275,7 @@ mod tests {
             mask: None,
         };
         let errors = fx.validate("fx[0]");
-        assert!(!errors.is_empty());
+        assert_ne!(errors.len(), 0);
     }
 
     #[test]

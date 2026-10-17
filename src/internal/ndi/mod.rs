@@ -1192,7 +1192,7 @@ mod tests {
             vec![0.1, -0.1, 0.2, -0.2, 0.3, -0.3]
         );
         assert_eq!(interleave(&[&left]), vec![0.1, 0.2, 0.3]);
-        assert!(interleave(&[]).is_empty());
+        assert_eq!(interleave(&[]).len(), 0);
     }
 
     /// One NDI audio frame over `planes`, as the SDK hands it out.
@@ -1250,7 +1250,7 @@ mod tests {
     fn ndi_manager_sources_empty() {
         let mgr = NdiManager::new();
         assert!(mgr.sources().is_empty());
-        assert!(mgr.discovered_sources().is_empty());
+        assert_eq!(mgr.discovered_sources().len(), 0);
     }
 
     #[test]

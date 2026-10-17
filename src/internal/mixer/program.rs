@@ -482,7 +482,7 @@ mod tests {
             "a cut takes it off at once"
         );
         m.tick(0.1);
-        assert!(m.overlays_on().is_empty());
+        assert_eq!(m.overlays_on().len(), 0);
     }
 
     #[test]

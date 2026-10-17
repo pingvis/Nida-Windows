@@ -296,8 +296,8 @@ mod tests {
 
     #[test]
     fn a_hole_over_everything_leaves_nothing() {
-        assert!(subtract(&[px(0, 0, 100, 50)], &px(0, 0, 100, 50)).is_empty());
-        assert!(subtract(&[px(10, 10, 20, 20)], &px(0, 0, 100, 50)).is_empty());
+        assert_eq!(subtract(&[px(0, 0, 100, 50)], &px(0, 0, 100, 50)).len(), 0);
+        assert_eq!(subtract(&[px(10, 10, 20, 20)], &px(0, 0, 100, 50)).len(), 0);
     }
 
     #[test]
