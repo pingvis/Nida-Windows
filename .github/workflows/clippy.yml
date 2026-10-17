@@ -133,32 +133,38 @@ jobs:
         with:
           components: clippy
 
-      - name: Cache vcpkg packages
-        uses: actions/cache@v4
-        with:
-          path: C:\vcpkg\installed
-          key: vcpkg-windows-x64-${{ hashFiles('.github/workflows/release.yml') }}
-          restore-keys: vcpkg-windows-x64-
+      - uses: ilammy/msvc-dev-cmd@v1
 
-      # `ffmpeg-next` and `shaderc` are unconditional dependencies, so even a
-      # `--no-default-features` check needs FFmpeg headers and libclang. This
-      # mirrors the release job's setup; the NDI runtime is omitted because the
-      # SDK is `dlopen`'d at runtime rather than linked.
-      - name: Install vcpkg FFmpeg
+      - name: Set up FFmpeg 9 and libclang 20
         shell: pwsh
         run: |
-          vcpkg install ffmpeg:x64-windows
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
-
-      - name: Install LLVM (for shaderc)
-        run: choco install llvm -y
-        shell: cmd
-
-      - name: Set build environment
-        shell: pwsh
-        run: |
-          echo "LIBCLANG_PATH=C:\Program Files\LLVM\lib" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG_PATH=C:\vcpkg\installed\x64-windows\lib\pkgconfig" >> $env:GITHUB_ENV
+          $ffmpegArchive = Join-Path $env:RUNNER_TEMP 'ffmpeg.zip'
+          $ffmpegExtract = Join-Path $env:RUNNER_TEMP 'ffmpeg-dev'
+          Invoke-WebRequest 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-win64-gpl-shared-9.0.zip' -OutFile $ffmpegArchive
+          Expand-Archive -LiteralPath $ffmpegArchive -DestinationPath $ffmpegExtract
+          $ffmpegRoot = (Get-ChildItem $ffmpegExtract -Directory | Select-Object -First 1).FullName
+          if (!(Test-Path (Join-Path $ffmpegRoot 'include/libavcodec/avcodec.h'))) { throw 'Missing FFmpeg development headers' }
+          foreach ($dll in Get-ChildItem (Join-Path $ffmpegRoot 'bin') -Filter '*.dll') {
+            if ($dll.Name -notmatch '^(avcodec|avdevice|avfilter|avformat|avutil|swresample|swscale|postproc)-\d+\.dll$') { continue }
+            $libraryName = $dll.BaseName -replace '-\d+$', ''
+            $exports = @(& dumpbin.exe /nologo /exports $dll.FullName | ForEach-Object {
+              if ($_ -match '^\s+\d+\s+[0-9A-F]+\s+[0-9A-F]+\s+(\S+)') { '  ' + $Matches[1] }
+            })
+            if (!$exports.Count) { throw "No exports for $($dll.Name)" }
+            $definition = Join-Path $ffmpegRoot "lib/$libraryName.def"
+            $importLibrary = Join-Path $ffmpegRoot "lib/$libraryName.lib"
+            [IO.File]::WriteAllLines($definition, @("LIBRARY $($dll.Name)", 'EXPORTS') + $exports, [Text.Encoding]::ASCII)
+            & lib.exe /nologo /machine:x64 "/def:$definition" "/out:$importLibrary"
+            if ($LASTEXITCODE -ne 0) { throw 'Could not generate MSVC import library' }
+          }
+          $clangArchive = Join-Path $env:RUNNER_TEMP 'libclang.zip'
+          $clangExtract = Join-Path $env:RUNNER_TEMP 'libclang-dev'
+          Invoke-WebRequest 'https://api.nuget.org/v3-flatcontainer/libclang.runtime.win-x64/20.1.2/libclang.runtime.win-x64.20.1.2.nupkg' -OutFile $clangArchive
+          Expand-Archive -LiteralPath $clangArchive -DestinationPath $clangExtract
+          "FFMPEG_DIR=$ffmpegRoot" >> $env:GITHUB_ENV
+          "LIBCLANG_PATH=$clangExtract/runtimes/win-x64/native" >> $env:GITHUB_ENV
+          "CARGO_BUILD_JOBS=4" >> $env:GITHUB_ENV
+          (Join-Path $ffmpegRoot 'bin') >> $env:GITHUB_PATH
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
