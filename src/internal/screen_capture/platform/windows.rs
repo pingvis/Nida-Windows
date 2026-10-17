@@ -327,6 +327,54 @@ unsafe fn process_name(pid: u32) -> Option<String> {
 /// thread.
 type FrameSlot = Arc<Mutex<Option<CaptureFrame>>>;
 
+/// Keep the requested rate's phase instead of starting a new interval at each
+/// compositor callback. Otherwise callback jitter and rates that do not divide
+/// the display's refresh rate accumulate into a much slower capture rate.
+struct CaptureRateGate {
+    interval: Duration,
+    next_due: Option<Instant>,
+}
+
+impl CaptureRateGate {
+    fn new(interval: Duration) -> Self {
+        Self {
+            interval,
+            next_due: None,
+        }
+    }
+
+    fn set_interval(&mut self, interval: Duration) {
+        if interval != self.interval {
+            self.interval = interval;
+            self.next_due = None;
+        }
+    }
+
+    fn accept(&mut self, now: Instant) -> bool {
+        let Some(due) = self.next_due else {
+            self.next_due = Some(now + self.interval);
+            return true;
+        };
+
+        // A callback fractionally before its deadline is still that frame,
+        // especially when capture and display rates match. Bound the allowance
+        // so ordinary early callbacks cannot consume a future frame's budget.
+        let tolerance = Duration::from_millis(1).min(self.interval / 8);
+        if now + tolerance < due {
+            return false;
+        }
+
+        self.next_due = Some(if now >= due + self.interval {
+            // Readback or the compositor stalled: discard missed deadlines
+            // rather than accepting a burst of queued callbacks to catch up.
+            now + self.interval
+        } else {
+            due + self.interval
+        });
+        true
+    }
+}
+
 /// Everything the arrival handler needs, in one allocation so the closure can
 /// hold a single `Arc`.
 struct ArrivalState {
@@ -337,8 +385,7 @@ struct ArrivalState {
     geometry: Mutex<Geometry>,
     /// Rate gate. Held here rather than read from the config so the handler
     /// does not take the geometry lock on every discarded frame.
-    min_interval: Mutex<Duration>,
-    last_delivered: Mutex<Option<Instant>>,
+    rate_gate: Mutex<CaptureRateGate>,
     /// Set once the pool has been asked to stop, so a frame still in flight
     /// does not resurrect the session.
     stopped: Arc<AtomicBool>,
@@ -399,8 +446,7 @@ impl WindowsBackend {
         let state = Arc::new(ArrivalState {
             slot: Arc::new(Mutex::new(None)),
             geometry: Mutex::new(geometry),
-            min_interval: Mutex::new(config.frame_interval()),
-            last_delivered: Mutex::new(None),
+            rate_gate: Mutex::new(CaptureRateGate::new(config.frame_interval())),
             stopped: Arc::clone(&stopped),
         });
 
@@ -532,19 +578,12 @@ fn on_frame_arrived(
     }
 
     {
-        let Ok(min_interval) = state.min_interval.lock() else {
+        let Ok(mut gate) = state.rate_gate.lock() else {
             return;
         };
-        let Ok(mut last) = state.last_delivered.lock() else {
+        if !gate.accept(Instant::now()) {
             return;
-        };
-        let now = Instant::now();
-        if let Some(prev) = *last {
-            if now.duration_since(prev) < *min_interval {
-                return;
-            }
         }
-        *last = Some(now);
     }
 
     let Ok(geometry) = state.geometry.lock().map(|g| *g) else {
@@ -700,8 +739,8 @@ impl ScreenCaptureBackend for WindowsBackend {
         if let Ok(mut g) = self.state.geometry.lock() {
             *g = geometry;
         }
-        if let Ok(mut interval) = self.state.min_interval.lock() {
-            *interval = config.frame_interval();
+        if let Ok(mut gate) = self.state.rate_gate.lock() {
+            gate.set_interval(config.frame_interval());
         }
         if cursor_changed {
             let _ = self
@@ -721,5 +760,80 @@ impl Drop for WindowsBackend {
         let _ = self.handles.session.Close();
         let _ = self.handles.frame_pool.Close();
         log::debug!("Windows Graphics Capture stopped for '{}'", self.label);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CaptureRateGate;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn first_frame_is_immediate_but_the_same_callback_cannot_deliver_twice() {
+        let now = Instant::now();
+        let mut gate = CaptureRateGate::new(Duration::from_millis(40));
+        assert!(gate.accept(now));
+        assert!(!gate.accept(now));
+        assert!(!gate.accept(now + Duration::from_millis(20)));
+        assert!(gate.accept(now + Duration::from_millis(40)));
+    }
+
+    #[test]
+    fn jittery_display_callbacks_keep_the_requested_capture_rate() {
+        let start = Instant::now();
+        for (display_hz, capture_fps) in [(60, 30), (60, 60), (75, 30), (165, 30), (165, 60)] {
+            let mut gate =
+                CaptureRateGate::new(Duration::from_secs_f64(1.0 / f64::from(capture_fps)));
+            let mut accepted = 0;
+            for frame in 0..display_hz * 10 {
+                let at = start
+                    + Duration::from_secs_f64(f64::from(frame) / f64::from(display_hz))
+                    + Duration::from_micros(if frame % 2 == 0 { 400 } else { 0 });
+                accepted += u32::from(gate.accept(at));
+            }
+            assert_eq!(
+                accepted,
+                capture_fps * 10,
+                "{display_hz} Hz display, {capture_fps} fps capture"
+            );
+        }
+    }
+
+    #[test]
+    fn only_callbacks_within_the_bounded_early_allowance_are_accepted() {
+        let start = Instant::now();
+        let mut gate = CaptureRateGate::new(Duration::from_millis(40));
+        assert!(gate.accept(start));
+        assert!(!gate.accept(start + Duration::from_micros(38_999)));
+        assert!(gate.accept(start + Duration::from_millis(39)));
+        assert!(!gate.accept(start + Duration::from_millis(40)));
+        assert!(!gate.accept(start + Duration::from_millis(78)));
+        assert!(gate.accept(start + Duration::from_millis(79)));
+    }
+
+    #[test]
+    fn a_stalled_handler_discards_missed_deadlines_without_a_catchup_burst() {
+        let start = Instant::now();
+        let mut gate = CaptureRateGate::new(Duration::from_millis(40));
+        assert!(gate.accept(start));
+        let resumed = start + Duration::from_millis(500);
+        assert!(gate.accept(resumed));
+        assert!(!gate.accept(resumed));
+        assert!(!gate.accept(resumed + Duration::from_millis(1)));
+        assert!(!gate.accept(resumed + Duration::from_millis(20)));
+        assert!(gate.accept(resumed + Duration::from_millis(40)));
+    }
+
+    #[test]
+    fn changing_rate_restarts_the_deadline_but_reapplying_it_keeps_the_phase() {
+        let start = Instant::now();
+        let mut gate = CaptureRateGate::new(Duration::from_millis(100));
+        assert!(gate.accept(start));
+        gate.set_interval(Duration::from_millis(100));
+        assert!(!gate.accept(start + Duration::from_millis(10)));
+        gate.set_interval(Duration::from_millis(20));
+        assert!(gate.accept(start + Duration::from_millis(10)));
+        assert!(!gate.accept(start + Duration::from_millis(20)));
+        assert!(gate.accept(start + Duration::from_millis(30)));
     }
 }

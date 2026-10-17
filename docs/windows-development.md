@@ -34,9 +34,15 @@ at the packaging script's default vcpkg location.
 
 ```powershell
 cargo check --locked --no-default-features --features screen-capture
-cargo build --locked --no-default-features --features screen-capture
-cargo run --locked --no-default-features --features screen-capture
+cargo build --release --locked --no-default-features --features screen-capture
+cargo run --release --locked --no-default-features --features screen-capture
 ```
+
+Use the release build for interactive use and performance validation. The
+default development profile is unoptimized: CPU processing such as desktop
+capture resizing can be much slower and cannot establish release performance.
+The optimized executable is `target\release\varda.exe`; `target\debug\varda.exe`
+is intended for debugging. The first release build compiles dependencies again.
 
 Use the same feature selection for validation:
 
@@ -50,6 +56,10 @@ cargo test --locked --no-default-features --features screen-capture --test ui_in
 Recording and streaming integration tests also require working FFmpeg tools and
 their codecs. Screen-capture smoke tests need an interactive Windows desktop;
 automated compilation does not validate cameras, audio devices, or displays.
+
+Windows recording currently uses software encoding; GPU rendering does not
+imply hardware video encoding. Validate H.264 first. HEVC at 1080p60 can exceed
+the throughput of the current software preset. NVENC is not integrated yet.
 
 The optional `html` and `face-detection` features are excluded from the initial
 baseline, not removed from the project. The existing Windows packaging profile
