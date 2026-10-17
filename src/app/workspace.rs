@@ -2854,6 +2854,12 @@ mod tests {
         );
         let file = tmp.path().join(".varda/presets/decks/Logo.json");
         assert!(!file.exists(), "not written yet");
+        app.update_notifications();
+        assert!(!notices(&app)
+            .iter()
+            .any(|m| m.contains("Saved deck preset")));
+        // Loading the preset may compile GPU pipelines for longer than the
+        // simulated disk delay, so check the pending notification before it.
         assert!(matches!(
             app.execute_command(crate::engine::EngineCommand::LoadDeckPreset {
                 channel_uuid,
@@ -2861,10 +2867,6 @@ mod tests {
             }),
             crate::engine::CommandResult::Ok
         ));
-        app.update_notifications();
-        assert!(!notices(&app)
-            .iter()
-            .any(|m| m.contains("Saved deck preset")));
         frames_until(&mut app, |app| {
             notices(app).contains(&"💾 Saved deck preset 'Logo'".to_string())
         });

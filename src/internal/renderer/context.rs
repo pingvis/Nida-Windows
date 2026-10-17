@@ -1119,7 +1119,9 @@ pub struct OutputWindow {
     /// not connected, or (on Linux) this window has not been mapped yet. Moved
     /// there once both hold, and saved as the target meanwhile so a restart does
     /// not forget it. Any explicit target change clears it.
-    pub awaiting_display: Option<AwaitedDisplay>,
+    // Monitor handles are much larger on Linux; allocate this rare state only
+    // while a display is missing, keeping UnifiedOutput's variants balanced.
+    pub awaiting_display: Option<Box<AwaitedDisplay>>,
     /// The screen this window was put on to cover — the screen itself, not
     /// its name, which changes as screens come and go (two of a model are
     /// told apart by place) — and since when it has been missing from the
@@ -3509,6 +3511,8 @@ mod tests {
     /// bytes on macOS but 224 on Windows — under the threshold on the platform
     /// most of us build on, over it on the one we don't. This catches that in the
     /// test suite, which runs everywhere, rather than in a per-platform lint job.
+    /// The rare awaiting-display state is boxed too: Linux's monitor handles
+    /// otherwise make the window variant larger than the same limit.
     #[test]
     fn output_variants_stay_under_the_large_enum_variant_threshold() {
         let window = std::mem::size_of::<OutputWindow>();

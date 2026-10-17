@@ -1074,6 +1074,18 @@ fn uyvy_to_rgba(uyvy: &[u8], rgba: &mut [u8], w: u32, h: u32, stride: usize) {
 /// levels (16–235), BT.709 for HD and up, BT.601 for standard definition.
 /// Each pair of pixels shares the average of their colour.
 pub(crate) fn rgba_to_uyvy(rgba: &[u8], uyvy: &mut [u8], w: u32, h: u32) {
+    rgba_to_uyvy_with_range(rgba, uyvy, w, h, false);
+}
+
+/// The shared CPU conversion, optionally using full levels for DeckLink's
+/// fallback converter. NDI always calls the video-level wrapper above.
+pub(crate) fn rgba_to_uyvy_with_range(
+    rgba: &[u8],
+    uyvy: &mut [u8],
+    w: u32,
+    h: u32,
+    full_range: bool,
+) {
     // (Kr, Kb) of the picture's colour space.
     let (kr, kb) = if h >= 720 {
         (0.2126, 0.0722)
@@ -1082,8 +1094,14 @@ pub(crate) fn rgba_to_uyvy(rgba: &[u8], uyvy: &mut [u8], w: u32, h: u32) {
     };
     let kg = 1.0 - kr - kb;
     let luma = |r: f32, g: f32, b: f32| kr * r + kg * g + kb * b;
-    let to_y = |l: f32| (16.0 + l * 219.0 / 255.0 + 0.5).clamp(0.0, 255.0) as u8;
-    let to_c = |c: f32| (128.0 + c * 224.0 / 255.0 + 0.5).clamp(0.0, 255.0) as u8;
+    // Full-range SDI reserves codes 0 and 255, matching the macOS converter.
+    let (bias, y_range, chroma_range, low, high) = if full_range {
+        (0.0, 255.0, 255.0, 1.0, 254.0)
+    } else {
+        (16.0, 219.0, 224.0, 0.0, 255.0)
+    };
+    let to_y = |l: f32| (bias + l * y_range / 255.0 + 0.5).clamp(low, high) as u8;
+    let to_c = |c: f32| (128.0 + c * chroma_range / 255.0 + 0.5).clamp(low, high) as u8;
     for y in 0..h as usize {
         for x in (0..w as usize).step_by(2) {
             let src0 = (y * w as usize + x) * 4;
@@ -1140,6 +1158,20 @@ mod tests {
         assert_eq!(px([255, 0, 0, 255], 1080), vec![102, 63, 240, 63]);
         // In standard definition, BT.601's: Y 81, Cb 90, Cr 240.
         assert_eq!(px([255, 0, 0, 255], 576), vec![90, 81, 240, 81]);
+    }
+
+    #[test]
+    fn full_levels_preserve_neutral_chroma_and_reserve_timing_codes() {
+        let pair = |color: [u8; 4], height| {
+            let rgba = color.repeat(2 * height as usize);
+            let mut uyvy = vec![0; 4 * height as usize];
+            rgba_to_uyvy_with_range(&rgba, &mut uyvy, 2, height, true);
+            uyvy[..4].to_vec()
+        };
+        assert_eq!(pair([0, 0, 0, 255], 1080), [128, 1, 128, 1]);
+        assert_eq!(pair([255, 255, 255, 255], 1080), [128, 254, 128, 254]);
+        assert_eq!(pair([255, 0, 0, 255], 1080), [99, 54, 254, 54]);
+        assert_eq!(pair([255, 0, 0, 255], 576), [85, 76, 254, 76]);
     }
 
     #[test]

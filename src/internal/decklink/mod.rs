@@ -1253,17 +1253,19 @@ mod sdk {
         Vec::new()
     }
 
-    /// RGBA to '2vuy' with Nida's own loop: video range only.
-    pub(super) struct Converter;
+    /// RGBA to '2vuy' with the shared CPU conversion on non-macOS platforms.
+    pub(super) struct Converter {
+        full_range: bool,
+    }
 
     impl Converter {
         // Match the fallible macOS converter's constructor in this stub backend.
         #[allow(clippy::unnecessary_wraps)]
-        pub(super) fn new(_height: u32, _full_range: bool) -> Result<Self, String> {
-            Ok(Self)
+        pub(super) fn new(_height: u32, full_range: bool) -> Result<Self, String> {
+            Ok(Self { full_range })
         }
 
-        #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
+        #[allow(clippy::unnecessary_wraps)]
         pub(super) fn run(
             &mut self,
             rgba: &[u8],
@@ -1271,7 +1273,7 @@ mod sdk {
             width: u32,
             height: u32,
         ) -> Result<(), String> {
-            crate::ndi::rgba_to_uyvy(rgba, uyvy, width, height);
+            crate::ndi::rgba_to_uyvy_with_range(rgba, uyvy, width, height, self.full_range);
             Ok(())
         }
     }

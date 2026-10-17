@@ -56,11 +56,11 @@ impl VardaApp {
                                     );
                                 } else {
                                     w.set_target(OutputTarget::Windowed, None);
-                                    w.awaiting_display = Some(AwaitedDisplay {
+                                    w.awaiting_display = Some(Box::new(AwaitedDisplay {
                                         monitor: name.clone(),
                                         screen: None,
                                         was_missing: true,
-                                    });
+                                    }));
                                     self.session.notifications.warn(format!(
                                         "Monitor '{name}' not connected — output '{}' \
                                          moves there when it connects",

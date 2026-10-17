@@ -30,6 +30,10 @@ from that same distribution on `PATH`, so the linked libraries and subprocess
 tools match. This setup uses `FFMPEG_DIR` directly rather than requiring FFmpeg
 at the packaging script's default vcpkg location.
 
+The optional `html` feature also builds Servo's native dependencies. With recent
+MSVC headers, use LLVM/libclang 19 or newer: older libclang versions fail while
+generating `mozangle` bindings with `STL1000: Unexpected compiler version`.
+
 ## Build and run the baseline
 
 ```powershell

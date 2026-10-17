@@ -344,11 +344,11 @@ impl VardaApp {
                                         #[cfg(target_os = "linux")]
                                         Some(_) => {
                                             output.set_target(OutputTarget::Windowed, None);
-                                            output.awaiting_display = Some(AwaitedDisplay {
+                                            output.awaiting_display = Some(Box::new(AwaitedDisplay {
                                                 monitor: name.clone(),
                                                 screen: None,
                                                 was_missing: false,
-                                            });
+                                            }));
                                         }
                                         None => {
                                             let output_name = &output.name;
@@ -362,11 +362,11 @@ impl VardaApp {
                                                  there when it connects"
                                             ));
                                             output.set_target(OutputTarget::Windowed, None);
-                                            output.awaiting_display = Some(AwaitedDisplay {
+                                            output.awaiting_display = Some(Box::new(AwaitedDisplay {
                                                 monitor: name.clone(),
                                                 screen: None,
                                                 was_missing: true,
-                                            });
+                                            }));
                                         }
                                     }
                                 }
@@ -714,11 +714,11 @@ impl VardaApp {
                         w.name
                     ));
                     w.set_target(OutputTarget::Windowed, None);
-                    w.awaiting_display = Some(AwaitedDisplay {
+                    w.awaiting_display = Some(Box::new(AwaitedDisplay {
                         monitor: name,
                         screen,
                         was_missing: true,
-                    });
+                    }));
                 }
             }
         }
@@ -741,7 +741,7 @@ impl VardaApp {
                 monitor: name,
                 screen,
                 was_missing,
-            }) = w.awaiting_display.clone()
+            }) = w.awaiting_display.as_deref().cloned()
             else {
                 continue;
             };
