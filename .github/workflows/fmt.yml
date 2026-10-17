@@ -36,5 +36,13 @@ jobs:
         with:
           components: rustfmt
 
+      - name: Diagnose runner prerequisites
+        run: |
+          command -v ffmpeg || true
+          systemctl is-active systemd-logind || true
+          systemd-inhibit --list || true
+          systemd-inhibit --what=idle:sleep --mode=block true || echo "INHIBIT_PROBE_EXIT=$?"
+          id
+
       - name: Check formatting
         run: cargo fmt --all -- --check
