@@ -5,6 +5,9 @@ the Windows screen/window capture backend; optional features can be enabled
 after this baseline builds. This is a development setup, not a claim that the
 Windows application is ready for a live show.
 
+For an experimental portable ZIP and its runtime checks, see
+[Windows packaging](windows-packaging.md).
+
 ## Build prerequisites
 
 - Stable Rust for `x86_64-pc-windows-msvc`, including rustfmt and Clippy.

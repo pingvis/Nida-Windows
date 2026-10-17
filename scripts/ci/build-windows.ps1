@@ -1,113 +1,99 @@
-# Build Varda Windows portable ZIP
-# Usage: .\scripts\ci\build-windows.ps1 [-SkipBuild]
-#
-# Expects:
-#   - cargo build --release already done (or omit -SkipBuild)
-#   - vcpkg FFmpeg installed at C:\vcpkg\installed\x64-windows
-#   - NDI Runtime installed (optional)
-#
-# Produces: Varda-Windows-x64.zip in the project root
-
+# Experimental core Windows portable ZIP. Run from x64 Developer PowerShell.
+# Requires Python 3.11+, MSVC tools and the FFmpeg SDK used to link the app.
+[CmdletBinding()]
 param(
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [string]$FfmpegRoot = $env:FFMPEG_DIR,
+    [string]$Binary,
+    [string]$CrtDirectory,
+    [string]$OutputDirectory
 )
-
-$ErrorActionPreference = "Stop"
-
-$ProjectRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
-Set-Location $ProjectRoot
-
-Write-Host "==> Project root: $ProjectRoot"
-
-# --- Build release binary ---
-if (-not $SkipBuild) {
-    Write-Host "==> Building release binary..."
-    # The `depth` feature (Kinect v1 via libfreenect) is excluded on Windows —
-    # libfreenect v1 has no vcpkg port. See spec/depth-sensors.md.
-    cargo build --release --no-default-features --features face-detection,html,screen-capture
-    if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+if (!$IsWindows) { throw 'Build and smoke-test this package on Windows x64.' }
+Import-Module (Join-Path $PSScriptRoot 'windows-package.psm1') -Force
+$root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+if (!$OutputDirectory) { $OutputDirectory = Join-Path $root 'dist/windows' }
+if (!$Binary) { $Binary = Join-Path $root 'target/release/varda.exe' }
+if (!$FfmpegRoot) { throw 'Set FFMPEG_DIR or pass -FfmpegRoot for the FFmpeg SDK used to build the application.' }
+$FfmpegRoot = (Resolve-Path -LiteralPath $FfmpegRoot).Path
+$ffmpegBin = Join-Path $FfmpegRoot 'bin'
+foreach ($file in @('bin/ffmpeg.exe', 'bin/ffprobe.exe', 'include/libavcodec/avcodec.h', 'LICENSE.txt')) {
+    if (!(Test-Path -LiteralPath (Join-Path $FfmpegRoot $file) -PathType Leaf)) { throw "FFmpeg SDK is incomplete: $file" }
 }
-
-$StageDir = "$ProjectRoot\Varda-Windows-x64"
-if (Test-Path $StageDir) { Remove-Item -Recurse -Force $StageDir }
-New-Item -ItemType Directory -Path $StageDir | Out-Null
-
-# --- Copy binary ---
-Write-Host "==> Copying varda.exe..."
-Copy-Item "target\release\varda.exe" "$StageDir\varda.exe"
-
-# --- Copy shaders ---
-Write-Host "==> Copying shaders..."
-Copy-Item -Recurse "shaders" "$StageDir\shaders"
-
-# --- Copy FFmpeg DLLs from vcpkg ---
-$VcpkgBin = "C:\vcpkg\installed\x64-windows\bin"
-Write-Host "==> Copying FFmpeg DLLs from $VcpkgBin..."
-$FfmpegDlls = @(
-    "avcodec-61.dll",
-    "avformat-61.dll",
-    "avutil-59.dll",
-    "swscale-8.dll",
-    "swresample-5.dll",
-    "avdevice-61.dll",
-    "avfilter-10.dll"
-)
-foreach ($dll in $FfmpegDlls) {
-    $src = Join-Path $VcpkgBin $dll
-    if (Test-Path $src) {
-        Copy-Item $src "$StageDir\$dll"
-    } else {
-        # Try glob pattern for version-agnostic match
-        $base = ($dll -split '-')[0]
-        $found = Get-ChildItem "$VcpkgBin\$base*.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($found) {
-            Copy-Item $found.FullName "$StageDir\$($found.Name)"
-            Write-Host "  (matched $($found.Name) for $dll)"
-        } else {
-            Write-Warning "FFmpeg DLL not found: $dll"
+Get-Command dumpbin.exe, python, cargo -ErrorAction Stop | Out-Null
+$env:FFMPEG_DIR = $FfmpegRoot
+$oldPath = $env:PATH
+Push-Location $root
+try {
+    $env:PATH = "$ffmpegBin;$oldPath"
+    if (!$SkipBuild) {
+        & cargo build --release --locked --no-default-features --features screen-capture
+        if ($LASTEXITCODE -ne 0) { throw 'Core release build failed.' }
+    }
+    if (!(Test-Path -LiteralPath $Binary -PathType Leaf)) { throw "Missing application binary: $Binary" }
+    if (!$CrtDirectory -and $env:VCToolsRedistDir) {
+        $crt = @(Get-ChildItem (Join-Path $env:VCToolsRedistDir 'x64') -Directory -Filter 'Microsoft.VC*.CRT' |
+            Sort-Object Name -Descending)
+        if ($crt.Count) { $CrtDirectory = $crt[0].FullName }
+    }
+    New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+    $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
+    $versionLine = Select-String -LiteralPath (Join-Path $root 'Cargo.toml') -Pattern '^version = "([^"]+)"' | Select-Object -First 1
+    if (!$versionLine) { throw 'Cannot read the application version.' }
+    $version = $versionLine.Matches[0].Groups[1].Value
+    $revision = (& git rev-parse --short=12 HEAD).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source revision.' }
+    $name = "Nida-$version-windows-x64-experimental-$revision"
+    # Only remove our own fresh temporary directory, never a caller's directory.
+    $work = Join-Path $OutputDirectory ([guid]::NewGuid().ToString('N'))
+    $stage = Join-Path $work $name
+    New-Item -ItemType Directory -Path $stage -Force | Out-Null
+    try {
+        Copy-Item -LiteralPath $Binary -Destination (Join-Path $stage 'varda.exe')
+        foreach ($tool in @('ffmpeg.exe', 'ffprobe.exe')) {
+            Copy-Item -LiteralPath (Join-Path $ffmpegBin $tool) -Destination $stage
         }
-    }
+        Get-ChildItem -LiteralPath $ffmpegBin -Filter '*.dll' -File | Copy-Item -Destination $stage
+        Copy-PackageDependencies $stage $ffmpegBin @((Split-Path $Binary), $CrtDirectory)
+        Copy-Item -LiteralPath (Join-Path $root 'shaders') -Destination $stage -Recurse
+        foreach ($line in Get-Content -LiteralPath (Join-Path $root 'scripts/ci/shaders-left-out.txt')) {
+            $shader = $line.Trim()
+            if (!$shader -or $shader.StartsWith('#')) { continue }
+            if ([IO.Path]::GetFileName($shader) -ne $shader) { throw "Invalid shader exclusion: $shader" }
+            Remove-Item -LiteralPath (Join-Path $stage "shaders/$shader") -ErrorAction SilentlyContinue
+        }
+        $licenses = Join-Path $stage 'licenses'
+        New-Item -ItemType Directory -Path $licenses | Out-Null
+        Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination (Join-Path $licenses 'Nida-MIT.txt')
+        Copy-Item -LiteralPath (Join-Path $FfmpegRoot 'LICENSE.txt') -Destination (Join-Path $licenses 'FFmpeg.txt')
+        & python (Join-Path $PSScriptRoot 'windows-notices.py') --output $licenses
+        if ($LASTEXITCODE -ne 0) { throw 'Could not collect dependency notices.' }
+        Copy-Item -LiteralPath (Join-Path $root 'docs/windows-portable-readme.txt') -Destination (Join-Path $stage 'Read me first.txt')
+        Copy-Item -LiteralPath (Join-Path $root 'Cargo.lock') -Destination $licenses
+        $provenance = Join-Path $FfmpegRoot 'nida-build-inputs.json'
+        if (Test-Path -LiteralPath $provenance) { Copy-Item -LiteralPath $provenance -Destination $licenses }
+        (& (Join-Path $stage 'ffmpeg.exe') -hide_banner -version 2>&1) | Set-Content (Join-Path $licenses 'FFmpeg-build.txt')
+        if ($LASTEXITCODE -ne 0) { throw 'Bundled FFmpeg cannot start.' }
+        $metadata = [ordered]@{
+            version = $version; revision = (& git rev-parse HEAD).Trim(); experimental = $true
+            features = @('screen-capture'); target = 'x86_64-pc-windows-msvc'
+            rust = (& rustc --version).Trim(); ffmpeg = (Get-Content (Join-Path $licenses 'FFmpeg-build.txt') -First 1)
+            files = @(Get-ChildItem -LiteralPath $stage -Recurse -File | Sort-Object FullName | ForEach-Object {
+                @{ path = [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\', '/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
+            })
+        }
+        $metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $stage 'build-info.json') -Encoding utf8
+        $candidate = Join-Path $work "$name.zip"
+        Compress-Archive -LiteralPath $stage -DestinationPath $candidate
+        & (Join-Path $PSScriptRoot 'test-windows-package.ps1') -Archive $candidate
+        $zip = Join-Path $OutputDirectory "$name.zip"
+        Move-Item -LiteralPath $candidate -Destination $zip -Force
+        $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+        "$hash  $name.zip" | Set-Content -LiteralPath "$zip.sha256" -Encoding ascii
+        Write-Host "Verified experimental package: $zip"
+    } finally { Remove-Item -LiteralPath $work -Recurse -Force }
+} finally {
+    $env:PATH = $oldPath
+    Pop-Location
 }
-
-# Also copy any transitive DLL dependencies (e.g. zlib, bzip2, etc.)
-$TransitiveDlls = Get-ChildItem "$VcpkgBin\*.dll" -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -notmatch "^(av|sw)" }
-foreach ($dll in $TransitiveDlls) {
-    if (-not (Test-Path "$StageDir\$($dll.Name)")) {
-        Copy-Item $dll.FullName "$StageDir\$($dll.Name)"
-    }
-}
-
-# --- Copy NDI DLL (optional) ---
-$NdiDll = "C:\Program Files\NDI\NDI 6 Runtime\v6\Processing.NDI.Lib.x64.dll"
-if (Test-Path $NdiDll) {
-    Write-Host "==> Copying NDI runtime DLL..."
-    Copy-Item $NdiDll "$StageDir\Processing.NDI.Lib.x64.dll"
-} else {
-    Write-Host "==> NDI runtime not found, skipping (NDI features will be disabled)"
-}
-
-# --- Copy licenses ---
-Write-Host "==> Copying licenses..."
-Copy-Item "LICENSE" "$StageDir\LICENSE"
-if (Test-Path "FFMPEG-LICENSE") {
-    Copy-Item "FFMPEG-LICENSE" "$StageDir\FFMPEG-LICENSE"
-} else {
-    # Create a minimal FFmpeg license notice
-    @"
-FFmpeg is licensed under the GNU Lesser General Public License (LGPL) version 2.1 or later.
-See https://ffmpeg.org/legal.html for details.
-
-The FFmpeg shared libraries bundled with Varda are dynamically linked,
-preserving LGPL compliance. Source code is available at https://ffmpeg.org.
-"@ | Set-Content "$StageDir\FFMPEG-LICENSE"
-}
-
-# --- Create ZIP ---
-$ZipPath = "$ProjectRoot\Varda-Windows-x64.zip"
-if (Test-Path $ZipPath) { Remove-Item $ZipPath }
-Write-Host "==> Creating $ZipPath..."
-Compress-Archive -Path $StageDir -DestinationPath $ZipPath
-
-Write-Host "==> Done! Artifact: $ZipPath"
-Get-ChildItem $StageDir | Format-Table Name, Length -AutoSize

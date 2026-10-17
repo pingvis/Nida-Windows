@@ -28,3 +28,7 @@ tests/media/
 # Python bytecode (scripts/ci)
 __pycache__/
 *.pyc
+
+# Experimental Windows packaging outputs and downloaded build tools.
+/dist/
+/.windows-tools/
