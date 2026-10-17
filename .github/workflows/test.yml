@@ -118,6 +118,8 @@ jobs:
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       # The whole suite, not a curated subset: with an adapter present there is
       # no GPU-free/GPU-gated split to maintain, and a newly added GPU test is
