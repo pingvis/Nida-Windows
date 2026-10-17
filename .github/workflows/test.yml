@@ -105,31 +105,25 @@ jobs:
           grep -qi llvmpipe /tmp/vulkaninfo.txt \
             || { echo "::error::lavapipe did not enumerate as a Vulkan device"; exit 1; }
 
-      # Hosted runners lack the desktop authorization needed by the real
-      # login1 integration test. Grant just its two inhibitor actions.
-      - name: Authorize the test user's idle and sleep inhibitor
-        run: |
-          sudo install -d /etc/polkit-1/rules.d
-          sudo tee /etc/polkit-1/rules.d/49-varda-ci-inhibit.rules > /dev/null <<RULE
-          polkit.addRule(function(action, subject) {
-            if (subject.user === "$(id -un)" &&
-                (action.id === "org.freedesktop.login1.inhibit-block-idle" ||
-                 action.id === "org.freedesktop.login1.inhibit-block-sleep")) {
-              return polkit.Result.YES;
-            }
-          });
-          RULE
-          sudo systemctl restart polkit
-          systemd-inhibit --what=idle:sleep --mode=block true
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
 
+      # The hosted runner denies login1 inhibition to its normal account.
+      # Exercise this one real OS integration test with existing sudo access;
+      # all other tests below still run as the unprivileged runner.
+      - name: Run the OS inhibitor integration test
+        run: |
+          sudo systemd-inhibit --what=idle:sleep --mode=block true
+          cargo test --lib --no-run --message-format=json > /tmp/varda-lib-tests.json
+          test_binary=$(python3 -c 'import json; messages = [json.loads(line) for line in open("/tmp/varda-lib-tests.json")]; print(next(m["executable"] for m in messages if m.get("reason") == "compiler-artifact" and m.get("target", {}).get("kind") == ["lib"] and m.get("executable")))')
+          sudo env RUST_BACKTRACE=1 "$test_binary" --exact app::keep_awake::tests::the_os_sees_the_machine_held_awake_and_then_released
+
       # The whole suite, not a curated subset: with an adapter present there is
       # no GPU-free/GPU-gated split to maintain, and a newly added GPU test is
       # covered without anyone remembering to list it here.
       - name: Run test suite
-        run: cargo test --workspace
+        # This exact OS test ran above; it is not omitted from validation.
+        run: cargo test --workspace -- --skip app::keep_awake::tests::the_os_sees_the_machine_held_awake_and_then_released
