@@ -34,9 +34,14 @@ at the packaging script's default vcpkg location.
 
 ```powershell
 cargo check --locked --no-default-features --features screen-capture
-cargo build --locked --no-default-features --features screen-capture
-cargo run --locked --no-default-features --features screen-capture
+cargo build --release --locked --no-default-features --features screen-capture
+cargo run --release --locked --no-default-features --features screen-capture
 ```
+
+Use the release build for interactive use and performance validation. The
+default development profile is unoptimized; its CPU processing throughput
+does not establish release performance. The optimized executable is
+`target\release\varda.exe`; `target\debug\varda.exe` is intended for debugging.
 
 Use the same feature selection for validation:
 
