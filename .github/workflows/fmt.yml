@@ -36,5 +36,8 @@ jobs:
         with:
           components: rustfmt
 
+      - name: Verify privileged inhibitor capability
+        run: sudo systemd-inhibit --what=idle:sleep --mode=block true
+
       - name: Check formatting
         run: cargo fmt --all -- --check
