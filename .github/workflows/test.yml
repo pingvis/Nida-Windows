@@ -1,6 +1,12 @@
 name: test
 
 on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Exact fork branch or commit to validate
+        required: true
+        type: string
   pull_request:
     branches: [main]
     # Allowlist: docs, README, CONTRIBUTING, LICENSE, and .gitignore are
@@ -47,6 +53,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.revision || github.ref }}
 
       - name: Install system dependencies
         run: |

@@ -1,6 +1,12 @@
 name: clippy
 
 on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Exact fork branch or commit to validate
+        required: true
+        type: string
   pull_request:
     branches: [main]
     # Allowlist: docs, README, CONTRIBUTING, LICENSE, and .gitignore are
@@ -35,6 +41,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.revision || github.ref }}
 
       - name: Install system dependencies
         run: |
@@ -82,6 +90,8 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.revision || github.ref }}
 
       - name: Install dependencies
         run: |
@@ -111,6 +121,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.revision || github.ref }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
