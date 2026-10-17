@@ -77,6 +77,8 @@ jobs:
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       # `clippy::pedantic` is enabled as warn-by-default in Cargo.toml's
       # `[lints.clippy]` (with a documented allow-list), so `-D warnings` gates
@@ -108,6 +110,8 @@ jobs:
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       # Homebrew's arm64 prefix is not on the default linker search path, and
       # `--all-targets` links test/bench binaries. See AGENTS.md.
@@ -158,6 +162,8 @@ jobs:
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       # Feature set matches the Windows release build: `depth` (libfreenect) has
       # no vcpkg port, so it is excluded and the other defaults re-added. See
