@@ -31,7 +31,8 @@ merged and verified in the resulting Windows build.
   H.264/HEVC outputs; preserve higher precision and alpha paths.
 - [x] Reserve unique timestamped takes and show the actual path during/after
   recording, with file-manager and copy-path actions.
-- [ ] Validate simultaneous recorders, restarts and release performance.
+- [x] Validate simultaneous recorders, restarts and short synthetic release
+  performance checks. See [test notes](recording-output-test.md).
 - [ ] User tests the separate Windows test build before a PR is opened.
 - [ ] Submit a focused PR, merge and verify the resulting package.
 

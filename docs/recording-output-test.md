@@ -44,4 +44,17 @@ after Stop until the app closes. Existing relative bases remain supported.
 - Production library/application Clippy: passed with warnings denied.
 - Repository-wide rustfmt still reports pre-existing differences; unrelated
   formatting changes are excluded from this branch.
-- Release performance and portable-package checks: pending.
+- Release build: passed.
+- Short sequential headless release comparison, on the same machine with
+  builds idle, using a 4K60 plasma generator and the same fixed-quality H.264
+  settings: original 35.93 render fps, updated 59.90 fps. Across the warm
+  approximately ten-second sample, repeated frames increased by 253 originally
+  and zero after the change. Both encoder-queue drop counters remained zero:
+  this case exposed render/readback throughput, not only queue backpressure.
+  The baseline executable's SHA256 matches the installed `6d0998b` package.
+- Final-build dual 1080p60 check: 59.91 render fps, zero encoder-queue drops on
+  either recorder, no added repeats after warm-up, independent stop and new
+  restart file verified. Both H.264/AAC files were probed; decoding the second
+  file confirmed its separate blue bus. These are short synthetic checks, not
+  qualification of long-running capture, lip sync or two 4K60 recordings.
+- Portable-package checks: pending.
