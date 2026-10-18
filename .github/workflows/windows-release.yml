@@ -1,0 +1,155 @@
+name: Windows installer and draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing Windows tag, e.g. windows-v0.9.0-beta.1. Leave empty for a test artifact only.'
+        required: false
+        default: ''
+  push:
+    tags: ['windows-v*']
+  pull_request:
+    paths:
+      - '.github/workflows/windows-release.yml'
+      - 'scripts/windows/**'
+      - 'scripts/ci/*windows*'
+      - 'scripts/ci/setup-inno.ps1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-installer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and test Windows installer
+    runs-on: windows-2022
+    timeout-minutes: 120
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_BUILD_JOBS: 4
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+      - name: Validate release tag
+        id: version
+        shell: pwsh
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+          EVENT_REF_TYPE: ${{ github.ref_type }}
+          EVENT_REF_NAME: ${{ github.ref_name }}
+        run: |
+          $tag = $env:REQUESTED_TAG
+          if (!$tag -and $env:EVENT_REF_TYPE -eq 'tag') { $tag = $env:EVENT_REF_NAME }
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          if ($tag) {
+            if ($tag -notmatch ('^windows-v' + [regex]::Escape($version) + '(-[A-Za-z0-9.-]+)?$')) { throw 'Windows tag must match Cargo.toml, e.g. windows-v0.9.0-beta.1.' }
+            $tagCommit = git rev-parse "refs/tags/$tag^{commit}"
+            if ($LASTEXITCODE -ne 0 -or $tagCommit -ne (git rev-parse HEAD)) { throw 'The requested tag must exist and point at the checked-out commit.' }
+            $version = $tag.Substring('windows-v'.Length)
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Test packaging dependency handling
+        shell: pwsh
+        run: ./scripts/ci/test-windows-package-helpers.ps1
+      - name: Set up FFmpeg 9 and libclang 20
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/ci/setup-windows-build.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-build-tools')
+      - name: Set up pinned portable Inno Setup compiler
+        shell: pwsh
+        run: ./scripts/ci/setup-inno.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-inno')
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-portable-core
+          cache-on-failure: true
+      - name: Build and verify portable package
+        shell: pwsh
+        run: ./scripts/ci/build-windows.ps1
+      - name: Build installer and exercise install, upgrade and uninstall
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $archive = @(Get-ChildItem dist/windows/*.zip)
+          if ($archive.Count -ne 1) { throw 'Expected exactly one verified portable ZIP.' }
+          ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion $env:RELEASE_VERSION
+          $version = ($env:RELEASE_VERSION -split '-')[0]
+          $first = ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion "$version-installer-test.1" -TestIdentity -OutputDirectory (Join-Path $env:RUNNER_TEMP 'installer-fixtures')
+          $next = ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion "$version-installer-test.2" -TestIdentity -OutputDirectory (Join-Path $env:RUNNER_TEMP 'installer-fixtures')
+          ./scripts/ci/test-windows-installer.ps1 -Installer $first.FullName -UpgradeInstaller $next.FullName
+      - name: Upload installer, portable ZIP and checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nida-Windows-installer
+          path: |
+            dist/windows/*.zip
+            dist/windows/*.sha256
+            dist/windows-installer/*-Setup.exe
+            dist/windows-installer/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-installer-test-logs
+          path: ${{ runner.temp }}/Nida installer test */*.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  draft:
+    name: Upload assets to a draft prerelease
+    needs: build
+    if: needs.build.outputs.tag != '' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Nida-Windows-installer
+          path: assets
+      - name: Create or update draft only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+          VERSION: ${{ needs.build.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > notes.md <<'NOTES'
+          Experimental Windows x64 core build. Download the Setup.exe installer or the portable ZIP; the .sha256 files verify your downloads. The Source code archives are not the application.
+
+          Setup installs for the current user, with a Start menu shortcut and optional desktop shortcut. Close Nida before upgrading. Uninstall keeps separately stored shows and recordings.
+
+          Includes screen/window capture. Optional HTML/Servo, face detection, Kinect and the NDI runtime are not bundled. This build and installer are unsigned; Windows may show an unknown-publisher warning.
+
+          Before publishing this draft: test on a clean Windows PC, review the version and release notes, and attach the exact corresponding FFmpeg/third-party source and build recipes described in docs/windows-packaging.md. A binary checksum or generic source URL is not a substitute for that source archive. This workflow deliberately never publishes a release automatically.
+          NOTES
+          if gh release view "$TAG" --json isDraft > existing.json 2>/dev/null; then
+            test "$(jq -r .isDraft existing.json)" = true || { echo 'Refusing to overwrite a published release'; exit 1; }
+          else
+            gh release create "$TAG" --verify-tag --draft --prerelease --title "Nida Windows $VERSION (experimental)" --notes-file notes.md
+          fi
+          mapfile -d '' files < <(find assets -type f -print0)
+          gh release upload "$TAG" "${files[@]}" --clobber
+          echo "Draft prerelease prepared for $TAG; review before publishing." >> "$GITHUB_STEP_SUMMARY"

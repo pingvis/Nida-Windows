@@ -1,0 +1,19 @@
+Nida Windows - experimental core build
+
+Install for your current Windows account. Administrator privileges are not required.
+Close Nida before installing an update. Setup will not automatically stop a running show.
+
+The Start menu shortcut opens your normal workspace under your user profile.
+Install, upgrade and uninstall do not remove your saved shows or recordings.
+Keep custom shaders and other personal files in your workspace, outside the program folder.
+
+This build includes the core application and screen/window capture. HTML/Servo,
+face detection and Kinect are excluded. The optional NDI runtime is installed separately.
+
+This application and installer are unsigned. Windows may display an unknown-publisher warning.
+This experimental build has not been qualified for every GPU, capture device or live show.
+
+Nida's own source is MIT. The included FFmpeg GPL build means this combined
+distribution is provided under GPLv3. See licenses/ for notices and build information.
+
+Manual and source: https://github.com/pingvis/Nida-Windows
