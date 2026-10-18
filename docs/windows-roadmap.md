@@ -23,6 +23,23 @@ merged and verified in the resulting Windows build.
 
 ## Planned work, in order
 
+### Recording outputs fix — ready for review
+
+- [x] Retain independent recording outputs and their existing source, audio,
+  codec, rotation, surfaces and precision controls.
+- [x] Adapt GPU NV12 delivery and bounded recording buffers to compatible
+  H.264/HEVC outputs; preserve higher precision and alpha paths.
+- [x] Reserve unique timestamped takes and show the actual path during/after
+  recording, with file-manager and copy-path actions.
+- [x] Validate simultaneous recorders, restarts and short synthetic release
+  performance checks. See [test notes](recording-output-test.md).
+- [x] User verified the initial separate Windows recording test build.
+- [x] User verifies the follow-up pencil rename, folder chooser and top REC
+  recording-name field before a PR is opened.
+- [ ] Submit a focused PR, merge and verify the resulting package.
+
+User approved opening the PR after testing the separate builds.
+
 ### 1. Shader compilation cache
 
 - [x] Confirm the current compiler path and extract the relevant Varda cache
