@@ -23,7 +23,7 @@ merged and verified in the resulting Windows build.
 
 ## Planned work, in order
 
-### Recording outputs fix — in local testing
+### Recording outputs fix — ready for review
 
 - [x] Retain independent recording outputs and their existing source, audio,
   codec, rotation, surfaces and precision controls.
@@ -34,11 +34,11 @@ merged and verified in the resulting Windows build.
 - [x] Validate simultaneous recorders, restarts and short synthetic release
   performance checks. See [test notes](recording-output-test.md).
 - [x] User verified the initial separate Windows recording test build.
-- [ ] User verifies the follow-up pencil rename, folder chooser and top REC
+- [x] User verifies the follow-up pencil rename, folder chooser and top REC
   recording-name field before a PR is opened.
 - [ ] Submit a focused PR, merge and verify the resulting package.
 
-PR intentionally not opened pending user testing.
+User approved opening the PR after testing the separate builds.
 
 ### 1. Shader compilation cache
 

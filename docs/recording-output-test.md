@@ -1,7 +1,7 @@
 # Recording outputs — local Windows test
 
-This change stays on `codex/recording-output-efficiency`. No PR is opened until
-the user has tested the separate release build.
+This change is on `codex/recording-output-efficiency`. The user tested the separate
+release builds and approved opening a PR.
 
 ## What to try
 
@@ -46,8 +46,8 @@ output names/folders through `POST /api/command` with
 `ConfigureRecordingOutput { output_uuid, name, folder }`; omit either optional
 field to leave it unchanged. A live folder change is rejected.
 
-The user verified the initial recording fix. The naming/folder follow-up is
-awaiting user verification; the PR remains on hold.
+The user verified the initial recording fix and approved the naming/folder
+follow-up for a PR after testing the separate release builds.
 
 ### Naming and folder follow-up checks
 
