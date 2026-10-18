@@ -34,6 +34,8 @@ merged and verified in the resulting Windows build.
 - [ ] Before public publishing, attach exact corresponding third-party sources
   and build recipes and verify a clean PC. See [release guide](windows-installer.md).
 
+Fork PR: [Nida-Windows #2](https://github.com/pingvis/Nida-Windows/pull/2).
+
 ### Recording outputs fix — ready for review
 
 - [x] Retain independent recording outputs and their existing source, audio,

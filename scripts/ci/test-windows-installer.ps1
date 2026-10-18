@@ -14,8 +14,9 @@ $workspace = Join-Path $temporary 'My show/.varda'
 New-Item -ItemType Directory -Path $workspace -Force | Out-Null
 $sentinel = Join-Path $workspace 'operator-data.txt'
 'Preserve this show' | Set-Content -LiteralPath $sentinel
-$startShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Nida Windows Installer Test.lnk'
-$desktopShortcut = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Nida Windows Installer Test.lnk'
+# A fresh CI profile may not have created these known folders yet.
+$startShortcut = Join-Path ([Environment]::GetFolderPath('Programs', 'DoNotVerify')) 'Nida Windows Installer Test.lnk'
+$desktopShortcut = Join-Path ([Environment]::GetFolderPath('DesktopDirectory', 'DoNotVerify')) 'Nida Windows Installer Test.lnk'
 if ((Test-Path -LiteralPath $startShortcut) -or (Test-Path -LiteralPath $desktopShortcut)) { throw 'Installer test shortcuts already exist.' }
 function Install-Test($path, $log, [switch]$Upgrade) {
     $path = (Resolve-Path -LiteralPath $path).Path
