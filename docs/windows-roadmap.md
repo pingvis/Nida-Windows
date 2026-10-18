@@ -23,6 +23,18 @@ merged and verified in the resulting Windows build.
 
 ## Planned work, in order
 
+### Channel-effects Properties layout — local testing only
+
+- [x] Cap the channel preview and allow a larger view on click.
+- [x] Move routing into a collapsible sidebar and stack collapsible effect
+  cards vertically; preserve controls, context menus and drag reordering.
+- [x] Reveal and briefly highlight newly added channel effects.
+- [x] Pass five focused layout tests, eight drag/drop tests and the production
+  application Clippy check.
+- [ ] Verify the integrated release build and user feedback.
+
+No PR or push for this change until the user explicitly requests it.
+
 ### Windows installer — implementation and testing
 
 - [x] Wrap the verified core portable package in a per-user Inno Setup installer.
