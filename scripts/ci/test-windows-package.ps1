@@ -1,6 +1,9 @@
 # Exercise the EXTRACTED ZIP without the developer PATH or repository as CWD.
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$Archive)
+param(
+    [Parameter(Mandatory, ParameterSetName = 'Archive')][string]$Archive,
+    [Parameter(Mandatory, ParameterSetName = 'Installed')][string]$PackageDirectory
+)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 if (!$IsWindows) { throw 'Runtime verification requires Windows.' }
@@ -10,10 +13,14 @@ $oldNoInstall = $env:VARDA_NO_CLI_INSTALL
 $oldFfmpeg = $env:FFMPEG_DIR
 New-Item -ItemType Directory -Path $temporary | Out-Null
 try {
-    Expand-Archive -LiteralPath $Archive -DestinationPath $temporary
-    $directories = @(Get-ChildItem -LiteralPath $temporary -Directory)
-    if ($directories.Count -ne 1) { throw 'Expected one portable application directory in the ZIP.' }
-    $package = $directories[0].FullName
+    if ($PSCmdlet.ParameterSetName -eq 'Archive') {
+        Expand-Archive -LiteralPath $Archive -DestinationPath $temporary
+        $directories = @(Get-ChildItem -LiteralPath $temporary -Directory)
+        if ($directories.Count -ne 1) { throw 'Expected one portable application directory in the ZIP.' }
+        $package = $directories[0].FullName
+    } else {
+        $package = (Resolve-Path -LiteralPath $PackageDirectory).Path
+    }
     foreach ($required in @('varda.exe', 'ffmpeg.exe', 'ffprobe.exe', 'shaders', 'licenses/FFmpeg.txt', 'build-info.json', 'Read me first.txt')) {
         if (!(Test-Path -LiteralPath (Join-Path $package $required))) { throw "ZIP is missing $required" }
     }
@@ -47,11 +54,12 @@ try {
         # Also decode the result; starting ffmpeg alone does not test its codecs.
         & (Join-Path $package 'ffmpeg.exe') -v error -nostdin -i $recording -f null -
         if ($LASTEXITCODE -ne 0) { throw 'Bundled decoder smoke test failed.' }
-        Write-Host 'Extracted ZIP passed application startup and H.264/AAC encode/probe/decode with a clean PATH.'
+        Write-Host 'Package passed payload hashes, application startup and H.264/AAC encode/probe/decode with a clean PATH.'
     } finally { Pop-Location }
 } finally {
     $env:PATH = $oldPath
     $env:VARDA_NO_CLI_INSTALL = $oldNoInstall
     $env:FFMPEG_DIR = $oldFfmpeg
+    if ([IO.Path]::GetDirectoryName($temporary) -ne [IO.Path]::GetTempPath().TrimEnd('\')) { throw 'Unsafe package test directory.' }
     Remove-Item -LiteralPath $temporary -Recurse -Force
 }

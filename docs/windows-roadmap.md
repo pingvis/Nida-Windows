@@ -1,6 +1,6 @@
 # Nida Windows roadmap
 
-Updated: 18 October 2026.
+Updated: 19 October 2026.
 
 This is the working checklist for incremental improvements to Nida Windows.
 Each feature gets a focused branch and PR. Update this file when its status
@@ -22,6 +22,17 @@ merged and verified in the resulting Windows build.
   failures recorded separately.
 
 ## Planned work, in order
+
+### Windows installer — implementation and testing
+
+- [x] Wrap the verified core portable package in a per-user Inno Setup installer.
+- [x] Validate install, shortcut targets, version upgrade and uninstall while
+  preserving user files; retain the existing payload and encoder smoke tests.
+- [x] Add a Windows-specific workflow that uploads Setup, ZIP and checksums to
+  a draft prerelease after checks pass, without triggering Mac releases.
+- [ ] User tests Setup on Windows; merge the fork-only installer PR.
+- [ ] Before public publishing, attach exact corresponding third-party sources
+  and build recipes and verify a clean PC. See [release guide](windows-installer.md).
 
 ### Recording outputs fix — ready for review
 
