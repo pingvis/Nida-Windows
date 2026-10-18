@@ -16,7 +16,11 @@ pub(super) fn render_output_section(ui: &mut egui::Ui, data: &UIData, actions: &
             use crate::renderer::context::RecordingCodec;
             actions.commands.push(EngineCommand::CreateHeadlessOutput {
                 target: OutputTarget::Recording {
-                    path: "output.mp4".to_string(),
+                    path: crate::record::RecordOptions::default()
+                        .folder
+                        .join("Recording.mp4")
+                        .display()
+                        .to_string(),
                     codec: RecordingCodec::H264,
                     audio_device: None,
                 },
@@ -485,7 +489,7 @@ fn render_headless_controls(
             });
             // File path input
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("File:").small());
+                ui.label(egui::RichText::new("File base:").small());
                 let path_id = egui::Id::new(format!("rec_path_{output_uuid}"));
                 let mut current_path: String = ui
                     .data(|d| d.get_temp(path_id))
@@ -494,7 +498,7 @@ fn render_headless_controls(
                     egui::TextEdit::singleline(&mut current_path)
                         .desired_width(160.0)
                         .font(egui::TextStyle::Small),
-                );
+                ).on_hover_text("Folder and base name for new takes. A timestamp is added on every Start; existing files are never overwritten. Relative paths use the application's working folder.");
                 if response.lost_focus() || response.changed() {
                     ui.data_mut(|d| d.insert_temp(path_id, current_path.clone()));
                     if response.lost_focus() {
@@ -507,6 +511,22 @@ fn render_headless_controls(
                             },
                         });
                     }
+                }
+            });
+        }
+        if let Some(file) = &output.recording_file {
+            let verb = if output.is_active {
+                "Writing"
+            } else {
+                "Last take"
+            };
+            ui.label(egui::RichText::new(format!("{verb}: {file}")).small());
+            ui.horizontal(|ui| {
+                if ui.small_button("Show file").clicked() {
+                    actions.session.reveal_file = Some(file.into());
+                }
+                if ui.small_button("Copy path").clicked() {
+                    ui.ctx().copy_text(file.clone());
                 }
             });
         }
@@ -1548,6 +1568,7 @@ mod tests {
             name: "Main".to_string(),
             target: OutputTarget::Windowed,
             target_label: "Windowed".to_string(),
+            recording_file: None,
             is_windowed: true,
             is_active: true,
             active_duration: std::time::Duration::ZERO,
@@ -1575,6 +1596,48 @@ mod tests {
         let _harness = egui_kittest::Harness::new_ui(|ui| {
             render_output_section(ui, &data, &mut actions);
         });
+    }
+
+    #[test]
+    fn recording_controls_reveal_last_take_and_stop_only_their_output() {
+        let mut data = UIData::test_fixture();
+        let mut output =
+            sample_output(crate::engine::value::render::ResolvedPresentation::default());
+        output.is_windowed = false;
+        output.target = OutputTarget::Recording {
+            path: "Clean.mp4".into(),
+            codec: crate::renderer::context::RecordingCodec::H264,
+            audio_device: None,
+        };
+        output.recording_file = Some("C:/Recordings/Clean 2026-10-18 12-00-00.mp4".into());
+        data.outputs = vec![output];
+        let mut actions = UIActions::new();
+        {
+            let mut harness = egui_kittest::Harness::builder()
+                .with_size(egui::vec2(500.0, 1000.0))
+                .build_ui(|ui| render_output_section(ui, &data, &mut actions));
+            harness.run();
+            harness.get_by_label("Show file").click();
+            harness.run();
+            harness.get_by_label("⏹ Stop").click();
+            harness.run();
+        }
+        assert_eq!(
+            actions.session.reveal_file,
+            data.outputs[0]
+                .recording_file
+                .as_ref()
+                .map(std::path::PathBuf::from)
+        );
+        assert!(actions.commands.iter().any(|command| matches!(command, EngineCommand::StopOutput { output_uuid } if output_uuid == "out00001")));
+        data.outputs[0].is_active = false;
+        let mut stopped = UIActions::new();
+        let mut harness = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(500.0, 1000.0))
+            .build_ui(|ui| render_output_section(ui, &data, &mut stopped));
+        harness.run();
+        harness.get_by_label("Last take: C:/Recordings/Clean 2026-10-18 12-00-00.mp4");
+        harness.get_by_label("▶ Start");
     }
 
     #[test]

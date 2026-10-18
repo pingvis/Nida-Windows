@@ -74,5 +74,31 @@ device too: it is for a picture that arrives late at a screen.)
 | `POST /api/record/start` | Start a new file |
 | `POST /api/record/stop` | Stop; the file is finished in the background |
 
-The older **Recording** output in the Outputs panel still exists (software
-encoders, one fixed path); the REC button replaces it for events.
+## Recording more than one feed
+
+In **Library → Outputs**, **+ Recording** adds an independent recorder. Each
+has its own **Source**, **Audio**, codec, file base and **Start / Stop** controls.
+For example, record Main with graphics on one output and a clean bus on another.
+The top-bar **REC** button still controls only its own recording.
+
+New recording outputs default to Videos/Movies → Nida. **File base** supplies
+the folder, filename stem and extension, such as `D:/Show/Clean.mp4`; each Start
+adds a timestamp and, when needed, a number. Existing files are not overwritten,
+even when two recorders use the same base. Old saved relative paths still work,
+relative to the application's working folder. Use a full path to choose exactly
+where recordings go. Keep the extension appropriate to the selected codec
+(for example, `.mov` for ProRes or HAP).
+
+**Writing** shows the full actual path while recording; **Last take** retains it
+after Stop until the app closes. **Show file** opens its location in the file
+manager, and **Copy path** copies that path. The configured base, source and
+other output settings continue to be saved with the show.
+
+Recording outputs retain rotation, surfaces, edge blending, SDR precision and
+the existing codec choices. Eight-bit H.264/HEVC use GPU NV12 conversion when
+the picture size supports it, with the same bounded buffering policy as REC.
+Ten-bit, alpha and other formats retain their corresponding readback paths.
+These recording outputs still use software encoders and fixed-quality settings;
+they do not inherit the top-bar recorder's bitrate or encoder settings. Each
+additional recorder adds encoding work, so check dropped frames with the actual
+show and simultaneous recordings before using them live.

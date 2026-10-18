@@ -110,6 +110,71 @@ fn default_folder() -> PathBuf {
         .join("Nida")
 }
 
+/// A uniquely reserved output take. The configured path supplies its folder,
+/// stem and extension; it is never used as an overwrite destination.
+pub(crate) struct OutputRecordingFile {
+    path: PathBuf,
+    keep: bool,
+}
+
+impl OutputRecordingFile {
+    pub(crate) fn reserve(configured: &Path) -> std::io::Result<Self> {
+        if configured.file_name().is_none() || configured.as_os_str().is_empty() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Choose a recording file name",
+            ));
+        }
+        let configured = std::path::absolute(configured)?;
+        let folder = configured
+            .parent()
+            .expect("absolute recording has a parent");
+        std::fs::create_dir_all(folder)?;
+        let stem = configured.file_stem().unwrap_or_default().to_string_lossy();
+        let extension = configured.extension().unwrap_or_default().to_string_lossy();
+        let stamp = timestamp_now();
+        for take in 1_u64.. {
+            let suffix = if take == 1 {
+                String::new()
+            } else {
+                format!(" ({take})")
+            };
+            let name = if extension.is_empty() {
+                format!("{stem} {stamp}{suffix}")
+            } else {
+                format!("{stem} {stamp}{suffix}.{extension}")
+            };
+            let path = folder.join(name);
+            match std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)
+            {
+                Ok(_) => return Ok(Self { path, keep: false }),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(error) => return Err(error),
+            }
+        }
+        unreachable!("recording take numbers exhausted")
+    }
+
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub(crate) fn keep(mut self) {
+        self.keep = true;
+    }
+}
+
+impl Drop for OutputRecordingFile {
+    fn drop(&mut self) {
+        if !self.keep {
+            let _ = std::fs::remove_file(&self.path);
+        }
+    }
+}
+
 fn default_audio_kbps() -> u32 {
     256
 }
@@ -651,6 +716,37 @@ fn available_on(path: &Path) -> Option<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn output_takes_reserve_distinct_absolute_files_without_overwriting() {
+        let dir = tempfile::tempdir().unwrap();
+        let configured = dir.path().join("new folder").join("Clean.mp4");
+        std::fs::create_dir_all(configured.parent().unwrap()).unwrap();
+        std::fs::write(&configured, b"existing recording").unwrap();
+        let first = OutputRecordingFile::reserve(&configured).unwrap();
+        let second = OutputRecordingFile::reserve(&configured).unwrap();
+        assert!(first.path().is_absolute());
+        assert_ne!(first.path(), second.path());
+        assert_eq!(first.path().extension().unwrap(), "mp4");
+        assert_eq!(std::fs::read(&configured).unwrap(), b"existing recording");
+        let path = first.path().to_path_buf();
+        first.keep();
+        assert!(path.exists(), "successful starts retain their reservation");
+        let abandoned = second.path().to_path_buf();
+        drop(second);
+        assert!(
+            !abandoned.exists(),
+            "failed starts remove their reservation"
+        );
+    }
+
+    #[test]
+    fn output_take_creates_parents_and_rejects_empty_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = OutputRecordingFile::reserve(&dir.path().join("new/takes/PGM.mov")).unwrap();
+        assert!(file.path().exists());
+        assert!(OutputRecordingFile::reserve(Path::new("")).is_err());
+    }
 
     /// The free space where a recording goes is found at once — the frame
     /// it is asked in must not come late — and found for a folder not made

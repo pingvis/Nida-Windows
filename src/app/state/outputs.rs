@@ -282,7 +282,20 @@ impl VardaApp {
             };
             if let Some(UnifiedOutput::Headless(output)) = self.output.outputs.get_mut(idx) {
                 output.set_resolved_presentation(device, resolved);
-                readback_format = output.readback.format();
+                let nv12 = matches!(
+                    codec,
+                    crate::renderer::context::RecordingCodec::H264
+                        | crate::renderer::context::RecordingCodec::H265
+                ) && output.resolved_presentation.resolved
+                    == crate::engine::value::render::PresentationDepth::Sdr8;
+                // A new take must not receive readbacks left by the last take.
+                output.keep_nv12(device, false);
+                output.keep_nv12(device, nv12);
+                readback_format = if output.nv12.is_some() {
+                    crate::renderer::ReadbackFormat::Nv12
+                } else {
+                    output.readback.format()
+                };
             }
         }
         self.release_passthrough(stale.map(|b| *b));
@@ -445,6 +458,10 @@ impl VardaApp {
                 if let Some(UnifiedOutput::Headless(h)) = self.output.outputs.get_mut(idx) {
                     if let Some(resolved) = presentation {
                         h.set_resolved_presentation(&self.context.device, resolved);
+                    }
+                    h.keep_nv12(&self.context.device, sub.takes_nv12());
+                    if matches!(target, OutputTarget::Recording { .. }) {
+                        h.recording_file = Some(sub.label().into());
                     }
                     h.subprocess = Some(Box::new(sub));
                     h.audio_pcm = passthrough.map(Box::new);
@@ -1295,6 +1312,78 @@ mod tests {
     fn headless_app() -> Option<super::VardaApp> {
         let gpu = crate::renderer::context::GpuContext::new_headless().ok()?;
         super::VardaApp::new(gpu, &crate::testing::headless_config()).ok()
+    }
+
+    #[test]
+    fn recording_outputs_start_stop_and_restart_independently() {
+        use crate::engine::CommandResult;
+        use crate::renderer::context::{OutputTarget, RecordingCodec, UnifiedOutput};
+        if !std::process::Command::new("ffmpeg")
+            .arg("-version")
+            .output()
+            .is_ok_and(|o| o.status.success())
+        {
+            return;
+        }
+        let Some(mut app) = headless_app() else {
+            return;
+        };
+        app.set_render_resolution(64, 64);
+        let dir = tempfile::tempdir().unwrap();
+        let configured = dir.path().join("Shared.mp4");
+        let mut ids = Vec::new();
+        for _ in 0..2 {
+            assert!(matches!(
+                app.cmd_create_headless_output(OutputTarget::Recording {
+                    path: configured.display().to_string(),
+                    codec: RecordingCodec::H264,
+                    audio_device: None
+                }),
+                CommandResult::Ok
+            ));
+            ids.push(app.output.outputs.last().unwrap().uuid().to_string());
+        }
+        for id in &ids {
+            assert!(matches!(app.cmd_start_output(id), CommandResult::Ok));
+        }
+        let files: Vec<_> = app
+            .output
+            .outputs
+            .iter()
+            .filter_map(|o| match o {
+                UnifiedOutput::Headless(h) => {
+                    assert!(h.active);
+                    assert!(h.nv12.is_some());
+                    assert!(h.subprocess.as_ref().unwrap().takes_nv12());
+                    h.recording_file.clone()
+                }
+                UnifiedOutput::Window(_) => None,
+            })
+            .collect();
+        assert_eq!(files.len(), 2);
+        assert_ne!(files[0], files[1]);
+        assert!(matches!(app.cmd_stop_output(&ids[0]), CommandResult::Ok));
+        let other = app
+            .output
+            .outputs
+            .iter()
+            .find(|o| o.uuid() == ids[1])
+            .unwrap();
+        assert!(matches!(other, UnifiedOutput::Headless(h) if h.active));
+        assert!(matches!(app.cmd_start_output(&ids[0]), CommandResult::Ok));
+        let restarted = app
+            .output
+            .outputs
+            .iter()
+            .find(|o| o.uuid() == ids[0])
+            .unwrap();
+        assert!(
+            matches!(restarted, UnifiedOutput::Headless(h) if h.recording_file.as_ref() != Some(&files[0]))
+        );
+        for id in &ids {
+            app.cmd_stop_output(id);
+        }
+        assert!(!configured.exists(), "configured base is never overwritten");
     }
 
     /// A screen for these tests: takes every picture, at once.
