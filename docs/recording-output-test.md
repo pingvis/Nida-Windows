@@ -57,4 +57,7 @@ after Stop until the app closes. Existing relative bases remain supported.
   restart file verified. Both H.264/AAC files were probed; decoding the second
   file confirmed its separate blue bus. These are short synthetic checks, not
   qualification of long-running capture, lip sync or two 4K60 recordings.
-- Portable-package checks: pending.
+- Portable-package checks: passed, including payload hashes, application startup
+  and bundled H.264/AAC encode/probe/decode from an unrelated working directory
+  with a clean PATH. An extracted copy has a separate demo workspace and launcher
+  under `dist/recording-output-test`; the user's installed app is unchanged.
