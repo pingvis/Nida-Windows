@@ -33,7 +33,9 @@ merged and verified in the resulting Windows build.
   recording, with file-manager and copy-path actions.
 - [x] Validate simultaneous recorders, restarts and short synthetic release
   performance checks. See [test notes](recording-output-test.md).
-- [ ] User tests the separate Windows test build before a PR is opened.
+- [x] User verified the initial separate Windows recording test build.
+- [ ] User verifies the follow-up pencil rename, folder chooser and top REC
+  recording-name field before a PR is opened.
 - [ ] Submit a focused PR, merge and verify the resulting package.
 
 PR intentionally not opened pending user testing.

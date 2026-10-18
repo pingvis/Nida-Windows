@@ -110,6 +110,53 @@ fn default_folder() -> PathBuf {
         .join("Nida")
 }
 
+fn default_name() -> String {
+    "Nida".into()
+}
+
+/// Keep names usable as a single filename component on every supported OS.
+pub(crate) fn recording_name(name: &str, fallback: &str) -> String {
+    let mut safe = String::new();
+    for c in name.chars() {
+        let c = if c.is_control() || "<>:\"/\\|?*".contains(c) {
+            '_'
+        } else {
+            c
+        };
+        if safe.len() + c.len_utf8() > 160 {
+            break;
+        }
+        safe.push(c);
+    }
+    let name = safe;
+    let name = name.trim_matches(|c: char| c.is_whitespace() || c == '.');
+    if name.is_empty() {
+        fallback.to_string()
+    } else {
+        name.to_string()
+    }
+}
+
+pub(crate) fn output_recording_folder(path: &str) -> &Path {
+    Path::new(path)
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+}
+
+pub(crate) fn output_recording_base(
+    folder: &Path,
+    name: &str,
+    codec: &crate::engine::value::render::RecordingCodec,
+) -> PathBuf {
+    use crate::engine::value::render::RecordingCodec;
+    let extension = match codec {
+        RecordingCodec::H264 | RecordingCodec::H265 | RecordingCodec::AV1 => "mp4",
+        _ => "mov",
+    };
+    folder.join(format!("{}.{extension}", recording_name(name, "Recording")))
+}
+
 /// A uniquely reserved output take. The configured path supplies its folder,
 /// stem and extension; it is never used as an overwrite destination.
 pub(crate) struct OutputRecordingFile {
@@ -182,6 +229,9 @@ fn default_audio_kbps() -> u32 {
 /// What is recorded and how.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct RecordOptions {
+    /// Filename prefix, followed by the take's timestamp.
+    #[serde(default = "default_name")]
+    pub name: String,
     /// The picture: the master, or a bus's Program.
     #[serde(default = "master")]
     pub source: OutputSource,
@@ -217,6 +267,7 @@ pub struct RecordOptions {
 impl Default for RecordOptions {
     fn default() -> Self {
         Self {
+            name: default_name(),
             source: master(),
             audio_bus: None,
             folder: default_folder(),
@@ -235,6 +286,7 @@ impl RecordOptions {
     /// The options made consistent: `ProRes` only in MOV, numbers in range.
     #[must_use]
     pub fn normalized(mut self) -> Self {
+        self.name = recording_name(&self.name, "Nida");
         if !self.codec.has_bit_rate() {
             self.format = RecordFormat::Mov;
         }
@@ -482,11 +534,12 @@ pub const LOW_SPACE_BYTES: u64 = 5 * 1024 * 1024 * 1024;
 
 /// A new file's path: `Nida 2026-09-26 14-05-09.mp4` in `folder`, with
 /// ` (2)`, ` (3)` … when a take continues in more files or the name is taken.
-pub fn file_path(folder: &Path, stamp: &str, part: usize, extension: &str) -> PathBuf {
+pub fn file_path(folder: &Path, name: &str, stamp: &str, part: usize, extension: &str) -> PathBuf {
+    let name = recording_name(name, "Nida");
     let base = if part > 1 {
-        format!("Nida {stamp} ({part})")
+        format!("{name} {stamp} ({part})")
     } else {
-        format!("Nida {stamp}")
+        format!("{name} {stamp}")
     };
     let mut path = folder.join(format!("{base}.{extension}"));
     let mut n = 2;
@@ -748,6 +801,30 @@ mod tests {
         assert!(OutputRecordingFile::reserve(Path::new("")).is_err());
     }
 
+    #[test]
+    fn recording_names_are_safe_and_old_settings_default_to_nida() {
+        assert_eq!(recording_name("  Žinių studija. ", "Nida"), "Žinių studija");
+        assert_eq!(recording_name("../bad\\name:*?", "Nida"), "_bad_name___");
+        assert_eq!(recording_name(" . ", "Nida"), "Nida");
+        let options: RecordOptions = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(options.name, "Nida");
+        let dir = tempfile::tempdir().unwrap();
+        let path = file_path(dir.path(), "Clean feed", "2026-10-18 21-30-00", 1, "mp4");
+        assert_eq!(
+            path.file_name().unwrap(),
+            "Clean feed 2026-10-18 21-30-00.mp4"
+        );
+        let saved = serde_json::to_value(RecordOptions {
+            name: "Lietuviškas įrašas".into(),
+            ..RecordOptions::default()
+        })
+        .unwrap();
+        assert_eq!(
+            serde_json::from_value::<RecordOptions>(saved).unwrap().name,
+            "Lietuviškas įrašas"
+        );
+    }
+
     /// The free space where a recording goes is found at once — the frame
     /// it is asked in must not come late — and found for a folder not made
     /// yet, by the folder it will go in.
@@ -924,12 +1001,12 @@ mod tests {
     #[test]
     fn files_are_named_by_time_and_never_overwritten() {
         let dir = tempfile::tempdir().unwrap();
-        let first = file_path(dir.path(), "2026-09-26 14-05-09", 1, "mp4");
+        let first = file_path(dir.path(), "Nida", "2026-09-26 14-05-09", 1, "mp4");
         assert_eq!(first.file_name().unwrap(), "Nida 2026-09-26 14-05-09.mp4");
         std::fs::write(&first, b"x").unwrap();
-        let again = file_path(dir.path(), "2026-09-26 14-05-09", 1, "mp4");
+        let again = file_path(dir.path(), "Nida", "2026-09-26 14-05-09", 1, "mp4");
         assert_eq!(again.file_name().unwrap(), "Nida 2026-09-26 14-05-09 2.mp4");
-        let part = file_path(dir.path(), "2026-09-26 14-05-09", 2, "mp4");
+        let part = file_path(dir.path(), "Nida", "2026-09-26 14-05-09", 2, "mp4");
         assert_eq!(
             part.file_name().unwrap(),
             "Nida 2026-09-26 14-05-09 (2).mp4"

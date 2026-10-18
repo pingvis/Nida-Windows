@@ -9,9 +9,10 @@ the user has tested the separate release build.
 2. Choose Main for one and a production bus for the other. Keep or choose
    their audio buses independently. Existing rotation, surfaces, edge blending
    and SDR precision controls remain available.
-3. Set a file base for each, such as `D:/Show/Program.mp4` and
-   `D:/Show/Clean.mp4`. You can also give both the same base to test collision
-   protection: they must create different takes.
+3. Click each title's pencil to set names such as **Program** and **Clean**.
+   Enter or clicking outside saves; Escape cancels. Use **Folder → Choose…**
+   to select the destination. Both recorders can share a name and folder;
+   they must still create different takes.
 4. Start both. Check their separate clocks and dropped-frame counters, and
    the full **Writing** path. **Show file** opens the location; **Copy path**
    copies the actual filename.
@@ -21,6 +22,11 @@ the user has tested the separate release build.
    Check motion, the correct picture/audio for each feed, and audio sync.
 7. Repeat with the actual show resolution and workload, and with top-bar REC
    if that will run simultaneously. Top-bar REC controls only its own take.
+8. Rename either recorder while running. Its current file must keep its name;
+   the next Start must create `New name timestamp.ext`. In the top REC menu,
+   set **Recording name**, then click Start directly without pressing Enter:
+   the first take must use that name. Name changes during REC apply to the
+   next Start; recovery files within the current take keep its original name.
 
 ## Scope
 
@@ -30,10 +36,30 @@ RGB readback; higher precision and alpha formats keep their existing paths.
 The output recorder's fixed-quality software encoding is retained. NVENC and
 new per-output bitrate/resolution settings are outside this fix.
 
-Saved-show settings keep their existing shape. The configured filename now
-acts as a base for unique takes instead of an overwrite destination. The actual
-last take is runtime status (`recording_file` in the outputs state API), retained
-after Stop until the app closes. Existing relative bases remain supported.
+Output settings reuse the existing saved title and destination path; the title
+now supplies the filename prefix, the path supplies its folder, and the codec
+supplies its extension. Top REC adds a backward-compatible `options.name` field,
+defaulting to Nida for old shows. The actual last take is runtime status
+(`recording_file` in the outputs state API), retained after Stop until the app
+closes. Existing relative folders remain supported. API clients can configure
+output names/folders through `POST /api/command` with
+`ConfigureRecordingOutput { output_uuid, name, folder }`; omit either optional
+field to leave it unchanged. A live folder change is rejected.
+
+The user verified the initial recording fix. The naming/folder follow-up is
+awaiting user verification; the PR remains on hold.
+
+### Naming and folder follow-up checks
+
+- Recording-related library tests: 55 passed, including pencil Enter/Escape,
+  folder-picker targeting, committing a name before Start and preserving it
+  when another option is clicked.
+- Recording integration: 9 passed with real encoders, including settings
+  persistence and retaining the current take's name through crash recovery.
+  These tests require the encoder's localhost audio connection; a sandboxed
+  attempt could not complete that connection and was rerun with it allowed.
+- UI integration: 87 passed. Production library/application Clippy passed
+  with warnings denied.
 
 ## Validation
 

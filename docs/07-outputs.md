@@ -290,7 +290,7 @@ MacBook Pro drives itself. Its picture goes out on its HDMI and SDI at once.
 
 ## Recording Outputs
 
-Click **+ Recording** to add a recording output; each runs its own ffmpeg subprocess, so several feeds can record at once. Choose each output's source, audio, codec and file base, then start and stop it independently. The actual file path remains visible after Stop. See [Recording more than one feed](19-recording.md#recording-more-than-one-feed).
+Click **+ Recording** to add a recording output; each runs its own ffmpeg subprocess, so several feeds can record at once. Use the pencil beside its title to set the filename prefix, and **Folder → Choose…** for its destination. Choose each output's source, audio and codec, then start and stop it independently. The actual file path remains visible after Stop. See [Recording more than one feed](19-recording.md#recording-more-than-one-feed).
 
 > **Sound.** Recording and all streaming targets carry an audio bus from the [Audio Mixer](16-audio-mixer.md) — **Bus: Master** by default — or a capture device directly, chosen in the output's **Audio:** menu. See also [Audio Passthrough](09-streaming-and-io.md#audio-passthrough).
 

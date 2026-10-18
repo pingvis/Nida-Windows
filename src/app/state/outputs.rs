@@ -17,6 +17,54 @@ const LOOK_FOR_DEVICE: std::time::Duration = std::time::Duration::from_secs(1);
 const DEVICE_MISSING_AFTER: std::time::Duration = std::time::Duration::from_secs(5);
 
 impl VardaApp {
+    /// Configure the next take. Renaming never stops an active encoder.
+    pub fn cmd_configure_recording_output(
+        &mut self,
+        output_uuid: &str,
+        name: Option<&str>,
+        folder: Option<&str>,
+    ) -> CommandResult {
+        let idx = match self.resolve_output(output_uuid) {
+            Ok(idx) => idx,
+            Err(error) => return error.into(),
+        };
+        let Some(UnifiedOutput::Headless(h)) = self.output.outputs.get_mut(idx) else {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: "This output is not a recording".into(),
+            };
+        };
+        let OutputTarget::Recording { path, codec, .. } = &mut h.target else {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: "This output is not a recording".into(),
+            };
+        };
+        if h.active && folder.is_some() {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: "Stop recording to change its folder".into(),
+            };
+        }
+        if folder.is_some_and(|folder| folder.trim().is_empty()) {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: "Choose a recording folder".into(),
+            };
+        }
+        if let Some(name) = name {
+            h.name = crate::record::recording_name(name, "Recording");
+        }
+        let folder = folder.map_or_else(
+            || crate::record::output_recording_folder(path),
+            std::path::Path::new,
+        );
+        *path = crate::record::output_recording_base(folder, &h.name, codec)
+            .display()
+            .to_string();
+        CommandResult::Ok
+    }
+
     /// Set the output target for a windowed or headless output.
     pub fn cmd_set_output_target(&mut self, idx: usize, target: OutputTarget) -> CommandResult {
         let ndi_resolution = matches!(&target, OutputTarget::NdiSend { .. }).then(|| {
@@ -137,7 +185,11 @@ impl VardaApp {
     /// Create a new headless output with the given target.
     pub fn cmd_create_headless_output(&mut self, target: OutputTarget) -> CommandResult {
         let idx = self.output.outputs.len() + 1;
-        let name = format!("Output {idx}");
+        let name = if matches!(target, OutputTarget::Recording { .. }) {
+            format!("Recording {idx}")
+        } else {
+            format!("Output {idx}")
+        };
         let is_ndi = matches!(&target, OutputTarget::NdiSend { .. });
         let mut headless = HeadlessOutput::new(
             &self.context.device,
@@ -328,8 +380,13 @@ impl VardaApp {
                 )
             }
             OutputTarget::Recording { path, codec, .. } => {
+                let path = crate::record::output_recording_base(
+                    crate::record::output_recording_folder(path),
+                    &name,
+                    codec,
+                );
                 crate::renderer::FfmpegSubprocess::spawn_recording_with_presentation(
-                    path,
+                    &path.display().to_string(),
                     codec,
                     width,
                     height,
@@ -1362,6 +1419,23 @@ mod tests {
             .collect();
         assert_eq!(files.len(), 2);
         assert_ne!(files[0], files[1]);
+        assert!(matches!(
+            app.cmd_configure_recording_output(&ids[0], Some("Clean feed"), None),
+            CommandResult::Ok
+        ));
+        let renamed = app
+            .output
+            .outputs
+            .iter()
+            .find(|o| o.uuid() == ids[0])
+            .unwrap();
+        assert!(
+            matches!(renamed, UnifiedOutput::Headless(h) if h.active && h.name == "Clean feed" && h.recording_file.as_ref() == Some(&files[0]))
+        );
+        assert!(matches!(
+            app.cmd_configure_recording_output(&ids[0], None, Some("new folder")),
+            CommandResult::Err { .. }
+        ));
         assert!(matches!(app.cmd_stop_output(&ids[0]), CommandResult::Ok));
         let other = app
             .output
@@ -1379,6 +1453,9 @@ mod tests {
             .unwrap();
         assert!(
             matches!(restarted, UnifiedOutput::Headless(h) if h.recording_file.as_ref() != Some(&files[0]))
+        );
+        assert!(
+            matches!(restarted, UnifiedOutput::Headless(h) if h.recording_file.as_ref().unwrap().file_name().unwrap().to_string_lossy().starts_with("Clean feed "))
         );
         for id in &ids {
             app.cmd_stop_output(id);

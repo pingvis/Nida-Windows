@@ -21,9 +21,12 @@ size, the file name with **Show in Finder**, and the free space.
 
 ## Files
 
-Each recording is a new file named by when it started —
-`Nida 2026-09-26 14-05-09.mp4` — in the **Folder** (Movies ▸ Nida by default;
-**Choose…** to change it). Nothing is ever overwritten.
+Each recording is a new file with its **Recording name** before the timestamp,
+such as `Clean feed 2026-09-26 14-05-09.mp4`, in the **Folder** (Movies ▸ Nida
+by default; **Choose…** changes only the folder). The default name is **Nida**.
+Nothing is ever overwritten. The name is kept between takes and saved with the
+show; editing it while recording applies to the next take. Recovery files
+continue using the current take's original name.
 
 If the encoder stops by itself mid-recording, Nida carries on in a new file a
 second later — `… (2).mp4` — and the window says the take is in two files.
@@ -34,6 +37,7 @@ second later — `… (2).mp4` — and the window says the take is in two files.
 |---|---|
 | **Picture** | What is recorded: **Master** or any bus's Program. Can be changed while recording |
 | **Sound** | The audio-mixer bus recorded (Master by default). With no bus the file carries silence, so it always has a sound track |
+| **Recording name** | Filename prefix before the timestamp. Can be edited while recording; applies to the next take |
 | **Codec** | **H.264** (plays everywhere), **HEVC** (about 60 % of the size), **ProRes 422** or **ProRes 422 HQ** (large files, light to edit and grade) |
 | **Format** | **MP4** — plays everywhere and **survives a crash**: it is written in one-second pieces, so if Nida or the Mac goes down, everything up to the last second plays. **MOV** — QuickTime. **MKV** — survives a crash too; VLC and editors that read it. ProRes is always MOV |
 | **Quality** | **Auto** picks a bit rate for the size and frame rate (12 Mbit/s for 1080p30 with H.264, about 68 Mbit/s for 4K60; 60 % of that for HEVC), or set one; **Presets** for common cases. ProRes has its own data rate |
@@ -42,7 +46,7 @@ second later — `… (2).mp4` — and the window says the take is in two files.
 | **Frame rate** | Nida's own, or 24, 25, 30, 50, 60 fps |
 | **Audio** | AAC 128–320 kbps; uncompressed PCM beside ProRes, as editors expect |
 
-Only the picture can change while recording; the rest waits for a stop. The
+The picture can change live, and the name can change for the next take; other settings wait for a stop. The
 settings are saved with the stage.
 
 ## Sound and picture in step
@@ -77,21 +81,28 @@ device too: it is for a picture that arrives late at a screen.)
 ## Recording more than one feed
 
 In **Library → Outputs**, **+ Recording** adds an independent recorder. Each
-has its own **Source**, **Audio**, codec, file base and **Start / Stop** controls.
+has its own **Source**, **Audio**, codec, name, folder and **Start / Stop** controls.
 For example, record Main with graphics on one output and a clean bus on another.
 The top-bar **REC** button still controls only its own recording.
 
-New recording outputs default to Videos/Movies → Nida. **File base** supplies
-the folder, filename stem and extension, such as `D:/Show/Clean.mp4`; each Start
-adds a timestamp and, when needed, a number. Existing files are not overwritten,
-even when two recorders use the same base. Old saved relative paths still work,
-relative to the application's working folder. Use a full path to choose exactly
-where recordings go. Keep the extension appropriate to the selected codec
-(for example, `.mov` for ProRes or HAP).
+New recording outputs default to Videos/Movies → Nida. Click the **pencil** next
+to a recorder's title to rename it in place: Enter or clicking outside saves,
+Escape cancels. This title is also its filename prefix. Renaming a running
+recorder changes only the next take; it does not rename its current file or
+restart the encoder. **Folder → Choose…** selects only the destination folder
+and is disabled while recording. Each Start adds the timestamp and, when needed,
+a collision number. The codec supplies the extension: MP4 for H.264/HEVC/AV1,
+MOV for ProRes/HAP. Two recorders can share a name and folder without overwriting
+each other's takes.
+
+Existing shows keep their output titles and destination folders. Their old
+configured file paths remain readable, but the title now supplies the prefix
+and the codec supplies the extension. Existing relative folders still resolve
+against the application's working folder.
 
 **Writing** shows the full actual path while recording; **Last take** retains it
 after Stop until the app closes. **Show file** opens its location in the file
-manager, and **Copy path** copies that path. The configured base, source and
+manager, and **Copy path** copies that path. The configured name, folder, source and
 other output settings continue to be saved with the show.
 
 Recording outputs retain rotation, surfaces, edge blending, SDR precision and
