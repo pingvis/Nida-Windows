@@ -60,6 +60,14 @@ awaiting user verification; the PR remains on hold.
   attempt could not complete that connection and was rerun with it allowed.
 - UI integration: 87 passed. Production library/application Clippy passed
   with warnings denied.
+- Optimized Windows build and portable-package checks passed, including clean
+  PATH application startup and bundled H.264/AAC encode/probe/decode.
+- Release filename smoke check passed: output and REC prefixes, live renames
+  leaving current files unchanged, new output takes using the changed name,
+  rejecting live folder changes, saved names and readable resulting files.
+- The refreshed standalone demo and launcher are in `dist/recording-name-test`,
+  with its own workspace, recording folder and API port 18096. The portable ZIP
+  is `dist/windows-recording-names/Nida-0.9.0-windows-x64-experimental-b203db0afc96.zip`.
 
 ## Validation
 
