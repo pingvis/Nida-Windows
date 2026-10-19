@@ -15,9 +15,16 @@
 //!   idle daemon on Omarchy) honours: no screensaver, lock or screen-off. It
 //!   lives in a child process tied to Varda's pid, so a crash cannot leave it
 //!   behind. Listed in `systemd-inhibit --list`.
+//! - **Windows** — a process-owned display + system power request, listed in
+//!   `powercfg /requests`. Closing the handle (including on process exit)
+//!   releases it. Explicit sleep and lock remain under the user's control.
+
+#[cfg(target_os = "windows")]
+#[path = "keep_awake/windows.rs"]
+mod windows;
 
 /// Why the machine is held awake, as the OS lists it.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 pub(crate) const REASON: &str = "Nida: live outputs";
 
 /// Holds the machine awake while wanted, and lets go on drop.
@@ -27,9 +34,11 @@ pub(crate) struct KeepAwake {
     activity: Option<Activity>,
     #[cfg(target_os = "linux")]
     inhibitor: Option<std::process::Child>,
+    #[cfg(target_os = "windows")]
+    request: Option<windows::PowerRequest>,
     /// Set once holding has failed, so a missing tool is reported once rather
     /// than retried every frame.
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     unavailable: bool,
 }
 
@@ -48,7 +57,7 @@ unsafe impl Send for Activity {}
 
 // Unsupported platforms retain the same lifecycle API until an inhibitor exists.
 #[cfg_attr(
-    not(any(target_os = "macos", target_os = "linux")),
+    not(any(target_os = "macos", target_os = "linux", target_os = "windows")),
     allow(clippy::unused_self)
 )]
 impl KeepAwake {
@@ -71,7 +80,9 @@ impl KeepAwake {
         return self.activity.is_some();
         #[cfg(target_os = "linux")]
         return self.inhibitor.is_some() || self.unavailable;
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        #[cfg(target_os = "windows")]
+        return self.request.is_some() || self.unavailable;
+        #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
         return true;
     }
 
@@ -123,10 +134,32 @@ impl KeepAwake {
         }
     }
 
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[cfg(target_os = "windows")]
+    fn hold(&mut self) {
+        match windows::PowerRequest::new(REASON) {
+            Ok(request) => {
+                self.request = Some(request);
+                log::info!("Keeping the computer and displays awake while Nida runs");
+            }
+            Err(e) => {
+                self.unavailable = true;
+                log::warn!(
+                    "Could not hold the machine awake (Windows power request: {e}); \
+                     disable display and system sleep by hand for the show"
+                );
+            }
+        }
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     fn hold(&mut self) {}
 
     fn release(&mut self) {
+        #[cfg(target_os = "windows")]
+        {
+            self.request = None;
+            self.unavailable = false;
+        }
         #[cfg(target_os = "macos")]
         if let Some(activity) = self.activity.take() {
             // Safety: `activity` is the object `beginActivityWithOptions:reason:`
@@ -147,6 +180,76 @@ impl KeepAwake {
 impl Drop for KeepAwake {
     fn drop(&mut self) {
         self.release();
+    }
+}
+
+#[cfg(all(test, target_os = "windows"))]
+mod windows_tests {
+    use super::*;
+
+    #[test]
+    fn windows_hold_is_idempotent_and_can_move_between_threads() {
+        let mut keep = KeepAwake::default();
+        keep.set(false);
+        assert!(!keep.is_held());
+        keep.set(true);
+        assert!(
+            keep.request.is_some(),
+            "Windows must accept the power request"
+        );
+        let request = std::ptr::from_ref(keep.request.as_ref().unwrap());
+        keep.set(true);
+        assert_eq!(request, std::ptr::from_ref(keep.request.as_ref().unwrap()));
+        std::thread::spawn(move || {
+            keep.set(false);
+            assert!(!keep.is_held());
+            assert!(keep.request.is_none());
+            keep.set(true);
+            assert!(keep.request.is_some());
+            // Drop on this thread must release the newly acquired request too.
+        })
+        .join()
+        .unwrap();
+    }
+
+    #[test]
+    fn windows_failed_hold_is_retried_only_after_disabling() {
+        let mut keep = KeepAwake {
+            request: None,
+            unavailable: true,
+        };
+        keep.set(true);
+        assert!(keep.request.is_none());
+        keep.set(false);
+        assert!(!keep.unavailable);
+        keep.set(true);
+        assert!(keep.request.is_some());
+    }
+
+    /// Run elevated and without another Nida instance holding a request.
+    #[test]
+    #[ignore = "powercfg /requests requires an elevated Windows terminal"]
+    fn windows_os_lists_and_releases_power_requests() {
+        fn count() -> usize {
+            let output = std::process::Command::new("powercfg")
+                .arg("/requests")
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "powercfg must run elevated");
+            String::from_utf8_lossy(&output.stdout)
+                .matches(REASON)
+                .count()
+        }
+        let before = count();
+        let mut keep = KeepAwake::default();
+        keep.set(true);
+        assert_eq!(count(), before + 2, "display and system requests");
+        keep.set(true);
+        keep.set(false);
+        assert_eq!(count(), before);
+        keep.set(true);
+        drop(keep);
+        assert_eq!(count(), before, "drop must release both requests");
     }
 }
 
