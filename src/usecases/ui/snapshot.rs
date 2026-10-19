@@ -571,6 +571,15 @@ pub(crate) fn build_ui_data(
         .chain(&engine.mixer.master_effects)
         .filter_map(|e| Some((e.uuid.clone(), e.mask.clone()?)))
         .collect();
+    let effect_load_states = engine
+        .mixer
+        .channels
+        .iter()
+        .flat_map(|ch| ch.decks.iter().flat_map(|d| &d.effects).chain(&ch.effects))
+        .chain(&engine.mixer.master_effects)
+        .filter(|e| e.load_state != crate::engine::types::EffectLoadState::Ready)
+        .map(|e| (e.uuid.clone(), e.load_state.clone()))
+        .collect();
     UIData {
         generators: engine.registry.generators,
         filters: engine.registry.filters,
@@ -578,6 +587,7 @@ pub(crate) fn build_ui_data(
         shader_count: engine.registry.shader_count,
         channels,
         master_effect_info,
+        effect_load_states,
         modulation_sources,
         modulation_current_values,
         modulation_assignments,
@@ -644,6 +654,8 @@ pub(crate) fn build_ui_data(
         library_panel_open: layout.library_panel_open,
         right_panel_open: layout.right_panel_open,
         screen: layout.screen.clone(),
+        windows_hardware_decode: false,
+        software_decode_forced: false,
         saved_layouts: std::sync::Arc::default(), // populated by UIRunner
         show_name: app.show_name(),
         show_folder: app.show_folder().to_path_buf(),

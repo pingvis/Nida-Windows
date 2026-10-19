@@ -76,12 +76,14 @@ edited shaders still update correctly. This is independent of text inputs.
 
 ### 2. Background effect loading
 
-- [ ] Adapt Varda's worker pool and pending-effect construction to Nida.
-- [ ] Keep frames rendering while the first compilation/pipeline build runs.
-- [ ] Expose building/ready/failed status and preserve chain order, parameters,
+- [x] Adapt Varda's worker pool and pending-effect construction to Nida.
+- [x] Keep frames rendering while the first compilation/pipeline build runs.
+- [x] Expose building/ready/failed status and preserve chain order, parameters,
   removal, undo and useful error messages while builds are pending.
-- [ ] Measure command responsiveness and output continuity, then submit its
-  own focused PR. Source swaps and transition loading can be separate slices.
+- [x] Validate responsiveness and output continuity; submitted as draft
+  [Nida #5](https://github.com/kristijonasatpro/Nida/pull/5). Interactive effect
+  additions only; source swaps and transition loading remain separate slices.
+- [ ] Verify background loading in the resulting Windows installer.
 
 This follows caching: cache hits speed repeated loads, while background loading
 addresses first-load stalls. It does not require a full source-provider rewrite.

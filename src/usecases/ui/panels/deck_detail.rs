@@ -1873,9 +1873,9 @@ pub(super) fn render_playback_controls(
         .weak(),
     )
     .on_hover_text(if vp.hardware_decode {
-        "Decoded on the Mac's media engine — almost no CPU"
+        "Decoded on the GPU/media engine. Colour conversion and upload may still use the CPU"
     } else {
-        "Decoded on the CPU: HAP, or a codec this Mac's media engine does not take"
+        "Decoded on the CPU: hardware decoding is unavailable for this codec, profile or device, or is disabled"
     });
 }
 
@@ -2378,6 +2378,7 @@ pub(super) fn render_effect_controls(
     actions: &mut UIActions,
 ) {
     let (eff_uuid, eff_name, _, eff_params) = effect;
+    render_effect_load_state(ui, eff_uuid, data);
     if eff_params.params.is_empty() {
         ui.label(egui::RichText::new("No parameters").weak());
     } else {
@@ -2386,6 +2387,23 @@ pub(super) fn render_effect_controls(
     // Framing places the whole picture; a mask on it would make no sense.
     if !FRAMING_EFFECTS.iter().any(|(name, _)| name == eff_name) {
         super::mask_edit::render_mask_row(ui, eff_uuid, data, actions);
+    }
+}
+
+pub(super) fn render_effect_load_state(ui: &mut egui::Ui, uuid: &str, data: &UIData) {
+    use crate::engine::types::EffectLoadState;
+    match data.effect_load_states.get(uuid) {
+        Some(EffectLoadState::Building) => {
+            ui.horizontal(|ui| {
+                ui.spinner();
+                ui.weak("Loading — bypassed until ready");
+            });
+        }
+        Some(EffectLoadState::Failed { message }) => {
+            ui.colored_label(ui.visuals().error_fg_color, "Failed to load — bypassed")
+                .on_hover_text(message);
+        }
+        _ => {}
     }
 }
 
