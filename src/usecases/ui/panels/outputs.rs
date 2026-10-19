@@ -241,7 +241,7 @@ fn render_output_name(ui: &mut egui::Ui, output: &super::super::OutputUI, action
     } else {
         ui.label(egui::RichText::new(&output.name).strong());
         if ui
-            .small_button("✎")
+            .small_button("Rename")
             .on_hover_text(if output.is_active {
                 "Rename recording — applies to the next take"
             } else {
@@ -688,8 +688,11 @@ fn render_headless_controls(
         });
     }
 
-    // An NDI sender carries an audio bus, changed over at once, on air too.
-    if matches!(output.target, OutputTarget::NdiSend { .. }) {
+    // NDI changes bus live; Blackmagic chooses its embedded stereo bus while
+    // stopped. No selection preserves existing video-only saved shows.
+    if matches!(output.target, OutputTarget::NdiSend { .. })
+        || matches!(output.target, OutputTarget::DeckLink { .. }) && !output.is_active
+    {
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new("Audio:").small());
             let bus_name = |uuid: &str| {
@@ -1706,7 +1709,7 @@ mod tests {
                 h.state().session.choose_output_record_folder.as_deref(),
                 Some("out00001")
             );
-            h.get_by_label("✎").click();
+            h.get_by_label("Rename").click();
             h.run();
             h.get_by_role(egui::accesskit::Role::TextInput)
                 .type_text("Clean feed");
@@ -2010,3 +2013,4 @@ mod tests {
         harness.get_by_label("⚠ UltraStudio Monitor 3G is not connected");
     }
 }
+
