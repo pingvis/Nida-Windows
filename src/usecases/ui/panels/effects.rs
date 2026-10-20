@@ -605,6 +605,39 @@ mod tests {
     }
 
     #[test]
+    fn properties_channel_effects_keep_background_loading_and_error_status() {
+        use crate::engine::types::EffectLoadState;
+
+        let mut h = harness(800.0, vec![effect("blur-id", "Blur")]);
+        h.state_mut()
+            .data
+            .effect_load_states
+            .insert("blur-id".into(), EffectLoadState::Building);
+        h.run_steps(3);
+        h.get_by_label("Loading — bypassed until ready");
+        h.get_by_label("Blur amount");
+
+        h.state_mut().data.effect_load_states.insert(
+            "blur-id".into(),
+            EffectLoadState::Failed {
+                message: "Shader compilation failed".into(),
+            },
+        );
+        h.run();
+        h.get_by_label("Failed to load — bypassed");
+        h.get_by_label("Remove").click();
+        h.run();
+        assert!(h
+            .state()
+            .actions
+            .commands
+            .iter()
+            .any(|command| matches!(command,
+                EngineCommand::RemoveEffect { effect_uuid } if effect_uuid == "blur-id"
+            )));
+    }
+
+    #[test]
     fn properties_channel_effect_controls_keep_their_targets() {
         let mut h = harness(800.0, vec![effect("blur-id", "Blur")]);
         h.run();

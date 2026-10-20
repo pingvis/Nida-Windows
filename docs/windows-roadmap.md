@@ -1,6 +1,6 @@
 # Nida Windows roadmap
 
-Updated: 19 October 2026.
+Updated: 20 October 2026.
 
 This is the working checklist for incremental improvements to Nida Windows.
 Each feature gets a focused branch and PR. Update this file when its status
@@ -23,7 +23,7 @@ merged and verified in the resulting Windows build.
 
 ## Planned work, in order
 
-### Channel-effects Properties layout — local testing only
+### Channel-effects Properties layout — Windows fork integration
 
 - [x] Cap the channel preview and allow a larger view on click.
 - [x] Move routing into a collapsible sidebar and stack collapsible effect
@@ -33,7 +33,9 @@ merged and verified in the resulting Windows build.
   application Clippy check.
 - [ ] Verify the integrated release build and user feedback.
 
-No PR or push for this change until the user explicitly requests it.
+Integrated into the Windows fork at the user's request on 20 October 2026.
+The vertical cards retain background-loading and failure indicators. The
+upstream review branches remain separate from this integration.
 
 ### Windows installer — implementation and testing
 
