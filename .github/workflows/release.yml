@@ -1,14 +1,12 @@
 name: Release
 
-# A `v*` tag (or a run by hand) builds Nida.app for Apple silicon on macOS 15
+# Run by hand to build Nida.app for Apple silicon on macOS 15
 # — the libraries it carries then open on macOS 15.7.9 and later — and puts
 # the DMG in a draft release, published by hand once it has been tried. See
-# scripts/ci/build-macos.sh. Only macOS for now: Nida's Linux and Windows
-# builds are untried.
+# scripts/ci/build-macos.sh. In this Windows fork, tags must not automatically
+# start the inherited macOS release job. Windows packaging has its own workflows.
 
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
