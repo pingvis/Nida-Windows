@@ -8517,7 +8517,7 @@
             }
           },
           "400": {
-            "description": "Only the source can change while recording"
+            "description": "Only the source and next-take name can change while recording"
           }
         }
       }
@@ -17669,6 +17669,10 @@
                   "device": {
                     "type": "string"
                   },
+                  "embedded_audio": {
+                    "type": "boolean",
+                    "description": "Explicit consent to scheduled embedded 48 kHz stereo audio.\nOld outputs already saved an audio bus, so absence stays video-only."
+                  },
                   "full_range": {
                     "type": "boolean",
                     "description": "Full levels — black at 0, white at 255 (1 and 254: 0 and 255 are\nthe signal's own) — for a display set to take them; off, video\nlevels, black at 16 and white at 235, as video gear takes them."
@@ -18324,6 +18328,10 @@
             "format": "int32",
             "description": "Frames per second; `None` is Varda's own.",
             "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "Filename prefix, followed by the take's timestamp."
           },
           "size": {
             "type": [
