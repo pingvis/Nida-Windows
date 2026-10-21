@@ -137,6 +137,11 @@ integrations must preserve this error reporting.
 
 Checks completed on 22 October 2026:
 
+- Complete core Windows library suite: **3,430 passed, zero failed, nine ignored**,
+  serially with `--no-default-features --features screen-capture`. The run
+  required filesystem access outside the sandbox: background workspace-save
+  tests failed under its restrictions and passed in the complete unrestricted
+  rerun. No tests were disabled or assertions changed for this result.
 - Windows application library check, locked/offline, no default features,
   `screen-capture`: passed. Existing vendor wgpu-hal build-script warnings.
 - Rust standalone harness importing production backend and FLV writer:
