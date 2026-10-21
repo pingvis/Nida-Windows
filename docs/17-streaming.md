@@ -44,6 +44,20 @@ the stream is stopped: they need a new encoder. So can the video bit rate
 with **Software** (x264 / x265), or where the stream is not encoded in Nida
 (the window says so: its bit rate box stays shut while live).
 
+On the Windows fork, **NVIDIA NVENC (experimental)** is an explicit encoder
+choice for NVIDIA GPUs. Selecting it chooses H.264, Constant (CBR), and manual
+bitrate control. The bitrate and Presets remain editable while live; allow
+the encoder a short settling interval after a change. Codec, rate mode and
+automatic upload adaptation stay locked for this backend. Existing shows
+keep their previous encoder, and Windows still defaults to software.
+
+The driver must pass a local encoder/rate-change probe. If it cannot open,
+or the picture cannot use the NV12 path, streaming falls back to software
+and reports that in the rate note; live bitrate editing is then unavailable.
+NVENC uses the existing audio and destination pipeline. This implementation
+uploads CPU-resident NV12 to the GPU and does not provide zero-copy encoding.
+See [Windows validation and limits](windows-live-bitrate.md).
+
 Seeing the upload struggle — a venue's Wi-Fi, a phone's hotspot — lower the
 bit rate, say from 4000 to 2000: with the box ticked the new rate is the
 most Nida sends, and it still goes lower by itself if the upload needs it;
@@ -248,7 +262,7 @@ its last four characters, a password only as set or not.
 | Route | |
 |---|---|
 | `GET /api/stream` | Settings (secrets masked) and each destination's state |
-| `PUT /api/stream/options` | Picture, sound, size, bit rates, `rate_mode` (`constant`, `variable`, `average`), encoder, keyframes. While live only `source` changes — and, when `GET /api/stream`'s `rate_live` says the stream is encoded in Nida, `video_kbps`, `adaptive`, and `rate_mode` between `constant` and `variable`; anything else is refused with a 400 saying so. `GET /api/stream` says how the running stream is held (`rate_mode`) and why where that differs from the one set (`rate_note`) |
+| `PUT /api/stream/options` | Picture, sound, size, bit rates, `rate_mode` (`constant`, `variable`, `average`), encoder, keyframes. While live `source` changes, plus `video_kbps` when `rate_live` is true. `rate_mode_live` separately qualifies Constant/Variable switching and automatic adaptation. Windows `nvidia_nvenc` requires H.264, `constant`, and `adaptive: false`; other combinations are refused. `rate_mode` and `rate_note` describe the running encoder and any fallback. |
 | `PUT /api/stream/destinations/{index}` | Destination 0–3. Leave `key` or `password` out to keep the saved one |
 | `POST /api/stream/start` | Start to every destination switched on |
 | `POST /api/stream/stop` | Stop |

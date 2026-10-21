@@ -187,6 +187,344 @@ fn one_encode_reaches_two_servers_with_picture_and_sound() {
     }
 }
 
+/// Real Windows encoder/mux/fan-out path. Explicitly opt in on an NVIDIA
+/// machine; ordinary cross-platform CI must not pretend to exercise NVENC.
+#[cfg(target_os = "windows")]
+#[test]
+#[ignore = "requires NVIDIA NVENC and local FFmpeg RTMP tools"]
+fn windows_nvenc_changes_bitrate_without_reconnecting_and_keeps_audio() {
+    windows_nvenc_round_trip((640, 360), 5);
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+#[ignore = "requires NVIDIA NVENC and a one-minute local RTMP workload"]
+fn windows_nvenc_1440p_sixty_second_regression() {
+    windows_nvenc_round_trip((2560, 1440), 20);
+}
+
+#[cfg(target_os = "windows")]
+fn windows_nvenc_round_trip((width, height): (u32, u32), phase_seconds: u64) {
+    use varda::streaming::RateMode;
+    let _ = env_logger::builder().is_test(true).try_init();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("nvenc.flv");
+    let port = free_port();
+    let mut server = rtmp_server(port, "nvenc", &path);
+    std::thread::sleep(Duration::from_millis(500));
+    let mut settings = settings(vec![dest(port, "nvenc")]);
+    settings.options.encoder = StreamEncoder::NvidiaNvenc;
+    settings.options.rate_mode = RateMode::Constant;
+    settings.options.adaptive = false;
+    settings.options.video_kbps = 8000;
+    settings.options.width = width;
+    settings.options.height = height;
+    settings.options.fps = Some(60);
+    let audio_started = Instant::now();
+    let (pcm_tx, pcm_rx) = crossbeam_channel::bounded(64);
+    let audio_stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let audio_done = audio_stop.clone();
+    let sound = std::thread::spawn(move || {
+        let mut block = 0u64;
+        while !audio_done.load(Ordering::SeqCst) {
+            let samples = (0..480)
+                .flat_map(|n| {
+                    let value =
+                        ((block * 480 + n) as f32 * std::f32::consts::TAU * 440.0 / 48000.0).sin()
+                            * 0.1;
+                    [value, value]
+                })
+                .collect();
+            if pcm_tx
+                .send_timeout(
+                    varda::audio::PcmChunk {
+                        samples,
+                        lost_before: 0,
+                    },
+                    Duration::from_secs(1),
+                )
+                .is_err()
+            {
+                break;
+            }
+            block += 1;
+            if let Some(wait) =
+                Duration::from_millis(block * 10).checked_sub(audio_started.elapsed())
+            {
+                std::thread::sleep(wait);
+            }
+        }
+    });
+    let audio = varda::renderer::subprocess::AudioInput {
+        rx: pcm_rx,
+        sample_rate: 48000,
+        channels: 2,
+        lost_samples: Arc::default(),
+        started: audio_started,
+    };
+    let mut encoder = FfmpegSubprocess::spawn_stream_with(
+        &settings,
+        PresentationRequest::default(),
+        (width, height),
+        60,
+        Some(audio),
+        true,
+    )
+    .unwrap();
+    assert!(
+        encoder.changes_rate_live(),
+        "NVENC did not open: {:?}",
+        encoder.rate_plan()
+    );
+    assert!(!encoder.changes_rate_mode_live());
+    assert!(!encoder.set_rate_mode(RateMode::Variable));
+    let luma = usize::try_from(width * height).unwrap();
+    let mut frame = vec![128u8; luma * 3 / 2];
+    let mut random = 0x2545_f491u32;
+    for pixel in &mut frame[..luma] {
+        random ^= random << 13;
+        random ^= random >> 17;
+        random ^= random << 5;
+        *pixel = 16 + (random % 220) as u8;
+    }
+    let started = Instant::now();
+    let mut generation = None;
+    let mut saw_applied = [false; 3];
+    let phase_frames = phase_seconds * 60;
+    for slot in 0u64..phase_frames * 3 {
+        if slot == phase_frames {
+            encoder.set_video_kbps(2000);
+        }
+        if slot == phase_frames * 2 {
+            encoder.set_video_kbps(32000);
+        }
+        frame[..luma].rotate_left(257);
+        assert!(
+            encoder.feed_nv12(&frame, Instant::now()),
+            "encoder exited during frame {slot}"
+        );
+        let phase = (slot / phase_frames) as usize;
+        saw_applied[phase] |= encoder.video_kbps() == Some([8000, 2000, 32000][phase]);
+        let status = &encoder.fanout().unwrap().status()[0];
+        if status.state == DestinationState::Live {
+            if let Some(old) = generation {
+                assert_eq!(status.generation, old, "reconnected during bitrate edit");
+            } else {
+                generation = Some(status.generation);
+            }
+            assert_eq!(status.reconnects, 0);
+        }
+        if let Some(wait) =
+            Duration::from_secs_f64((slot + 1) as f64 / 60.0).checked_sub(started.elapsed())
+        {
+            std::thread::sleep(wait);
+        }
+    }
+    let status = encoder.fanout().unwrap().status();
+    let last_error = encoder.last_error();
+    if generation.is_none() {
+        encoder.stop();
+    }
+    assert!(
+        generation.is_some(),
+        "destination never became live: {status:?}; encoder error: {last_error:?}"
+    );
+    assert!(saw_applied.into_iter().all(|seen| seen));
+    assert_eq!(
+        encoder.frames_dropped(),
+        0,
+        "native encoder queue must keep up"
+    );
+    assert_eq!(
+        encoder.fanout().unwrap().status()[0].state,
+        DestinationState::Live
+    );
+    audio_stop.store(true, Ordering::SeqCst);
+    sound.join().unwrap();
+    encoder.stop();
+    wait_exit(&mut server);
+    let output = Command::new("ffprobe")
+        .args([
+            "-v",
+            "error",
+            "-show_streams",
+            "-show_packets",
+            "-of",
+            "json",
+        ])
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let streams = report["streams"].as_array().unwrap();
+    let video = streams.iter().find(|s| s["codec_name"] == "h264").unwrap();
+    let audio = streams.iter().find(|s| s["codec_name"] == "aac").unwrap();
+    assert_eq!(video["width"], width);
+    assert_eq!(video["height"], height);
+    assert_eq!(video["color_space"], "bt709");
+    assert_eq!(video["color_range"], "tv");
+    let vi = video["index"].as_u64().unwrap();
+    let ai = audio["index"].as_u64().unwrap();
+    let mut last = [None::<f64>; 2];
+    let mut first = [None::<f64>; 2];
+    let mut rates = [0u64; 3];
+    for packet in report["packets"].as_array().unwrap() {
+        let stream = packet["stream_index"].as_u64().unwrap();
+        let which = if stream == vi {
+            0
+        } else {
+            assert_eq!(stream, ai);
+            1
+        };
+        let time: f64 = packet["pts_time"].as_str().unwrap().parse().unwrap();
+        if let Some(previous) = last[which] {
+            assert!(time > previous, "non-monotonic timestamps");
+        }
+        let origin = *first[which].get_or_insert(time);
+        last[which] = Some(time);
+        let elapsed = time - origin;
+        if which == 0 && (0.0..(phase_seconds * 3) as f64).contains(&elapsed) {
+            let phase = (elapsed / phase_seconds as f64) as usize;
+            if elapsed - phase as f64 * phase_seconds as f64 >= 2.0 {
+                rates[phase] += packet["size"].as_str().unwrap().parse::<u64>().unwrap();
+            }
+        }
+    }
+    assert!(
+        (first[0].unwrap() - first[1].unwrap()).abs() < 0.15,
+        "audio/video start mismatch: {first:?}"
+    );
+    assert!(
+        (last[0].unwrap() - last[1].unwrap()).abs() < 0.3,
+        "audio/video end mismatch: {last:?}"
+    );
+    assert!(
+        rates[1] * 2 < rates[0] && rates[1] * 2 < rates[2],
+        "transmitted video rate failed to change: {rates:?}"
+    );
+    let decode = Command::new("ffmpeg")
+        .args(["-v", "error", "-xerror", "-i"])
+        .arg(&path)
+        .args(["-f", "null", "-"])
+        .output()
+        .unwrap();
+    assert!(
+        decode.status.success(),
+        "{}",
+        String::from_utf8_lossy(&decode.stderr)
+    );
+    let pcm = Command::new("ffmpeg")
+        .args(["-v", "error", "-i"])
+        .arg(&path)
+        .args(["-vn", "-f", "f32le", "-c:a", "pcm_f32le", "pipe:1"])
+        .output()
+        .unwrap();
+    assert!(pcm.status.success());
+    assert!(
+        pcm.stdout
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .any(|bytes| f32::from_le_bytes(*bytes).abs() > 0.02),
+        "streamed audio must contain the generated tone"
+    );
+    let measured = rates.map(|bytes| bytes as f64 * 8.0 / (phase_seconds - 2) as f64 / 1e6);
+    eprintln!("NVENC local RTMP settled Mbps: {measured:?}; starts={first:?}, ends={last:?}");
+    settings.destinations.clear();
+    for kbps in [2000, 8000] {
+        settings.options.video_kbps = kbps;
+        let mut restarted = FfmpegSubprocess::spawn_stream_with(
+            &settings,
+            PresentationRequest::default(),
+            (width, height),
+            60,
+            None,
+            true,
+        )
+        .unwrap();
+        assert!(restarted.changes_rate_live());
+        assert!(restarted.feed_nv12(&frame, Instant::now()));
+        let stopping = Instant::now();
+        restarted.stop();
+        assert!(
+            stopping.elapsed() < Duration::from_secs(3),
+            "native stop must remain bounded"
+        );
+    }
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+fn nvenc_unavailable_input_falls_back_visibly_without_live_controls() {
+    let mut config = settings(Vec::new());
+    config.options.encoder = StreamEncoder::NvidiaNvenc;
+    config.options.adaptive = false;
+    // RGBA cannot enter the first NVENC implementation. This exercises the
+    // startup fallback deterministically without needing a particular GPU.
+    let mut encoder = FfmpegSubprocess::spawn_stream_with(
+        &config,
+        PresentationRequest::default(),
+        (320, 180),
+        25,
+        None,
+        false,
+    )
+    .unwrap();
+    assert!(!encoder.changes_rate_live());
+    assert!(!encoder.changes_rate_mode_live());
+    let plan = encoder.rate_plan().unwrap();
+    assert_eq!(plan.encoder, StreamEncoder::Software);
+    assert!(plan.note.as_deref().unwrap().contains("using software"));
+    encoder.stop();
+}
+
+#[test]
+fn nvenc_settings_reject_unqualified_features_at_the_command_boundary() {
+    let dir = tempfile::tempdir().unwrap();
+    let Some(mut app) = app_in(dir.path().to_str().unwrap()) else {
+        return;
+    };
+    let mut options = app.stream_settings().options.clone();
+    options.encoder = StreamEncoder::NvidiaNvenc;
+    options.adaptive = false;
+    options.codec = varda::streaming::VideoCodec::H264;
+    options.rate_mode = varda::streaming::RateMode::Constant;
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetStreamOptions {
+            options: options.clone(),
+        },
+    ));
+    for invalid in [
+        varda::streaming::StreamOptions {
+            adaptive: true,
+            ..options.clone()
+        },
+        varda::streaming::StreamOptions {
+            codec: varda::streaming::VideoCodec::Hevc,
+            ..options.clone()
+        },
+        varda::streaming::StreamOptions {
+            rate_mode: varda::streaming::RateMode::Variable,
+            ..options.clone()
+        },
+    ] {
+        assert!(matches!(
+            send_cmd(
+                &mut app,
+                EngineCommand::SetStreamOptions { options: invalid }
+            ),
+            CommandResult::Err { .. }
+        ));
+        assert_eq!(
+            app.stream_settings().options,
+            options,
+            "rejected settings must not replace the running configuration"
+        );
+    }
+}
+
 #[test]
 fn a_destination_that_is_down_reconnects_on_its_own_when_it_comes_back() {
     if !ffmpeg_available() {

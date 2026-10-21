@@ -777,7 +777,7 @@ fn render_options(
             // the codec needs a new encoder.
             let rate_editable = !live || data.stream_status.rate_live;
             ui.horizontal(|ui| {
-                ui.add_enabled_ui(!live, |ui| {
+                ui.add_enabled_ui(!live && options.encoder != crate::streaming::StreamEncoder::NvidiaNvenc, |ui| {
                     egui::ComboBox::from_id_salt("stream_codec")
                         .selected_text(options.codec.label())
                         .width(120.0)
@@ -806,9 +806,9 @@ fn render_options(
                                 .suffix(" kbps"),
                         )
                         .on_hover_text(if live {
-                            "Changes while live, from the next frame"
+                            "Changes while live; the encoder may take a moment to settle at the new rate"
                         } else {
-                            "The video bit rate: with the Hardware encoder it can be changed while live too"
+                            "The video bit rate: supported Mac hardware and NVIDIA NVENC encoders can change it while live"
                         })
                         .on_disabled_hover_text(
                             "This stream's encoder cannot change its bit rate while live: stop the stream to change it",
@@ -841,7 +841,7 @@ fn render_options(
             ui.end_row();
 
             ui.label("Rate");
-            ui.add_enabled_ui(rate_editable, |ui| {
+            ui.add_enabled_ui((!live || data.stream_status.rate_mode_live) && options.encoder != crate::streaming::StreamEncoder::NvidiaNvenc, |ui| {
                 ui.horizontal(|ui| {
                     use crate::streaming::RateMode;
                     // Live, Constant and Variable trade places (one encoding,
@@ -890,7 +890,7 @@ fn render_options(
             }
 
             ui.label("");
-            ui.add_enabled_ui(rate_editable, |ui| {
+            ui.add_enabled_ui(!live || data.stream_status.rate_mode_live, |ui| {
                 let hardware = options.encoder == crate::streaming::StreamEncoder::Hardware;
                 let mut on = options.adaptive && hardware;
                 let check = ui
@@ -926,7 +926,9 @@ fn render_options(
                         for enc in [
                             crate::streaming::StreamEncoder::Hardware,
                             crate::streaming::StreamEncoder::Software,
+                            crate::streaming::StreamEncoder::NvidiaNvenc,
                         ] {
+                            if enc == crate::streaming::StreamEncoder::NvidiaNvenc && !cfg!(target_os = "windows") { continue; }
                             let chosen = options.encoder == enc;
                             let item = ui.add_enabled(
                                 enc.available(),
@@ -937,6 +939,9 @@ fn render_options(
                                     actions,
                                     StreamOptions {
                                         encoder: enc,
+                                        codec: if enc == crate::streaming::StreamEncoder::NvidiaNvenc { VideoCodec::H264 } else { options.codec },
+                                        rate_mode: if enc == crate::streaming::StreamEncoder::NvidiaNvenc { crate::streaming::RateMode::Constant } else { options.rate_mode },
+                                        adaptive: if enc == crate::streaming::StreamEncoder::NvidiaNvenc { false } else { options.adaptive },
                                         ..options.clone()
                                     },
                                 );
@@ -1953,6 +1958,48 @@ mod tests {
             });
             assert_eq!(sent, Some(2500));
         }
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn nvenc_exposes_manual_live_rate_without_mode_or_adaptation_controls() {
+        use egui_kittest::kittest::NodeT as _;
+        let mut data = UIData::test_fixture();
+        data.stream_settings.options.encoder = crate::streaming::StreamEncoder::NvidiaNvenc;
+        data.stream_settings.options.adaptive = false;
+        data.stream_status = live(&[DestinationState::Live]);
+        data.stream_status.rate_live = true;
+        data.stream_status.rate_mode_live = false;
+        let mut h = harness(data);
+        h.get_by_label_contains("STREAM").click();
+        h.run_steps(2);
+        assert!(h
+            .get_by_label("Lower it while the upload cannot keep up")
+            .accesskit_node()
+            .is_disabled());
+        assert!(h
+            .get_by_value("Constant (CBR)")
+            .accesskit_node()
+            .is_disabled());
+        h.get_by_label("Presets").click();
+        h.run_steps(2);
+        h.get_by_label_contains("2500 kbps").click();
+        h.run_steps(2);
+        let options = h
+            .state()
+            .commands
+            .iter()
+            .find_map(|command| match command {
+                EngineCommand::SetStreamOptions { options } => Some(options),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(options.video_kbps, 2500);
+        assert!(!options.adaptive);
+        assert_eq!(
+            options.encoder,
+            crate::streaming::StreamEncoder::NvidiaNvenc
+        );
     }
 
     /// What the stream needs of an upload: the rate set and the sound held

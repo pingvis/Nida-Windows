@@ -108,6 +108,7 @@ pub fn slot_ms(slot: u64, fps: u32) -> u32 {
 /// model the padding is part of (checked: its parameter sets carry no
 /// timing or HRD), so nothing it says is made untrue. The units as they are
 /// where there is none, or where they do not read whole.
+#[cfg(any(target_os = "macos", test))]
 pub fn without_filler(units: &[u8], codec: VideoCodec) -> std::borrow::Cow<'_, [u8]> {
     let filler = |unit: &[u8]| match codec {
         VideoCodec::H264 => unit.first().is_some_and(|b| b & 0x1f == 12),

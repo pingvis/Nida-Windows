@@ -21,9 +21,12 @@ use crate::renderer::{ReadbackFormat, ReadbackFrame};
 
 #[cfg(target_os = "macos")]
 mod native;
+#[cfg(target_os = "windows")]
+#[path = "subprocess/windows.rs"]
+mod native;
 
-/// No encoder in Nida off the Mac: the stream's encoder is always ffmpeg's.
-#[cfg(not(target_os = "macos"))]
+/// Platforms without a native streaming worker use FFmpeg's subprocess encoder.
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod native {
     use std::sync::atomic::AtomicBool;
     use std::sync::{mpsc, Arc};
@@ -60,7 +63,7 @@ mod native {
 }
 
 /// What a stream's encoder in Nida shares between its threads and the app
-/// that steers its rate. Made on a Mac only.
+/// that steers its rate.
 #[derive(Clone)]
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 struct NativeShared {
@@ -204,7 +207,7 @@ impl NativeShared {
 }
 
 /// A stream's encoder in Nida, and the thread writing what it makes to
-/// ffmpeg. Made on a Mac only.
+/// ffmpeg.
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 struct NativeVideo {
     shared: NativeShared,
@@ -2363,17 +2366,21 @@ impl FfmpegSubprocess {
             request,
             StreamingCapabilities::for_request(request),
         );
-        let rate_plan = options.encoder.plan(options.codec, options.rate_mode);
+        let mut rate_plan = options.encoder.plan(options.codec, options.rate_mode);
         if let Some(note) = &rate_plan.note {
             log::warn!("Stream: {note}");
         }
-        let encoder = rate_plan.encoder;
         // Frames arrive at Varda's rate; ffmpeg drops or repeats them to the
         // rate the stream is sent at, and keyframes count in those frames.
         let out_fps = options.fps.unwrap_or(fps).max(1);
         let gop = out_fps * options.keyframe_secs.max(1);
         // Encoded in Nida where it can be, its rate followed while live.
         let native = native::open(options, (width, height), out_fps, nv12, &rate_plan);
+        if rate_plan.encoder == crate::streaming::StreamEncoder::NvidiaNvenc && native.is_none() {
+            rate_plan.encoder = crate::streaming::StreamEncoder::Software;
+            rate_plan.note = Some("NVIDIA NVENC could not open for this stream; using software. Live bitrate changes are unavailable; see the log".into());
+        }
+        let encoder = rate_plan.encoder;
 
         let input_format = if nv12 {
             "nv12"
@@ -2428,7 +2435,7 @@ impl FfmpegSubprocess {
             options.video_kbps,
             rate_plan.mode.label(),
             if native.is_some() {
-                "the media engine, in Nida (the rate changes while live)"
+                "native encoder in Nida (the rate changes while live)"
             } else {
                 encoder.label()
             }
@@ -2688,6 +2695,14 @@ impl FfmpegSubprocess {
         self.native.is_some()
     }
 
+    /// Mode switching/adaptation are qualified separately from manual bitrate.
+    pub fn changes_rate_mode_live(&self) -> bool {
+        self.native.is_some()
+            && self.rate_plan.as_ref().is_some_and(|plan| {
+                plan.encoder == crate::streaming::StreamEncoder::Hardware
+            })
+    }
+
     /// How the stream is encoded, as it runs (see [`crate::streaming::RatePlan`]).
     pub fn rate_plan(&self) -> Option<&crate::streaming::RatePlan> {
         self.rate_plan.as_ref()
@@ -2701,6 +2716,7 @@ impl FfmpegSubprocess {
         let (Some(native), Some(plan)) = (&self.native, self.rate_plan.as_mut()) else {
             return false;
         };
+        if plan.encoder == crate::streaming::StreamEncoder::NvidiaNvenc { return false; }
         let held = |m: RateMode| matches!(m, RateMode::Constant | RateMode::Variable);
         if !(held(mode) && held(plan.mode)) {
             return false;

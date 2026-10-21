@@ -1,0 +1,19 @@
+[package]
+name = "nida-stream-bitrate-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = "1.0"
+log = "0.4"
+ffmpeg-next = "9.0.0"
+
+[dev-dependencies]
+tempfile = "3.27.0"
+
+[[bin]]
+name = "rust-nvenc-probe"
+path = "rust.rs"
+
+[workspace]
