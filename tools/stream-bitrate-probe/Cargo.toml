@@ -11,6 +11,12 @@ ffmpeg-next = "9.0.0"
 
 [dev-dependencies]
 tempfile = "3.27.0"
+criterion = "0.5"
+
+[[bench]]
+name = "pipeline"
+path = "pipeline.rs"
+harness = false
 
 [[bin]]
 name = "rust-nvenc-probe"

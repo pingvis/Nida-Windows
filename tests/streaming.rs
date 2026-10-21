@@ -204,6 +204,13 @@ fn windows_nvenc_1440p_sixty_second_regression() {
 }
 
 #[cfg(target_os = "windows")]
+#[test]
+#[ignore = "requires NVIDIA NVENC and a five-minute local RTMP workload"]
+fn windows_nvenc_1440p_five_minute_soak() {
+    windows_nvenc_round_trip((2560, 1440), 100);
+}
+
+#[cfg(target_os = "windows")]
 fn windows_nvenc_round_trip((width, height): (u32, u32), phase_seconds: u64) {
     use varda::streaming::RateMode;
     let _ = env_logger::builder().is_test(true).try_init();
