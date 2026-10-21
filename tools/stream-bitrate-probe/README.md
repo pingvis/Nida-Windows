@@ -59,3 +59,33 @@ through one session at 8 -> 2 -> 8 Mbps, serializes the resulting packets
 through Nida's FLV writer, and decodes/probes the temporary video. It checks
 continuous slots, all 540 decoded frames, rate decrease and recovery.
 It does not start a network destination or the complete application.
+
+An additional ignored native test checks limited-range black/white/colour bars
+through production encode and decode. Its 650-pixel width exercises padded
+FFmpeg luma/chroma strides; sampled Y/Cb/Cr centres must stay within three code
+values. Run native tests serially with `--include-ignored --test-threads=1`.
+
+## Quality and packet/encoder benchmarks
+
+`quality.ps1` compares p4/p5, quarter-resolution two-pass and spatial AQ at
+8 and 32 Mbps. It generates a six-second 1440p60 lossless reference, encodes
+each candidate, measures decoded SSIM and saves JSON/logs/videos locally:
+
+```powershell
+./tools/stream-bitrate-probe/quality.ps1 -Source testsrc2 -OutputDirectory target/nvenc-quality-pattern
+./tools/stream-bitrate-probe/quality.ps1 -Source mandelbrot -OutputDirectory target/nvenc-quality-fractal
+```
+
+The `pipeline` Criterion benchmark imports production source. Packet cases need
+no GPU; setting `NIDA_BENCH_NVENC=1` additionally opens the actual NVIDIA encoder
+at 1440p60. Do not run concurrent GPU workloads when comparing baselines.
+
+```powershell
+$env:NIDA_BENCH_NVENC = '1'
+cargo bench --locked --offline --manifest-path tools/stream-bitrate-probe/Cargo.toml --target-dir target/nvenc-probe --bench pipeline -- --save-baseline before
+# Change production code only after saving the baseline.
+cargo bench --locked --offline --manifest-path tools/stream-bitrate-probe/Cargo.toml --target-dir target/nvenc-probe --bench pipeline -- --baseline before
+```
+
+Results and measurement limits are recorded in
+[the Windows NVENC follow-up](../../docs/windows-nvenc-quality.md).

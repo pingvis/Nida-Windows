@@ -1,5 +1,10 @@
 # Windows NVENC optimization handoff — paused 22 October 2026
 
+**Historical checkpoint:** the user subsequently resumed work on the Windows
+GPU host. See [the completed local follow-up](windows-nvenc-quality.md) for
+current settings and validation; the paused-work descriptions below record
+what was known at checkpoint `40ec691`.
+
 Work stopped at the user's request, before any production optimization was
 applied. This is a work-in-progress checkpoint, not a validated implementation.
 

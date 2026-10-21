@@ -376,6 +376,8 @@ fn windows_nvenc_round_trip((width, height): (u32, u32), phase_seconds: u64) {
     let mut last = [None::<f64>; 2];
     let mut first = [None::<f64>; 2];
     let mut rates = [0u64; 3];
+    let mut video_packets = 0u64;
+    let mut last_key = None;
     for packet in report["packets"].as_array().unwrap() {
         let stream = packet["stream_index"].as_u64().unwrap();
         let which = if stream == vi {
@@ -391,6 +393,18 @@ fn windows_nvenc_round_trip((width, height): (u32, u32), phase_seconds: u64) {
         let origin = *first[which].get_or_insert(time);
         last[which] = Some(time);
         let elapsed = time - origin;
+        if which == 0 {
+            video_packets += 1;
+            if packet["flags"].as_str().unwrap().contains('K') {
+                if let Some(previous) = last_key {
+                    assert!(
+                        time - previous <= 2.1,
+                        "keyframe interval exceeded two seconds"
+                    );
+                }
+                last_key = Some(time);
+            }
+        }
         if which == 0 && (0.0..(phase_seconds * 3) as f64).contains(&elapsed) {
             let phase = (elapsed / phase_seconds as f64) as usize;
             if elapsed - phase as f64 * phase_seconds as f64 >= 2.0 {
@@ -405,6 +419,12 @@ fn windows_nvenc_round_trip((width, height): (u32, u32), phase_seconds: u64) {
     assert!(
         (last[0].unwrap() - last[1].unwrap()).abs() < 0.3,
         "audio/video end mismatch: {last:?}"
+    );
+    assert!(last[0].unwrap() - last_key.unwrap() <= 2.1);
+    assert!(
+        video_packets >= phase_frames * 3 - 60,
+        "received too few frames: {video_packets}; submitted {}",
+        phase_frames * 3
     );
     assert!(
         rates[1] * 2 < rates[0] && rates[1] * 2 < rates[2],

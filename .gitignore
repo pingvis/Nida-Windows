@@ -32,3 +32,4 @@ __pycache__/
 # Experimental Windows packaging outputs and downloaded build tools.
 /dist/
 /.windows-tools/
+/tools/stream-bitrate-probe/target/

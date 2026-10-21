@@ -57,6 +57,8 @@ and reports that in the rate note; live bitrate editing is then unavailable.
 NVENC uses the existing audio and destination pipeline. This implementation
 uploads CPU-resident NV12 to the GPU and does not provide zero-copy encoding.
 See [Windows validation and limits](windows-live-bitrate.md).
+The NVENC path uses two-pass bit allocation and spatial AQ while retaining
+low-latency frame ordering; see [quality and efficiency measurements](windows-nvenc-quality.md).
 
 Seeing the upload struggle — a venue's Wi-Fi, a phone's hotspot — lower the
 bit rate, say from 4000 to 2000: with the box ticked the new rate is the

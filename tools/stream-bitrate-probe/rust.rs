@@ -27,7 +27,13 @@ mod tests {
         // BT.709 limited-range black, white, red, green and blue. Use an
         // unaligned width to exercise FFmpeg's padded luma/chroma strides.
         let (width, height) = (650usize, 180usize);
-        let bars = [(16, 128, 128), (235, 128, 128), (63, 102, 240), (173, 42, 26), (32, 240, 118)];
+        let bars = [
+            (16, 128, 128),
+            (235, 128, 128),
+            (63, 102, 240),
+            (173, 42, 26),
+            (32, 240, 118),
+        ];
         let mut pixels = vec![0u8; width * height * 3 / 2];
         for y in 0..height {
             for x in 0..width {
@@ -48,24 +54,59 @@ mod tests {
         let mut writer = flv::FlvWriter::new(VideoCodec::H264);
         for slot in 0..30 {
             for picture in encoder.encode(&pixels, slot).unwrap() {
-                output.write_all(&writer.frame(flv::slot_ms(picture.slot, 60), picture.key, &picture.units, Some(encoder.config()))).unwrap();
+                output
+                    .write_all(&writer.frame(
+                        flv::slot_ms(picture.slot, 60),
+                        picture.key,
+                        &picture.units,
+                        Some(encoder.config()),
+                    ))
+                    .unwrap();
             }
         }
         for picture in encoder.finish().unwrap() {
-            output.write_all(&writer.frame(flv::slot_ms(picture.slot, 60), picture.key, &picture.units, Some(encoder.config()))).unwrap();
+            output
+                .write_all(&writer.frame(
+                    flv::slot_ms(picture.slot, 60),
+                    picture.key,
+                    &picture.units,
+                    Some(encoder.config()),
+                ))
+                .unwrap();
         }
         drop(output);
         let decode = std::process::Command::new("ffmpeg")
             .args(["-v", "error", "-xerror", "-i"])
             .arg(path)
-            .args(["-frames:v", "1", "-pix_fmt", "nv12", "-f", "rawvideo", "pipe:1"])
-            .output().unwrap();
-        assert!(decode.status.success(), "{}", String::from_utf8_lossy(&decode.stderr));
+            .args([
+                "-frames:v",
+                "1",
+                "-pix_fmt",
+                "nv12",
+                "-f",
+                "rawvideo",
+                "pipe:1",
+            ])
+            .output()
+            .unwrap();
+        assert!(
+            decode.status.success(),
+            "{}",
+            String::from_utf8_lossy(&decode.stderr)
+        );
         assert_eq!(decode.stdout.len(), pixels.len());
         for (index, &(luma, cb, cr)) in bars.iter().enumerate() {
             let x = index * 130 + 64;
-            for (at, expected) in [(height / 2 * width + x, luma), (width * height + height / 4 * width + x, cb), (width * height + height / 4 * width + x + 1, cr)] {
-                assert!(decode.stdout[at].abs_diff(expected) <= 3, "bar {index}, byte {at}: expected {expected}, got {}", decode.stdout[at]);
+            for (at, expected) in [
+                (height / 2 * width + x, luma),
+                (width * height + height / 4 * width + x, cb),
+                (width * height + height / 4 * width + x + 1, cr),
+            ] {
+                assert!(
+                    decode.stdout[at].abs_diff(expected) <= 3,
+                    "bar {index}, byte {at}: expected {expected}, got {}",
+                    decode.stdout[at]
+                );
             }
         }
     }

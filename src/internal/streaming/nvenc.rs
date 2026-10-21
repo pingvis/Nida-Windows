@@ -172,6 +172,10 @@ impl NvEncoder {
         options.set("tune", "ll");
         options.set("rc", "cbr");
         options.set("zerolatency", "1");
+        // Improve bit allocation without introducing frame reordering or
+        // lookahead latency. Keep p4 to retain more render/encode headroom.
+        options.set("multipass", "qres");
+        options.set("spatial-aq", "1");
         // SAFETY: exclusively owned context; the log scope only compares its address.
         let pointer = unsafe { encoder.as_mut_ptr() };
         let encoder = checked_call(pointer, || Ok(encoder.open_as_with(codec, options)?))
@@ -373,10 +377,10 @@ fn avc_config(bytes: &[u8]) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn logged_driver_errors_are_not_reported_as_success() {
+        use super::*;
+
         let codec = ffmpeg::encoder::find_by_name("h264_nvenc").unwrap();
         let mut context = ffmpeg::codec::context::Context::new_with_codec(codec);
         let pointer = unsafe { context.as_mut_ptr() };
@@ -415,6 +419,8 @@ mod tests {
 
     #[test]
     fn annex_b_becomes_avc_without_losing_units() {
+        use super::*;
+
         let source = [
             0, 0, 0, 1, 0x67, 0x64, 0, 0x33, 0x80, 0, 0, 1, 0x68, 0xaa, 0, 0, 0, 1, 0x65, 0xff,
         ];
@@ -439,6 +445,8 @@ mod tests {
 
     #[test]
     fn invalid_requests_do_not_open_the_driver() {
+        use super::*;
+
         assert!(NvEncoder::new(0, 180, 60, 1000, 2).is_err());
         assert!(NvEncoder::new(321, 180, 60, 1000, 2).is_err());
         assert!(NvEncoder::new(320, 180, 0, 1000, 2).is_err());

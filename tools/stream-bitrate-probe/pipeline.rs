@@ -22,9 +22,13 @@ fn pipeline(c: &mut Criterion) {
         let mut writer = flv::FlvWriter::new(VideoCodec::H264);
         drop(writer.frame(0, true, &payload, Some(&[1, 2, 3])));
         group.throughput(Throughput::Bytes(bytes as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(bytes), &payload, |b, payload| {
-            b.iter(|| black_box(writer.frame(1000, false, black_box(payload), None)));
-        });
+        group.bench_with_input(
+            BenchmarkId::from_parameter(bytes),
+            &payload,
+            |b, payload| {
+                b.iter(|| black_box(writer.frame(1000, false, black_box(payload), None)));
+            },
+        );
     }
     group.finish();
     // Opening an NVIDIA device is opt-in; packet benchmarks need no GPU.
@@ -52,7 +56,9 @@ fn pipeline(c: &mut Criterion) {
         let mut slot = 0u64;
         group.bench_function(BenchmarkId::from_parameter(kbps), |b| {
             b.iter(|| {
-                let output = encoder.encode(black_box(&frames[slot as usize % 4]), slot).unwrap();
+                let output = encoder
+                    .encode(black_box(&frames[slot as usize % 4]), slot)
+                    .unwrap();
                 slot += 1;
                 black_box(output)
             });
