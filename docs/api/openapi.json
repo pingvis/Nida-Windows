@@ -10984,7 +10984,7 @@
             }
           },
           "400": {
-            "description": "While the stream is on only the source changes — and, for a stream encoded in Nida (`rate_live`), the video bit rate and `adaptive`"
+            "description": "While live, source and qualified controls only: rate_live permits bitrate; rate_mode_live permits Constant/Variable switching and adaptive rate. NVIDIA NVENC requires H.264, Constant and adaptive=false."
           }
         }
       }
@@ -19581,7 +19581,8 @@
         "description": "Which H.264 encoder a stream uses.",
         "enum": [
           "hardware",
-          "software"
+          "software",
+          "nvidia_nvenc"
         ]
       },
       "StreamLibraryBody": {
@@ -19773,6 +19774,10 @@
                 "description": "How the running stream's rate is held, which may differ from the one\nset (see [`RatePlan`]); `None` while stopped."
               }
             ]
+          },
+          "rate_mode_live": {
+            "type": "boolean",
+            "description": "The running encoder can switch Constant/Variable and adapt to upload\nbandwidth without restarting, separately qualified from manual bitrate."
           },
           "rate_note": {
             "type": [

@@ -183,6 +183,7 @@ impl super::super::VardaApp {
             encoder_fps: fps,
             stream_fps: self.streaming.settings.options.fps.unwrap_or(fps).max(1),
             rate_live: h.subprocess.as_ref().is_some_and(|s| s.changes_rate_live()),
+            rate_mode_live: h.subprocess.as_ref().is_some_and(|s| s.changes_rate_mode_live()),
             rate_mode: h.subprocess.as_ref().and_then(|s| s.rate_plan()).map(|p| p.mode),
             rate_note: h
                 .subprocess
@@ -209,6 +210,16 @@ impl super::super::VardaApp {
     /// needs a new encoder, so it waits for a stop.
     pub fn cmd_set_stream_options(&mut self, options: StreamOptions) -> CommandResult {
         let options = options.clamped();
+        if options.encoder == crate::streaming::StreamEncoder::NvidiaNvenc
+            && (options.codec != crate::streaming::VideoCodec::H264
+                || options.rate_mode != crate::streaming::RateMode::Constant
+                || options.adaptive)
+        {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: "NVIDIA NVENC currently supports H.264, Constant (CBR) and manual bitrate control; disable automatic adaptation".into(),
+            };
+        }
         if self.stream_is_on() {
             let current = self.streaming.settings.options.clone();
             let live_rate = self.stream_rate_changes_live();

@@ -36,7 +36,7 @@ pub async fn get_stream(State(state): State<SharedState>) -> impl IntoResponse {
     }
 }
 
-#[utoipa::path(put, path = "/api/stream/options", request_body = crate::streaming::StreamOptions, responses((status = 200, body = crate::usecases::api::ApiReply), (status = 400, description = "While the stream is on only the source changes — and, for a stream encoded in Nida (`rate_live`), the video bit rate and `adaptive`")), tag = "Stream")]
+#[utoipa::path(put, path = "/api/stream/options", request_body = crate::streaming::StreamOptions, responses((status = 200, body = crate::usecases::api::ApiReply), (status = 400, description = "While live, source and qualified controls only: rate_live permits bitrate; rate_mode_live permits Constant/Variable switching and adaptive rate. NVIDIA NVENC requires H.264, Constant and adaptive=false.")), tag = "Stream")]
 pub async fn set_options(
     State(s): State<SharedState>,
     Json(options): Json<crate::streaming::StreamOptions>,

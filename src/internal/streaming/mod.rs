@@ -9,8 +9,10 @@
 //! shows.
 
 pub(crate) mod adaptive;
+#[cfg(target_os = "windows")]
+pub(crate) mod nvenc;
 mod fanout;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) mod flv;
 pub mod network;
 pub(crate) mod ts;
@@ -35,6 +37,8 @@ pub enum StreamEncoder {
     Hardware,
     /// x264 on the CPU, for machines without a hardware encoder ffmpeg can use.
     Software,
+    /// Opt-in Windows H.264 NVENC; keeps the existing software default.
+    NvidiaNvenc,
 }
 
 impl StreamEncoder {
@@ -51,6 +55,7 @@ impl StreamEncoder {
         match self {
             Self::Hardware => "Hardware (Mac media engine)",
             Self::Software => "Software (x264, uses the CPU)",
+            Self::NvidiaNvenc => "NVIDIA NVENC (experimental)",
         }
     }
 
@@ -58,6 +63,7 @@ impl StreamEncoder {
     pub fn available(self) -> bool {
         match self {
             Self::Software => true,
+            Self::NvidiaNvenc => cfg!(target_os = "windows"),
             Self::Hardware => {
                 static HAS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
                 *HAS.get_or_init(|| {
@@ -76,6 +82,10 @@ impl StreamEncoder {
     /// The encoder that will actually open here for `codec`, and whether it
     /// takes constant bit rate: hardware as asked if it works, else software.
     pub(crate) fn resolved(self, codec: VideoCodec) -> (Self, bool) {
+        // Recording does not use the streaming-only NVENC worker.
+        if self == Self::NvidiaNvenc {
+            return (Self::Software, true);
+        }
         // Software needs no trying: the media engine is not asked about.
         if self == Self::Software {
             return (Self::Software, true);
@@ -91,6 +101,7 @@ impl StreamEncoder {
                 (Self::Software, true)
             }
             (Self::Software, _) => (Self::Software, true),
+            (Self::NvidiaNvenc, _) => unreachable!("resolved above"),
         }
     }
 
@@ -99,6 +110,25 @@ impl StreamEncoder {
     /// the encoder can hold it — a media engine with no constant rate (some
     /// Intel Macs) sends Constant and Variable as its average, said.
     pub fn plan(self, codec: VideoCodec, mode: RateMode) -> RatePlan {
+        if self == Self::NvidiaNvenc {
+            if cfg!(target_os = "windows")
+                && codec == VideoCodec::H264
+                && mode == RateMode::Constant
+            {
+                return RatePlan {
+                    encoder: self,
+                    mode,
+                    constant: true,
+                    note: None,
+                };
+            }
+            return RatePlan {
+                encoder: Self::Software,
+                mode,
+                constant: mode != RateMode::Average,
+                note: Some("NVIDIA NVENC requires Windows, H.264 and Constant (CBR); using software".into()),
+            };
+        }
         self.plan_from(self.resolved(codec), mode)
     }
 
@@ -172,7 +202,8 @@ impl StreamEncoder {
             // x265 held under the rate without being told to pad; the media
             // engine on its own average (`plan.constant` false).
             (Self::Software, VideoCodec::Hevc, RateMode::Variable)
-            | (Self::Hardware, _, RateMode::Average) => {}
+            | (Self::Hardware, _, RateMode::Average)
+            | (Self::NvidiaNvenc, _, _) => {}
             (Self::Software, _, RateMode::Average) => {
                 set(&mut args, "-maxrate", format!("{}k", kbps * 3 / 2));
                 set(&mut args, "-bufsize", format!("{}k", kbps * 3));
@@ -211,6 +242,9 @@ impl StreamEncoder {
         gop: u32,
         constant_rate: bool,
     ) -> Vec<String> {
+        if self == Self::NvidiaNvenc {
+            return Self::Software.video_args(codec, kbps, gop, constant_rate);
+        }
         let rate = format!("{kbps}k");
         let buffer = format!("{}k", kbps * 2);
         let gop = gop.max(1).to_string();
@@ -263,6 +297,7 @@ impl StreamEncoder {
                 "-tag:v",
                 "hvc1",
             ],
+            (Self::NvidiaNvenc, _) => unreachable!("handled above"),
         };
         if self == Self::Hardware && constant_rate {
             args.extend(["-constant_bit_rate", "1"]);
@@ -386,6 +421,8 @@ pub fn try_encoders_meanwhile() {
             }
             let _ = crate::record::prores_hardware();
             crate::renderer::subprocess::find_streaming_capabilities();
+            #[cfg(target_os = "windows")]
+            let _ = nvenc::available();
         });
     if let Err(e) = spawned {
         log::warn!("Encoders not tried ahead: {e}");
@@ -859,6 +896,10 @@ pub struct StreamStatus {
     /// while live: the stream is encoded in Nida.
     #[serde(default)]
     pub rate_live: bool,
+    /// The running encoder can switch Constant/Variable and adapt to upload
+    /// bandwidth without restarting, separately qualified from manual bitrate.
+    #[serde(default)]
+    pub rate_mode_live: bool,
     /// How the running stream's rate is held, which may differ from the one
     /// set (see [`RatePlan`]); `None` while stopped.
     #[serde(default)]
@@ -909,6 +950,7 @@ impl StreamStatus {
             stream_fps: 0,
             adaptive: None,
             rate_live: false,
+            rate_mode_live: false,
             rate_mode: None,
             rate_note: None,
             stream_kbps: None,
@@ -1387,5 +1429,19 @@ mod tests {
         assert!(explain("[rtmp @ 0x1] Server error: Authentication failed").contains("login"));
         assert!(explain("Connection refused").contains("URL and port"));
         assert!(explain("Failed to resolve hostname x: nodename nor servname").contains("Unknown"));
+    }
+    #[test]
+    fn nvenc_is_explicit_and_old_preferences_keep_their_encoder() {
+        let options: StreamOptions = serde_json::from_str("{}").unwrap();
+        assert_eq!(options.encoder, StreamEncoder::preferred());
+        assert_ne!(options.encoder, StreamEncoder::NvidiaNvenc);
+        let explicit: StreamOptions = serde_json::from_str(r#"{"encoder":"nvidia_nvenc","adaptive":false}"#).unwrap();
+        assert_eq!(explicit.encoder, StreamEncoder::NvidiaNvenc);
+        let plan = explicit.encoder.plan(VideoCodec::Hevc, RateMode::Constant);
+        assert_eq!(plan.encoder, StreamEncoder::Software);
+        assert!(plan.note.is_some());
+        let plan = explicit.encoder.plan(VideoCodec::H264, RateMode::Variable);
+        assert_eq!(plan.encoder, StreamEncoder::Software);
+        assert!(plan.note.is_some());
     }
 }
