@@ -61,7 +61,7 @@ This workflow deliberately does not publish a public Release.
 
 ## Windows installer
 
-The separate [Inno Setup and draft-release workflow](windows-installer.md) reuses
+The separate [Inno Setup workflow](windows-installer.md) reuses
 this verified ZIP as its payload. It adds a per-user installation, shortcuts,
-upgrade/uninstall checks, and optional upload to a draft Windows prerelease.
-It does not change the Mac release workflow or publish releases automatically.
+upgrade/uninstall checks, and uploads Setup.exe and its checksum as Actions
+artifacts. It does not create releases, tags or branches.

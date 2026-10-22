@@ -42,8 +42,8 @@ upstream review branches remain separate from this integration.
 - [x] Wrap the verified core portable package in a per-user Inno Setup installer.
 - [x] Validate install, shortcut targets, version upgrade and uninstall while
   preserving user files; retain the existing payload and encoder smoke tests.
-- [x] Add a Windows-specific workflow that uploads Setup, ZIP and checksums to
-  a draft prerelease after checks pass, without triggering Mac releases.
+- [x] Add a Windows-specific workflow that uploads Setup.exe and its checksum
+  as Actions artifacts after checks pass, without creating releases or Git refs.
 - [ ] User tests Setup on Windows; merge the fork-only installer PR.
 - [ ] Before public publishing, attach exact corresponding third-party sources
   and build recipes and verify a clean PC. See [release guide](windows-installer.md).

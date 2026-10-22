@@ -1,74 +1,45 @@
-# Windows installer and draft releases
+# Windows installer files
 
-The fork's **Windows installer and draft release** workflow builds the same
-experimental core profile as the portable ZIP, then wraps that verified payload
-with Inno Setup 6.7.1. It is separate from the upstream Mac release workflow.
+The fork's **Windows installer (files only)** workflow builds the experimental
+core portable payload, verifies it, and wraps it with Inno Setup 6.7.1. It
+outputs a setup executable and SHA256 checksum as downloadable Actions artifacts.
+It has read-only repository access and does not create releases, tags or branches.
+
+## Download the setup file
+
+1. Open **Actions → Windows installer (files only) → Run workflow**. The default
+   source is `main`; no tag needs to be created.
+2. Leave **version** empty to use `Cargo.toml`, or enter a setup label such as
+   `0.9.1-beta.2`. A leading `v` is accepted. Its numeric version must match
+   the app in `Cargo.toml`. This field labels the installer, not a Git ref.
+3. When the run succeeds, download **Nida-Windows-installer** under **Artifacts**.
+   Extract that download and run `Nida-<version>-windows-x64-Setup.exe`.
+
+The artifact contains the setup executable and its `.sha256` file. The portable
+ZIP is used internally to assemble the installer; use the separate portable
+workflow if you want that ZIP instead. Artifacts are retained for 14 days.
+Pull requests touching the installer also build and test these files.
+
+The workflow verifies the portable payload, compiles Setup, and exercises
+isolated test installers: installation, shortcut targets, clean-PATH payload/
+encoder checks, upgrade, and uninstall with user files preserved. Test fixtures
+are not included in the downloadable setup artifact.
 
 ## What the installer does
 
-- Installs for the current user under `%LOCALAPPDATA%\Programs\Nida Windows`.
-  No administrator prompt is requested.
+- Installs for the current user under `%LOCALAPPDATA%\Programs\Nida Windows`,
+  without an administrator prompt.
 - Creates a Start menu shortcut and offers an optional desktop shortcut. They
-  launch from the user profile, so the application's existing default `.varda`
-  workspace is used. Existing custom shows can be opened normally.
+  launch from the user profile, preserving the existing default workspace.
 - Registers an uninstaller in Windows Settings. Upgrades use the same AppId and
-  installation folder. Close Nida first; Setup does not automatically close a
-  running show. Automatic updating is not included.
-- Copies only the application payload. Uninstall removes installer-owned files
-  and shortcuts; no recursive wipe of the application folder or user data is
-  performed. Keep personal shaders in the workspace, not the program folder.
+  installation folder. Close Nida first; Setup does not close a running show.
+- Removes installer-owned files and shortcuts on uninstall, preserving personal
+  files and separately stored shows and recordings.
 
 The EXE and installer are unsigned. The core feature set and remaining device/
 GPU validation limits are the same as [the portable package](windows-packaging.md).
-
-## First try it without creating a release
-
-Once the workflow is on the fork's main branch:
-
-1. Open **Actions → Windows installer and draft release → Run workflow**.
-2. Select the branch and leave **tag** empty.
-3. When the run succeeds, download **Nida-Windows-installer** under **Artifacts**.
-4. Extract the Actions download. Run the file ending in `-Setup.exe`. The inner
-   portable ZIP is an alternative; it does not need to be installed first.
-
-Pull requests touching the installer also build this test artifact. They never
-create releases and have no repository-write permission.
-
-## Prepare a downloadable version
-
-Choose a version from the fork's `Cargo.toml`, with a Windows beta suffix, for
-example `windows-v0.9.0-beta.1`. Tags must identify a specific tested commit.
-Windows tags start with `windows-v`, so the existing Mac workflow's `v*` trigger
-does not run. For example, after merging and testing the installer PR:
-
-```powershell
-git switch main
-git pull --ff-only origin main
-git tag -a windows-v0.9.0-beta.1 -m "Windows installer beta 1"
-git push origin windows-v0.9.0-beta.1
-```
-
-Pushing that tag starts the workflow automatically. Alternatively, run it by
-hand with an **existing** Windows tag in the tag field. The tag must match the
-Cargo version, optionally followed by a prerelease suffix.
-
-The workflow builds and verifies the ZIP, compiles Setup, and exercises isolated
-test installers: install, shortcut targets, clean-PATH payload/encoder checks,
-upgrade to a second display version, and uninstall with user files preserved.
-Only after these pass does a separate job with repository-write permission
-create a **draft prerelease** and attach:
-
-- `Nida-<version>-windows-x64-Setup.exe` and its `.sha256`;
-- the portable ZIP and its `.sha256`.
-
-Open the fork's **Releases** page to find the draft. It is not a public download
-until published. Review the notes and test the installer on a clean Windows PC.
-Before publishing, attach the exact corresponding FFmpeg/third-party source and
-build recipes required by the existing [packaging policy](windows-packaging.md).
-The automatic GitHub **Source code** archives contain Nida's source, not every
-bundled dependency's corresponding source. The draft notes retain this reminder.
-The workflow never publishes automatically and refuses to replace assets on an
-already published release. Re-running a tag can update its existing draft assets.
+The existing corresponding-source requirements still apply if these files are
+later distributed publicly; see the packaging guide.
 
 ## Local build and test
 
@@ -82,11 +53,11 @@ $compiler = ./scripts/ci/setup-inno.ps1 -ToolsDirectory .windows-tools/inno
 
 The compiler is downloaded from its official immutable GitHub release, checked
 against a pinned SHA256, and unpacked portably. No system-wide compiler install
-is needed. `-ReleaseVersion 0.9.0-beta.1` supplies the installer display version;
+is needed. `-ReleaseVersion 0.9.1-beta.1` supplies the installer display version;
 its numeric part must match the portable payload's build manifest.
 
 For an automated install test, compile two fixtures with `-TestIdentity` and
-different suffixes, such as `0.9.0-installer-test.1` and `.2`, then pass their
+different suffixes, such as `0.9.1-installer-test.1` and `.2`, then pass their
 paths to `test-windows-installer.ps1 -Installer ... -UpgradeInstaller ...`.
 The test identity uses separate registration and shortcut names and an isolated
 temporary install folder. The test refuses a production installer or an already
