@@ -306,7 +306,7 @@ impl VardaApp {
                     self.render_height,
                 ) {
                     Ok(mut deck) => {
-                        deck.set_browser_settings(settings.clone());
+                        deck.set_browser_settings(settings);
                         self.add_default_effects(&mut deck);
                         // A keyed graphic sent over NDI shows what is under
                         // it where it is clear, as it does in vMix.

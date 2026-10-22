@@ -6021,6 +6021,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
+name = "nida-browser-protocol"
+version = "0.0.0"
+
+[[package]]
 name = "nix"
 version = "0.31.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11951,6 +11955,7 @@ dependencies = [
  "midir",
  "naga 30.0.0",
  "ndarray",
+ "nida-browser-protocol",
  "nokhwa",
  "notify",
  "objc2 0.6.4",

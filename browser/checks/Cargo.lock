@@ -468,6 +468,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "keyboard-types"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fbe853b403ae61a04233030ae8a79d94975281ed9770a1f9e246732b534b28d"
+dependencies = [
+ "bitflags",
+ "serde",
+]
+
+[[package]]
 name = "khronos-egl"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -600,7 +610,9 @@ name = "nida-browser-checks"
 version = "0.0.0"
 dependencies = [
  "dirs",
+ "keyboard-types",
  "log",
+ "nida-browser-protocol",
  "serde",
  "serde_json",
  "url",
@@ -608,6 +620,10 @@ dependencies = [
  "wgpu",
  "windows-sys",
 ]
+
+[[package]]
+name = "nida-browser-protocol"
+version = "0.0.0"
 
 [[package]]
 name = "num-traits"

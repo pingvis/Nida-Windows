@@ -2,9 +2,8 @@
 //! deck's live HTML texture and carries the input state needed to forward
 //! mouse/keyboard/scroll/IME into the offscreen Servo `WebView`.
 //!
-//! It is fixed 1:1 to the deck's `WebView` size and non-resizable (see
-//! `/spec/html-source.md` §4), so the surface and the `WebView` share a device
-//! pixel grid and cursor mapping is the identity (plus clamping). Modeled on
+//! The texture fills a resizable window; cursor positions map back to the
+//! authored viewport without resizing or navigating the webpage. Modeled on
 //! `OutputWindow` but display-only — it never joins `output.outputs`.
 
 use anyhow::{Context, Result};
@@ -82,6 +81,10 @@ impl InteractiveWindow {
         self.window.id()
     }
 
+    pub(crate) fn focus(&self) {
+        self.window.focus_window();
+    }
+
     /// `WebView` size in device pixels (for coordinate clamping).
     pub(crate) fn webview_size(&self) -> (u32, u32) {
         (self.target.width, self.target.height)
@@ -95,20 +98,20 @@ impl InteractiveWindow {
         match event {
             WindowEvent::CursorMoved { position, .. } => {
                 self.cursor = (position.x, position.y);
-                let p = input::to_device_point(self.cursor, 1.0, self.webview_size());
+                let p = self.pointer_position();
                 vec![input::mouse_move(p)]
             }
             WindowEvent::MouseInput { state, button, .. } => {
-                let p = input::to_device_point(self.cursor, 1.0, self.webview_size());
+                let p = self.pointer_position();
                 vec![input::mouse_button(p, *button, *state)]
             }
             WindowEvent::MouseWheel { delta, .. } => {
-                let p = input::to_device_point(self.cursor, 1.0, self.webview_size());
+                let p = self.pointer_position();
                 vec![input::wheel(p, *delta)]
             }
             WindowEvent::ModifiersChanged(m) => {
                 self.modifiers = m.state();
-                vec![]
+                vec![HtmlInputEvent::Modifiers(input::modifiers(self.modifiers))]
             }
             WindowEvent::KeyboardInput { event, .. } => {
                 vec![input::keyboard(event, self.modifiers)]
@@ -117,6 +120,19 @@ impl InteractiveWindow {
             WindowEvent::Focused(focused) => vec![HtmlInputEvent::Focus(*focused)],
             _ => vec![],
         }
+    }
+
+    /// The window may be smaller than the source; interaction must use the
+    /// same scaling as its displayed texture, without resizing the webpage.
+    fn pointer_position(&self) -> (f32, f32) {
+        input::displayed_point(self.cursor,
+            (self.surface_config.width, self.surface_config.height), self.webview_size())
+    }
+
+    pub(crate) fn resize(&mut self, context: &GpuContext, size: winit::dpi::PhysicalSize<u32>) {
+        self.surface_config.width = size.width.max(1);
+        self.surface_config.height = size.height.max(1);
+        context.configure_surface(&self.surface, &self.surface_config);
     }
 
     /// IME → composition events, tracking the start/update/end session lifecycle.

@@ -97,6 +97,7 @@ struct AccActions {
     next_cue: bool,
     trigger_cue: Option<String>,
     midi_learn_select: Option<String>,
+    open_html_interactive: bool,
 }
 
 impl AccActions {
@@ -136,6 +137,7 @@ impl AccActions {
         // Unified command stream — crossfader, modulation-source adds, etc.
         for cmd in &a.commands {
             match cmd {
+                EngineCommand::OpenHtmlInteractive { .. } => self.open_html_interactive = true,
                 EngineCommand::SetCrossfader(p) if *p < 0.5 => self.crossfader_snap_a = true,
                 EngineCommand::SetCrossfader(_) => self.crossfader_snap_b = true,
                 EngineCommand::AutoCrossfade { duration_secs, .. } => {
@@ -2645,6 +2647,22 @@ fn double_clicking_a_deck_card_opens_its_layer_in_input_settings() {
         Some((0, 0)),
         "the deck is selected too"
     );
+}
+
+#[test]
+fn double_clicking_browser_settings_does_not_expand_the_window_or_open_interactive() {
+    let mut data = UIData::test_fixture();
+    let deck = &mut data.channels[0].decks[0];
+    let name = format!("🌐 data:text/html,{}", "%3Ch1%3Etest%3C%2Fh1%3E".repeat(1000));
+    deck.name = name.clone();
+    deck.is_html = true;
+    let mut harness = make_harness_stepping(data, 1.0 / 60.0);
+    let card = harness.get_by_label(&format!("{name} deck card")).rect();
+    double_click(&mut harness, card.center());
+    let window = harness.get_by_label("Ch A — Input Settings").rect();
+    assert!(window.width() <= 1280.0, "browser title expanded settings: {window:?}");
+    assert_eq!(harness.state().select_deck, Some((0, 0)));
+    assert!(!harness.state().open_html_interactive);
 }
 
 /// A deck card's right-click menu copies and pastes crop, border and

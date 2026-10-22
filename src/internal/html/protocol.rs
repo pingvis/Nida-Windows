@@ -48,6 +48,22 @@ pub fn read_message(input: &mut impl Read) -> io::Result<Message> {
             pixels: Vec::new(),
         });
     }
+    straighten_bgra(&mut pixels);
+    Ok(Message {
+        id,
+        generation,
+        width,
+        height,
+        pixels,
+        error: None,
+    })
+}
+
+// A non-generic boundary keeps this hot loop in the optimized protocol crate.
+// read_message is instantiated for the app's ChildStdout in debug builds; its
+// pixel loop must not be inlined back into that unoptimized instantiation.
+#[inline(never)]
+fn straighten_bgra(pixels: &mut [u8]) {
     // CEF OSR supplies premultiplied BGRA. The deck blit expects straight RGBA
     // in an sRGB texture. Unpremultiply in the browser's byte colour space.
     for pixel in pixels.chunks_exact_mut(4) {
@@ -64,14 +80,6 @@ pub fn read_message(input: &mut impl Read) -> io::Result<Message> {
             };
         }
     }
-    Ok(Message {
-        id,
-        generation,
-        width,
-        height,
-        pixels,
-        error: None,
-    })
 }
 
 #[cfg(test)]

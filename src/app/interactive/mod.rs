@@ -1,9 +1,9 @@
-//! Interactive mode for HTML decks (feature `html`).
+//! Interactive mode for browser decks (Servo or Windows CEF).
 //!
 //! A separate Varda-owned window displays a selected HTML deck's live page and
-//! forwards mouse/keyboard/scroll/IME input into the offscreen Servo `WebView`.
+//! forwards mouse/keyboard/scroll/IME input into the same offscreen browser.
 //! See `/spec/html-source.md` §4. Only one interactive window exists at a time;
-//! it is fixed 1:1 to the deck's WebView size (non-resizable).
+//! resizing the window changes its display and input mapping, not the source.
 
 pub(crate) mod input;
 mod window;
@@ -31,6 +31,8 @@ pub(crate) struct InteractiveHtmlState {
     pending_open: Option<InteractiveTarget>,
     /// Request to close the current window (set by command or `CloseRequested`).
     pending_close: bool,
+    /// Bring the existing interaction window forward on the main thread.
+    pending_focus: bool,
     /// The live interactive window, if any.
     window: Option<window::InteractiveWindow>,
 }
@@ -51,9 +53,16 @@ impl super::VardaApp {
             .map(|slot| slot.deck.external_source_kind());
         match kind {
             Some(Some(ExternalSourceKind::Html(html_idx))) => {
-                // Already showing this deck → no-op.
+                if !self.external_io.html_manager.snapshot(html_idx).is_some_and(|b| b.interactive) {
+                    return CommandResult::Err {
+                        code: ErrorCode::InvalidInput,
+                        message: "This browser backend does not support interactive windows".into(),
+                    };
+                }
+                // Already showing this deck: bring its window forward.
                 if let Some(win) = &self.interactive.window {
                     if win.target.deck_uuid == deck_uuid {
+                        self.interactive.pending_focus = true;
                         return CommandResult::Ok;
                     }
                 }
@@ -82,6 +91,7 @@ impl super::VardaApp {
     /// Close the interactive window (if any). Deferred to the render loop.
     pub(crate) fn cmd_close_html_interactive(&mut self) -> CommandResult {
         self.interactive.pending_open = None;
+        self.interactive.pending_focus = false;
         self.interactive.pending_close = true;
         CommandResult::Ok
     }
@@ -102,6 +112,24 @@ impl super::VardaApp {
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
     ) {
+        // Closing/removing a source must not leave an input window addressing
+        // a stopped browser. Viewport changes update mapping, not navigation.
+        if let Some(window) = self.interactive.window.as_ref() {
+            let source = self.mixer.channels().iter().flat_map(|ch| &ch.decks)
+                .find(|slot| slot.deck.uuid() == window.target.deck_uuid)
+                .and_then(|slot| match slot.deck.external_source_kind() {
+                    Some(ExternalSourceKind::Html(idx)) => self.external_io.html_manager
+                        .instance_dimensions(idx).map(|size| (idx, size)),
+                    _ => None,
+                });
+            if let Some((idx, (width, height))) = source {
+                if let Some(window) = self.interactive.window.as_mut() {
+                    window.target.html_idx = idx;
+                    window.target.width = width;
+                    window.target.height = height;
+                }
+            } else { self.interactive.pending_close = true; }
+        }
         if self.interactive.pending_close {
             self.interactive.pending_close = false;
             if let Some(win) = self.interactive.window.take() {
@@ -111,14 +139,25 @@ impl super::VardaApp {
                 win.destroy();
             }
         }
+        if std::mem::take(&mut self.interactive.pending_focus) {
+            if let Some(window) = self.interactive.window.as_ref() {
+                window.focus();
+            }
+        }
         let Some(target) = self.interactive.pending_open.take() else {
             return;
         };
         let attrs = crate::app::app_id::tagged(
             Window::default_attributes()
-                .with_title("Nida — Interactive HTML")
-                .with_inner_size(PhysicalSize::new(target.width, target.height))
-                .with_resizable(false),
+                .with_title("Nida — Interact with browser")
+                .with_theme(Some(winit::window::Theme::Dark))
+                .with_inner_size({
+                    let scale = (1200.0 / f64::from(target.width))
+                        .min(800.0 / f64::from(target.height)).min(1.0);
+                    PhysicalSize::new((f64::from(target.width) * scale) as u32,
+                        (f64::from(target.height) * scale) as u32)
+                })
+                .with_resizable(true),
             crate::app::app_id::INTERACTIVE,
         );
         let window = match event_loop.create_window(attrs) {
@@ -179,6 +218,10 @@ impl super::VardaApp {
         }
         if matches!(event, winit::event::WindowEvent::CloseRequested) {
             self.interactive.pending_close = true;
+            return true;
+        }
+        if let winit::event::WindowEvent::Resized(size) = event {
+            self.interactive.window.as_mut().unwrap().resize(&self.context, *size);
             return true;
         }
         let html_idx = self.interactive.window.as_ref().unwrap().target.html_idx;

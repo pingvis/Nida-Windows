@@ -903,7 +903,9 @@ pub(super) fn render_library_panel(ui: &mut egui::Ui, data: &UIData, actions: &m
                                 .unwrap_or_else(|| "https://example.com/visuals.html".to_string());
                             ui.horizontal(|ui| {
                                 ui.label("URL:");
-                                ui.text_edit_singleline(&mut url);
+                                ui.add(egui::TextEdit::singleline(&mut url)
+                                    .desired_width(ui.available_width())
+                                    .clip_text(true));
                             });
                             ui.horizontal(|ui| {
                                 if ui.small_button("✔ Add").clicked() && !url.is_empty() {
@@ -936,7 +938,7 @@ pub(super) fn render_library_panel(ui: &mut egui::Ui, data: &UIData, actions: &m
                                 item_id,
                                 LibraryDrag::Html(url.clone()),
                                 status_color,
-                                format!("🌐 {url}"),
+                                crate::html::browser_source_name(&url),
                             ) {
                                 actions
                                     .commands

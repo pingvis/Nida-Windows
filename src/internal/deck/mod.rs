@@ -1807,7 +1807,7 @@ impl Deck {
         {
             *source_width = settings.width;
             *source_height = settings.height;
-            self.source_name = format!("🌐 {}", settings.url);
+            self.source_name = crate::html::browser_source_name(&settings.url);
             *browser_settings = Some(settings);
         }
     }

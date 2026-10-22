@@ -15,7 +15,7 @@ pub(crate) mod frame_parts;
 pub(crate) mod history;
 mod inputs;
 /// Interactive mode for HTML decks (feature `html`). See /spec/html-source.md §4.
-#[cfg(feature = "html")]
+#[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
 pub(crate) mod interactive;
 mod keep_awake;
 pub mod log_file;
@@ -653,7 +653,7 @@ pub struct VardaApp {
     pub(crate) output: OutputSubsystem,
     pub(crate) external_io: ExternalIO,
     /// Interactive HTML window state (feature `html`). See /spec/html-source.md §4.
-    #[cfg(feature = "html")]
+    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
     pub(crate) interactive: interactive::InteractiveHtmlState,
     pub(crate) frame_stats: FrameStats,
     pub(crate) session: SessionState,
@@ -1018,7 +1018,7 @@ impl VardaApp {
                 state_tx,
             },
             audio_textures,
-            #[cfg(feature = "html")]
+            #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
             interactive: interactive::InteractiveHtmlState::default(),
             production_buses: crate::bus::BusBank::with_legacy_default(),
             rundown: crate::rundown::Rundown::default(),

@@ -1369,7 +1369,7 @@ impl Deck {
         let mut deck = Self::new_from_external(
             context,
             ExternalSourceKind::Html(instance_idx),
-            format!("🌐 {url}"),
+            crate::html::browser_source_name(url),
             source_width,
             source_height,
             width,

@@ -1194,11 +1194,11 @@ impl VardaApp {
                 self.cmd_add_html_deck(&channel_uuid, &url)
             }
             EngineCommand::OpenHtmlInteractive { deck_uuid } => {
-                #[cfg(feature = "html")]
+                #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
                 {
                     self.cmd_open_html_interactive(&deck_uuid)
                 }
-                #[cfg(not(feature = "html"))]
+                #[cfg(not(any(feature = "html", all(target_os = "windows", feature = "windows-browser"))))]
                 {
                     let _ = deck_uuid;
                     crate::engine::CommandResult::Err {
@@ -1208,11 +1208,11 @@ impl VardaApp {
                 }
             }
             EngineCommand::CloseHtmlInteractive => {
-                #[cfg(feature = "html")]
+                #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
                 {
                     self.cmd_close_html_interactive()
                 }
-                #[cfg(not(feature = "html"))]
+                #[cfg(not(any(feature = "html", all(target_os = "windows", feature = "windows-browser"))))]
                 {
                     crate::engine::CommandResult::Ok
                 }

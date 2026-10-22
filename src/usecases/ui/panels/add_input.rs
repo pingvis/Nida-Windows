@@ -71,7 +71,7 @@ impl Kind {
             Self::Screen,
             Self::Stream,
         ];
-        if cfg!(feature = "html") {
+        if cfg!(any(feature = "html", all(target_os = "windows", feature = "windows-browser"))) {
             kinds.push(Self::Web);
         }
         kinds.extend([Self::Colour, Self::Generator, Self::Timer, Self::Input]);
@@ -365,7 +365,8 @@ fn kind_body(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions, state: &
         }
         Kind::Web => {
             ui.label("Address of the page:");
-            ui.add(egui::TextEdit::singleline(&mut state.web_url).desired_width(f32::INFINITY));
+            ui.add(egui::TextEdit::singleline(&mut state.web_url)
+                .desired_width(ui.available_width()).clip_text(true));
             false
         }
         Kind::Colour => {
@@ -1169,6 +1170,28 @@ mod tests {
                 )
             })
             .collect()
+    }
+
+    #[test]
+    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+    fn browser_sources_are_offered_for_both_inputs_and_layers() {
+        let url = "https://www.youtube.com/live_chat?is_popout=1&v=Tk6E7lbvBzI";
+        for layer in [None, Some("a0000000")] {
+            let fixture = data();
+            let layer = layer.map(|_| fixture.channels[0].uuid.clone());
+            let mut h = harness(fixture, layer.as_deref());
+            click(&mut h, "Web Browser");
+            let mut state = load(&h.ctx);
+            state.web_url = url.into();
+            store(&h.ctx, state);
+            h.run_steps(2);
+            click(&mut h, "OK");
+            assert!(added(&h).iter().any(|command| match command {
+                EngineCommand::AddInput { source: InputSource::Html { url: actual }, .. } => layer.is_none() && actual == url,
+                EngineCommand::AddHtmlDeck { channel_uuid, url: actual } => layer.as_ref() == Some(channel_uuid) && actual == url,
+                _ => false,
+            }));
+        }
     }
 
     #[test]

@@ -12,6 +12,7 @@ html = []
 windows-browser = []
 
 [dependencies]
+nida-browser-protocol = { path = "../protocol" }
 wgpu = "30.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -19,6 +20,10 @@ utoipa = "5.5.0"
 log = "0.4"
 dirs = "6.0.0"
 url = "2.5"
+keyboard-types = "0.8"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_System_JobObjects", "Win32_Foundation", "Win32_Security", "Win32_System_Threading"] }
+
+[profile.dev.package.nida-browser-protocol]
+opt-level = 3

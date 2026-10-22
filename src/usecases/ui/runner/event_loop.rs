@@ -33,7 +33,7 @@ pub(crate) trait WindowHost {
     /// Refresh the engine's cached monitor list.
     fn refresh_monitors(&self, varda: &mut VardaApp);
     /// Create any queued interactive (HTML) surfaces.
-    #[cfg(feature = "html")]
+    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
     fn create_pending_interactive(&self, varda: &mut VardaApp);
 }
 
@@ -50,7 +50,7 @@ impl WindowHost for ActiveEventLoop {
         varda.refresh_monitors(self);
     }
 
-    #[cfg(feature = "html")]
+    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
     fn create_pending_interactive(&self, varda: &mut VardaApp) {
         varda.create_pending_interactive(self);
     }
@@ -208,7 +208,7 @@ impl ApplicationHandler for UIRunner {
                     | WindowEvent::Moved(_)
                     | WindowEvent::Occluded(_)
                     | WindowEvent::KeyboardInput { .. }
-            ) || cfg!(feature = "html");
+            ) || cfg!(any(feature = "html", all(target_os = "windows", feature = "windows-browser")));
             if wanted {
                 let handled = self.with_engine(|this| {
                     if let Some(varda) = this.varda.as_mut() {
@@ -312,7 +312,7 @@ const UI_FALLBACK: std::time::Duration = std::time::Duration::from_millis(100);
 /// An event on an output window (main thread, engine borrowed).
 fn output_window_event(varda: &mut VardaApp, window_id: WindowId, event: WindowEvent) {
     // Interactive HTML window: forward input to the WebView and consume.
-    #[cfg(feature = "html")]
+    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
     if varda.handle_interactive_event(window_id, &event) {
         return;
     }

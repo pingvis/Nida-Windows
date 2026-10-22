@@ -13,7 +13,7 @@ pub const MAIN: &str = "nida";
 /// Every output window.
 pub const OUTPUT: &str = "nida-output";
 /// The interactive HTML window.
-#[cfg(feature = "html")]
+#[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
 pub const INTERACTIVE: &str = "nida-interactive";
 
 /// Tag `attrs` with `app_id` (Wayland) and `WM_CLASS` (X11). A no-op elsewhere.

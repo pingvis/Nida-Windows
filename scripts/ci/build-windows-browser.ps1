@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 if (!$IsWindows -or !$CefRoot) { throw 'Use Windows x64 and run setup-windows-cef.ps1 first.' }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
-$CefRoot = (Resolve-Path -LiteralPath $CefRoot).Path
+$CefRoot = (Resolve-Path -LiteralPath $CefRoot).Path.Replace('\', '/')
 $inputs = Get-Content -LiteralPath (Join-Path $CefRoot 'nida-cef-inputs.json') -Raw | ConvertFrom-Json
 if ($inputs.version -ne '152.0.15+gb3d72fb+chromium-152.0.7977.169') { throw 'CEF SDK does not match the supported API/runtime pair.' }
 $build = Join-Path $root 'target/cef-host'

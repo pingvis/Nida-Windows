@@ -1,0 +1,17 @@
+[package]
+name = "nida-browser-protocol"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Keep the wire implementation beside HtmlManager; compile its pixel hot loop
+# as a small independently optimized dependency, including in debug builds.
+[lib]
+path = "../../src/internal/html/protocol.rs"
+
+[[example]]
+name = "conversion"
+path = "../../scripts/ci/benchmark-browser-conversion.rs"
+
+[profile.dev.package.nida-browser-protocol]
+opt-level = 3

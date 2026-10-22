@@ -1,3 +1,17 @@
+/// A display label only. Navigation and persistence must use `BrowserSettings::url`.
+pub fn browser_source_name(url: &str) -> String {
+    if url.starts_with("data:") {
+        return "🌐 Inline HTML".into();
+    }
+    let mut chars = url.chars();
+    let short: String = chars.by_ref().take(80).collect();
+    if chars.next().is_some() {
+        format!("🌐 {short}…")
+    } else {
+        format!("🌐 {short}")
+    }
+}
+
 /// Authored browser viewport, independent of the show's output resolution.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 #[serde(default)]
@@ -64,6 +78,17 @@ pub struct BrowserSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn browser_titles_never_include_inline_documents_or_unbounded_urls() {
+        let url = format!("data:text/html;charset=utf-8,{}", "%3Ch1%3Etest%3C%2Fh1%3E".repeat(1000));
+        let settings = BrowserSettings { url: url.clone(), ..BrowserSettings::default() };
+        assert_eq!(browser_source_name(&url), "🌐 Inline HTML");
+        let restored: BrowserSettings = serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
+        assert_eq!(restored.url, url, "the display label must not replace the saved URL");
+        assert_eq!(browser_source_name("https://example.com/chat"), "🌐 https://example.com/chat");
+        assert!(browser_source_name(&format!("https://example.com/{}", "界".repeat(1000))).chars().count() <= 83);
+    }
 
     #[test]
     fn url_only_request_gets_compatible_defaults() {

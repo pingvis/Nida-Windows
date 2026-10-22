@@ -16,12 +16,14 @@ use std::sync::{Arc, Mutex};
 #[cfg(all(target_os = "windows", feature = "windows-browser"))]
 mod cef_backend;
 #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+mod cef_input;
+#[cfg(all(target_os = "windows", feature = "windows-browser"))]
 mod cef_job;
 #[cfg(any(test, all(target_os = "windows", feature = "windows-browser")))]
-mod protocol;
+use nida_browser_protocol as protocol;
 
 mod settings;
-pub use settings::{BrowserSettings, BrowserSnapshot};
+pub use settings::{browser_source_name, BrowserSettings, BrowserSnapshot};
 
 /// Default render resolution for an HTML instance when none is supplied.
 const DEFAULT_WIDTH: u32 = 1920;
@@ -49,7 +51,7 @@ type FrameSlot = Arc<Mutex<Option<HtmlFrame>>>;
 /// winit never reaches this module, preserving the "only `Send` data crosses the
 /// thread boundary" contract. Positions are `WebView` **device** pixels. See
 /// `/spec/html-source.md` §4.
-#[cfg(feature = "html")]
+#[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
 #[derive(Debug, Clone)]
 pub enum HtmlInputEvent {
     /// Pointer moved to a `WebView` device-pixel position.
@@ -73,6 +75,8 @@ pub enum HtmlInputEvent {
     ImeDismissed,
     /// Window focus gained/lost → `WebView::focus()`/`blur()`.
     Focus(bool),
+    /// Modifier state, including when no character key is pressed.
+    Modifiers(keyboard_types::Modifiers),
 }
 
 /// Manages offscreen HTML render instances and their destination GPU textures.
@@ -155,7 +159,7 @@ impl HtmlManager {
         }
         #[cfg(all(target_os = "windows", feature = "windows-browser"))]
         {
-            return cef_backend::helper_path().is_some();
+            cef_backend::helper_path().is_some()
         }
         #[cfg(not(all(target_os = "windows", feature = "windows-browser")))]
         {
@@ -400,8 +404,7 @@ impl HtmlManager {
                 settings: instance.settings.clone(),
                 error: instance.error.clone(),
                 ready: instance.painted,
-                interactive: cfg!(feature = "html")
-                    && !cfg!(all(target_os = "windows", feature = "windows-browser")),
+                interactive: self.is_available(),
             })
     }
 
@@ -534,8 +537,17 @@ impl HtmlManager {
 
     /// Forward an interactive-mode input event to the instance at `idx`.
     /// No-op for an unknown index or when no engine has been spawned.
-    #[cfg(feature = "html")]
+    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
     pub fn send_input(&self, idx: usize, event: HtmlInputEvent) {
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        {
+            if let (Some(instance), Some(cef)) = (
+                self.instances.get(idx).and_then(Option::as_ref), self.cef.as_ref(),
+            ) {
+                let _ = cef.send(cef_input::command(instance.id, instance.generation, event));
+            }
+        }
+        #[cfg(not(all(target_os = "windows", feature = "windows-browser")))]
         if let (Some(instance), Some(engine)) = (
             self.instances.get(idx).and_then(Option::as_ref),
             self.engine.as_ref(),

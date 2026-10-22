@@ -222,11 +222,11 @@ pub(crate) fn build_mixer_snapshot(app: &VardaApp) -> MixerSnapshot {
                         camera_lowest_latency: (slot.deck.source_type() == "camera")
                             .then_some(slot.deck.camera_lowest_latency),
                         is_html_interactive: {
-                            #[cfg(feature = "html")]
+                            #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
                             {
                                 app.interactive_active_deck() == Some(slot.deck.uuid())
                             }
-                            #[cfg(not(feature = "html"))]
+                            #[cfg(not(any(feature = "html", all(target_os = "windows", feature = "windows-browser"))))]
                             {
                                 false
                             }

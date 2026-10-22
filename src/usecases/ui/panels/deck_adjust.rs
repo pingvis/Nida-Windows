@@ -149,6 +149,13 @@ pub(super) fn render_preview(
     let Some(deck) = deck else {
         return;
     };
+    let can_interact = view == View::Input && deck.is_html
+        && deck.browser.as_ref().is_some_and(|browser| browser.interactive);
+    if can_interact && response.double_clicked() {
+        actions.commands.push(EngineCommand::OpenHtmlInteractive {
+            deck_uuid: deck.uuid.clone(),
+        });
+    }
     let render = (data.render_width, data.render_height);
     let transform = Transform::of(deck, render);
     if let Some(t) = &transform {
@@ -170,13 +177,36 @@ pub(super) fn render_preview(
         draw_guides(ui, response.rect, &guides);
     }
 
-    ui.horizontal(|ui| {
-        let hint = if transform.is_some() {
+    if can_interact {
+        // An action on this picture, visually separate from the view selectors.
+        // A child UI overlays the picture without reserving more panel space.
+        let mut overlay = ui.new_child(
+            egui::UiBuilder::new()
+                .id_salt(("browser_preview_interaction", &deck.uuid))
+                .max_rect(response.rect.shrink(6.0))
+                .layout(egui::Layout::right_to_left(egui::Align::Min)),
+        );
+        if overlay.small_button("🖱 Interact")
+            .on_hover_text("Click, type and scroll in this browser source. You can also double-click its preview.")
+            .clicked()
+        {
+            actions.commands.push(EngineCommand::OpenHtmlInteractive {
+                deck_uuid: deck.uuid.clone(),
+            });
+        }
+    }
+
+    ui.horizontal_wrapped(|ui| {
+        let hint = if can_interact && transform.is_some() {
+            "Double-click to interact · Drag to move · Shift-drag or scroll to resize"
+        } else if can_interact {
+            "Double-click to interact with this browser source"
+        } else if transform.is_some() {
             "Drag the picture to move it · Shift-drag or scroll to resize"
         } else {
             "Switch on Transform under Position to move it here"
         };
-        ui.label(egui::RichText::new(hint).small().weak());
+        ui.add(egui::Label::new(egui::RichText::new(hint).small().weak()).wrap());
         if let Some(t) = &transform {
             if ui
                 .small_button("Reset position & size")
@@ -677,6 +707,73 @@ mod tests {
             } if effect_uuid == "fxtrans1" && n == name => Some(*v),
             _ => None,
         })
+    }
+
+    #[test]
+    fn double_clicking_a_browser_input_preview_opens_interaction_only_for_that_view() {
+        for (browser, interactive, view) in [
+            (true, true, View::Input),
+            (true, false, View::Input),
+            (false, true, View::Input),
+            (true, true, View::Channel),
+            (true, true, View::Main),
+        ] {
+            let mut data = UIData::test_fixture();
+            let uuid = deck_with_transform(&mut data);
+            let deck = &mut data.channels[0].decks[0];
+            deck.is_html = browser;
+            deck.browser = Some(crate::html::BrowserSnapshot {
+                settings: crate::html::BrowserSettings {
+                    url: "https://example.com".into(), ..Default::default()
+                },
+                ready: true, interactive, error: None,
+            });
+            let selected = uuid.clone();
+            let mut h = egui_kittest::Harness::builder()
+                .with_size(egui::vec2(1280.0, 900.0))
+                .with_step_dt(1.0 / 60.0)
+                .build_ui_state(move |ui, commands: &mut Vec<EngineCommand>| {
+                    ui.ctx().memory_mut(|m| m.data.insert_temp(view_id(), view));
+                    let layer = data.channels[0].decks.iter().find(|d| d.uuid == selected);
+                    let mut actions = UIActions::new();
+                    render_preview(ui, 0, "Ch A", layer, 500.0, &data, &mut actions);
+                    commands.extend(actions.commands);
+                }, Vec::new());
+            h.run();
+            assert_eq!(h.query_by_label("🖱 Interact").is_some(),
+                browser && interactive && view == View::Input);
+            let preview = h.get_by_label("Adjust preview").rect();
+            if browser && interactive && view == View::Input {
+                let button = h.get_by_label("🖱 Interact").rect();
+                assert!(preview.contains_rect(button), "interaction stays inside the picture");
+                assert!((preview.right() - button.right() - 6.0).abs() < 1.0);
+                assert!((button.top() - preview.top() - 6.0).abs() < 1.0);
+            }
+            let pos = preview.center();
+            h.event(egui::Event::PointerMoved(pos));
+            h.run();
+            for _ in 0..2 {
+                for pressed in [true, false] {
+                    h.event(egui::Event::PointerButton {
+                        pos, button: egui::PointerButton::Primary, pressed,
+                        modifiers: egui::Modifiers::default(),
+                    });
+                    h.run();
+                }
+            }
+            let opens = h.state().iter().filter(|c| matches!(c,
+                EngineCommand::OpenHtmlInteractive { deck_uuid } if deck_uuid == &uuid)).count();
+            assert_eq!(opens, usize::from(browser && interactive && view == View::Input));
+            assert!(!h.state().iter().any(|c| matches!(c,
+                EngineCommand::CloseHtmlInteractive | EngineCommand::SetEffectParam { .. })));
+            if browser && interactive && view == View::Input {
+                h.get_by_label("🖱 Interact").click();
+                h.run();
+                assert_eq!(h.state().iter().filter(|c| matches!(c,
+                    EngineCommand::OpenHtmlInteractive { deck_uuid } if deck_uuid == &uuid)).count(), 2);
+                assert!(!h.state().iter().any(|c| matches!(c, EngineCommand::SetEffectParam { .. })));
+            }
+        }
     }
 
     #[test]

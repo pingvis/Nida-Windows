@@ -769,81 +769,7 @@ pub(super) fn render_selected_deck_detail(
                         ui.set_min_width(140.0);
                         ui.set_max_width(200.0);
                         ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
-                            ui.label(egui::RichText::new("🌐 Website / Browser").strong());
-                            if let Some(browser) = &deck.browser {
-                                if let Some(error) = &browser.error { ui.colored_label(egui::Color32::YELLOW, error); }
-                                else if !browser.ready { ui.label("Loading website…"); }
-                                let key = ui.id().with(("browser_settings", &deck.uuid));
-                                let mut settings = ui.data(|d| d.get_temp::<crate::html::BrowserSettings>(key)).unwrap_or_else(|| browser.settings.clone());
-                                ui.label("URL");
-                                ui.text_edit_singleline(&mut settings.url);
-                                ui.horizontal(|ui| {
-                                    ui.label("Size");
-                                    ui.add(egui::DragValue::new(&mut settings.width).range(1..=4096));
-                                    ui.label("×");
-                                    ui.add(egui::DragValue::new(&mut settings.height).range(1..=4096));
-                                });
-                                ui.horizontal(|ui| {
-                                    ui.label("FPS");
-                                    ui.add(egui::DragValue::new(&mut settings.fps).range(1..=60));
-                                });
-                                if ui.button("Apply source settings").clicked() {
-                                    actions.commands.push(EngineCommand::ConfigureBrowserDeck { deck_uuid: deck.uuid.clone(), settings: settings.clone() });
-                                }
-                                ui.data_mut(|d| d.insert_temp(key, settings));
-                            }
-                            let reload_resp = ui.button("⟳ Reload");
-                            if reload_resp.clicked() {
-                                actions.commands.push(EngineCommand::ReloadHtmlDeck {
-                                    deck_uuid: deck.uuid.clone(),
-                                });
-                            }
-                            learn_overlay(
-                                ui,
-                                reload_resp.rect,
-                                format!("deck/{}/html/reload", deck.uuid),
-                                data,
-                                actions,
-                            );
-                            let interactive_label = if deck.is_html_interactive {
-                                "🖱 Exit Interactive"
-                            } else {
-                                "🖱 Interactive"
-                            };
-                            let interactive_resp = ui.add_enabled(deck.browser.as_ref().is_some_and(|b| b.interactive), egui::Button::new(interactive_label));
-                            if interactive_resp.clicked() {
-                                let cmd = if deck.is_html_interactive {
-                                    EngineCommand::CloseHtmlInteractive
-                                } else {
-                                    EngineCommand::OpenHtmlInteractive {
-                                        deck_uuid: deck.uuid.clone(),
-                                    }
-                                };
-                                actions.commands.push(cmd);
-                            }
-                            learn_overlay(
-                                ui,
-                                interactive_resp.rect,
-                                format!("deck/{}/html/interactive", deck.uuid),
-                                data,
-                                actions,
-                            );
-                            let mut transparent = deck.transparent;
-                            let transparent_resp =
-                                ui.checkbox(&mut transparent, "Transparent BG");
-                            if transparent_resp.changed() {
-                                actions.commands.push(EngineCommand::SetDeckTransparent {
-                                    deck_uuid: deck.uuid.clone(),
-                                    transparent,
-                                });
-                            }
-                            learn_overlay(
-                                ui,
-                                transparent_resp.rect,
-                                format!("deck/{}/transparent", deck.uuid),
-                                data,
-                                actions,
-                            );
+                            render_browser_source_settings(ui, deck, data, actions);
                         });
                     });
                 ui.separator();
@@ -1274,6 +1200,70 @@ const FRAMING_EFFECTS: [(&str, &str); 2] = [("crop", "Crop"), ("transform", "Tra
 
 const EFFECT_LIST_WIDTH: f32 = 180.0;
 const EFFECT_CONTROLS_WIDTH: f32 = 260.0;
+
+/// Browser controls shared by Properties and Input Settings. Drafts belong to
+/// the deck, not the panel, so switching inputs does not discard a URL edit.
+pub(super) fn render_browser_source_settings(
+    ui: &mut egui::Ui,
+    deck: &DeckUIInfo,
+    data: &UIData,
+    actions: &mut UIActions,
+) {
+    if let Some(browser) = &deck.browser {
+        if let Some(error) = &browser.error {
+            ui.add(egui::Label::new(egui::RichText::new(error).color(egui::Color32::YELLOW)).wrap());
+        } else if !browser.ready {
+            ui.label("Loading website…");
+        }
+        let key = egui::Id::new(("browser_settings", &deck.uuid));
+        let (mut original, mut settings) = ui.data(|d| d.get_temp::<(crate::html::BrowserSettings, crate::html::BrowserSettings)>(key))
+            .unwrap_or_else(|| (browser.settings.clone(), browser.settings.clone()));
+        if original != browser.settings {
+            // Applied here, or changed through the API: show the live settings.
+            original = browser.settings.clone();
+            settings = original.clone();
+        }
+        ui.label("URL");
+        ui.add(egui::TextEdit::singleline(&mut settings.url)
+            .id_salt(("browser_url", &deck.uuid))
+            .hint_text("https://… or data:text/html,…")
+            .desired_width(ui.available_width())
+            .clip_text(true));
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Width");
+            ui.add(egui::DragValue::new(&mut settings.width).range(1..=4096));
+            ui.label("Height");
+            ui.add(egui::DragValue::new(&mut settings.height).range(1..=4096));
+            ui.label("FPS");
+            ui.add(egui::DragValue::new(&mut settings.fps).range(1..=60));
+        });
+        ui.horizontal_wrapped(|ui| {
+            if ui.button("Apply source settings").clicked() {
+                actions.commands.push(EngineCommand::ConfigureBrowserDeck {
+                    deck_uuid: deck.uuid.clone(), settings: settings.clone(),
+                });
+            }
+            render_browser_reload(ui, deck, data, actions);
+        });
+        ui.data_mut(|d| d.insert_temp(key, (original, settings)));
+    } else {
+        render_browser_reload(ui, deck, data, actions);
+    }
+    let mut transparent = deck.transparent;
+    let response = ui.checkbox(&mut transparent, "Transparent BG");
+    if response.changed() {
+        actions.commands.push(EngineCommand::SetDeckTransparent { deck_uuid: deck.uuid.clone(), transparent });
+    }
+    learn_overlay(ui, response.rect, format!("deck/{}/transparent", deck.uuid), data, actions);
+}
+
+fn render_browser_reload(ui: &mut egui::Ui, deck: &DeckUIInfo, data: &UIData, actions: &mut UIActions) {
+    let reload = ui.button("⟳ Reload");
+    if reload.clicked() {
+        actions.commands.push(EngineCommand::ReloadHtmlDeck { deck_uuid: deck.uuid.clone() });
+    }
+    learn_overlay(ui, reload.rect, format!("deck/{}/html/reload", deck.uuid), data, actions);
+}
 
 /// A deck's source settings: how its picture is scaled into the frame, the
 /// controls a depth sensor, capture or tap has, how often and how large it

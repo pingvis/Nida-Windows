@@ -100,6 +100,12 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     let profile = dirs::data_local_dir()
         .ok_or_else(|| std::io::Error::other("missing user data directory"))?
         .join("Nida/BrowserCEF");
+    // A native debug test can run alongside the operator's instance without
+    // sharing Chromium's profile lock or touching their cookies. Release
+    // builds always retain the normal persistent profile above.
+    #[cfg(all(debug_assertions, not(test)))]
+    let profile = std::env::var_os("NIDA_BROWSER_DEBUG_PROFILE")
+        .map_or(profile, PathBuf::from);
     std::fs::create_dir_all(&profile)?;
     // Current CEF requires LPAC read/execute access to its public runtime files.
     // Apply only to the browser runtime, never to show files or profile data.
@@ -138,7 +144,22 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     let reader = thread::Builder::new()
         .name("html-cef-frames".into())
         .spawn(move || {
+            // Opt-in throughput diagnostics, with no URLs or page contents.
+            let mut measured = std::env::var_os("NIDA_BROWSER_PERF")
+                .map(|_| (std::time::Instant::now(), 0u64));
             while let Ok(frame) = read_message(&mut stdout) {
+                if frame.error.is_none() {
+                    if let Some((since, count)) = measured.as_mut() {
+                        *count += 1;
+                        let elapsed = since.elapsed().as_secs_f64();
+                        if elapsed >= 5.0 {
+                            log::info!("CEF decoded {:.1} fps ({} frames in {:.2}s, all browser sources)",
+                                *count as f64 / elapsed, count, elapsed);
+                            *since = std::time::Instant::now();
+                            *count = 0;
+                        }
+                    }
+                }
                 if let Ok(mut pending) = frames.lock() {
                     let key = (frame.id, frame.error.is_some());
                     if pending.len() < 64 || pending.contains_key(&key) {

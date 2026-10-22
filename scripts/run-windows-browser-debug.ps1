@@ -71,6 +71,6 @@ h1{font-size:34px;color:#7ee7ff}p{animation:enter .4s ease-out}@keyframes enter{
     else { $channel = (Invoke-RestMethod "$api/channels" -Method Post -TimeoutSec 10).uuid }
     $body = @{ url = $Url; width = 1280; height = 720; fps = 30 } | ConvertTo-Json
     $null = Invoke-RestMethod "$api/channels/$channel/decks/html" -Method Post -ContentType 'application/json' -Body $body -TimeoutSec 15
-    Write-Host "Nida debug is open (PID $($process.Id)). Select the browser deck in the first channel for URL, size, transparency and Refresh controls."
+    Write-Host "Nida debug is open (PID $($process.Id)). Double-click Inline HTML in the first channel, then select Source for URL, size, transparency and Reload controls."
     Write-Host "Debug show workspace: $workspace"
 } finally { Pop-Location }

@@ -250,7 +250,11 @@ onto a channel. Each deck owns an independent page, including when two decks use
 the same URL. The deck's Website / Browser controls edit its URL, viewport width,
 height and frame-rate limit. Apply changes with **Apply source settings**.
 Viewport resizing changes webpage layout without reloading it; deck scaling
-controls placement in the show independently. Refresh re-fetches the page while
+controls placement in the show independently. Double-click a deck to open Input
+Settings, then select **Source** to edit these same controls. The complete URL
+scrolls inside its field; inline `data:` documents are titled **Inline HTML**.
+Opening settings does not open a separate interactive browser window.
+Refresh re-fetches the page while
 keeping effects and mappings. The source stays connected while off-air.
 
 New browser decks preserve transparency by default. Transparent BG preserves a
@@ -262,11 +266,25 @@ show resolution and 30 fps. Limits are 4096 pixels per viewport dimension,
 
 CEF improves modern CSS/JavaScript, Canvas and WebSocket compatibility, but
 provider URLs still need native testing. OBS-specific `window.obsstudio` APIs,
-DRM/proprietary codecs, interactive sign-in and popup windows are not supported
-by this initial backend. Browser audio is muted; the interactive button remains
-available for Servo only. A provider-generated overlay token is usually the most
+DRM/proprietary codecs and popup windows are not supported
+by this initial backend. Browser audio is muted. **Interact** in the Input
+Settings preview's top-right corner opens the same page in a separate window
+so you can click cookie prompts, type, and scroll.
+Double-clicking the **This layer** preview in Input Settings also opens it,
+or brings it forward when already open.
+Its cookies remain in Nida's browser profile; Chrome/Edge cookies are separate.
+Resize the interaction window to fit your screen without resizing or reloading
+the source. Closing it leaves the browser source running. Authentication that
+requires popups or an external browser remains unsupported.
+A provider-generated overlay token is usually the most
 practical way to connect chat. Such URLs are stored in shows: treat them as
 private, and do not include them in bug reports.
+
+On Windows browser builds, **Add Input → Web Browser** and **Add layer → Web
+Browser** both accept a YouTube popout chat URL. Chat must be enabled for the
+selected stream; a loaded page can report that chat is disabled. The CEF helper
+corrects YouTube popout chat's white-on-white theme mismatch using the page's
+own background variable, while leaving transparent overlay feeds unchanged.
 
 CEF rendering and pipe I/O run outside the application render loop. Completed
 frames are uploaded without waiting for navigation or JavaScript. CPU/GPU

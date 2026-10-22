@@ -293,6 +293,7 @@ fn apply_input(entry: &Entry, event: HtmlInputEvent) {
         HtmlInputEvent::ImeDismissed => {
             let _ = wv.notify_input_event(InputEvent::Ime(ImeEvent::Dismissed));
         }
+        HtmlInputEvent::Modifiers(_) => {}
         HtmlInputEvent::Focus(true) => wv.focus(),
         HtmlInputEvent::Focus(false) => wv.blur(),
     }

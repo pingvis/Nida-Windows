@@ -139,7 +139,21 @@ CMake and Python are required):
 The launcher downloads missing SDKs on first use and leaves Nida open. It uses
 `target/browser-debug-workspace` and port 8088, keeping normal saved shows
 separate. Use `-SkipBuild` for subsequent launches with the SDK environment
-still configured. The default demo is a local HTML page running inside CEF.
+still configured. The default demo is an inline HTML page running inside CEF,
+titled **Inline HTML**. Double-click its deck, then select **Source** in Input
+Settings. The full encoded URL scrolls inside its field and remains editable;
+opening settings does not open an interactive CEF window. On narrow windows,
+browser settings put controls below the preview automatically.
+
+Use **Interact** in the preview's top-right corner, or double-click the **This
+layer** preview in Input Settings, to operate a page directly, including cookie
+consent. Either action brings an existing interaction window forward. It uses a
+dark native title bar where supported, displays the existing CEF page and forwards
+mouse, keyboard, wheel and IME events to it; it does not create a second
+browser or change Program routing. Closing it leaves the source and cookies
+intact. For a separate native debug instance, set `NIDA_BROWSER_DEBUG_PROFILE`
+to a dedicated writable profile directory in that child process. Release
+builds always use the normal persistent browser profile.
 
 For manual build and transport checks:
 
@@ -166,6 +180,32 @@ A Windows job object owns the Chromium process tree. Browser control and frame
 pipes run on background workers, with bounded command queues and latest-frame
 slots. A stalled pipe is terminated off the render thread; Refresh restarts a
 failed host. The render loop only polls completed frames and uploads textures.
+
+### Browser performance diagnostics
+
+The CEF decoder is a small `nida-browser-protocol` dependency, built with
+optimization even in debug mode. Its BGRA/alpha conversion touches every pixel;
+unoptimized conversion can limit a 1080p browser to single-digit frame rates
+while the show counter still reports 60 fps. The wire format and straight-alpha
+output are unchanged. The rest of the application retains its normal debug
+build settings.
+
+To measure conversion and actual CEF-to-decoder throughput using a local
+animated page and an isolated temporary profile:
+
+```powershell
+cargo run --manifest-path browser/protocol/Cargo.toml --example conversion
+python scripts/ci/benchmark-browser-host.py target/debug/browser/nida-browser-host.exe --decoder browser/protocol/target/debug/examples/conversion.exe
+cargo test --manifest-path browser/protocol/Cargo.toml
+```
+
+For an application run, set `NIDA_BROWSER_PERF=1` and enable info logging for
+`varda::internal::html::cef_backend`. The host's decoded frame rate is logged
+every five seconds (aggregated across browser sources, without URLs). A static
+page only paints when changed, so use an animated page to assess throughput.
+`GET /api/state/performance` also reports **browser interaction** under control
+frame parts, separating interaction drawing from the decoder. These are
+diagnostics, not a reason to change a show's resolution or browser frame limit.
 
 The standalone checks compile the actual manager and transport without FFmpeg,
 audio or capture dependencies. The host smoke test checks WebSocket-driven

@@ -9,6 +9,7 @@ import base64
 import hashlib
 import http.server
 import json
+import re
 from pathlib import Path
 import queue
 import struct
@@ -24,6 +25,28 @@ let box=document.getElementById('box');
 new WebSocket('ws://'+location.host+'/chat').onmessage=()=>{box.style.background=n===1?'red':'lime'};
 addEventListener('resize',()=>{box.style.background=n===1?'blue':'yellow'});
 </script>'''
+
+CHAT_THEME = b'''<!doctype html><style>
+html,body{margin:0;background:transparent}
+yt-live-chat-renderer{display:block;width:40px;height:40px;
+--yt-live-chat-background-color:rgb(16,24,32);background:white;color:white}
+yt-live-chat-renderer[is-overlay-feed]{background:transparent}
+</style><yt-live-chat-renderer></yt-live-chat-renderer>
+<div style="position:absolute;left:60px;top:0;width:30px;height:30px;background:rgba(128,64,0,0.5)"></div>'''
+
+INTERACT = '''<!doctype html><meta charset="utf-8"><style>
+html,body{margin:0;background:transparent}
+button{position:absolute;left:0;top:0;width:40px;height:40px;padding:0;border:0}
+input{position:absolute;left:0;top:50px;width:120px;height:24px}
+</style><button id="accept" aria-label="Accept test cookies"></button><input id="entry" aria-label="Test text">
+<div style="position:absolute;left:60px;top:0;width:30px;height:30px;background:rgba(128,64,0,0.5)"></div>
+<script>
+const accept=document.getElementById('accept'),entry=document.getElementById('entry');
+accept.style.background=document.cookie.includes('nida-consent=yes')?'lime':'red';
+accept.onclick=()=>{document.cookie='nida-consent=yes; path=/; max-age=86400';accept.style.background='lime'};
+entry.oninput=()=>{accept.style.background=entry.value==='ą'?'purple':entry.value==='ą你'?'cyan':'orange'};
+addEventListener('wheel',()=>{accept.style.background='blue'});
+</script>'''.encode('utf-8')
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -47,12 +70,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # Keep the connection open until the test closes the browser.
             time.sleep(15)
         else:
+            page = CHAT_THEME if self.path.startswith('/live_chat') else PAGE
+            if self.path.startswith('/interact'):
+                page = INTERACT
+            if 'overlay=1' in self.path:
+                page = page.replace(b'<yt-live-chat-renderer>', b'<yt-live-chat-renderer is-overlay-feed>')
+            if self.path.startswith('/live_chat'):
+                # Test the exact embedded script without external HTTPS/DNS or
+                # bypassing YouTube's HSTS policy. Only its location parameter
+                # is supplied by the fixture; the production guard is intact.
+                source = (Path(__file__).resolve().parents[2] / 'browser/cef/main.cpp').read_text(encoding='utf-8')
+                script = re.search(r'R"JS\((.*?)\)JS"', source, re.S).group(1)
+                host = 'www.youtube.com.evil.invalid' if 'other=1' in self.path else 'www.youtube.com'
+                fixture = 'new Function("location", ' + json.dumps(script) + ')(' + json.dumps({'hostname': host, 'pathname': '/live_chat'}) + ');'
+                page += ('<script>' + fixture + '</script>').encode()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
-            self.send_header('Content-Length', str(len(PAGE)))
+            self.send_header('Content-Length', str(len(page)))
             self.send_header('Cache-Control', 'no-store')
             self.end_headers()
-            self.wfile.write(PAGE)
+            self.wfile.write(page)
 
 
 def exact(stream, length):
@@ -138,6 +175,51 @@ def exercise(helper):
             send(op='stop', id=7)
             send(op='configure', id=9, generation=1, url=url, width=480, height=270, fps=24)
             expect(9, 1, (480, 270), (0, 255, 255, 255))  # Yellow: second source remains independent.
+            # Exercise the real compatibility script with a local reproduction
+            # of YouTube's mismatched theme; never depend on a live stream.
+            chat = f'http://127.0.0.1:{server.server_port}/live_chat'
+            send(op='configure', id=11, generation=0, url=chat, width=320, height=240, fps=24)
+            expect(11, 0, (320, 240), (32, 24, 16, 255))
+            send(op='configure', id=11, generation=1, url=chat + '?overlay=1', width=320, height=240, fps=24)
+            expect(11, 1, (320, 240), (0, 0, 0, 0))
+            # The identical markup on another host keeps its white background.
+            send(op='configure', id=11, generation=2,
+                 url=chat + '?other=1', width=320, height=240, fps=24)
+            expect(11, 2, (320, 240), (255, 255, 255, 255))
+            interactive = f'http://127.0.0.1:{server.server_port}/interact'
+            send(op='configure', id=12, generation=0, url=interactive, width=320, height=240, fps=30)
+            expect(12, 0, (320, 240), (0, 0, 255, 255))
+
+            def input_event(type, **values):
+                send(op='input', id=12, generation=0, type=type, **values)
+
+            def click(x, y):
+                input_event('move', x=x, y=y)
+                input_event('button', x=x, y=y, button=0, pressed=True)
+                input_event('button', x=x, y=y, button=0, pressed=False)
+
+            input_event('focus', focused=True)
+            click(10, 10)  # Consent is a real DOM click, not JavaScript injection.
+            expect(12, 0, (320, 240), (0, 255, 0, 255))
+            send(op='reload', id=12)
+            expect(12, 0, (320, 240), (0, 255, 0, 255))  # Cookie survives navigation.
+            send(op='configure', id=13, generation=0, url=interactive, width=320, height=240, fps=30)
+            expect(13, 0, (320, 240), (0, 255, 0, 255))  # Same cookie profile, independent page.
+            click(10, 60)
+            input_event('key', code='KeyA', key='ą', text='ą', pressed=True, modifiers=0)
+            input_event('key', code='KeyA', key='ą', text='ą', pressed=False, modifiers=0)
+            expect(12, 0, (320, 240), (128, 0, 128, 255))
+            input_event('ime', text='你', commit=False)
+            input_event('ime', text='你', commit=True)
+            expect(12, 0, (320, 240), (255, 255, 0, 255))
+            input_event('key', code='KeyA', key='a', text='a', pressed=True, modifiers=4)
+            input_event('key', code='KeyA', key='a', text='a', pressed=False, modifiers=4)
+            input_event('key', code='Backspace', key='Backspace', text='', pressed=True, modifiers=0)
+            input_event('key', code='Backspace', key='Backspace', text='', pressed=False, modifiers=0)
+            expect(12, 0, (320, 240), (0, 165, 255, 255))
+            input_event('wheel', x=10, y=10, dx=0, dy=-120)
+            expect(12, 0, (320, 240), (255, 0, 0, 255))
+            input_event('focus', focused=False)
         finally:
             process.stdin.close()
             try:
@@ -148,7 +230,7 @@ def exercise(helper):
             process.stdout.close()
             server.shutdown()
         assert process.returncode == 0, f'CEF host exited with {process.returncode}'
-    print('CEF host passed: live WebSocket, transparency, independent sources, resize, refresh and profile storage.')
+    print('CEF host passed: live WebSocket, transparency, independent sources, resize, refresh, profile storage, scoped YouTube theme repair, cookie consent clicks, Unicode keyboard, shortcuts, IME and wheel input.')
 
 
 if __name__ == '__main__':

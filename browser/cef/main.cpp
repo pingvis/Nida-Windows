@@ -112,6 +112,9 @@ class View final : public CefClient, public CefRenderHandler,
   std::string url;
   CefRefPtr<CefBrowser> browser;
   bool stopped = false;
+  uint32_t input_modifiers = 0, mouse_buttons = 0;
+  uint64_t last_click_time = 0;
+  int last_click_x = 0, last_click_y = 0, last_button = -1, click_count = 1;
   CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
@@ -147,18 +150,45 @@ class View final : public CefClient, public CefRenderHandler,
     packet.data.assign(bytes, bytes + static_cast<size_t>(w) * h * 4);
     Publish(std::move(packet));
   }
-  void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int status) override {
+  void OnLoadEnd(CefRefPtr<CefBrowser> source_browser, CefRefPtr<CefFrame> frame, int status) override {
     if (!credits_output.empty()) {
       if (frame->IsMain() && frame->GetURL().ToString().rfind("chrome://credits", 0) == 0)
-        frame->GetSource(new CreditsWriter(browser));
+        frame->GetSource(new CreditsWriter(source_browser));
       return;
     }
-    if (frame->IsMain()) Status(id, generation, status >= 400 ? "Website returned an HTTP error. Refresh to retry." : "");
+    if (frame->IsMain()) {
+      Status(id, generation, status >= 400 ? "Website returned an HTTP error. Refresh to retry." : "");
+      // YouTube's standalone chat can mix a white background token with its
+      // older dark-theme text tokens. Repair only that white-on-white case,
+      // using the page's own background variable. Other sites and transparent
+      // overlay feeds retain their authored styles.
+      if (status < 400) frame->ExecuteJavaScript(R"JS((() => {
+        if (!['www.youtube.com', 'youtube.com'].includes(location.hostname) ||
+            !['/live_chat', '/live_chat_replay'].includes(location.pathname)) return;
+        const repair = () => {
+          const chat = document.querySelector('yt-live-chat-renderer');
+          if (!chat) return false;
+          if (chat.hasAttribute('is-overlay-feed')) return true;
+          const style = getComputedStyle(chat);
+          if (style.color === 'rgb(255, 255, 255)' &&
+              style.backgroundColor === 'rgb(255, 255, 255)' &&
+              style.getPropertyValue('--yt-live-chat-background-color').trim()) {
+            chat.style.backgroundColor = 'var(--yt-live-chat-background-color)';
+          }
+          return true;
+        };
+        if (!repair()) {
+          const observer = new MutationObserver(() => { if (repair()) observer.disconnect(); });
+          observer.observe(document.documentElement, {childList: true, subtree: true});
+          setTimeout(() => observer.disconnect(), 15000);
+        }
+      })())JS", frame->GetURL(), 0);
+    }
   }
-  void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode code,
+  void OnLoadError(CefRefPtr<CefBrowser> source_browser, CefRefPtr<CefFrame> frame, ErrorCode code,
                    const CefString&, const CefString&) override {
     if (!credits_output.empty() && frame->IsMain() && code != ERR_ABORTED) {
-      closing = true; browser->GetHost()->CloseBrowser(true); return;
+      closing = true; source_browser->GetHost()->CloseBrowser(true); return;
     }
     if (frame->IsMain() && code != ERR_ABORTED)
       Status(id, generation, "Website could not load. Check the URL and connection, then refresh.");
@@ -169,7 +199,7 @@ class View final : public CefClient, public CefRenderHandler,
   }
   // Browser sources never open desktop windows or hand URLs to external apps.
   bool OnBeforePopup(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, int,
-                     const CefString&, const CefString&, WindowOpenDisposition, bool,
+                     const CefString&, const CefString&, CefLifeSpanHandler::WindowOpenDisposition, bool,
                      const CefPopupFeatures&, CefWindowInfo&, CefRefPtr<CefClient>&,
                      CefBrowserSettings&, CefRefPtr<CefDictionaryValue>&, bool*) override { return true; }
   bool OnJSDialog(CefRefPtr<CefBrowser>, const CefString&, JSDialogType,
@@ -184,6 +214,133 @@ class View final : public CefClient, public CefRenderHandler,
 
 uint64_t Number(CefRefPtr<CefDictionaryValue> d, const char* key) {
   return d->GetType(key) == VTYPE_INT ? static_cast<uint64_t>(d->GetInt(key)) : static_cast<uint64_t>(d->GetDouble(key));
+}
+
+int VirtualKey(const std::string& code, const std::string& key) {
+  if (code.size() == 4 && code.rfind("Key", 0) == 0 && code[3] >= 'A' && code[3] <= 'Z') return code[3];
+  if (code.size() == 6 && code.rfind("Digit", 0) == 0 && code[5] >= '0' && code[5] <= '9') return code[5];
+  if (code.size() == 7 && code.rfind("Numpad", 0) == 0 && code[6] >= '0' && code[6] <= '9') return VK_NUMPAD0 + code[6] - '0';
+  if (code.size() >= 2 && code.size() <= 3 && code[0] == 'F' && code[1] >= '1' && code[1] <= '9' &&
+      (code.size() == 2 || (code[2] >= '0' && code[2] <= '9'))) {
+    const int n = std::stoi(code.substr(1)); if (n <= 24) return VK_F1 + n - 1;
+  }
+  static const std::map<std::string, int> keys{
+    {"Enter",VK_RETURN},{"NumpadEnter",VK_RETURN},{"Tab",VK_TAB},{"Space",VK_SPACE},
+    {"Escape",VK_ESCAPE},{"Backspace",VK_BACK},{"Delete",VK_DELETE},{"Insert",VK_INSERT},
+    {"Home",VK_HOME},{"End",VK_END},{"PageUp",VK_PRIOR},{"PageDown",VK_NEXT},
+    {"ArrowLeft",VK_LEFT},{"ArrowRight",VK_RIGHT},{"ArrowUp",VK_UP},{"ArrowDown",VK_DOWN},
+    {"ShiftLeft",VK_SHIFT},{"ShiftRight",VK_SHIFT},{"ControlLeft",VK_CONTROL},{"ControlRight",VK_CONTROL},
+    {"AltLeft",VK_MENU},{"AltRight",VK_MENU},{"MetaLeft",VK_LWIN},{"MetaRight",VK_RWIN},
+    {"CapsLock",VK_CAPITAL},{"NumLock",VK_NUMLOCK},{"ScrollLock",VK_SCROLL},
+    {"Semicolon",VK_OEM_1},{"Equal",VK_OEM_PLUS},{"Comma",VK_OEM_COMMA},{"Minus",VK_OEM_MINUS},
+    {"Period",VK_OEM_PERIOD},{"Slash",VK_OEM_2},{"Backquote",VK_OEM_3},
+    {"BracketLeft",VK_OEM_4},{"Backslash",VK_OEM_5},{"BracketRight",VK_OEM_6},{"Quote",VK_OEM_7},
+    {"IntlBackslash",VK_OEM_102},{"NumpadMultiply",VK_MULTIPLY},{"NumpadAdd",VK_ADD},
+    {"NumpadSubtract",VK_SUBTRACT},{"NumpadDecimal",VK_DECIMAL},{"NumpadDivide",VK_DIVIDE},
+  };
+  auto found = keys.find(code);
+  if (found != keys.end()) return found->second;
+  found = keys.find(key);
+  return found == keys.end() ? 0 : found->second;
+}
+
+void ApplyInput(CefRefPtr<View> view, CefRefPtr<CefDictionaryValue> command) {
+  if (!view->browser || view->stopped || Number(command, "generation") != view->generation) return;
+  auto host = view->browser->GetHost();
+  const std::string type = command->GetString("type");
+  if (type == "focus") {
+    const bool focused = command->GetBool("focused");
+    host->SetFocus(focused);
+    if (!focused) {
+      view->mouse_buttons = 0; view->input_modifiers = 0;
+      host->SendCaptureLostEvent(); host->ImeCancelComposition();
+    }
+    return;
+  }
+  if (type == "modifiers") { view->input_modifiers = command->GetInt("modifiers") & 0x318f; return; }
+  if (type == "key") {
+    const uint32_t flags = command->GetInt("modifiers") & 0x3fff;
+    view->input_modifiers = flags & 0x318f;
+    const bool pressed = command->GetBool("pressed");
+    const std::string code = command->GetString("code"), key = command->GetString("key");
+    CefKeyEvent event;
+    event.type = pressed ? KEYEVENT_RAWKEYDOWN : KEYEVENT_KEYUP;
+    event.windows_key_code = VirtualKey(code, key);
+    event.native_key_code = static_cast<int>(MapVirtualKeyW(event.windows_key_code, MAPVK_VK_TO_VSC) << 16);
+    if (code == "ControlRight" || code == "AltRight" || code == "NumpadEnter" ||
+        (event.windows_key_code >= VK_PRIOR && event.windows_key_code <= VK_DOWN) ||
+        event.windows_key_code == VK_INSERT || event.windows_key_code == VK_DELETE)
+      event.native_key_code |= 1 << 24;
+    if (!pressed) event.native_key_code |= static_cast<int>(0xc0000000u);
+    else if (flags & EVENTFLAG_IS_REPEAT) event.native_key_code |= 1 << 30;
+    event.modifiers = flags;
+    event.is_system_key = (flags & EVENTFLAG_ALT_DOWN) != 0;
+    if (event.windows_key_code) host->SendKeyEvent(event);
+    // Text travels separately from the physical key: preserve Unicode and
+    // keyboard layout, while letting Chromium handle editing shortcuts.
+    const bool shortcut = (flags & EVENTFLAG_COMMAND_DOWN) ||
+      ((flags & EVENTFLAG_CONTROL_DOWN) && !(flags & EVENTFLAG_ALT_DOWN)) ||
+      ((flags & EVENTFLAG_ALT_DOWN) && !(flags & EVENTFLAG_CONTROL_DOWN));
+    if (pressed && !shortcut) {
+      const std::u16string text = command->GetString("text").ToString16();
+      for (const char16_t ch : text) {
+        event.type = KEYEVENT_CHAR; event.windows_key_code = ch;
+        event.character = ch; event.unmodified_character = ch;
+        host->SendKeyEvent(event);
+      }
+    }
+    return;
+  }
+  if (type == "ime_cancel") { host->ImeCancelComposition(); return; }
+  if (type == "ime") {
+    const CefString text = command->GetString("text");
+    if (text.length() > 65536) return;
+    if (command->GetBool("commit")) host->ImeCommitText(text, CefRange(UINT32_MAX, UINT32_MAX), 0);
+    else {
+      CefCompositionUnderline underline;
+      underline.range = CefRange(0, static_cast<uint32_t>(text.length()));
+      underline.color = CefColorSetARGB(255, 0, 0, 0);
+      const auto end = static_cast<uint32_t>(text.length());
+      host->ImeSetComposition(text, {underline}, CefRange(UINT32_MAX, UINT32_MAX), CefRange(end, end));
+    }
+    return;
+  }
+  auto coordinate = [&](const char* key, int maximum) {
+    const double value = command->GetType(key) == VTYPE_DOUBLE ? command->GetDouble(key) : command->GetInt(key);
+    return static_cast<int>(std::clamp(value, 0.0, static_cast<double>(maximum - 1)));
+  };
+  CefMouseEvent mouse;
+  mouse.x = coordinate("x", view->width); mouse.y = coordinate("y", view->height);
+  mouse.modifiers = view->input_modifiers | view->mouse_buttons;
+  if (type == "move") host->SendMouseMoveEvent(mouse, false);
+  else if (type == "button") {
+    const int button = command->GetInt("button");
+    if (button < 0 || button > 2) return;
+    const bool pressed = command->GetBool("pressed");
+    const uint32_t flag = button == 0 ? EVENTFLAG_LEFT_MOUSE_BUTTON :
+      button == 1 ? EVENTFLAG_MIDDLE_MOUSE_BUTTON : EVENTFLAG_RIGHT_MOUSE_BUTTON;
+    if (pressed) view->mouse_buttons |= flag; else view->mouse_buttons &= ~flag;
+    mouse.modifiers = view->input_modifiers | view->mouse_buttons;
+    if (pressed) {
+      host->SetFocus(true);
+      const auto now = GetTickCount64();
+      if (view->last_button == button && now - view->last_click_time <= GetDoubleClickTime() &&
+          abs(mouse.x - view->last_click_x) <= GetSystemMetrics(SM_CXDOUBLECLK) / 2 &&
+          abs(mouse.y - view->last_click_y) <= GetSystemMetrics(SM_CYDOUBLECLK) / 2)
+        view->click_count = view->click_count % 3 + 1;
+      else view->click_count = 1;
+      view->last_button = button; view->last_click_time = now;
+      view->last_click_x = mouse.x; view->last_click_y = mouse.y;
+    }
+    host->SendMouseClickEvent(mouse, button == 0 ? MBT_LEFT : button == 1 ? MBT_MIDDLE : MBT_RIGHT,
+      !pressed, view->click_count);
+  } else if (type == "wheel") {
+    auto delta = [&](const char* key) {
+      const double value = command->GetType(key) == VTYPE_DOUBLE ? command->GetDouble(key) : command->GetInt(key);
+      return static_cast<int>(std::clamp(value, -12000.0, 12000.0));
+    };
+    host->SendMouseWheelEvent(mouse, delta("dx"), delta("dy"));
+  }
 }
 class ApplyCommand final : public CefTask {
  public:
@@ -206,6 +363,10 @@ class ApplyCommand final : public CefTask {
     }
     const uint64_t id = Number(command_, "id");
     auto it = views.find(id);
+    if (op == "input") {
+      if (it != views.end()) ApplyInput(it->second, command_);
+      return;
+    }
     if (op == "stop") {
       if (it != views.end()) { it->second->stopped = true; if (it->second->browser) it->second->browser->GetHost()->CloseBrowser(true); }
       return;

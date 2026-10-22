@@ -39,6 +39,7 @@ must_use_candidate = "allow"
 too_many_lines = "allow"
 
 [dependencies]
+nida-browser-protocol = { path = "browser/protocol" }
 # Graphics
 wgpu = "30.0"
 winit = "0.30"
@@ -276,7 +277,7 @@ face-detection = ["dep:ort", "dep:ndarray"]
 html = ["dep:servo", "dep:url", "dep:euclid", "dep:keyboard-types"]
 # Windows CEF is an app-local helper, built separately with browser/cef/CMakeLists.txt.
 # Select with --no-default-features --features screen-capture,windows-browser.
-windows-browser = ["dep:url"]
+windows-browser = ["dep:url", "dep:keyboard-types"]
 # Depth sensor / point-cloud input (Kinect v1 via libfreenect). Default-on
 # (opt out with `--no-default-features`): only the FreenectBackend module is
 # gated — the DepthSensorManager integration surface (manager, deck integration,
@@ -368,6 +369,11 @@ harness = false
 [profile.dev]
 debug = "line-tables-only"
 incremental = false
+
+# The CEF decoder touches every pixel. Unoptimized 1080p conversion alone can
+# exceed 100 ms; keep this isolated hot path fast while the app stays debuggable.
+[profile.dev.package.nida-browser-protocol]
+opt-level = 3
 
 [profile.release]
 opt-level = 3

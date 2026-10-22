@@ -716,7 +716,7 @@ impl UIRunner {
         // Create pending output windows (API-driven in headless)
         host.create_pending_outputs(varda);
         host.refresh_monitors(varda);
-        #[cfg(feature = "html")]
+        #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
         host.create_pending_interactive(varda);
 
         // Publish the cued channel(s) so off-air previews render live (issue #72).
@@ -742,7 +742,7 @@ impl UIRunner {
 
         // Render output windows + publish state
         varda.render_outputs();
-        #[cfg(feature = "html")]
+        #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
         varda.render_interactive();
         self.publish_counter += 1;
         if self.publish_counter.is_multiple_of(10) {
@@ -1004,7 +1004,7 @@ impl UIRunner {
             if let Some(kept) = kept {
                 varda.note_screen_rate(&kept);
             }
-            #[cfg(feature = "html")]
+            #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
             varda.create_pending_interactive(event_loop);
         }
 
@@ -1572,8 +1572,12 @@ impl UIRunner {
             );
             // Interactive HTML windows are winit windows: drawn here, on the
             // main thread, where winit may be asked for things.
-            #[cfg(feature = "html")]
-            varda.render_interactive();
+            #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+            {
+                let started = std::time::Instant::now();
+                varda.render_interactive();
+                self.ui_parts.add("browser interaction", started.elapsed());
+            }
         }
 
         // Previews, gamma-encoded from the engine's latest frame for the
@@ -2047,7 +2051,7 @@ mod tests {
                 .set(self.monitors_refreshed.get() + 1);
         }
 
-        #[cfg(feature = "html")]
+        #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
         fn create_pending_interactive(&self, _varda: &mut VardaApp) {}
     }
 

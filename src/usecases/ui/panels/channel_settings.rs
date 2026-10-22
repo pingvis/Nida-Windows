@@ -329,6 +329,11 @@ pub(super) fn render_channel_settings(
         // Wide enough for the controls beside the picture, their sliders
         // long.
         .default_size(egui::vec2(1180.0, 680.0))
+        .max_width(if layer.is_some_and(|deck| deck.is_html) {
+            (ctx.content_rect().width() - 32.0).max(0.0)
+        } else {
+            f32::INFINITY
+        })
         .show(ctx, |ui| {
             render_body(ui, ch, layer, &open, data, actions);
         });
@@ -762,9 +767,16 @@ fn render_editor(
     // Beside unless the operator put them under it, which is kept for every
     // show (see `window_choices`).
     let chosen: Option<bool> = ui.ctx().data(|d| d.get_temp(beside_id()));
-    let beside = chosen.unwrap_or(!data.window_choices.settings_controls_below);
+    let beside = chosen.unwrap_or(!data.window_choices.settings_controls_below)
+        && !(layer.is_some_and(|deck| deck.is_html) && ui.available_width() < 600.0);
     ui.horizontal(|ui| {
-        ui.label(egui::RichText::new(heading).strong());
+        // Horizontal labels default to extending their row. In particular an
+        // old browser title may contain a whole percent-encoded HTML document.
+        let heading_width = (ui.available_width() - 200.0).max(0.0);
+        ui.add_sized(
+            [heading_width, ui.text_style_height(&egui::TextStyle::Body)],
+            egui::Label::new(egui::RichText::new(heading).strong()).truncate(),
+        );
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             for (value, label, hover) in [
                 (true, "Beside", "Tabs beside the picture"),
@@ -1022,7 +1034,12 @@ const OWN_TABS: [&str; 7] = [
 /// all of it with transparent bars, Fill fills the frame and cuts the edges
 /// — how often and how large it is drawn, and a generator's own parameters.
 fn render_source(ui: &mut egui::Ui, deck: &DeckUIInfo, data: &UIData, actions: &mut UIActions) {
-    ui.label(egui::RichText::new(&deck.name).strong());
+    if deck.is_html {
+        super::deck_detail::render_browser_source_settings(ui, deck, data, actions);
+        ui.separator();
+    } else {
+        ui.add(egui::Label::new(egui::RichText::new(&deck.name).strong()).truncate());
+    }
     if deck.scaling_mode.is_some() {
         ui.label(
             egui::RichText::new(
@@ -2147,6 +2164,132 @@ mod tests {
     fn layer_harness(data: UIData) -> egui_kittest::Harness<'static, Seen> {
         let deck = data.channels[0].decks[0].uuid.clone();
         harness(data, move |ctx| open_layer(ctx, &deck))
+    }
+
+    #[test]
+    fn browser_source_controls_leave_interaction_on_the_preview() {
+        for active in [false, true] {
+            let mut data = UIData::test_fixture();
+            let deck = &mut data.channels[0].decks[0];
+            deck.is_html = true;
+            deck.name = "🌐 Inline HTML".into();
+            deck.is_html_interactive = active;
+            deck.browser = Some(crate::html::BrowserSnapshot {
+                settings: crate::html::BrowserSettings { url: "data:text/html,<button>Cookies</button>".into(), ..Default::default() },
+                ready: true, interactive: true, error: None,
+            });
+            let uuid = deck.uuid.clone();
+            let mut h = layer_harness(data);
+            assert!(!h.state().commands.iter().any(|c| matches!(c, EngineCommand::OpenHtmlInteractive { .. })));
+            h.get_by_label("Source").click();
+            h.run();
+            let apply = h.get_by_label("Apply source settings").rect();
+            let reload = h.get_by_label("⟳ Reload").rect();
+            assert!((apply.center().y - reload.center().y).abs() < 1.0);
+            assert!(h.query_by_label("🖱 Interact…").is_none());
+            assert!(h.query_by_label("🖱 Close interaction").is_none());
+            h.get_by_label("🖱 Interact").click();
+            h.run();
+            assert!(h.state().commands.iter().any(|c|
+                matches!(c, EngineCommand::OpenHtmlInteractive { deck_uuid } if deck_uuid == &uuid)));
+            assert!(!h.state().commands.iter().any(|c| matches!(c, EngineCommand::CloseHtmlInteractive)));
+        }
+    }
+
+    #[test]
+    fn browser_url_draft_survives_switching_to_an_ordinary_input() {
+        use egui::accesskit::Role;
+        let mut data = UIData::test_fixture();
+        data.selected_deck = Some((0, 0));
+        let browser = &mut data.channels[0].decks[0];
+        browser.name = "🌐 Inline HTML".into();
+        browser.is_html = true;
+        browser.generator.params.clear();
+        browser.browser = Some(crate::html::BrowserSnapshot {
+            settings: crate::html::BrowserSettings {
+                url: format!("data:text/html,{}", "%3Cp%3Etest%3C%2Fp%3E".repeat(500)),
+                width: 480, height: 720, fps: 24,
+            },
+            ready: true, interactive: false, error: None,
+        });
+        let uuid = browser.uuid.clone();
+        let mut opened = false;
+        let mut h = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(960.0, 900.0))
+            .build_ui_state(move |ui, state: &mut (UIData, Vec<EngineCommand>)| {
+                if !opened { open_layer(ui.ctx(), &uuid); opened = true; }
+                let mut actions = UIActions::new();
+                render_channel_settings(ui.ctx(), ui.max_rect(), &state.0, &mut actions);
+                if let Some(selected) = actions.session.select_deck {
+                    state.0.selected_deck = Some(selected);
+                }
+                state.1.extend(actions.commands);
+            }, (data, Vec::new()));
+        h.run();
+        h.get_by_label("Source").click();
+        h.run();
+        h.get_by_role(Role::TextInput).focus();
+        h.run();
+        h.key_press(egui::Key::End);
+        h.run();
+        h.get_by_role(Role::TextInput).type_text("%20draft");
+        h.run();
+        let draft = h.get_by_role(Role::TextInput).value().unwrap();
+        assert!(draft.ends_with("%20draft"));
+        let ordinary = h.state().0.channels[0].decks[1].name.clone();
+        h.get_by_label(&format!("{ordinary} layer")).click();
+        h.run();
+        assert_eq!(h.state().0.selected_deck, Some((0, 1)));
+        assert!(h.get_by_label("Ch A — Input Settings").rect().width() <= 960.0);
+        h.get_by_label("🌐 Inline HTML layer").click();
+        h.run();
+        h.get_by_label("Source").click();
+        h.run();
+        assert_eq!(h.state().0.selected_deck, Some((0, 0)));
+        assert_eq!(h.get_by_role(Role::TextInput).value().as_deref(), Some(draft.as_str()));
+        h.get_by_label("Apply source settings").click();
+        h.run();
+        assert!(h.state().1.iter().any(|c| matches!(c, EngineCommand::ConfigureBrowserDeck { settings, .. }
+            if settings.url == draft && (settings.width, settings.height, settings.fps) == (480, 720, 24))));
+    }
+
+    #[test]
+    fn browser_settings_keep_long_urls_inside_the_window() {
+        use egui::accesskit::Role;
+        for width in [1400.0, 960.0] {
+            for url in [
+                format!("data:text/html,{}", "%3Cmain%3Ehello%3C%2Fmain%3E".repeat(1000)),
+                format!("https://example.com/overlay?token={}", "a".repeat(4000)),
+            ] {
+                let mut data = UIData::test_fixture();
+                let deck = &mut data.channels[0].decks[0];
+                // The legacy title deliberately reproduces the original cause,
+                // independently of the new short names assigned by the engine.
+                deck.name = format!("🌐 {url}");
+                deck.is_html = true;
+                deck.generator.params.clear();
+                deck.browser = Some(crate::html::BrowserSnapshot {
+                    settings: crate::html::BrowserSettings { url: url.clone(), ..Default::default() },
+                    ready: true, interactive: false, error: None,
+                });
+                let uuid = deck.uuid.clone();
+                let mut h = harness_of_size(data, move |ctx| open_layer(ctx, &uuid), egui::vec2(width, 900.0));
+                let window = h.get_by_label("Ch A — Input Settings").rect();
+                assert!(window.width() <= width, "legacy title expanded window: {window:?}");
+                h.get_by_label("Source").click();
+                h.run();
+                let window = h.get_by_label("Ch A — Input Settings").rect();
+                let field = h.get_by_role(Role::TextInput).rect();
+                assert!(window.width() <= width, "URL expanded window: {window:?}");
+                assert!(field.left() >= window.left() && field.right() <= window.right(), "{field:?} outside {window:?}");
+                assert!(h.query_by_label("🖱 Interactive").is_none());
+                h.get_by_label("Apply source settings").click();
+                h.run();
+                assert!(h.state().commands.iter().any(|c| matches!(c,
+                    EngineCommand::ConfigureBrowserDeck { settings, .. } if settings.url == url)));
+                assert!(!h.state().commands.iter().any(|c| matches!(c, EngineCommand::OpenHtmlInteractive { .. })));
+            }
+        }
     }
 
     #[test]
