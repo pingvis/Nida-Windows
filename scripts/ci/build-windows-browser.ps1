@@ -23,3 +23,8 @@ Copy-Item -LiteralPath (Join-Path $CefRoot 'nida-cef-inputs.json') -Destination 
 # grant at first browser use, including for extracted portable packages.
 & icacls $browser /grant '*S-1-15-2-2:(OI)(CI)(RX)' /T /Q | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'CEF sandbox runtime ACL setup failed.' }
+
+# Extract notices from the exact Chromium runtime being packaged, rather than a
+# generic web link or a different version's credits.
+& python (Join-Path $PSScriptRoot 'test-browser-host.py') (Join-Path $browser 'nida-browser-host.exe') --credits-output (Join-Path $browser 'Chromium-credits.html')
+if ($LASTEXITCODE -ne 0) { throw 'Could not export exact Chromium third-party notices.' }

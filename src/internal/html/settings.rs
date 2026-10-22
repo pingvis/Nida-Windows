@@ -57,6 +57,7 @@ impl BrowserSettings {
 pub struct BrowserSnapshot {
     pub settings: BrowserSettings,
     pub error: Option<String>,
+    pub ready: bool,
     pub interactive: bool,
 }
 

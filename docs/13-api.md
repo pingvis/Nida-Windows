@@ -637,6 +637,7 @@ ordinals and sequence step indices — see [/spec/api-addressing.md].
 | `DELETE` | `/api/decks/{deck_uuid}` |  |
 | `PUT` | `/api/decks/{deck_uuid}/blend-mode` |  |
 | `PUT` | `/api/decks/{deck_uuid}/color` |  |
+| `PUT` | `/api/decks/{deck_uuid}/html` |  |
 | `POST` | `/api/decks/{deck_uuid}/html/interactive` |  |
 | `POST` | `/api/decks/{deck_uuid}/html/reload` |  |
 | `PUT` | `/api/decks/{deck_uuid}/mask` | Set or clear a layer's own mask: a shape cut out of it, or kept alone. |

@@ -52,6 +52,9 @@ pub fn read_message(input: &mut impl Read) -> io::Result<Message> {
     // in an sRGB texture. Unpremultiply in the browser's byte colour space.
     for pixel in pixels.chunks_exact_mut(4) {
         pixel.swap(0, 2);
+        if pixel[3] == 255 {
+            continue;
+        }
         let alpha = u32::from(pixel[3]);
         for channel in &mut pixel[..3] {
             *channel = if alpha == 0 {

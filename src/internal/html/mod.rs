@@ -101,6 +101,7 @@ struct HtmlInstance {
     view: wgpu::TextureView,
     /// True once at least one frame (or the placeholder) has been written.
     initialized: bool,
+    painted: bool,
     /// Stable id addressing this instance on the servo thread.
     #[cfg_attr(not(feature = "html"), allow(dead_code))]
     id: HtmlId,
@@ -249,6 +250,7 @@ impl HtmlManager {
             texture,
             view,
             initialized: false,
+            painted: false,
             id,
             frame,
             settings,
@@ -306,6 +308,7 @@ impl HtmlManager {
                 {
                     Self::upload(queue, instance, &frame.data);
                     instance.initialized = true;
+                    instance.painted = true;
                 }
             } else if !instance.initialized {
                 let placeholder = placeholder_frame(instance.width, instance.height);
@@ -396,6 +399,7 @@ impl HtmlManager {
             .map(|instance| BrowserSnapshot {
                 settings: instance.settings.clone(),
                 error: instance.error.clone(),
+                ready: instance.painted,
                 interactive: cfg!(feature = "html")
                     && !cfg!(all(target_os = "windows", feature = "windows-browser")),
             })
@@ -470,6 +474,7 @@ impl HtmlManager {
             0
         };
         instance.initialized = false;
+        instance.painted = false;
         instance.error = None;
         if let Ok(mut frame) = instance.frame.try_lock() {
             *frame = None;
@@ -483,6 +488,7 @@ impl HtmlManager {
             instance.url = url.to_string();
             instance.settings.url = url.to_string();
             instance.initialized = false;
+            instance.painted = false;
             #[cfg(all(target_os = "windows", feature = "windows-browser"))]
             if let Some(cef) = &self.cef {
                 instance.generation += 1;
@@ -915,7 +921,7 @@ background:transparent}</style></head><body></body></html>";
         while start.elapsed() < Duration::from_secs(30) {
             mgr.update(&gpu.device, &gpu.queue);
             px = center_pixel(&gpu, &mgr, idx);
-            if px[3] < 255 {
+            if px[3] < 255 && mgr.instances[idx].as_ref().unwrap().painted {
                 break;
             }
             std::thread::sleep(Duration::from_millis(16));

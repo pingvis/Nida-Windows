@@ -76,8 +76,9 @@ uploads a browser-enabled evaluation ZIP; it never creates releases or tags.
 
 CEF is pinned to `152.0.15+gb3d72fb+chromium-152.0.7977.169` and its SDK SHA256 in
 `setup-windows-cef.ps1`. Headers, wrapper, bootstrap and runtime must be updated
-together. The archive includes the exact SDK URL/hash, CEF license, version
-header, resources, locales and hashed payload manifest. Browser binaries receive
+together. The archive includes the exact SDK URL/hash, CEF license, Chromium credits
+exported from that runtime, version header, resources, locales and hashed
+payload manifest. Browser binaries receive
 the same import checks as the core application. Resource files are explicitly
 copied because PE import scanning cannot discover them.
 
@@ -89,9 +90,8 @@ They are not included in ZIPs or installer payloads. Multiple Nida instances
 cannot concurrently own this default profile.
 
 CEF/Chromium adds substantial disk and memory use and requires ongoing security
-updates. The included CEF license is not a complete replacement for Chromium's
-third-party notices: public distribution must also carry the exact Chromium
-credits and applicable sources/build recipes. Until those distribution materials
-and native provider/performance checks are complete, this remains an experimental
-CI artifact, not a supported public release. Installer browser payload validation
+updates. Public distribution must also carry the applicable sources/build recipes,
+following the existing source-archive policy. Until native provider/performance
+checks and public-distribution materials are complete, this remains an
+experimental CI artifact, not a supported public release. Installer browser payload validation
 is not enabled by default.

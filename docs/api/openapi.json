@@ -3654,6 +3654,50 @@
         }
       }
     },
+    "/api/decks/{deck_uuid}/html": {
+      "put": {
+        "tags": [
+          "Decks"
+        ],
+        "operationId": "configure_browser_deck",
+        "parameters": [
+          {
+            "name": "deck_uuid",
+            "in": "path",
+            "description": "Deck UUID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HtmlSourceBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Deck not found"
+          }
+        }
+      }
+    },
     "/api/decks/{deck_uuid}/html/interactive": {
       "post": {
         "tags": [
@@ -14190,6 +14234,34 @@
           }
         }
       },
+      "BrowserSettings": {
+        "type": "object",
+        "description": "Authored browser viewport, independent of the show's output resolution.",
+        "properties": {
+          "fps": {
+            "type": "integer",
+            "format": "int32",
+            "default": 30,
+            "minimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1080,
+            "minimum": 0
+          },
+          "url": {
+            "type": "string",
+            "default": ""
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1920,
+            "minimum": 0
+          }
+        }
+      },
       "BusAutoBody": {
         "type": "object",
         "description": "Body for an `AUTO` take.",
@@ -15873,16 +15945,11 @@
         }
       },
       "HtmlSourceBody": {
-        "type": "object",
-        "required": [
-          "url"
-        ],
-        "properties": {
-          "url": {
-            "type": "string",
-            "description": "HTML content URL or local file path."
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BrowserSettings"
           }
-        }
+        ]
       },
       "HullMode": {
         "type": "string",

@@ -41,7 +41,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Packaged application cannot start.' }
         if ('windows-browser' -in $metadata.features) {
             $browser = Join-Path $package 'browser'
-            foreach ($required in @('nida-browser-host.exe', 'nida-browser-host.dll', 'libcef.dll', 'icudtl.dat', 'resources.pak', 'locales', 'CEF-LICENSE.txt', 'nida-cef-inputs.json')) {
+            foreach ($required in @('nida-browser-host.exe', 'nida-browser-host.dll', 'libcef.dll', 'icudtl.dat', 'resources.pak', 'locales', 'CEF-LICENSE.txt', 'Chromium-credits.html', 'nida-cef-inputs.json')) {
                 if (!(Test-Path -LiteralPath (Join-Path $browser $required))) { throw "Browser payload is missing $required" }
             }
             & (Join-Path $env:SystemRoot 'System32/icacls.exe') $browser /grant '*S-1-15-2-2:(OI)(CI)(RX)' /T /Q | Out-Null

@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <future>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -37,9 +39,9 @@ std::map<uint64_t, Packet> pending_frames, pending_status;
 bool output_stopped = false;
 
 void Publish(Packet packet) {
-  std::unique_lock lock(output_mutex, std::defer_lock);
-  if (packet.error) lock.lock();
-  else if (!lock.try_lock()) return;
+  // The writer only swaps maps under this lock; pipe writes happen outside it.
+  // Never drop a static page's sole paint callback because a swap is in flight.
+  std::unique_lock lock(output_mutex);
   if (output_stopped) return;
   auto& pending = packet.error ? pending_status : pending_frames;
   pending.insert_or_assign(packet.id, std::move(packet));
@@ -80,6 +82,26 @@ void WritePackets() {
 class View;
 std::map<uint64_t, CefRefPtr<View>> views; // CEF UI thread only.
 bool closing = false;
+bool context_ready = false;
+std::wstring credits_output;
+bool credits_ok = false;
+
+class CreditsWriter final : public CefStringVisitor {
+ public:
+  explicit CreditsWriter(CefRefPtr<CefBrowser> browser) : browser_(browser) {}
+  void Visit(const CefString& source) override {
+    const std::string html = source.ToString();
+    std::ofstream file(std::filesystem::path(credits_output), std::ios::binary);
+    file.write(html.data(), static_cast<std::streamsize>(html.size()));
+    file.close();
+    credits_ok = file.good() && html.size() > 10000;
+    closing = true;
+    browser_->GetHost()->CloseBrowser(true);
+  }
+ private:
+  CefRefPtr<CefBrowser> browser_;
+  IMPLEMENT_REFCOUNTING(CreditsWriter);
+};
 
 class View final : public CefClient, public CefRenderHandler,
                    public CefLifeSpanHandler, public CefLoadHandler,
@@ -117,7 +139,7 @@ class View final : public CefClient, public CefRenderHandler,
   }
   void OnPaint(CefRefPtr<CefBrowser>, PaintElementType type, const RectList&,
                const void* buffer, int w, int h) override {
-    if (stopped || type != PET_VIEW || w != width || h != height) return;
+    if (!credits_output.empty() || stopped || type != PET_VIEW || w != width || h != height) return;
     Packet packet;
     packet.id = id; packet.generation = generation;
     packet.width = w; packet.height = h;
@@ -125,11 +147,19 @@ class View final : public CefClient, public CefRenderHandler,
     packet.data.assign(bytes, bytes + static_cast<size_t>(w) * h * 4);
     Publish(std::move(packet));
   }
-  void OnLoadEnd(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame> frame, int status) override {
+  void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int status) override {
+    if (!credits_output.empty()) {
+      if (frame->IsMain() && frame->GetURL().ToString().rfind("chrome://credits", 0) == 0)
+        frame->GetSource(new CreditsWriter(browser));
+      return;
+    }
     if (frame->IsMain()) Status(id, generation, status >= 400 ? "Website returned an HTTP error. Refresh to retry." : "");
   }
-  void OnLoadError(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame> frame, ErrorCode code,
+  void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode code,
                    const CefString&, const CefString&) override {
+    if (!credits_output.empty() && frame->IsMain() && code != ERR_ABORTED) {
+      closing = true; browser->GetHost()->CloseBrowser(true); return;
+    }
     if (frame->IsMain() && code != ERR_ABORTED)
       Status(id, generation, "Website could not load. Check the URL and connection, then refresh.");
   }
@@ -160,6 +190,7 @@ class ApplyCommand final : public CefTask {
   ApplyCommand(CefRefPtr<CefDictionaryValue> d, std::shared_ptr<std::promise<void>> done)
       : command_(d), done_(std::move(done)) {}
   void Execute() override {
+    if (!context_ready) { CefPostDelayedTask(TID_UI, this, 10); return; }
     Apply(); done_->set_value();
   }
  private:
@@ -237,8 +268,21 @@ void ReadCommands() {
   }
   auto command = CefDictionaryValue::Create(); command->SetString("op", "shutdown"); Dispatch(command);
 }
-class Application final : public CefApp {
+class Application final : public CefApp, public CefBrowserProcessHandler {
  public:
+  CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; }
+  void OnContextInitialized() override {
+    context_ready = true;
+    if (credits_output.empty()) return;
+    CefRefPtr<View> view = new View;
+    view->url = "chrome://credits";
+    views.emplace(0, view);
+    CefWindowInfo window; window.SetAsWindowless(nullptr);
+    CefBrowserSettings settings;
+    if (!CefBrowserHost::CreateBrowser(window, view, "about:blank", settings, nullptr, nullptr)) {
+      views.clear(); CefQuitMessageLoop();
+    }
+  }
   void OnBeforeCommandLineProcessing(const CefString&, CefRefPtr<CefCommandLine> command) override {
     // Off-air sources retain their live chat session and JS timers.
     command->AppendSwitch("disable-background-timer-throttling");
@@ -265,7 +309,13 @@ CEF_BOOTSTRAP_EXPORT int RunWinMain(HINSTANCE instance, LPWSTR, int, void* sandb
   CefString(&settings.root_cache_path) = cache;
   CefString(&settings.cache_path) = cache.ToWString() + L"\\Default";
   settings.persist_session_cookies = true;
+  credits_output = command->GetSwitchValue("credits-output").ToWString();
   if (!CefInitialize(args, settings, app, sandbox_info)) return 3;
+  if (!credits_output.empty()) {
+    CefRunMessageLoop();
+    CefShutdown();
+    return credits_ok ? 0 : 4;
+  }
   std::thread writer(WritePackets), reader(ReadCommands);
   CefRunMessageLoop();
   reader.join();

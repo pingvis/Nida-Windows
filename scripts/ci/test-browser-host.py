@@ -18,7 +18,7 @@ import threading
 import time
 
 PAGE = b'''<!doctype html><style>html,body{margin:0;background:transparent}#box{width:40px;height:40px}</style>
-<div id="box"></div><script>
+<div id="box"></div><div style="position:absolute;left:60px;top:0;width:30px;height:30px;background:rgba(128,64,0,0.5)"></div><script>
 let n=+(localStorage.getItem('nida-test')||0)+1;localStorage.setItem('nida-test',n);
 let box=document.getElementById('box');
 new WebSocket('ws://'+location.host+'/chat').onmessage=()=>{box.style.background=n===1?'red':'lime'};
@@ -27,6 +27,8 @@ addEventListener('resize',()=>{box.style.background=n===1?'blue':'yellow'});
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+
     def log_message(self, *_):
         pass
 
@@ -47,6 +49,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         else:
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', str(len(PAGE)))
             self.send_header('Cache-Control', 'no-store')
             self.end_headers()
             self.wfile.write(PAGE)
@@ -116,6 +119,9 @@ def exercise(helper):
                 # startup placeholder before checking transparent background.
                 clear = (100 * width + 100) * 4
                 assert data[clear + 3] == 0, 'page background lost transparency'
+                translucent = (10 * width + 70) * 4
+                actual = data[translucent:translucent + 4]
+                assert all(abs(a - b) <= 2 for a, b in zip(actual, (0, 32, 64, 128))), 'CEF premultiplied alpha contract changed'
                 return
             raise AssertionError('expected browser pixels did not arrive')
 
@@ -148,5 +154,17 @@ def exercise(helper):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('helper', type=Path)
+    parser.add_argument('--credits-output', type=Path)
     args = parser.parse_args()
-    exercise(args.helper.resolve(strict=True))
+    helper = args.helper.resolve(strict=True)
+    if args.credits_output:
+        destination = args.credits_output.resolve()
+        with tempfile.TemporaryDirectory(prefix='Nida Chromium credits ') as work:
+            subprocess.run([str(helper), '--cache-path=' + work + '/profile',
+                            '--credits-output=' + str(destination), '--disable-gpu'],
+                           cwd=work, check=True, timeout=60,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        text = destination.read_text(encoding='utf-8').lower()
+        assert len(text) > 10000 and 'license' in text, 'Chromium credits were not exported'
+    else:
+        exercise(helper)

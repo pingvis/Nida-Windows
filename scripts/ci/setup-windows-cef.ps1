@@ -3,6 +3,7 @@
 param([Parameter(Mandatory)][string]$ToolsDirectory)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 if (!$IsWindows) { throw 'CEF setup requires Windows x64.' }
 $version = '152.0.15+gb3d72fb+chromium-152.0.7977.169'
 $name = "cef_binary_${version}_windows64"
@@ -12,7 +13,7 @@ New-Item -ItemType Directory -Force -Path $ToolsDirectory | Out-Null
 $ToolsDirectory = (Resolve-Path -LiteralPath $ToolsDirectory).Path
 $archive = Join-Path $ToolsDirectory "$name.tar.bz2"
 $cef = Join-Path $ToolsDirectory $name
-if (!(Test-Path -LiteralPath $archive)) { Invoke-WebRequest -Uri $url -OutFile $archive }
+if (!(Test-Path -LiteralPath $archive)) { Invoke-WebRequest -Uri $url -OutFile $archive -TimeoutSec 600 }
 if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $sha256) { throw 'CEF SDK checksum mismatch.' }
 # Always validate the archive even when reusing an extracted SDK.
 if (!(Test-Path -LiteralPath $cef)) {

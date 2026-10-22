@@ -2420,10 +2420,28 @@ mod tests {
         let json = serde_json::to_string(&source).unwrap();
         let restored: SourceConfig = serde_json::from_str(&json).unwrap();
         match restored {
-            SourceConfig::Html { url, .. } => {
+            SourceConfig::Html {
+                url,
+                width,
+                height,
+                fps,
+            } => {
                 assert_eq!(url, "https://example.com/visuals.html");
+                assert_eq!((width, height, fps), (640, 960, 24));
             }
             _ => panic!("Expected Html source"),
+        }
+    }
+
+    #[test]
+    fn legacy_browser_source_keeps_show_resolution_defaults() {
+        let source: SourceConfig =
+            serde_json::from_str(r#"{"type":"Html","url":"https://example.com/chat"}"#).unwrap();
+        match source {
+            SourceConfig::Html {
+                width, height, fps, ..
+            } => assert_eq!((width, height, fps), (0, 0, 30)),
+            _ => panic!("expected browser source"),
         }
     }
 

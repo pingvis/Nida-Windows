@@ -590,7 +590,7 @@ impl VardaApp {
             .iter()
             .flat_map(|ch| &ch.decks)
             .filter_map(|slot| match slot.deck.external_source_kind() {
-                Some(ExternalSourceKind::Html(idx)) => Some(idx),
+                Some(crate::deck::ExternalSourceKind::Html(idx)) => Some(idx),
                 _ => None,
             })
             .collect();

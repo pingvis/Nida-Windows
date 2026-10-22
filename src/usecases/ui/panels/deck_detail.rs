@@ -772,6 +772,7 @@ pub(super) fn render_selected_deck_detail(
                             ui.label(egui::RichText::new("🌐 Website / Browser").strong());
                             if let Some(browser) = &deck.browser {
                                 if let Some(error) = &browser.error { ui.colored_label(egui::Color32::YELLOW, error); }
+                                else if !browser.ready { ui.label("Loading website…"); }
                                 let key = ui.id().with(("browser_settings", &deck.uuid));
                                 let mut settings = ui.data(|d| d.get_temp::<crate::html::BrowserSettings>(key)).unwrap_or_else(|| browser.settings.clone());
                                 ui.label("URL");
