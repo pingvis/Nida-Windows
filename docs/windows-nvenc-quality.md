@@ -96,6 +96,8 @@ Validation on the native Windows host, using core Windows features
   Keyframe cadence, sufficient received frames, monotonic timestamps, video
   and audio decode, tone presence and bounded stop/reopen checks passed.
 - All **87 UI integration tests passed**; the application binary built.
+- Complete core Windows library suite: **3,430 passed, zero failed, nine
+  ignored**, serially outside the filesystem/network sandbox, in 445.84 seconds.
 - Production library/binary/streaming-target Clippy with warnings denied
   passed. The standalone harness's all-target Clippy passed. Existing vendor
   wgpu-hal build-script warnings remain.
@@ -104,9 +106,6 @@ Validation on the native Windows host, using core Windows features
   whole-repository all-target Clippy still fails on existing assertion-style
   lints in `main_program`, `add_input`, `persistence_integration` and `rundown`
   tests. No lints or test assertions were suppressed.
-
-The complete core library regression is the remaining validation at the time
-of this intermediate update; its result will be recorded before publication.
 
 Added hardware checks cover limited-range Y/Cb/Cr values through encode/decode
 at an unaligned frame width, and a five-minute 1440p60 local RTMP soak using
