@@ -66,31 +66,31 @@ impl FlvWriter {
     /// One video tag: the configuration record (`header`) or a frame.
     fn tag(&self, out: &mut Vec<u8>, ms: u32, key: bool, header: bool, payload: &[u8]) {
         let frame_type: u8 = if key { 1 } else { 2 };
-        let mut body = Vec::with_capacity(payload.len() + 8);
-        match self.codec {
-            VideoCodec::H264 => {
-                // Frame type and AVC; a sequence header or units; no
-                // composition offset, there being no B-frames.
-                body.push(frame_type << 4 | 7);
-                body.push(u8::from(!header));
-                body.extend_from_slice(&[0, 0, 0]);
-            }
-            VideoCodec::Hevc => {
-                // Enhanced FLV: the extended header, frame type, sequence
-                // start or frames with no composition offset, and the codec.
-                let packet: u8 = if header { 0 } else { 3 };
-                body.push(0x80 | frame_type << 4 | packet);
-                body.extend_from_slice(b"hvc1");
-            }
-        }
-        body.extend_from_slice(payload);
-        let size = u32::try_from(body.len()).unwrap_or(u32::MAX) & 0x00FF_FFFF;
+        // Both codec headers are five bytes. Append directly to the output:
+        // a temporary body would allocate and copy every picture a second time.
+        let size = u32::try_from(payload.len().saturating_add(5)).unwrap_or(u32::MAX) & 0x00FF_FFFF;
         out.push(VIDEO);
         out.extend_from_slice(&size.to_be_bytes()[1..]);
         out.extend_from_slice(&(ms & 0x00FF_FFFF).to_be_bytes()[1..]);
         out.push((ms >> 24) as u8);
         out.extend_from_slice(&[0, 0, 0]);
-        out.extend_from_slice(&body);
+        match self.codec {
+            VideoCodec::H264 => {
+                // Frame type and AVC; a sequence header or units; no
+                // composition offset, there being no B-frames.
+                out.push(frame_type << 4 | 7);
+                out.push(u8::from(!header));
+                out.extend_from_slice(&[0, 0, 0]);
+            }
+            VideoCodec::Hevc => {
+                // Enhanced FLV: the extended header, frame type, sequence
+                // start or frames with no composition offset, and the codec.
+                let packet: u8 = if header { 0 } else { 3 };
+                out.push(0x80 | frame_type << 4 | packet);
+                out.extend_from_slice(b"hvc1");
+            }
+        }
+        out.extend_from_slice(payload);
         out.extend_from_slice(&(size + 11).to_be_bytes());
     }
 }
@@ -160,18 +160,34 @@ mod tests {
         let filler = unit(&[0x0c, 0xff, 0xff, 0xff, 0x80]);
         let sei = unit(&[0x06, 5, 0]);
         let h264 = [sei.clone(), idr.clone(), filler.clone()].concat();
-        assert_eq!(&*without_filler(&h264, VideoCodec::H264), [sei, idr.clone()].concat().as_slice());
-        assert!(matches!(without_filler(&idr, VideoCodec::H264), std::borrow::Cow::Borrowed(_)));
+        assert_eq!(
+            &*without_filler(&h264, VideoCodec::H264),
+            [sei, idr.clone()].concat().as_slice()
+        );
+        assert!(matches!(
+            without_filler(&idr, VideoCodec::H264),
+            std::borrow::Cow::Borrowed(_)
+        ));
 
         let hevc_slice = unit(&[0x26, 0x01, 9]);
         let hevc_filler = unit(&[0x4c, 0x01, 0xff, 0xff]);
         let hevc = [hevc_slice.clone(), hevc_filler].concat();
-        assert_eq!(&*without_filler(&hevc, VideoCodec::Hevc), hevc_slice.as_slice());
+        assert_eq!(
+            &*without_filler(&hevc, VideoCodec::Hevc),
+            hevc_slice.as_slice()
+        );
         // H.264 filler read as HEVC is a slice, and kept.
-        assert_eq!(&*without_filler(&filler, VideoCodec::Hevc), filler.as_slice());
+        assert_eq!(
+            &*without_filler(&filler, VideoCodec::Hevc),
+            filler.as_slice()
+        );
 
         let cut = [idr.clone(), vec![0, 0, 0, 9, 1]].concat();
-        assert_eq!(&*without_filler(&cut, VideoCodec::H264), cut.as_slice(), "not read whole: as it is");
+        assert_eq!(
+            &*without_filler(&cut, VideoCodec::H264),
+            cut.as_slice(),
+            "not read whole: as it is"
+        );
     }
 
     /// The tags in an FLV file after its header: (type, time, body).
@@ -232,7 +248,9 @@ mod tests {
     fn nothing_before_the_configuration_record() {
         let mut flv = FlvWriter::new(VideoCodec::H264);
         assert!(flv.frame(0, false, &[0, 0, 0, 1, 0x41], None).is_empty());
-        assert!(!flv.frame(20, true, &[0, 0, 0, 1, 0x65], Some(&[1])).is_empty());
+        assert!(!flv
+            .frame(20, true, &[0, 0, 0, 1, 0x65], Some(&[1]))
+            .is_empty());
     }
 
     /// Times past 2^24 ms use the extended byte.
