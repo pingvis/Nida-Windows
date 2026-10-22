@@ -126,6 +126,23 @@ Windows. Build it with the exact SDK selected by `setup-windows-cef.ps1`:
 
 For development without packaging:
 
+To build and open the debug GUI with a transparent animated chat demo already
+added, run this from x64 Developer PowerShell 7 (Rust, Visual Studio C++ tools,
+CMake and Python are required):
+
+```powershell
+./scripts/run-windows-browser-debug.ps1
+# Or test your actual overlay URL:
+./scripts/run-windows-browser-debug.ps1 -Url 'https://your-overlay-url'
+```
+
+The launcher downloads missing SDKs on first use and leaves Nida open. It uses
+`target/browser-debug-workspace` and port 8088, keeping normal saved shows
+separate. Use `-SkipBuild` for subsequent launches with the SDK environment
+still configured. The default demo is a local HTML page running inside CEF.
+
+For manual build and transport checks:
+
 ```powershell
 cargo build --release --locked --no-default-features --features screen-capture,windows-browser
 ./scripts/ci/build-windows-browser.ps1 -OutputDirectory target/release

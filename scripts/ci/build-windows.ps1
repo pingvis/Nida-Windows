@@ -85,7 +85,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Bundled FFmpeg cannot start.' }
         $metadata = [ordered]@{
             version = $version; revision = (& git rev-parse HEAD).Trim(); experimental = $true
-            features = $(if ($WithBrowser) { @('screen-capture', 'windows-browser') } else { @('screen-capture') }); target = 'x86_64-pc-windows-msvc'
+            features = @(if ($WithBrowser) { 'screen-capture'; 'windows-browser' } else { 'screen-capture' }); target = 'x86_64-pc-windows-msvc'
             rust = (& rustc --version).Trim(); ffmpeg = (Get-Content (Join-Path $licenses 'FFmpeg-build.txt') -First 1)
             files = @(Get-ChildItem -LiteralPath $stage -Recurse -File | Sort-Object FullName | ForEach-Object {
                 @{ path = [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\', '/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }

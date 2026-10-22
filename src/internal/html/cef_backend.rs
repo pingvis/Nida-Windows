@@ -19,6 +19,11 @@ pub struct CefEngine {
 }
 
 pub fn helper_path() -> Option<PathBuf> {
+    #[cfg(test)]
+    if let Some(path) = std::env::var_os("NIDA_BROWSER_TEST_HELPER") {
+        let path = PathBuf::from(path);
+        return path.is_file().then_some(path);
+    }
     let path = std::env::current_exe()
         .ok()?
         .parent()?
@@ -88,6 +93,10 @@ impl CefEngine {
 fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     use std::os::windows::process::CommandExt;
     let helper = helper_path().ok_or_else(|| std::io::Error::other("missing browser host"))?;
+    #[cfg(test)]
+    let profile =
+        std::env::temp_dir().join(format!("Nida CEF transport test {}", std::process::id()));
+    #[cfg(not(test))]
     let profile = dirs::data_local_dir()
         .ok_or_else(|| std::io::Error::other("missing user data directory"))?
         .join("Nida/BrowserCEF");
@@ -191,4 +200,66 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     drop(writer);
     let _ = reader.join();
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn real_windows_transport_renders_and_closes_its_process_tree() {
+        // The Windows browser workflow supplies the freshly built runtime.
+        // Ordinary unit runs remain independent of an installed CEF SDK.
+        if std::env::var_os("NIDA_BROWSER_TEST_HELPER").is_none() {
+            return;
+        }
+        let engine = CefEngine::new();
+        let alive = engine.alive.clone();
+        engine
+            .configure(
+                1,
+                3,
+                &super::super::BrowserSettings {
+                    url: "data:text/html,<html style='background:red'><body></body></html>".into(),
+                    width: 64,
+                    height: 32,
+                    fps: 30,
+                },
+            )
+            .unwrap();
+        let deadline = std::time::Instant::now() + Duration::from_secs(30);
+        let mut rendered = false;
+        while std::time::Instant::now() < deadline && engine.is_alive() {
+            for message in engine.drain() {
+                if message.id == 1
+                    && message.generation == 3
+                    && message.width == 64
+                    && message.height == 32
+                {
+                    let center = ((16 * 64 + 32) * 4) as usize;
+                    rendered |= message.pixels.get(center..center + 4) == Some(&[255, 0, 0, 255]);
+                }
+            }
+            if rendered {
+                break;
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        drop(engine);
+        let deadline = std::time::Instant::now() + Duration::from_secs(10);
+        while alive.load(Ordering::Acquire) && std::time::Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(20));
+        }
+        assert!(
+            !alive.load(Ordering::Acquire),
+            "browser process tree did not close"
+        );
+        assert!(
+            rendered,
+            "no real CEF frame arrived through the Windows job and Rust transport"
+        );
+        let profile =
+            std::env::temp_dir().join(format!("Nida CEF transport test {}", std::process::id()));
+        std::fs::remove_dir_all(profile).expect("CEF job should release its profile files");
+    }
 }

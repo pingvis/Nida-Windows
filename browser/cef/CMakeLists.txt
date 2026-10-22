@@ -18,7 +18,7 @@ target_compile_features(nida-browser-host PRIVATE cxx_std_20)
 target_include_directories(nida-browser-host PRIVATE "${CEF_ROOT}")
 target_link_libraries(nida-browser-host PRIVATE libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
 # Keep helper and all resource-only dependencies together, independent of CWD.
-install(TARGETS nida-browser-host RUNTIME DESTINATION browser)
+install(FILES "$<TARGET_FILE:nida-browser-host>" DESTINATION browser)
 install(FILES "${CEF_ROOT}/Release/bootstrap.exe" DESTINATION browser RENAME nida-browser-host.exe)
 install(DIRECTORY "${CEF_ROOT}/Release/" DESTINATION browser
   FILES_MATCHING PATTERN "*.dll" PATTERN "*.bin" PATTERN "*.json")
