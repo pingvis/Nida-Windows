@@ -938,6 +938,7 @@ impl Deck {
         let (blit_pipeline, blit_pipeline_over_black) = external_blit_pipelines(context)?;
 
         let source = DeckSource::ExternalSource {
+            browser_settings: None,
             kind: ExternalSourceKind::Camera(camera_id),
             blit_pipeline,
             blit_pipeline_over_black,
@@ -976,6 +977,7 @@ impl Deck {
         let (blit_pipeline, blit_pipeline_over_black) = external_blit_pipelines(context)?;
 
         let source = DeckSource::ExternalSource {
+            browser_settings: None,
             kind: ExternalSourceKind::ScreenCapture(state.capture_id),
             blit_pipeline,
             blit_pipeline_over_black,
@@ -1009,6 +1011,7 @@ impl Deck {
         let (blit_pipeline, blit_pipeline_over_black) = external_blit_pipelines(context)?;
 
         let deck_source = DeckSource::ExternalSource {
+            browser_settings: None,
             kind: ExternalSourceKind::Tap,
             blit_pipeline,
             blit_pipeline_over_black,
@@ -1045,6 +1048,7 @@ impl Deck {
         let (blit_pipeline, blit_pipeline_over_black) = external_blit_pipelines(context)?;
 
         let source = DeckSource::ExternalSource {
+            browser_settings: None,
             kind: ExternalSourceKind::DepthSensor(sensor_id),
             blit_pipeline,
             blit_pipeline_over_black,
@@ -1179,6 +1183,7 @@ impl Deck {
         let (blit_pipeline, blit_pipeline_over_black) = external_blit_pipelines(context)?;
 
         let source = DeckSource::ExternalSource {
+            browser_settings: None,
             kind,
             blit_pipeline,
             blit_pipeline_over_black,
@@ -1361,7 +1366,7 @@ impl Deck {
         width: u32,
         height: u32,
     ) -> Result<Self> {
-        Self::new_from_external(
+        let mut deck = Self::new_from_external(
             context,
             ExternalSourceKind::Html(instance_idx),
             format!("🌐 {url}"),
@@ -1369,7 +1374,14 @@ impl Deck {
             source_height,
             width,
             height,
-        )
+        )?;
+        deck.set_browser_settings(crate::html::BrowserSettings {
+            url: url.to_string(),
+            width: source_width,
+            height: source_height,
+            ..crate::html::BrowserSettings::default()
+        });
+        Ok(deck)
     }
 
     /// Create a new deck from a GLSL compute shader (.comp file)

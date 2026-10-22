@@ -65,3 +65,33 @@ The separate [Inno Setup workflow](windows-installer.md) reuses
 this verified ZIP as its payload. It adds a per-user installation, shortcuts,
 upgrade/uninstall checks, and uploads Setup.exe and its checksum as Actions
 artifacts. It does not create releases, tags or branches.
+
+## Experimental browser-enabled package
+
+`build-windows.ps1 -WithBrowser` builds with
+`--no-default-features --features screen-capture,windows-browser` and adds the
+sandboxed CEF helper under `browser/`. The ordinary core ZIP and installer
+selection are unchanged. The **Windows browser sources (experimental)** workflow
+uploads a browser-enabled evaluation ZIP; it never creates releases or tags.
+
+CEF is pinned to `152.0.15+gb3d72fb+chromium-152.0.7977.169` and its SDK SHA256 in
+`setup-windows-cef.ps1`. Headers, wrapper, bootstrap and runtime must be updated
+together. The archive includes the exact SDK URL/hash, CEF license, version
+header, resources, locales and hashed payload manifest. Browser binaries receive
+the same import checks as the core application. Resource files are explicitly
+copied because PE import scanning cannot discover them.
+
+The extracted-package test runs a local WebSocket overlay through the real CEF
+host with a clean PATH and unrelated CWD. Python is a build/test dependency,
+not part of the runtime. Browser cookies and storage live under
+`%LOCALAPPDATA%\Nida\BrowserCEF`, outside the portable folder and show files.
+They are not included in ZIPs or installer payloads. Multiple Nida instances
+cannot concurrently own this default profile.
+
+CEF/Chromium adds substantial disk and memory use and requires ongoing security
+updates. The included CEF license is not a complete replacement for Chromium's
+third-party notices: public distribution must also carry the exact Chromium
+credits and applicable sources/build recipes. Until those distribution materials
+and native provider/performance checks are complete, this remains an experimental
+CI artifact, not a supported public release. Installer browser payload validation
+is not enabled by default.

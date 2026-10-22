@@ -191,6 +191,7 @@ pub(crate) mod tests {
                         uuid: "dk-001".into(),
                         name: "Sine".into(),
                         is_html: false,
+                        browser: None,
                         is_depth_sensor: false,
                         point_cloud_params: None,
                         has_depth_prepro: false,

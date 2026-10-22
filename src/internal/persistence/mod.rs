@@ -669,7 +669,13 @@ pub fn snapshot_scene(
                                 .source_name()
                                 .trim_start_matches("🌐 ")
                                 .to_string();
-                            SourceConfig::Html { url }
+                            let settings = slot.deck.browser_settings();
+                            SourceConfig::Html {
+                                url: settings.map_or(url, |s| s.url.clone()),
+                                width: settings.map_or(0, |s| s.width),
+                                height: settings.map_or(0, |s| s.height),
+                                fps: settings.map_or(30, |s| s.fps),
+                            }
                         }
                         "depth_sensor" => {
                             // Store the sensor's name, not the layer's label
@@ -2042,13 +2048,25 @@ pub(crate) fn restore_deck(
                 }
             }
         }
-        SourceConfig::Html { url } => {
-            match html_manager.start_render(url, render_width, render_height, &context.device) {
+        SourceConfig::Html {
+            url,
+            width,
+            height,
+            fps,
+        } => {
+            let settings = crate::html::BrowserSettings {
+                url: url.clone(),
+                width: if *width == 0 { render_width } else { *width },
+                height: if *height == 0 { render_height } else { *height },
+                fps: *fps,
+            };
+            settings.validate().map_err(anyhow::Error::msg)?;
+            match html_manager.start_with_settings(settings.clone(), &context.device) {
                 Some(instance_idx) => {
                     let (src_w, src_h) = html_manager
                         .instance_dimensions(instance_idx)
                         .unwrap_or((1920, 1080));
-                    Deck::new_from_html(
+                    let mut deck = Deck::new_from_html(
                         context,
                         instance_idx,
                         url,
@@ -2056,7 +2074,9 @@ pub(crate) fn restore_deck(
                         src_h,
                         render_width,
                         render_height,
-                    )?
+                    )?;
+                    deck.set_browser_settings(settings);
+                    deck
                 }
                 None => {
                     return Err(anyhow::anyhow!(
@@ -2222,7 +2242,20 @@ pub(crate) fn source_configs_match(deck: &Deck, config: &SourceConfig) -> bool {
         ("rtmp", SourceConfig::Rtmp { url, .. }) => {
             deck.source_name().trim_start_matches("📺 ") == url
         }
-        ("html", SourceConfig::Html { url }) => deck.source_name().trim_start_matches("🌐 ") == url,
+        (
+            "html",
+            SourceConfig::Html {
+                url,
+                width,
+                height,
+                fps,
+            },
+        ) => deck.browser_settings().is_some_and(|s| {
+            s.url == *url
+                && (*width == 0 || s.width == *width)
+                && (*height == 0 || s.height == *height)
+                && s.fps == *fps
+        }),
         ("depth_sensor", SourceConfig::DepthSensor { name, .. }) => {
             sensor_of(deck.source_name()) == name
         }
@@ -2267,9 +2300,10 @@ fn sensor_of(label: &str) -> &str {
 /// A saved layer label as it is drawn now: an older preset's depth-sensor
 /// prefix replaced by today's.
 pub(crate) fn label_now(label: &str) -> String {
-    label
-        .strip_prefix(OLD_SENSOR_PREFIX)
-        .map_or_else(|| label.to_string(), |sensor| format!("{SENSOR_PREFIX}{sensor}"))
+    label.strip_prefix(OLD_SENSOR_PREFIX).map_or_else(
+        || label.to_string(),
+        |sensor| format!("{SENSOR_PREFIX}{sensor}"),
+    )
 }
 
 #[cfg(test)]

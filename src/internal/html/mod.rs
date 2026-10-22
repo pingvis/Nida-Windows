@@ -13,6 +13,16 @@ mod servo_backend;
 
 use std::sync::{Arc, Mutex};
 
+#[cfg(all(target_os = "windows", feature = "windows-browser"))]
+mod cef_backend;
+#[cfg(all(target_os = "windows", feature = "windows-browser"))]
+mod cef_job;
+#[cfg(any(test, all(target_os = "windows", feature = "windows-browser")))]
+mod protocol;
+
+mod settings;
+pub use settings::{BrowserSettings, BrowserSnapshot};
+
 /// Default render resolution for an HTML instance when none is supplied.
 const DEFAULT_WIDTH: u32 = 1920;
 const DEFAULT_HEIGHT: u32 = 1080;
@@ -26,6 +36,7 @@ struct HtmlFrame {
     data: Vec<u8>,
     width: u32,
     height: u32,
+    generation: u64,
 }
 
 /// Latest-frame slot shared between the servo thread (writer) and the render
@@ -70,12 +81,14 @@ pub enum HtmlInputEvent {
 /// [`HtmlManager::update`] each frame and looks up [`HtmlManager::texture_view`]
 /// for compositing.
 pub struct HtmlManager {
-    instances: Vec<HtmlInstance>,
+    instances: Vec<Option<HtmlInstance>>,
     disabled: bool,
     next_id: HtmlId,
     /// The single shared servo pump thread, spawned lazily on first render.
     #[cfg(feature = "html")]
     engine: Option<servo_backend::ServoEngine>,
+    #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+    cef: Option<cef_backend::CefEngine>,
 }
 
 /// A single HTML render target: the wgpu texture frames are uploaded into, plus
@@ -94,6 +107,9 @@ struct HtmlInstance {
     /// Latest frame published by the servo thread (never filled when the `html`
     /// feature is off → placeholder is shown).
     frame: FrameSlot,
+    settings: BrowserSettings,
+    generation: u64,
+    error: Option<String>,
 }
 
 impl Default for HtmlManager {
@@ -111,6 +127,8 @@ impl HtmlManager {
             next_id: 0,
             #[cfg(feature = "html")]
             engine: None,
+            #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+            cef: None,
         }
     }
 
@@ -124,17 +142,28 @@ impl HtmlManager {
             next_id: 0,
             #[cfg(feature = "html")]
             engine: None,
+            #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+            cef: None,
         }
     }
 
     /// Whether HTML rendering is available (feature enabled and not disabled).
     pub fn is_available(&self) -> bool {
-        !self.disabled && cfg!(feature = "html")
+        if self.disabled {
+            return false;
+        }
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        {
+            return cef_backend::helper_path().is_some();
+        }
+        #[cfg(not(all(target_os = "windows", feature = "windows-browser")))]
+        {
+            cfg!(feature = "html")
+        }
     }
 
-    /// Start rendering `url` at `width`×`height`. Returns the instance index, or
-    /// reuses an existing instance for the same URL. Returns `None` when the
-    /// manager is disabled.
+    /// Allocate an independent browser source. An unavailable backend retains a
+    /// transparent placeholder so loading a show never drops its authored deck.
     pub fn start_render(
         &mut self,
         url: &str,
@@ -142,21 +171,33 @@ impl HtmlManager {
         height: u32,
         device: &wgpu::Device,
     ) -> Option<usize> {
-        if self.disabled {
-            log::warn!("HTML manager disabled; cannot render '{url}'");
+        let width = if width == 0 { DEFAULT_WIDTH } else { width };
+        let height = if height == 0 { DEFAULT_HEIGHT } else { height };
+        let settings = BrowserSettings {
+            url: url.to_string(),
+            width,
+            height,
+            ..BrowserSettings::default()
+        };
+        self.start_with_settings(settings, device)
+    }
+
+    /// Allocate a source with its complete authored settings.
+    pub fn start_with_settings(
+        &mut self,
+        settings: BrowserSettings,
+        device: &wgpu::Device,
+    ) -> Option<usize> {
+        let (url, width, height) = (settings.url.as_str(), settings.width, settings.height);
+        settings.validate().ok()?;
+        if width > device.limits().max_texture_dimension_2d
+            || height > device.limits().max_texture_dimension_2d
+        {
             return None;
         }
 
-        if let Some(idx) = self.instances.iter().position(|i| i.url == url) {
-            log::info!("Reusing existing HTML instance {idx} for '{url}'");
-            return Some(idx);
-        }
-
-        let width = if width == 0 { DEFAULT_WIDTH } else { width };
-        let height = if height == 0 { DEFAULT_HEIGHT } else { height };
-
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(&format!("html-{url}")),
+            label: Some("browser-source"),
             size: wgpu::Extent3d {
                 width,
                 height,
@@ -182,13 +223,26 @@ impl HtmlManager {
         // Spawn the shared servo thread on first use, then start this instance.
         #[cfg(feature = "html")]
         {
-            let engine = self
-                .engine
-                .get_or_insert_with(servo_backend::ServoEngine::new);
-            engine.start(id, url, width, height, frame.clone());
+            if self.is_available() && !cfg!(all(target_os = "windows", feature = "windows-browser"))
+            {
+                let engine = self
+                    .engine
+                    .get_or_insert_with(servo_backend::ServoEngine::new);
+                engine.start(id, url, width, height, frame.clone());
+            }
         }
 
-        self.instances.push(HtmlInstance {
+        #[allow(unused_mut)] // CEF adds asynchronous command submission errors on Windows.
+        let mut error = (!self.is_available()).then(|| {
+            "Browser rendering is unavailable in this build or the CEF runtime is missing"
+                .to_string()
+        });
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        if self.is_available() {
+            let cef = self.cef.get_or_insert_with(cef_backend::CefEngine::new);
+            error = cef.configure(id, 0, &settings).err().map(str::to_string);
+        }
+        self.instances.push(Some(HtmlInstance {
             url: url.to_string(),
             width,
             height,
@@ -197,14 +251,11 @@ impl HtmlManager {
             initialized: false,
             id,
             frame,
-        });
-        log::info!(
-            "HTML instance {} started for '{}' ({}x{})",
-            self.instances.len() - 1,
-            url,
-            width,
-            height
-        );
+            settings,
+            generation: 0,
+            error,
+        }));
+        log::info!("Browser instance {id} allocated ({width}x{height})");
         Some(self.instances.len() - 1)
     }
 
@@ -212,13 +263,47 @@ impl HtmlManager {
     /// `html` feature is off this writes a one-time placeholder so the deck is
     /// not invisible.
     pub fn update(&mut self, _device: &wgpu::Device, queue: &wgpu::Queue) {
-        for instance in &mut self.instances {
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        if let Some(cef) = &self.cef {
+            if !cef.is_alive() {
+                for instance in self.instances.iter_mut().flatten() {
+                    instance.error =
+                        Some("Browser host stopped. Check the CEF runtime, then refresh.".into());
+                }
+            }
+            for message in cef.drain() {
+                if message.id == u64::MAX {
+                    for instance in self.instances.iter_mut().flatten() {
+                        instance.error.clone_from(&message.error);
+                    }
+                } else if let Some(instance) =
+                    self.instances.iter_mut().flatten().find(|instance| {
+                        instance.id == message.id && instance.generation == message.generation
+                    })
+                {
+                    if let Some(error) = message.error {
+                        instance.error = (!error.is_empty()).then_some(error);
+                    } else if let Ok(mut frame) = instance.frame.try_lock() {
+                        *frame = Some(HtmlFrame {
+                            data: message.pixels,
+                            width: message.width,
+                            height: message.height,
+                            generation: message.generation,
+                        });
+                    }
+                }
+            }
+        }
+        for instance in self.instances.iter_mut().flatten() {
             // Non-blocking poll of the latest frame published by the servo thread
             // (latest-wins, identical to the NDI/stream sources).
             let frame = instance.frame.try_lock().ok().and_then(|mut g| g.take());
 
             if let Some(frame) = frame {
-                if frame.width == instance.width && frame.height == instance.height {
+                if frame.width == instance.width
+                    && frame.height == instance.height
+                    && frame.generation == instance.generation
+                {
                     Self::upload(queue, instance, &frame.data);
                     instance.initialized = true;
                 }
@@ -259,29 +344,153 @@ impl HtmlManager {
 
     /// Texture view for compositing the instance at `idx`.
     pub fn texture_view(&self, idx: usize) -> Option<&wgpu::TextureView> {
-        self.instances.get(idx).map(|i| &i.view)
+        self.instances
+            .get(idx)
+            .and_then(Option::as_ref)
+            .map(|i| &i.view)
     }
 
     /// Render dimensions of the instance at `idx`.
     pub fn instance_dimensions(&self, idx: usize) -> Option<(u32, u32)> {
-        self.instances.get(idx).map(|i| (i.width, i.height))
+        self.instances
+            .get(idx)
+            .and_then(Option::as_ref)
+            .map(|i| (i.width, i.height))
     }
 
     /// URL of the instance at `idx`.
     pub fn instance_url(&self, idx: usize) -> Option<&str> {
-        self.instances.get(idx).map(|i| i.url.as_str())
+        self.instances
+            .get(idx)
+            .and_then(Option::as_ref)
+            .map(|i| i.url.as_str())
     }
 
     /// Number of active instances.
     pub fn instance_count(&self) -> usize {
-        self.instances.len()
+        self.instances.iter().flatten().count()
+    }
+
+    /// Whether the library URL currently has a live browser deck.
+    pub fn has_url(&self, url: &str) -> bool {
+        self.instances
+            .iter()
+            .flatten()
+            .any(|instance| instance.url == url)
+    }
+
+    /// Release browsers whose decks were deleted or replaced by a loaded show.
+    pub fn reconcile(&mut self, live: &[usize]) {
+        for idx in 0..self.instances.len() {
+            if self.instances[idx].is_some() && !live.contains(&idx) {
+                self.stop_render(idx);
+            }
+        }
+    }
+
+    /// Authored settings and asynchronous host status for a browser deck.
+    pub fn snapshot(&self, idx: usize) -> Option<BrowserSnapshot> {
+        self.instances
+            .get(idx)
+            .and_then(Option::as_ref)
+            .map(|instance| BrowserSnapshot {
+                settings: instance.settings.clone(),
+                error: instance.error.clone(),
+                interactive: cfg!(feature = "html")
+                    && !cfg!(all(target_os = "windows", feature = "windows-browser")),
+            })
+    }
+
+    /// Update a CEF viewport without reloading its page. Servo restarts its view.
+    ///
+    /// # Errors
+    /// Rejects invalid sizes, unsupported rates or a busy/disconnected host.
+    pub fn configure(
+        &mut self,
+        idx: usize,
+        settings: BrowserSettings,
+        device: &wgpu::Device,
+    ) -> Result<(), &'static str> {
+        settings.validate()?;
+        if settings.width > device.limits().max_texture_dimension_2d
+            || settings.height > device.limits().max_texture_dimension_2d
+        {
+            return Err("Viewport exceeds GPU texture limits");
+        }
+        let instance = self
+            .instances
+            .get_mut(idx)
+            .and_then(Option::as_mut)
+            .ok_or("Browser source not found")?;
+        let generation = instance.generation + 1;
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        {
+            let cef = self
+                .cef
+                .as_ref()
+                .ok_or("Browser host unavailable; reopen the show after installing its runtime")?;
+            cef.configure(instance.id, generation, &settings)?;
+        }
+        #[cfg(feature = "html")]
+        if let Some(engine) = &self.engine {
+            engine.stop(instance.id);
+            engine.start(
+                instance.id,
+                &settings.url,
+                settings.width,
+                settings.height,
+                instance.frame.clone(),
+            );
+        }
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("browser-source"),
+            size: wgpu::Extent3d {
+                width: settings.width,
+                height: settings.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        instance.view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        instance.texture = texture;
+        instance.url.clone_from(&settings.url);
+        instance.width = settings.width;
+        instance.height = settings.height;
+        instance.settings = settings;
+        instance.generation = if cfg!(all(target_os = "windows", feature = "windows-browser")) {
+            generation
+        } else {
+            0
+        };
+        instance.initialized = false;
+        instance.error = None;
+        if let Ok(mut frame) = instance.frame.try_lock() {
+            *frame = None;
+        }
+        Ok(())
     }
 
     /// Navigate an existing instance to a new URL.
     pub fn navigate(&mut self, idx: usize, url: &str) {
-        if let Some(instance) = self.instances.get_mut(idx) {
+        if let Some(instance) = self.instances.get_mut(idx).and_then(Option::as_mut) {
             instance.url = url.to_string();
+            instance.settings.url = url.to_string();
             instance.initialized = false;
+            #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+            if let Some(cef) = &self.cef {
+                instance.generation += 1;
+                instance.error = cef
+                    .configure(instance.id, instance.generation, &instance.settings)
+                    .err()
+                    .map(str::to_string);
+            }
             #[cfg(feature = "html")]
             if let Some(engine) = self.engine.as_ref() {
                 engine.navigate(instance.id, url);
@@ -291,8 +500,25 @@ impl HtmlManager {
 
     /// Reload an existing instance, re-fetching its current URL.
     pub fn reload(&mut self, idx: usize) {
-        if let Some(instance) = self.instances.get_mut(idx) {
-            instance.initialized = false;
+        let available = self.is_available();
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        if self.is_available() && self.cef.as_ref().is_none_or(|cef| !cef.is_alive()) {
+            self.cef = Some(cef_backend::CefEngine::new());
+            if let Some(cef) = &self.cef {
+                for instance in self.instances.iter_mut().flatten() {
+                    instance.error = cef
+                        .configure(instance.id, instance.generation, &instance.settings)
+                        .err()
+                        .map(str::to_string);
+                }
+            }
+        }
+        if let Some(instance) = self.instances.get_mut(idx).and_then(Option::as_mut) {
+            instance.error = (!available).then(|| "Browser rendering is unavailable".to_string());
+            #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+            if let Some(cef) = &self.cef {
+                instance.error = cef.reload(instance.id).err().map(str::to_string);
+            }
             #[cfg(feature = "html")]
             if let Some(engine) = self.engine.as_ref() {
                 engine.reload(instance.id);
@@ -304,23 +530,29 @@ impl HtmlManager {
     /// No-op for an unknown index or when no engine has been spawned.
     #[cfg(feature = "html")]
     pub fn send_input(&self, idx: usize, event: HtmlInputEvent) {
-        if let (Some(instance), Some(engine)) = (self.instances.get(idx), self.engine.as_ref()) {
+        if let (Some(instance), Some(engine)) = (
+            self.instances.get(idx).and_then(Option::as_ref),
+            self.engine.as_ref(),
+        ) {
             engine.send_input(instance.id, event);
         }
     }
 
-    /// Stop and drop the instance at `idx`. Note: indices of later instances are
-    /// not preserved — callers that hold indices should treat this as teardown.
+    /// Stop a browser without changing any other deck's instance index.
     pub fn stop_render(&mut self, idx: usize) {
-        if idx < self.instances.len() {
-            #[cfg(feature = "html")]
-            {
-                let id = self.instances[idx].id;
-                if let Some(engine) = self.engine.as_ref() {
-                    engine.stop(id);
+        if let Some(instance) = self.instances.get_mut(idx).and_then(Option::take) {
+            #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+            if let Some(cef) = &self.cef {
+                if cef.is_alive() && cef.stop(instance.id).is_err() {
+                    self.instances[idx] = Some(instance);
+                    return;
                 }
             }
-            self.instances.remove(idx);
+            #[cfg(feature = "html")]
+            if let Some(engine) = &self.engine {
+                engine.stop(instance.id);
+            }
+            drop(instance);
         }
     }
 }
@@ -417,7 +649,7 @@ mod smoke_tests {
 
     /// Read the center pixel of an instance's texture back to CPU.
     fn center_pixel(gpu: &GpuContext, mgr: &HtmlManager, idx: usize) -> [u8; 4] {
-        let texture = &mgr.instances[idx].texture;
+        let texture = &mgr.instances[idx].as_ref().unwrap().texture;
         let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("html-smoke-readback"),
             size: u64::from(ROW_BYTES * H),

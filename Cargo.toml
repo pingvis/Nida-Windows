@@ -222,7 +222,7 @@ objc2-app-kit            = { version = "0.3", default-features = false, features
 # Windows Graphics Capture for the Windows screen/window capture backend
 # (spec/screen-capture.md). Microsoft-maintained, so no third-party binding.
 [target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_System_Power", "Win32_System_Threading", "Win32_System_SystemServices"] }
+windows-sys = { version = "0.61", features = ["Win32_System_Power", "Win32_System_Threading", "Win32_System_SystemServices", "Win32_System_JobObjects", "Win32_Foundation", "Win32_Security"] }
 windows = { version = "0.62", optional = true, features = [
     "Foundation",
     "Graphics",
@@ -274,6 +274,9 @@ face-detection = ["dep:ort", "dep:ndarray"]
 # profile. Disable with `--no-default-features` (re-add `face-detection` as needed).
 # See spec/html-source.md "Decision: html on by default".
 html = ["dep:servo", "dep:url", "dep:euclid", "dep:keyboard-types"]
+# Windows CEF is an app-local helper, built separately with browser/cef/CMakeLists.txt.
+# Select with --no-default-features --features screen-capture,windows-browser.
+windows-browser = ["dep:url"]
 # Depth sensor / point-cloud input (Kinect v1 via libfreenect). Default-on
 # (opt out with `--no-default-features`): only the FreenectBackend module is
 # gated — the DepthSensorManager integration surface (manager, deck integration,

@@ -252,16 +252,44 @@ impl VardaApp {
     }
 
     pub fn cmd_add_html_deck(&mut self, channel_uuid: &str, url: &str) -> CommandResult {
+        self.cmd_add_browser_deck(
+            channel_uuid,
+            crate::html::BrowserSettings {
+                url: url.to_string(),
+                width: self.render_width,
+                height: self.render_height,
+                ..crate::html::BrowserSettings::default()
+            },
+        )
+    }
+
+    pub fn cmd_add_browser_deck(
+        &mut self,
+        channel_uuid: &str,
+        settings: crate::html::BrowserSettings,
+    ) -> CommandResult {
+        if let Err(message) = settings.validate() {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: message.into(),
+            };
+        }
+        if !self.external_io.html_manager.is_available() {
+            return CommandResult::Err {
+                code: ErrorCode::Unavailable,
+                message: "Browser rendering is disabled or its runtime is missing".into(),
+            };
+        }
+        let url = settings.url.as_str();
         let channel_idx = match self.resolve_channel(channel_uuid) {
             Ok(idx) => idx,
             Err(e) => return e.into(),
         };
-        match self.external_io.html_manager.start_render(
-            url,
-            self.render_width,
-            self.render_height,
-            &self.context.device,
-        ) {
+        match self
+            .external_io
+            .html_manager
+            .start_with_settings(settings.clone(), &self.context.device)
+        {
             Some(instance_idx) => {
                 let (src_w, src_h) = self
                     .external_io
@@ -278,6 +306,7 @@ impl VardaApp {
                     self.render_height,
                 ) {
                     Ok(mut deck) => {
+                        deck.set_browser_settings(settings.clone());
                         self.add_default_effects(&mut deck);
                         // A keyed graphic sent over NDI shows what is under
                         // it where it is clear, as it does in vMix.
@@ -301,9 +330,40 @@ impl VardaApp {
             }
             None => CommandResult::Err {
                 code: ErrorCode::InvalidInput,
-                message: format!("Failed to start HTML render for '{url}'"),
+                message: "Failed to allocate browser source".into(),
             },
         }
+    }
+
+    pub fn cmd_configure_browser_deck(
+        &mut self,
+        deck_uuid: &str,
+        settings: crate::html::BrowserSettings,
+    ) -> CommandResult {
+        let (channel_idx, deck_idx) = match self.resolve_deck(deck_uuid) {
+            Ok(loc) => loc,
+            Err(e) => return e.into(),
+        };
+        let slot = &mut self.mixer.channels_mut()[channel_idx].decks[deck_idx];
+        let Some(crate::deck::ExternalSourceKind::Html(idx)) = slot.deck.external_source_kind()
+        else {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: "Deck is not a browser source".into(),
+            };
+        };
+        if let Err(message) =
+            self.external_io
+                .html_manager
+                .configure(idx, settings.clone(), &self.context.device)
+        {
+            return CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                message: message.into(),
+            };
+        }
+        slot.deck.set_browser_settings(settings);
+        CommandResult::Ok
     }
 
     /// Reload the HTML deck at `(channel_idx, deck_idx)`, re-fetching its URL.

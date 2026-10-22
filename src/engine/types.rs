@@ -718,6 +718,7 @@ pub struct DeckSnapshot {
     pub name: String,
     /// True when this deck's source is an HTML/Servo instance.
     pub is_html: bool,
+    pub browser: Option<crate::html::BrowserSnapshot>,
     /// True when the interactive window is currently open for this deck.
     pub is_html_interactive: bool,
     /// True when this deck's source is a depth sensor (point-cloud) source.
@@ -1642,6 +1643,7 @@ mod tests {
             uuid: "test0002".into(),
             name: "Sine Wave".into(),
             is_html: false,
+            browser: None,
             is_html_interactive: false,
             is_depth_sensor: true,
             point_cloud_params: Some(PointCloudParamsSnapshot {

@@ -68,7 +68,7 @@ use utoipa_swagger_ui::SwaggerUi;
         routes::decks::set_transition, routes::decks::set_param,
         routes::decks::add_ndi_deck, routes::decks::add_syphon_deck,
         routes::decks::add_srt_deck, routes::decks::add_hls_deck, routes::decks::add_dash_deck, routes::decks::add_rtmp_deck,
-        routes::decks::add_html_deck, routes::decks::reload_html_deck,
+        routes::decks::add_html_deck, routes::decks::reload_html_deck, routes::decks::configure_browser_deck,
         routes::decks::set_html_interactive,
         routes::decks::reset_generator_params,
         // Video
@@ -765,6 +765,10 @@ pub fn build_router(shared: SharedState) -> Router {
         .route(
             "/api/channels/{channel_uuid}/decks/html",
             axum::routing::post(routes::decks::add_html_deck),
+        )
+        .route(
+            "/api/decks/{deck_uuid}/html",
+            axum::routing::put(routes::decks::configure_browser_deck),
         )
         .route(
             "/api/decks/{deck_uuid}/html/reload",

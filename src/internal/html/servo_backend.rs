@@ -187,6 +187,7 @@ impl Entry {
             data: image.as_raw().clone(),
             width: w,
             height: h,
+            generation: 0,
         })
     }
 }

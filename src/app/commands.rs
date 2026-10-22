@@ -1182,6 +1182,14 @@ impl VardaApp {
                 mode,
             } => self.cmd_add_rtmp_deck(&channel_uuid, &url, mode),
             EngineCommand::ReloadHtmlDeck { deck_uuid } => self.cmd_reload_html_deck(&deck_uuid),
+            EngineCommand::AddBrowserDeck {
+                channel_uuid,
+                settings,
+            } => self.cmd_add_browser_deck(&channel_uuid, settings),
+            EngineCommand::ConfigureBrowserDeck {
+                deck_uuid,
+                settings,
+            } => self.cmd_configure_browser_deck(&deck_uuid, settings),
             EngineCommand::AddHtmlDeck { channel_uuid, url } => {
                 self.cmd_add_html_deck(&channel_uuid, &url)
             }

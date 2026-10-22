@@ -1230,8 +1230,8 @@ pub async fn add_rtmp_deck(
 
 #[derive(Deserialize, ToSchema)]
 pub struct HtmlSourceBody {
-    /// HTML content URL or local file path.
-    pub url: String,
+    #[serde(flatten)]
+    pub settings: crate::html::BrowserSettings,
 }
 #[utoipa::path(post, path = "/api/channels/{channel_uuid}/decks/html", params(("channel_uuid" = String, Path, description = "Channel UUID")), request_body = HtmlSourceBody, responses((status = 200, body = crate::usecases::api::ApiReply), (status = 404, description = "Channel not found")), tag = "Decks")]
 pub async fn add_html_deck(
@@ -1240,9 +1240,27 @@ pub async fn add_html_deck(
     Json(b): Json<HtmlSourceBody>,
 ) -> impl IntoResponse {
     match s
-        .send_command(EngineCommand::AddHtmlDeck {
+        .send_command(EngineCommand::AddBrowserDeck {
             channel_uuid,
-            url: b.url,
+            settings: b.settings,
+        })
+        .await
+    {
+        Ok(r) => command_response(r),
+        Err(m) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, m).into_response(),
+    }
+}
+
+#[utoipa::path(put, path = "/api/decks/{deck_uuid}/html", params(("deck_uuid" = String, Path, description = "Deck UUID")), request_body = HtmlSourceBody, responses((status = 200, body = crate::usecases::api::ApiReply), (status = 404, description = "Deck not found")), tag = "Decks")]
+pub async fn configure_browser_deck(
+    State(s): State<SharedState>,
+    Path(deck_uuid): Path<String>,
+    Json(b): Json<HtmlSourceBody>,
+) -> impl IntoResponse {
+    match s
+        .send_command(EngineCommand::ConfigureBrowserDeck {
+            deck_uuid,
+            settings: b.settings,
         })
         .await
     {

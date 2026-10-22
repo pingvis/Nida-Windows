@@ -547,10 +547,10 @@ impl VardaApp {
         self.camera_manager.set_profiles(&camera_profiles);
         // Each camera's and capture's frame is picked by when this show
         // frame is due on screen (see `crate::frame_picker`).
-        let show_at = self
-            .frame_stats
-            .refresh_at
-            .map_or_else(crate::host_clock::host_seconds, crate::host_clock::host_seconds_of);
+        let show_at = self.frame_stats.refresh_at.map_or_else(
+            crate::host_clock::host_seconds,
+            crate::host_clock::host_seconds_of,
+        );
         // Update only needed camera frames
         self.camera_manager
             .update_selective(&self.context, &needed_camera_ids, show_at);
@@ -583,7 +583,19 @@ impl VardaApp {
             .stream_manager
             .update(&self.context.device, &self.context.queue);
 
-        // Pump HTML (Servo) instances and upload their frames
+        // Retire removed browsers before accepting any newly completed frames.
+        let browser_indices: Vec<_> = self
+            .mixer
+            .channels()
+            .iter()
+            .flat_map(|ch| &ch.decks)
+            .filter_map(|slot| match slot.deck.external_source_kind() {
+                Some(ExternalSourceKind::Html(idx)) => Some(idx),
+                _ => None,
+            })
+            .collect();
+        self.external_io.html_manager.reconcile(&browser_indices);
+        // Upload completed browser frames without waiting on the host.
         self.external_io
             .html_manager
             .update(&self.context.device, &self.context.queue);
@@ -1540,9 +1552,9 @@ impl VardaApp {
                 let card = led.output_cards.view(&h.uuid).filter(|_| {
                     h.calibration_mode == crate::renderer::context::CalibrationMode::Projector
                 });
-                let Some(source_view) = card.or_else(|| {
-                    Self::resolve_source(mixer, &h.source, domemaster_view, bus_feeds)
-                }) else {
+                let Some(source_view) = card
+                    .or_else(|| Self::resolve_source(mixer, &h.source, domemaster_view, bus_feeds))
+                else {
                     continue;
                 };
                 // A bus sends only its region of the master, as it does on a
@@ -2197,9 +2209,11 @@ fn lut_in_full(
 ) -> crate::engine::value::camera::CameraProfile {
     use crate::engine::value::camera::CameraProfile;
     match profile {
-        CameraProfile::Lut { file } if !std::path::Path::new(file).is_absolute() => CameraProfile::Lut {
-            file: luts.join(file).to_string_lossy().into_owned(),
-        },
+        CameraProfile::Lut { file } if !std::path::Path::new(file).is_absolute() => {
+            CameraProfile::Lut {
+                file: luts.join(file).to_string_lossy().into_owned(),
+            }
+        }
         other => other.clone(),
     }
 }

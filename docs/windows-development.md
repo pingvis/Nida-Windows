@@ -66,8 +66,8 @@ their codecs. Screen-capture smoke tests need an interactive Windows desktop;
 automated compilation does not validate cameras, audio devices, or displays.
 
 The optional `html` and `face-detection` features are excluded from the initial
-baseline, not removed from the project. The existing Windows packaging profile
-enables them. The `depth` feature requires native libfreenect and is omitted on
+baseline, not removed from the project. The core portable and installer profiles
+exclude them; the Windows Clippy job separately selects them for compilation. The `depth` feature requires native libfreenect and is omitted on
 Windows, as in the existing packaging and Clippy workflows.
 
 ## Porting conventions
@@ -112,3 +112,47 @@ macOS-specific app-audio, hardware media, and Blackmagic implementations have
 not been ported by these baseline fixes. Windows sleep prevention is not
 implemented here. The reported secondary-display color mismatch is unresolved;
 capture timing and resize/readback performance are separate work.
+
+## Experimental Chromium browser sources
+
+The `windows-browser` feature selects a separate CEF helper instead of Servo on
+Windows. Build it with the exact SDK selected by `setup-windows-cef.ps1`:
+
+```powershell
+./scripts/ci/setup-windows-build.ps1 -ToolsDirectory C:\nida-build-tools
+./scripts/ci/setup-windows-cef.ps1 -ToolsDirectory C:\nida-cef-tools
+./scripts/ci/build-windows.ps1 -WithBrowser
+```
+
+For development without packaging:
+
+```powershell
+cargo build --release --locked --no-default-features --features screen-capture,windows-browser
+./scripts/ci/build-windows-browser.ps1 -OutputDirectory target/release
+cargo test --locked --manifest-path browser/checks/Cargo.toml --features windows-browser --lib
+python scripts/ci/test-browser-host.py target/release/browser/nida-browser-host.exe
+```
+
+The helper must remain in `browser/` beside varda.exe, with its matching DLLs,
+resources and locales. It resolves paths relative to the executable, not CWD.
+No system-installed Chrome or Edge is used. `--no-html` disables browser startup.
+Browser decks from existing shows remain as transparent placeholders when the
+backend is unavailable; their settings and effect chains survive save/reopen.
+
+The helper uses CEF's sandbox bootstrap. CEF 152 requires LPAC read/execute
+access to its runtime directory, so setup and first use grant
+`S-1-15-2-2:(OI)(CI)(RX)` only within `browser/`. This never grants access to
+show files or browser profiles. A runtime directory that the user cannot update
+will report an error; no elevation or sandbox-disabling fallback is attempted.
+
+A Windows job object owns the Chromium process tree. Browser control and frame
+pipes run on background workers, with bounded command queues and latest-frame
+slots. A stalled pipe is terminated off the render thread; Refresh restarts a
+failed host. The render loop only polls completed frames and uploads textures.
+
+The standalone checks compile the actual manager and transport without FFmpeg,
+audio or capture dependencies. The host smoke test checks WebSocket-driven
+pixels, transparent backgrounds, viewport resize without navigation, refresh,
+profile storage and independent same-URL sources. These tests do not qualify
+third-party chat providers or application GPU performance. Test actual overlay
+URLs and a sustained live show on Windows before relying on this build.

@@ -193,6 +193,12 @@ pub(crate) fn build_mixer_snapshot(app: &VardaApp) -> MixerSnapshot {
                             slot.deck.external_source_kind(),
                             Some(crate::deck::ExternalSourceKind::Html(_))
                         ),
+                        browser: match slot.deck.external_source_kind() {
+                            Some(crate::deck::ExternalSourceKind::Html(idx)) => {
+                                app.external_io.html_manager.snapshot(idx)
+                            }
+                            _ => None,
+                        },
                         is_depth_sensor: matches!(
                             slot.deck.external_source_kind(),
                             Some(crate::deck::ExternalSourceKind::DepthSensor(_))

@@ -1,0 +1,64 @@
+name: Windows browser sources (experimental)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/windows-browser-sources]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_BUILD_JOBS: 4
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+      - name: Set up pinned CEF SDK
+        shell: pwsh
+        run: ./scripts/ci/setup-windows-cef.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-cef')
+      - name: Build sandboxed CEF helper
+        shell: pwsh
+        run: ./scripts/ci/build-windows-browser.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'Nida browser helper')
+      - name: Test real browser pixels and live updates
+        shell: pwsh
+        run: |
+          python scripts/ci/test-browser-host.py (Join-Path $env:RUNNER_TEMP 'Nida browser helper/browser/nida-browser-host.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'CEF browser source smoke test failed.' }
+      - name: Test Rust browser manager and Windows transport
+        run: cargo test --locked --manifest-path browser/checks/Cargo.toml --features windows-browser --lib
+      - name: Set up application build dependencies
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/ci/setup-windows-build.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-build-tools')
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-browser
+          cache-on-failure: true
+      - name: Build browser-enabled application and verify extracted package
+        shell: pwsh
+        run: ./scripts/ci/build-windows.ps1 -WithBrowser
+      - name: Upload experimental browser package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nida-Windows-browser-experimental
+          path: |
+            dist/windows/*.zip
+            dist/windows/*.sha256
+          if-no-files-found: error
+          retention-days: 14

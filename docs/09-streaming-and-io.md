@@ -238,9 +238,45 @@ curl -X POST http://localhost:8080/api/channels/0/decks/html \
 
 HTML decks are persisted in `scene.json` by URL and reload automatically.
 
+### Experimental Windows browser sources
+
+The Windows core package does not include a browser. The optional
+`windows-browser` build uses Chromium/CEF for browser-source overlay URLs;
+see [Windows development](windows-development.md#experimental-chromium-browser-sources)
+and [packaging](windows-packaging.md#experimental-browser-enabled-package).
+
+Add the provider's **browser-source / overlay URL** to HTML Sources and drag it
+onto a channel. Each deck owns an independent page, including when two decks use
+the same URL. The deck's Website / Browser controls edit its URL, viewport width,
+height and frame-rate limit. Apply changes with **Apply source settings**.
+Viewport resizing changes webpage layout without reloading it; deck scaling
+controls placement in the show independently. Refresh re-fetches the page while
+keeping effects and mappings. The source stays connected while off-air.
+
+New browser decks preserve transparency by default. Transparent BG preserves a
+page's alpha; it cannot remove backgrounds painted by the page itself. Use an
+actual overlay URL configured for transparency, rather than a normal chat page.
+Settings and transparency survive show save/reopen; old URL-only shows use the
+show resolution and 30 fps. Limits are 4096 pixels per viewport dimension,
+1–60 fps (default 30), and 16 live CEF pages.
+
+CEF improves modern CSS/JavaScript, Canvas and WebSocket compatibility, but
+provider URLs still need native testing. OBS-specific `window.obsstudio` APIs,
+DRM/proprietary codecs, interactive sign-in and popup windows are not supported
+by this initial backend. Browser audio is muted; the interactive button remains
+available for Servo only. A provider-generated overlay token is usually the most
+practical way to connect chat. Such URLs are stored in shows: treat them as
+private, and do not include them in bug reports.
+
+CEF rendering and pipe I/O run outside the application render loop. Completed
+frames are uploaded without waiting for navigation or JavaScript. CPU/GPU
+contention can still affect show performance; start with a modest viewport and
+30 fps. Missing runtime, navigation and host failures appear in deck controls.
+Unavailable sources retain their deck and settings when a saved show opens.
+
 ### Rendering & performance
 
-HTML is rasterized on the **CPU** (Servo's software renderer) and uploaded to a GPU texture each frame. It is heavier than the GPU-native deck types.
+The Servo backend is rasterized on the **CPU** (Servo's software renderer) and uploaded to a GPU texture each frame. It is heavier than the GPU-native deck types.
 
 > **Platform support.** HTML decks are available on **Apple Silicon macOS** (arm64) and **Linux** (x86_64). They are **not** available on Intel (x86_64) macOS: Servo deck-creation hangs under Rosetta, so the macOS DMG ships HTML in the Apple Silicon slice only. It comfortably handles HTML/CSS/SVG, dashboards, and text overlays; heavy WebGL or full-screen Canvas animation at high resolution may not sustain 60 fps. Profile your pages with the `html_render` benchmark (see [Benchmarking](../CONTRIBUTING.md#benchmarking)) if frame rate matters.
 

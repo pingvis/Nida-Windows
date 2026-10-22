@@ -3,6 +3,8 @@
 [CmdletBinding()]
 param(
     [switch]$SkipBuild,
+    [switch]$WithBrowser,
+    [string]$CefRoot = $env:NIDA_CEF_ROOT,
     [string]$FfmpegRoot = $env:FFMPEG_DIR,
     [string]$Binary,
     [string]$CrtDirectory,
@@ -28,7 +30,8 @@ Push-Location $root
 try {
     $env:PATH = "$ffmpegBin;$oldPath"
     if (!$SkipBuild) {
-        & cargo build --release --locked --no-default-features --features screen-capture
+        $features = if ($WithBrowser) { 'screen-capture,windows-browser' } else { 'screen-capture' }
+        & cargo build --release --locked --no-default-features --features $features
         if ($LASTEXITCODE -ne 0) { throw 'Core release build failed.' }
     }
     if (!(Test-Path -LiteralPath $Binary -PathType Leaf)) { throw "Missing application binary: $Binary" }
@@ -51,6 +54,11 @@ try {
     New-Item -ItemType Directory -Path $stage -Force | Out-Null
     try {
         Copy-Item -LiteralPath $Binary -Destination (Join-Path $stage 'varda.exe')
+        if ($WithBrowser) {
+            & (Join-Path $PSScriptRoot 'build-windows-browser.ps1') -CefRoot $CefRoot -OutputDirectory $stage
+            # Browser binaries live in their own DLL search directory.
+            Copy-PackageDependencies (Join-Path $stage 'browser') $ffmpegBin @($CrtDirectory)
+        }
         foreach ($tool in @('ffmpeg.exe', 'ffprobe.exe')) {
             Copy-Item -LiteralPath (Join-Path $ffmpegBin $tool) -Destination $stage
         }
@@ -77,7 +85,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Bundled FFmpeg cannot start.' }
         $metadata = [ordered]@{
             version = $version; revision = (& git rev-parse HEAD).Trim(); experimental = $true
-            features = @('screen-capture'); target = 'x86_64-pc-windows-msvc'
+            features = $(if ($WithBrowser) { @('screen-capture', 'windows-browser') } else { @('screen-capture') }); target = 'x86_64-pc-windows-msvc'
             rust = (& rustc --version).Trim(); ffmpeg = (Get-Content (Join-Path $licenses 'FFmpeg-build.txt') -First 1)
             files = @(Get-ChildItem -LiteralPath $stage -Recurse -File | Sort-Object FullName | ForEach-Object {
                 @{ path = [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\', '/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }

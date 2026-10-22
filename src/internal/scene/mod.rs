@@ -501,6 +501,10 @@ impl From<EasingConfig> for crate::mixer::CrossfadeEasing {
 
 // ── Source ──────────────────────────────────────────────────────────
 
+fn default_browser_fps() -> u32 {
+    30
+}
+
 /// What generates the base image for a deck.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -595,8 +599,16 @@ pub enum SourceConfig {
     Dash { url: String },
     /// RTMP stream source (reconnected on restore)
     Rtmp { url: String, mode: String },
-    /// HTML content source (URL or file path, rendered via Servo)
-    Html { url: String },
+    /// Website source. Zero dimensions in legacy shows mean the show resolution.
+    Html {
+        url: String,
+        #[serde(default)]
+        width: u32,
+        #[serde(default)]
+        height: u32,
+        #[serde(default = "default_browser_fps")]
+        fps: u32,
+    },
     /// Depth sensor (Kinect/LIDAR point cloud, matched by name on restore)
     DepthSensor {
         name: String,
@@ -1175,7 +1187,7 @@ impl SourceConfig {
                     errors.push(format!("{prefix}: RTMP url is empty"));
                 }
             }
-            SourceConfig::Html { url } => {
+            SourceConfig::Html { url, .. } => {
                 if url.trim().is_empty() {
                     errors.push(format!("{prefix}: HTML url is empty"));
                 }
@@ -2401,11 +2413,14 @@ mod tests {
     fn scene_config_roundtrip_html_source() {
         let source = SourceConfig::Html {
             url: "https://example.com/visuals.html".to_string(),
+            width: 640,
+            height: 960,
+            fps: 24,
         };
         let json = serde_json::to_string(&source).unwrap();
         let restored: SourceConfig = serde_json::from_str(&json).unwrap();
         match restored {
-            SourceConfig::Html { url } => {
+            SourceConfig::Html { url, .. } => {
                 assert_eq!(url, "https://example.com/visuals.html");
             }
             _ => panic!("Expected Html source"),

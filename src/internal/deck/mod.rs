@@ -394,6 +394,7 @@ pub enum DeckSource {
     /// External live source (camera, NDI, Syphon, SRT, HLS, DASH, RTMP)
     ExternalSource {
         kind: ExternalSourceKind,
+        browser_settings: Option<crate::html::BrowserSettings>,
         /// REPLACE blit — writes the source's straight RGBA verbatim. Used when
         /// the deck is flagged `transparent` (preserves source alpha).
         blit_pipeline: BlitPipeline,
@@ -1781,6 +1782,33 @@ impl Deck {
         {
             *source_width = width;
             *source_height = height;
+        }
+    }
+
+    /// Authored browser settings, preserved even if its backend is unavailable.
+    pub fn browser_settings(&self) -> Option<&crate::html::BrowserSettings> {
+        match &self.source {
+            DeckSource::ExternalSource {
+                browser_settings, ..
+            } => browser_settings.as_ref(),
+            _ => None,
+        }
+    }
+
+    /// Update browser identity and source size without recreating effects.
+    pub fn set_browser_settings(&mut self, settings: crate::html::BrowserSettings) {
+        if let DeckSource::ExternalSource {
+            kind: ExternalSourceKind::Html(_),
+            browser_settings,
+            source_width,
+            source_height,
+            ..
+        } = &mut self.source
+        {
+            *source_width = settings.width;
+            *source_height = settings.height;
+            self.source_name = format!("🌐 {}", settings.url);
+            *browser_settings = Some(settings);
         }
     }
 

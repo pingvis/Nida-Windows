@@ -678,6 +678,14 @@ pub enum EngineCommand {
     ReloadHtmlDeck {
         deck_uuid: String,
     },
+    AddBrowserDeck {
+        channel_uuid: String,
+        settings: crate::html::BrowserSettings,
+    },
+    ConfigureBrowserDeck {
+        deck_uuid: String,
+        settings: crate::html::BrowserSettings,
+    },
     /// Open the interactive window for an HTML deck.
     OpenHtmlInteractive {
         deck_uuid: String,
@@ -1437,7 +1445,10 @@ pub enum EngineCommand {
     /// camera over USB: about two a second) — or, `false`, each in turn at
     /// the delay that keeps motion even. Every layer on that camera takes
     /// it: they share its capture.
-    SetCameraLowestLatency { deck_uuid: String, on: bool },
+    SetCameraLowestLatency {
+        deck_uuid: String,
+        on: bool,
+    },
     /// What a camera layer's picture is coded as, so the show gets Rec.709
     /// video from it: `normal` (shown as it comes), `sony_hlg`,
     /// `sony_s_log2`, `sony_s_log3_cine`, `sony_s_log3`,

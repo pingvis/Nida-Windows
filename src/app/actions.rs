@@ -217,6 +217,7 @@ pub(crate) fn command_is_deck_add(cmd: &EngineCommand) -> bool {
             | EngineCommand::AddDashDeck { .. }
             | EngineCommand::AddRtmpDeck { .. }
             | EngineCommand::AddHtmlDeck { .. }
+            | EngineCommand::AddBrowserDeck { .. }
             | EngineCommand::AddPlaylistDeck { .. }
             | EngineCommand::AddTimerDeck { .. }
     )

@@ -11,6 +11,7 @@ $temporary = Join-Path ([IO.Path]::GetTempPath()) ("Nida package test " + [guid]
 $oldPath = $env:PATH
 $oldNoInstall = $env:VARDA_NO_CLI_INSTALL
 $oldFfmpeg = $env:FFMPEG_DIR
+$python = (Get-Command python -ErrorAction Stop).Source
 New-Item -ItemType Directory -Path $temporary | Out-Null
 try {
     if ($PSCmdlet.ParameterSetName -eq 'Archive') {
@@ -38,6 +39,16 @@ try {
     try {
         & (Join-Path $package 'varda.exe') --version
         if ($LASTEXITCODE -ne 0) { throw 'Packaged application cannot start.' }
+        if ('windows-browser' -in $metadata.features) {
+            $browser = Join-Path $package 'browser'
+            foreach ($required in @('nida-browser-host.exe', 'nida-browser-host.dll', 'libcef.dll', 'icudtl.dat', 'resources.pak', 'locales', 'CEF-LICENSE.txt', 'nida-cef-inputs.json')) {
+                if (!(Test-Path -LiteralPath (Join-Path $browser $required))) { throw "Browser payload is missing $required" }
+            }
+            & (Join-Path $env:SystemRoot 'System32/icacls.exe') $browser /grant '*S-1-15-2-2:(OI)(CI)(RX)' /T /Q | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not grant CEF sandbox runtime access.' }
+            & $python (Join-Path $PSScriptRoot 'test-browser-host.py') (Join-Path $browser 'nida-browser-host.exe')
+            if ($LASTEXITCODE -ne 0) { throw 'Extracted CEF browser smoke test failed.' }
+        }
         $ffmpegVersion = @(& (Join-Path $package 'ffmpeg.exe') -hide_banner -version 2>&1)
         if ($LASTEXITCODE -ne 0 -or $ffmpegVersion[0] -notmatch '^ffmpeg version n?9\.') { throw 'FFmpeg 9 runtime check failed.' }
         & (Join-Path $package 'ffprobe.exe') -hide_banner -version

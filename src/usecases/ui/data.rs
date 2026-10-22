@@ -257,6 +257,7 @@ pub struct DeckUIInfo {
     pub name: String,
     /// True when this deck's source is an HTML/Servo instance.
     pub is_html: bool,
+    pub browser: Option<crate::html::BrowserSnapshot>,
     /// True when this deck's source is a depth sensor (point-cloud) source.
     pub is_depth_sensor: bool,
     /// Point-cloud controls (None = not a depth-sensor source).

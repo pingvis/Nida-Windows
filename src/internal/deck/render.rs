@@ -761,6 +761,7 @@ impl Deck {
                 source_width,
                 source_height,
                 scaling_mode,
+                ..
             } => {
                 // DepthSensor decks were already reprojected above via the
                 // point-cloud pass; the plain blit only applies to flat sources.
@@ -1181,7 +1182,10 @@ impl Deck {
     /// between theirs (see `mixer::main_transition`) — known before the
     /// source is bound, as when a take starts on a deck just added. Else why
     /// not, for the operator.
-    pub(crate) fn framing(&self, modulation: &ModulationEngine) -> Result<Framing<'_>, &'static str> {
+    pub(crate) fn framing(
+        &self,
+        modulation: &ModulationEngine,
+    ) -> Result<Framing<'_>, &'static str> {
         let over_black = self.source_draws()?;
         let DeckSource::ExternalSource {
             kind,

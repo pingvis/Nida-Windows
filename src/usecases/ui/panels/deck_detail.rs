@@ -769,7 +769,28 @@ pub(super) fn render_selected_deck_detail(
                         ui.set_min_width(140.0);
                         ui.set_max_width(200.0);
                         ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
-                            ui.label(egui::RichText::new("🌐 HTML").strong());
+                            ui.label(egui::RichText::new("🌐 Website / Browser").strong());
+                            if let Some(browser) = &deck.browser {
+                                if let Some(error) = &browser.error { ui.colored_label(egui::Color32::YELLOW, error); }
+                                let key = ui.id().with(("browser_settings", &deck.uuid));
+                                let mut settings = ui.data(|d| d.get_temp::<crate::html::BrowserSettings>(key)).unwrap_or_else(|| browser.settings.clone());
+                                ui.label("URL");
+                                ui.text_edit_singleline(&mut settings.url);
+                                ui.horizontal(|ui| {
+                                    ui.label("Size");
+                                    ui.add(egui::DragValue::new(&mut settings.width).range(1..=4096));
+                                    ui.label("×");
+                                    ui.add(egui::DragValue::new(&mut settings.height).range(1..=4096));
+                                });
+                                ui.horizontal(|ui| {
+                                    ui.label("FPS");
+                                    ui.add(egui::DragValue::new(&mut settings.fps).range(1..=60));
+                                });
+                                if ui.button("Apply source settings").clicked() {
+                                    actions.commands.push(EngineCommand::ConfigureBrowserDeck { deck_uuid: deck.uuid.clone(), settings: settings.clone() });
+                                }
+                                ui.data_mut(|d| d.insert_temp(key, settings));
+                            }
                             let reload_resp = ui.button("⟳ Reload");
                             if reload_resp.clicked() {
                                 actions.commands.push(EngineCommand::ReloadHtmlDeck {
@@ -788,7 +809,7 @@ pub(super) fn render_selected_deck_detail(
                             } else {
                                 "🖱 Interactive"
                             };
-                            let interactive_resp = ui.button(interactive_label);
+                            let interactive_resp = ui.add_enabled(deck.browser.as_ref().is_some_and(|b| b.interactive), egui::Button::new(interactive_label));
                             if interactive_resp.clicked() {
                                 let cmd = if deck.is_html_interactive {
                                     EngineCommand::CloseHtmlInteractive
@@ -2653,7 +2674,9 @@ mod tests {
             let mut actions = UIActions::new();
             let h = egui_kittest::Harness::builder()
                 .with_size(egui::vec2(600.0, 300.0))
-                .build_ui(|ui| render_border(ui, &deck, &crop, params.clone(), &data, &mut actions));
+                .build_ui(|ui| {
+                    render_border(ui, &deck, &crop, params.clone(), &data, &mut actions)
+                });
             h.get_by_label_contains("Circle");
             assert_eq!(
                 h.query_by_label_contains("Roundness").is_some(),

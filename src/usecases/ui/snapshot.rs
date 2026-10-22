@@ -117,6 +117,7 @@ pub(crate) fn build_ui_data(
                         uuid: d.uuid.clone(),
                         name: d.name.clone(),
                         is_html: d.is_html,
+                        browser: d.browser.clone(),
                         is_depth_sensor: d.is_depth_sensor,
                         point_cloud,
                         depth_prepro,
@@ -753,8 +754,7 @@ pub(crate) fn build_ui_data(
             .iter()
             .map(|url| crate::usecases::ui::HtmlLibraryEntry {
                 url: url.clone(),
-                active: (0..app.external_io.html_manager.instance_count())
-                    .any(|i| app.external_io.html_manager.instance_url(i) == Some(url.as_str())),
+                active: app.external_io.html_manager.has_url(url),
             })
             .collect(),
 
@@ -916,10 +916,25 @@ mod tests {
     #[test]
     fn a_channel_runs_at_its_slowest_moving_layer_and_a_still_does_not_count() {
         // The PiP scene: a still background and four moving taps.
-        let pip = [(0.16, true), (61.0, false), (61.1, false), (61.0, false), (61.2, false)];
-        assert!((channel_fps(pip) - 61.0).abs() < 1e-4, "not dragged to 48 by the still");
-        assert!((channel_fps([(61.0, false), (30.0, false)]) - 30.0).abs() < 1e-4, "the slowest");
-        assert!(channel_fps([(0.16, true)]).abs() < f32::EPSILON, "nothing moving");
+        let pip = [
+            (0.16, true),
+            (61.0, false),
+            (61.1, false),
+            (61.0, false),
+            (61.2, false),
+        ];
+        assert!(
+            (channel_fps(pip) - 61.0).abs() < 1e-4,
+            "not dragged to 48 by the still"
+        );
+        assert!(
+            (channel_fps([(61.0, false), (30.0, false)]) - 30.0).abs() < 1e-4,
+            "the slowest"
+        );
+        assert!(
+            channel_fps([(0.16, true)]).abs() < f32::EPSILON,
+            "nothing moving"
+        );
         assert!(channel_fps([]).abs() < f32::EPSILON, "no layers");
     }
 }
