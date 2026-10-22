@@ -624,6 +624,7 @@ impl Effect {
         if !self.is_active() {
             return Ok(());
         }
+        context.colour_pick.capture(context, self.uuid(), input_view, uniforms.render_size, cmd_buffers);
         let Some(mask) = self.mask.clone() else {
             self.apply_passes(
                 context,

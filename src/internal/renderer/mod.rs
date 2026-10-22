@@ -1,5 +1,6 @@
 pub mod blit;
 pub mod camera_profile;
+pub mod colour_pick;
 pub mod compute_pipeline;
 pub mod config;
 pub mod context;

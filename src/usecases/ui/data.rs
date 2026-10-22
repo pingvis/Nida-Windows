@@ -441,6 +441,8 @@ pub struct UIData {
     /// Output preview textures keyed by output index
     pub output_preview_textures: std::collections::HashMap<usize, egui::TextureId>,
     pub main_output_texture: Option<egui::TextureId>,
+    /// Picture immediately before the effect being colour-picked.
+    pub colour_pick_preview: Option<(String, egui::TextureId, [u32; 2])>,
     pub notifications: Vec<NotificationUI>,
     /// Crossfader position (0.0 = A, 1.0 = B)
     pub crossfader: f32,

@@ -164,6 +164,7 @@ fn follow_selection(ctx: &egui::Context, data: &UIData) {
     });
     ctx.memory_mut(|m| m.data.insert_temp(seen_id(), now.clone()));
     let Some(mut open) = current(ctx) else {
+        super::super::preview_picker::cancel(ctx);
         return;
     };
     // Nothing seen before this frame is no change either.
@@ -294,6 +295,7 @@ pub(super) fn render_channel_settings(
 ) {
     follow_selection(ctx, data);
     let Some(mut open) = current(ctx) else {
+        super::super::preview_picker::cancel(ctx);
         return;
     };
     let Some((ch, layer)) = resolve(data, &open).or_else(|| {
@@ -309,6 +311,8 @@ pub(super) fn render_channel_settings(
     if layer.is_none() {
         open.item = Item::Channel;
     }
+    let pick_chain = chain(ch, layer);
+    super::super::preview_picker::validate(ctx, &pick_chain.owner, pick_chain.effects);
     let tabs = tabs_for(layer);
     if !tabs.contains(&open.tab) {
         open.tab = tabs[0];
@@ -355,6 +359,7 @@ pub(super) fn render_channel_settings(
             .as_ref()
             .is_some_and(|w| ctx.rect_contains_pointer(w.response.layer_id, w.response.rect));
     if !still_open || escaped {
+        super::super::preview_picker::cancel(ctx);
         ctx.memory_mut(|m| m.data.remove::<Open>(open_id()));
     }
 }
@@ -1484,6 +1489,7 @@ fn render_single_effect(
         }
     });
     super::deck_detail::render_effect_controls(ui, &chain.owner, effect, data, actions);
+    super::super::preview_picker::button(ui, &chain.owner, effect);
 }
 
 /// Every other effect on the chain, in the order they run, each with its

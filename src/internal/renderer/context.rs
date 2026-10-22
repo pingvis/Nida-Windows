@@ -267,6 +267,8 @@ pub struct GpuContext {
     /// Keeps every submit clear of a surface's configure, which wgpu refuses
     /// when another thread submits meanwhile. See `submit_gate`.
     pub submit_gate: super::submit_gate::SubmitGate,
+    /// Temporary pre-effect colour sampling; never persisted in shows.
+    pub(crate) colour_pick: super::colour_pick::ColourPickCapture,
 }
 
 /// Window surface for presentation — surface, swapchain config, and size.
@@ -428,6 +430,7 @@ impl GpuContext {
             errors,
             submits: super::submit_stats::SubmitCounter::new(),
             submit_gate: super::submit_gate::SubmitGate::new(),
+            colour_pick: super::colour_pick::ColourPickCapture::default(),
         };
         gpu.configure_surface(&surface, &surface_config);
         let win_surface = WindowSurface {
@@ -555,6 +558,7 @@ impl GpuContext {
             errors,
             submits: super::submit_stats::SubmitCounter::new(),
             submit_gate: super::submit_gate::SubmitGate::new(),
+            colour_pick: super::colour_pick::ColourPickCapture::default(),
         })
     }
 

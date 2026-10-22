@@ -598,6 +598,7 @@ pub(crate) fn build_ui_data(
         channel_preview_textures: channel_preview_textures.clone(),
         output_preview_textures: output_preview_textures.clone(),
         main_output_texture,
+        colour_pick_preview: None,
         notifications,
         crossfader: engine.mixer.crossfader,
         auto_crossfade_active: engine.mixer.auto_crossfade_active,

@@ -16,6 +16,7 @@ use winit::{
 };
 
 mod camera_detect;
+mod colour_pick;
 mod deck_load;
 mod detect;
 mod drag_position;
@@ -52,6 +53,8 @@ pub struct UIRunner {
     egui_state: Option<egui_winit::State>,
     egui_renderer: Option<egui_wgpu::Renderer>,
     preview_encoder: Option<PreviewEncoder>,
+    colour_pick_texture: Option<(String, u64, egui::TextureId, [u32; 2])>,
+    colour_pick_readback: Option<(String, std::sync::mpsc::Receiver<Option<[f32; 3]>>)>,
     /// The textures this frame's UI draws, tessellated: the previews to
     /// encode (see `encode_previews`).
     textures_drawn: std::collections::HashSet<egui::TextureId>,
@@ -207,6 +210,8 @@ impl UIRunner {
             egui_state: None,
             egui_renderer: None,
             preview_encoder: None,
+            colour_pick_texture: None,
+            colour_pick_readback: None,
             textures_drawn: std::collections::HashSet::new(),
             drawn_px: std::collections::HashMap::new(),
             deck_preview_textures: std::collections::HashMap::new(),
@@ -1046,6 +1051,8 @@ impl UIRunner {
         self.sync_camera_detect_capture();
         self.part("windows", t_part);
 
+        self.refresh_colour_pick();
+
         // 4. Collect UI data snapshot (engine → UI, with UI-owned layout state)
         let t_part = std::time::Instant::now();
         let varda_ref = self.varda.as_ref()?;
@@ -1057,6 +1064,7 @@ impl UIRunner {
             &self.output_preview_textures,
             self.main_output_texture,
         );
+        ui_data.colour_pick_preview = self.colour_pick_texture.as_ref().map(|(effect, _, texture, size)| (effect.clone(), *texture, *size));
         ui_data.saved_layouts = self.saved_layouts.layouts();
         ui_data.window_choices = self.window_choices.choices();
         if cfg!(target_os = "windows") {
@@ -1583,6 +1591,7 @@ impl UIRunner {
         // Previews, gamma-encoded from the engine's latest frame for the
         // thumbnails the UI draws.
         let t_part = std::time::Instant::now();
+        self.sync_colour_pick();
         self.encode_previews();
         self.part("previews", t_part);
 

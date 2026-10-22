@@ -7,6 +7,7 @@
 
 mod actions;
 pub mod colour_sampler;
+pub(crate) mod preview_picker;
 mod data;
 pub(crate) mod keyboard;
 pub mod notifications;

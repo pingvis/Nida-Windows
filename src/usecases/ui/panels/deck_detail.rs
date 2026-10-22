@@ -2435,14 +2435,36 @@ fn render_effect_param_widgets(
 ) {
     let (eff_uuid, _, _, eff_params) = effect;
     let eff_midi_prefix = format!("{owner}/effect/{eff_uuid}");
+    // Chroma parameters are stored as sRGB, while egui's float colour
+    // editor expects linear RGB. Match the sampled picture and keep the
+    // existing show/shader-upload representation unchanged.
+    let srgb_key = cfg!(target_os = "windows") && effect.1 == "chroma_key";
+    let linear_params;
+    let params = if srgb_key {
+        linear_params = eff_params.params.iter().cloned().map(|mut param| {
+            if let ParamValue::Color(ref mut c) = param.value {
+                for component in &mut c[..3] { *component = crate::params::srgb_to_linear(*component); }
+            }
+            param
+        }).collect::<Vec<_>>();
+        &linear_params
+    } else { &eff_params.params };
     widgets::render_effect_params(
         ui,
-        &eff_params.params,
+        params,
         &data.modulation_sources,
         &|name: &str, val: ParamValue| EngineCommand::SetEffectParam {
             effect_uuid: eff_uuid.clone(),
             name: name.to_string(),
-            value: val,
+            value: if srgb_key {
+                match val {
+                    ParamValue::Color(mut c) => {
+                        for component in &mut c[..3] { *component = super::super::preview_picker::srgb_from_linear(*component); }
+                        ParamValue::Color(c)
+                    }
+                    other => other,
+                }
+            } else { val },
         },
         Some(
             &|name: &str, source_uuid: &str| EngineCommand::AssignModulation {

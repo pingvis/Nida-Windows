@@ -325,6 +325,7 @@ impl UIData {
             channel_preview_textures: std::collections::HashMap::new(),
             output_preview_textures: std::collections::HashMap::new(),
             main_output_texture: None,
+            colour_pick_preview: None,
             notifications: vec![],
             crossfader: 0.5,
             auto_crossfade_active: false,

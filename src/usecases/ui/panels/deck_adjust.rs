@@ -57,6 +57,8 @@ pub(super) fn render_preview(
         (view, _) => view,
     };
 
+    let picking = super::super::preview_picker::current(ui.ctx());
+    ui.add_enabled_ui(picking.is_none(), |ui| {
     ui.horizontal_wrapped(|ui| {
         ui.label(egui::RichText::new("Show:").small());
         let pick = |ui: &mut egui::Ui, v: View, label: &str, hover: &str| {
@@ -85,6 +87,8 @@ pub(super) fn render_preview(
         }
     });
 
+    });
+
     let (texture, width, height) = match view {
         View::Channel => (
             data.channel_preview_textures.get(&ch_idx).copied(),
@@ -111,6 +115,12 @@ pub(super) fn render_preview(
             data.render_height,
         ),
     };
+    let (texture, width, height) = if let Some(pick) = &picking {
+        match &data.colour_pick_preview {
+            Some((effect, texture, size)) if *effect == pick.effect => (Some(*texture), size[0], size[1]),
+            _ => (None, data.render_width, data.render_height),
+        }
+    } else { (texture, width, height) };
     let size = super::utils::preview_size(
         egui::vec2(ui.available_width(), max_height.max(120.0)),
         width,
@@ -130,6 +140,8 @@ pub(super) fn render_preview(
     };
     response
         .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Other, true, "Adjust preview"));
+
+    if super::super::preview_picker::handle(ui, &response, data, actions) { return; }
 
     // Drawing a mask: the picture is the frame the mask is in, so not a
     // screen's own picture; the drag draws it, and does not move the layer.
@@ -798,6 +810,40 @@ mod tests {
             harness.state().session.gesture_active,
             "one undo step for the drag"
         );
+    }
+
+    #[test]
+    fn colour_picking_consumes_preview_clicks_and_escape_without_other_edits() {
+        use super::super::super::preview_picker::{self, Pick};
+        let mut data = UIData::test_fixture();
+        let deck = deck_with_transform(&mut data);
+        let layer = data.channels[0].decks.iter_mut().find(|d| d.uuid == deck).unwrap();
+        layer.is_html = true;
+        layer.browser = Some(crate::html::BrowserSnapshot {
+            settings: crate::html::BrowserSettings { url: "https://example.com".into(), ..Default::default() },
+            ready: true, interactive: true, error: None,
+        });
+        data.colour_pick_preview = Some(("key".into(), egui::TextureId::User(42), [1920, 1080]));
+        let mut h = harness_for(data, &deck);
+        let request = Pick { owner: format!("deck/{deck}"), effect: "key".into(), alpha: 0.4, uv: None, waiting: false, rgb: None };
+        preview_picker::store(&h.ctx, request);
+        h.step();
+        let pos = h.get_by_label("Adjust preview").rect().center();
+        h.event(egui::Event::PointerMoved(pos));
+        h.step();
+        for pressed in [true, false, true, false] {
+            h.event(egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::default() });
+            h.step();
+        }
+        assert!(h.state().commands.is_empty(), "picking cannot transform or interact");
+        let pending = preview_picker::current(&h.ctx).unwrap();
+        assert!(pending.waiting);
+        let uv = pending.uv.unwrap();
+        assert!((uv[0] - 0.5).abs() < 1e-5 && (uv[1] - 0.5).abs() < 1e-5);
+        h.event(egui::Event::Key { key: egui::Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: egui::Modifiers::default() });
+        h.step();
+        assert!(preview_picker::current(&h.ctx).is_none());
+        assert!(h.state().commands.is_empty(), "Escape preserves settings");
     }
 
     /// Shift-drag resizes, as in vMix, and leaves the position alone.
