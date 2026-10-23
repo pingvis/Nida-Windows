@@ -4,4 +4,3 @@
 pub mod ffi;
 #[path = "../../../src/internal/ndi/sdk.rs"]
 pub mod sdk;
-

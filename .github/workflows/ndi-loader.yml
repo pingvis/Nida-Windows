@@ -22,6 +22,7 @@ permissions:
 jobs:
   loader:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-2022]
     runs-on: ${{ matrix.os }}
@@ -47,4 +48,3 @@ jobs:
           name: NDI-runtime-probe-windows-x64
           path: tests/ndi-loader/target/release/nida-ndi-loader-checks.exe
           retention-days: 7
-

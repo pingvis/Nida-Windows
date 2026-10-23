@@ -337,7 +337,10 @@ mod tests {
         let candidates = windows_runtime_candidates(|name| {
             (name == "NDI_RUNTIME_DIR_V6").then(|| directory.clone().into_os_string())
         });
-        assert_eq!(candidates, vec![directory.join("Processing.NDI.Lib.x64.dll")]);
+        assert_eq!(
+            candidates,
+            vec![directory.join("Processing.NDI.Lib.x64.dll")]
+        );
     }
 
     #[test]
@@ -379,7 +382,10 @@ mod tests {
         let candidates = windows_runtime_candidates(|name| {
             (name == "NDI_RUNTIME_DIR_V5").then(|| directory.clone().into_os_string())
         });
-        assert_eq!(candidates, vec![directory.join("Processing.NDI.Lib.x64.dll")]);
+        assert_eq!(
+            candidates,
+            vec![directory.join("Processing.NDI.Lib.x64.dll")]
+        );
     }
 
     #[test]

@@ -10,4 +10,3 @@ fn main() {
         (sdk.destroy)();
     }
 }
-
