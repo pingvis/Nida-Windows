@@ -1,81 +1,76 @@
-# Windows installer files
+# Windows portable and installer downloads
 
-The fork's **Windows installer (files only)** workflow builds the experimental
-core portable payload, verifies it, and wraps it with Inno Setup 6.7.1. It
-outputs a setup executable and SHA256 checksum as downloadable Actions artifacts.
-It has read-only repository access and does not create releases, tags or branches.
+Use **Actions → Windows portable and installer → Run workflow**. Select the
+source branch or tag in **Use workflow from**, then optionally enter a version
+such as `v0.9.1-beta.4`. That one version labels both downloads. On a tag, the tag
+is used automatically and a conflicting input is rejected. On a branch, an empty
+input uses `Cargo.toml`. The numeric version must match Cargo; a leading `v` and
+prerelease capitalization are normalized to the existing lowercase filenames.
+Pushing a `v*` tag also runs this workflow against the tagged commit.
 
-## Download the setup file
+Download the run's `Nida-<version>-windows-x64` artifact. It contains:
 
-1. Open **Actions → Windows installer (files only) → Run workflow**. The default
-   source is `main`; no tag needs to be created.
-2. Leave **version** empty to use `Cargo.toml`, or enter a setup label such as
-   `0.9.1-beta.2`. A leading `v` is accepted. Its numeric version must match
-   the app in `Cargo.toml`. This field labels the installer, not a Git ref.
-3. When the run succeeds, download **Nida-Windows-installer** under **Artifacts**.
-   Extract that download and run `Nida-<version>-windows-x64-Setup.exe`.
+- `Nida-<version>-windows-x64-portable.zip`
+- `Nida-<version>-windows-x64-portable.zip.sha256`
+- `Nida-<version>-windows-x64-Setup.exe`
+- `Nida-<version>-windows-x64-Setup.exe.sha256`
 
-The artifact contains the setup executable and its `.sha256` file. The portable
-ZIP is used internally to assemble the installer; use the separate portable
-workflow if you want that ZIP instead. Artifacts are retained for 14 days.
-Pull requests touching the installer also build and test these files.
+Checksums contain the final asset filenames, so no renaming or checksum editing
+is needed before uploading them to a release. Artifacts are retained for 14 days.
+The workflow has read-only repository permissions: it builds files and does not
+create releases or tags or upload release assets automatically.
 
-The workflow verifies the portable payload, compiles Setup, and exercises
-isolated test installers: installation, shortcut targets, clean-PATH payload/
-encoder checks, upgrade, and uninstall with user files preserved. Test fixtures
-are not included in the downloadable setup artifact.
+The application and CEF helper are built once with
+`screen-capture,windows-browser`. The verified portable ZIP is the exact payload
+wrapped by Inno Setup 6.7.1. Both downloads include the browser runtime and the
+same version, source revision, payload hashes and `nida.ico`. The core-only
+portable distribution workflow is retired; the separate browser workflow now
+runs development checks without producing a competing release package.
 
-## What the installer does
+## Installer behavior
 
-- Installs for the current user under `%LOCALAPPDATA%\Programs\Nida Windows`,
-  without an administrator prompt.
-- Creates a Start menu shortcut and offers an optional desktop shortcut. They
-  launch from the user profile, preserving the existing default workspace.
-- Registers an uninstaller in Windows Settings. Upgrades use the same AppId and
-  installation folder. Close Nida first; Setup does not close a running show.
-- Removes installer-owned files and shortcuts on uninstall, preserving personal
-  files and separately stored shows and recordings.
+The installer installs for the current user under
+`%LOCALAPPDATA%\Programs\Nida Windows`, without an administrator prompt. It creates
+a Start menu shortcut and offers a desktop shortcut. Both retain the default
+workspace under the user profile. Close Nida before upgrading: Setup does not
+stop a running show.
 
-The EXE and installer are unsigned. The core feature set and remaining device/
-GPU validation limits are the same as [the portable package](windows-packaging.md).
-The existing corresponding-source requirements still apply if these files are
-later distributed publicly; see the packaging guide.
+Setup embeds `assets/nida.ico`; the payload, shortcuts and uninstall entry use
+that same icon. It is a multi-size conversion of the existing `assets/icon.png`
+artwork, with 16, 24, 32, 48, 64, 128 and 256-pixel images. The application window
+continues using its existing PNG icon.
 
-## Local build and test
+The AppId and install folder remain stable across upgrades. Uninstall removes
+installer-owned files and shortcuts while preserving unknown personal files and
+separately stored workspaces and recordings. Packages remain unsigned and
+experimental; device/GPU qualification and the corresponding-source requirements
+in [Windows packaging](windows-packaging.md) still apply.
 
-Run from PowerShell 7 on Windows. First create a verified portable package using
-the existing [Windows build instructions](windows-packaging.md), then:
+## Local build
+
+From PowerShell 7 in an x64 Developer PowerShell environment:
 
 ```powershell
-$compiler = ./scripts/ci/setup-inno.ps1 -ToolsDirectory .windows-tools/inno
-./scripts/ci/build-windows-installer.ps1 -Archive C:\build\Nida-portable.zip -Compiler $compiler
+./scripts/ci/setup-windows-build.ps1 -ToolsDirectory C:\nida-tools\build
+./scripts/ci/setup-windows-cef.ps1 -ToolsDirectory C:\nida-tools\cef
+./scripts/ci/build-windows.ps1 -WithBrowser -ReleaseVersion v0.9.1-beta.4
+$compiler = ./scripts/ci/setup-inno.ps1 -ToolsDirectory C:\nida-tools\inno
+./scripts/ci/build-windows-installer.ps1 -Archive dist/windows/Nida-0.9.1-beta.4-windows-x64-portable.zip -Compiler $compiler
 ```
 
-The compiler is downloaded from its official immutable GitHub release, checked
-against a pinned SHA256, and unpacked portably. No system-wide compiler install
-is needed. `-ReleaseVersion 0.9.1-beta.1` supplies the installer display version;
-its numeric part must match the portable payload's build manifest.
+Use fresh tools directories. The portable manifest stores the release label as
+`version`, Cargo's application version as `package_version`, and the full source
+commit as `revision`. The installer inherits the portable manifest's version; a
+production override must match it exactly. Windows' numeric file version remains
+based on the numeric application version.
 
-For an automated install test, compile two fixtures with `-TestIdentity` and
-different suffixes, such as `0.9.1-installer-test.1` and `.2`, then pass their
-paths to `test-windows-installer.ps1 -Installer ... -UpgradeInstaller ...`.
-The test identity uses separate registration and shortcut names and an isolated
-temporary install folder. The test refuses a production installer or an already
-registered test installation. Test logs and user-data fixtures are retained.
+The workflow retains the existing package smoke checks and isolated installer
+install/upgrade/uninstall checks, and checks the installed icon references.
+`test-windows-package-helpers.ps1` covers version normalization, tag/input
+conflicts, numeric-version mismatches and final checksum filenames without
+requiring a Rust build or the Windows SDK.
 
-The product identity and fork links currently belong to `pingvis/Nida-Windows`.
-An upstream contribution can reuse the scripts but should choose its own stable
-AppId, branding and release policy before distributing installers.
-
-## Local validation — 19 October 2026
-
-The production installer and two isolated test installers compiled with the
-pinned compiler. The automated test passed initial installation, both shortcut
-targets, a display-version upgrade which discovered the existing install folder,
-replacement of installer-owned content, payload hashes and clean-PATH H.264/AAC
-encode/probe/decode after both installs, and uninstall. Test registration,
-shortcuts and application files were removed; a separately stored show fixture
-and an unknown personal file inside the installation folder survived.
-
-PowerShell syntax checks and actionlint passed for the new workflow and scripts.
-GitHub-hosted execution and a clean-PC user test remain separate checks.
+Installer test fixtures use `-TestIdentity` with a separate AppId, shortcuts and
+temporary install folder; only these fixtures may use different prerelease
+labels to exercise an upgrade. The automated test refuses production installers.
+Test logs are retained, and user-data fixtures survive uninstall.

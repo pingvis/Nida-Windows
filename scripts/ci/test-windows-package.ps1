@@ -22,7 +22,7 @@ try {
     } else {
         $package = (Resolve-Path -LiteralPath $PackageDirectory).Path
     }
-    foreach ($required in @('varda.exe', 'ffmpeg.exe', 'ffprobe.exe', 'shaders', 'licenses/FFmpeg.txt', 'build-info.json', 'Read me first.txt')) {
+    foreach ($required in @('varda.exe', 'nida.ico', 'ffmpeg.exe', 'ffprobe.exe', 'shaders', 'licenses/FFmpeg.txt', 'build-info.json', 'Read me first.txt')) {
         if (!(Test-Path -LiteralPath (Join-Path $package $required))) { throw "ZIP is missing $required" }
     }
     $metadata = Get-Content -LiteralPath (Join-Path $package 'build-info.json') -Raw | ConvertFrom-Json

@@ -1,5 +1,24 @@
 Set-StrictMode -Version Latest
 
+function Resolve-WindowsReleaseVersion {
+    param([string]$RequestedVersion, [Parameter(Mandatory)][string]$PackageVersion, [string]$TagVersion)
+    $pattern = '^\d+\.\d+\.\d+(-[a-z0-9-]+(\.[a-z0-9-]+)*)?$'
+    $requested = ([string]$RequestedVersion).Trim().ToLowerInvariant() -replace '^v', ''
+    $tag = ([string]$TagVersion).Trim().ToLowerInvariant() -replace '^v', ''
+    if ($requested -and $tag -and $requested -cne $tag) { throw 'Release version must match the selected tag.' }
+    $version = if ($tag) { $tag } elseif ($requested) { $requested } else { $PackageVersion.ToLowerInvariant() }
+    if ($version -cnotmatch $pattern) { throw 'Use a release version such as 0.9.1-beta.4 (an optional leading v is accepted).' }
+    if (($version -split '-')[0] -ne ($PackageVersion -split '-')[0]) { throw 'The numeric release version must match the package version.' }
+    $version
+}
+
+function Write-PackageChecksum {
+    param([Parameter(Mandatory)][string]$Path)
+    $name = [IO.Path]::GetFileName($Path)
+    $hash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    "$hash  $name" | Set-Content -LiteralPath "$Path.sha256" -Encoding ascii
+}
+
 function ConvertFrom-DumpbinDependencies {
     param([string[]]$Lines)
     @($Lines | ForEach-Object {
@@ -61,4 +80,4 @@ function Copy-PackageDependencies {
     }
 }
 
-Export-ModuleMember -Function ConvertFrom-DumpbinDependencies, Get-PeDependencies, Find-PackageDependency, Copy-PackageDependencies
+Export-ModuleMember -Function Resolve-WindowsReleaseVersion, Write-PackageChecksum, ConvertFrom-DumpbinDependencies, Get-PeDependencies, Find-PackageDependency, Copy-PackageDependencies
