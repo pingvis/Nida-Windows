@@ -879,6 +879,41 @@ mod tests {
     };
     use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 
+    /// Synthetic textures only: no desktop capture, UI automation or audio.
+    #[test]
+    #[ignore = "Timing diagnostic; run serially without an active compiler"]
+    fn native_capture_readback_performance() {
+        let (device, context) = create_d3d_device().unwrap();
+        for (width, height, out_w, out_h) in [(3840, 2160, 1920, 1080), (2560, 1440, 1920, 1080), (1920, 1080, 1280, 720)] {
+            let pixels = [20u8, 50, 180, 117].repeat(width as usize * height as usize);
+            let desc = D3D11_TEXTURE2D_DESC {
+                Width: width, Height: height, MipLevels: 1, ArraySize: 1,
+                Format: DXGI_FORMAT_B8G8R8A8_UNORM,
+                SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+                Usage: D3D11_USAGE_DEFAULT, ..Default::default()
+            };
+            let initial = D3D11_SUBRESOURCE_DATA { pSysMem: pixels.as_ptr().cast(), SysMemPitch: width * 4, ..Default::default() };
+            let mut texture = None;
+            unsafe { device.CreateTexture2D(&raw const desc, Some(&raw const initial), Some(&raw mut texture)) }.unwrap();
+            let texture = texture.unwrap();
+            let geometry = Geometry { src_x: 0, src_y: 0, src_w: width, src_h: height, out_w, out_h };
+            let mut staging = None;
+            let mut times = Vec::new();
+            for iteration in 0..12 {
+                let started = Instant::now();
+                let frame = read_back(&context, &texture, geometry, &mut staging).unwrap();
+                let elapsed = started.elapsed().as_secs_f64() * 1000.0;
+                assert_eq!((frame.width, frame.height), (out_w, out_h));
+                assert_eq!(frame.data.len(), out_w as usize * out_h as usize * 4);
+                assert!(frame.data.chunks_exact(4).all(|p| p == [20, 50, 180, 117]));
+                if iteration >= 3 { times.push(elapsed); }
+                std::hint::black_box(frame);
+            }
+            times.sort_by(f64::total_cmp);
+            eprintln!("CAPTURE_READBACK,{width}x{height},{out_w}x{out_h},median_ms={:.3},max_ms={:.3}", times[4], times[8]);
+        }
+    }
+
     #[test]
     fn readback_reuses_allocations_and_preserves_pixels_across_crop_changes() {
         let (device, context) = create_d3d_device().expect("D3D11 hardware or WARP device");

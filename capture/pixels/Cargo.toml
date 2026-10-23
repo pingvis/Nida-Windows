@@ -1,0 +1,12 @@
+[package]
+name = "nida-capture-pixels"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[example]]
+name = "resample"
+path = "../../scripts/ci/benchmark-capture-resample.rs"
+
+[profile.dev.package.nida-capture-pixels]
+opt-level = 3

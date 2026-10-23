@@ -40,6 +40,7 @@ too_many_lines = "allow"
 
 [dependencies]
 nida-browser-protocol = { path = "browser/protocol" }
+nida-capture-pixels = { path = "capture/pixels" }
 # Graphics
 wgpu = "30.0"
 winit = "0.30"
@@ -380,6 +381,10 @@ incremental = false
 # The CEF decoder touches every pixel. Unoptimized 1080p conversion alone can
 # exceed 100 ms; keep this isolated hot path fast while the app stays debuggable.
 [profile.dev.package.nida-browser-protocol]
+opt-level = 3
+
+# CPU screen-capture downscaling is otherwise hundreds of ms/frame in debug.
+[profile.dev.package.nida-capture-pixels]
 opt-level = 3
 
 [profile.release]

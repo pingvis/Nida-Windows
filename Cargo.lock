@@ -6025,6 +6025,10 @@ name = "nida-browser-protocol"
 version = "0.0.0"
 
 [[package]]
+name = "nida-capture-pixels"
+version = "0.0.0"
+
+[[package]]
 name = "nix"
 version = "0.31.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11956,6 +11960,7 @@ dependencies = [
  "naga 30.0.0",
  "ndarray",
  "nida-browser-protocol",
+ "nida-capture-pixels",
  "nokhwa",
  "notify",
  "objc2 0.6.4",
