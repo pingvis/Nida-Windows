@@ -16,10 +16,16 @@ release or tag was created.
 
 Individual validation and limitations are documented in windows-colour-picker.md,
 windows-app-audio.md, windows-capture-exclusion.md and windows-capture-performance.md.
-The final combined build and selected tests are running; their logs are under
-`target/windows-features-preview-*.log`. The machine-readable current status is
-`target/windows-feature-progress.json`. Do not claim combined-build success until
-its log and exit status confirm it.
+The combined debug build succeeded. Production Clippy passed, along with 50
+picker tests, 51 capture tests and seven app-audio tests. Interactive/audio
+fixtures were excluded. Logs are under `target/windows-features-preview-*.log`.
+
+The preview is running from `target/debug/varda-windows-features-preview.exe`,
+using `target/windows-features-preview-workspace`, API port 8100. API smoke checks
+confirmed about 60 fps after startup, no configured bus or monitor audio device,
+a silent "Picker test" colour input with chroma key, and successful workspace save.
+Runtime metadata is in `target/windows-features-preview-current.json`.
+
 
 **Do not use computer speakers or change Windows volume/routing.** Task tone
 fixtures were stopped, and their standalone helpers now refuse implicit default
@@ -34,10 +40,13 @@ No manual picker click/preview resize/browser interaction gesture validation is
 claimed. Native GPU/API tests cover the implementation but do not replace those
 user-visible checks.
 
-Finish the combined targeted checks and build, launch it in a fresh isolated
-workspace with no media or configured audio destinations, and perform API smoke
-checks. Preserve the individual branches. Then present concrete results and the
-remaining manual/live-audio limitations. User allows overwriting test shows.
-Do not reboot/shut down the PC, touch unrelated processes, or push/merge main.
-At <=5% remaining usage, checkpoint and schedule this chat after the limiting reset;
-repeat until the four features are ready for review, then pause the continuation.
+The four implementations and combined preview are ready for review with the
+manual UI and live-audio limitations above. No speaker playback was used during
+this resumed verification. Main and remotes remain unchanged. The standalone
+benchmark cache ignore was also propagated to the performance branch.
+
+The usage-limit continuation reached its scheduled reset before this resumed run.
+Its automation remains ACTIVE: the app's usage/automation tools were unavailable
+in this session, so it could not be paused through the supported tool. On a later
+wake, read this completed checkpoint, pause that continuation when the tool is
+available, and do no further implementation work unless the user requests it.
