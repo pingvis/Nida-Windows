@@ -422,10 +422,17 @@ pub struct WindowsBackend {
     width: u32,
     height: u32,
     config: CaptureConfig,
+    exclusion: Option<crate::renderer::capture_exclusion::windows::Lease>,
+    is_display: bool,
 }
 
 impl WindowsBackend {
     fn new(target: &CaptureTargetInfo, config: &CaptureConfig) -> Result<Self, CaptureError> {
+        let exclusion = match target.kind {
+            CaptureTargetKind::Display if config.exclude_varda => Some(crate::renderer::capture_exclusion::windows::Lease::display()),
+            CaptureTargetKind::Display => None,
+            CaptureTargetKind::Window => Some(crate::renderer::capture_exclusion::windows::Lease::window(target.platform_id as usize)),
+        };
         let item = capture_item(target)?;
         let size = item
             .Size()
@@ -501,6 +508,8 @@ impl WindowsBackend {
             width: geometry.out_w,
             height: geometry.out_h,
             config: config.clone(),
+            exclusion,
+            is_display: target.kind == CaptureTargetKind::Display,
         })
     }
 }
@@ -754,6 +763,9 @@ impl ScreenCaptureBackend for WindowsBackend {
             return Ok(());
         }
         let cursor_changed = config.show_cursor != self.config.show_cursor;
+        if self.is_display && config.exclude_varda != self.config.exclude_varda {
+            self.exclusion = config.exclude_varda.then(crate::renderer::capture_exclusion::windows::Lease::display);
+        }
         self.config = config.clone();
 
         let geometry = Geometry::resolve(self.native_w, self.native_h, config);
@@ -789,6 +801,79 @@ mod tests {
     use super::{create_d3d_device, read_back, CaptureRateGate, Geometry};
     use std::time::{Duration, Instant};
     use windows::core::Interface;
+
+    /// Inspect only a four-by-four crop of our own colour fixture. No desktop
+    /// image is saved or used to inspect/control another application.
+    #[test]
+    #[ignore = "Needs an unlocked interactive Windows desktop; briefly shows a small colour fixture"]
+    fn native_display_exclusion_toggle_changes_wgc_pixels_and_restores_window_capture() {
+        use super::{enumerate_monitors, ensure_supported, WindowsBackend};
+        use crate::screen_capture::backend::{CaptureConfig, CropRect, ScreenCaptureBackend};
+        use windows::core::w;
+        use windows::Win32::Foundation::{COLORREF, HWND, RECT};
+        use windows::Win32::Graphics::Gdi::{CreateSolidBrush, DeleteObject, FillRect, GdiFlush, GetDC, GetMonitorInfoW, ReleaseDC, HMONITOR, MONITORINFO};
+        use windows::Win32::UI::WindowsAndMessaging::{CreateWindowExW, DestroyWindow, DispatchMessageW, PeekMessageW, TranslateMessage, MSG, PM_REMOVE, WS_EX_NOACTIVATE, WS_EX_TOPMOST, WS_POPUP, WS_VISIBLE};
+        use windows::Win32::UI::HiDpi::{SetThreadDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, DPI_AWARENESS_CONTEXT};
+        struct Dpi(DPI_AWARENESS_CONTEXT);
+        impl Drop for Dpi { fn drop(&mut self) { unsafe { SetThreadDpiAwarenessContext(self.0); } } }
+        let _dpi = Dpi(unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) });
+        struct Fixture(HWND);
+        impl Drop for Fixture { fn drop(&mut self) { unsafe { let _ = DestroyWindow(self.0); } } }
+        fn paint(fixture: HWND) {
+            unsafe {
+                let dc = GetDC(Some(fixture));
+                let brush = CreateSolidBrush(COLORREF(247 | (11 << 8) | (169 << 16)));
+                let rect = RECT { left: 0, top: 0, right: 96, bottom: 96 };
+                assert_ne!(FillRect(dc, &raw const rect, brush), 0);
+                let _ = GdiFlush();
+                ReleaseDC(Some(fixture), dc);
+                let _ = DeleteObject(brush.into());
+            }
+        }
+        fn wait_for(backend: &mut WindowsBackend, fixture: HWND, included: bool) {
+            let started = Instant::now();
+            let mut frames = 0;
+            let mut last = None;
+            while started.elapsed() < Duration::from_secs(5) {
+                unsafe {
+                    let mut message = MSG::default();
+                    while PeekMessageW(&raw mut message, Some(fixture), 0, 0, PM_REMOVE).as_bool() {
+                        let _ = TranslateMessage(&raw const message);
+                        DispatchMessageW(&raw const message);
+                    }
+                }
+                paint(fixture);
+                if let Some(frame) = backend.next_frame() {
+                    frames += 1;
+                    last = Some((frame.width, frame.height, frame.data.first_chunk::<4>().copied()));
+                    // HDR desktops can tone-map GDI colours during WGC readback.
+                    // Check the fixture hue, rather than assuming exact SDR bytes.
+                    let pink = frame.data.chunks_exact(4).all(|p| p[2] > 90 && p[1] < 35 && p[0] > 60 && u16::from(p[2]) > u16::from(p[0]) + 20);
+                    if pink == included { return; }
+                }
+                std::thread::sleep(Duration::from_millis(16));
+            }
+            panic!("WGC did not report fixture included={included}; frames={frames}, last={last:?}");
+        }
+        ensure_supported().unwrap();
+        let (target, monitor) = enumerate_monitors().into_iter().find_map(|target| {
+            let mut info = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
+            let valid = unsafe { GetMonitorInfoW(HMONITOR(target.platform_id as *mut core::ffi::c_void), &raw mut info) }.as_bool();
+            (valid && info.dwFlags & 1 != 0).then_some((target, info.rcMonitor))
+        }).expect("primary monitor");
+        let fixture = Fixture(unsafe { CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, w!("STATIC"), w!("Nida capture test"), WS_POPUP | WS_VISIBLE, monitor.left + 80, monitor.top + 80, 96, 96, None, None, None, None) }.unwrap());
+        paint(fixture.0);
+        let mut config = CaptureConfig { exclude_varda: false, show_cursor: false, crop: CropRect { x: 120.0 / target.width as f32, y: 120.0 / target.height as f32, w: 4.0 / target.width as f32, h: 4.0 / target.height as f32 }, ..Default::default() };
+        let mut backend = WindowsBackend::new(&target, &config).unwrap();
+        wait_for(&mut backend, fixture.0, true);
+        config.exclude_varda = true;
+        backend.set_config(&config).unwrap();
+        wait_for(&mut backend, fixture.0, false);
+        config.exclude_varda = false;
+        backend.set_config(&config).unwrap();
+        wait_for(&mut backend, fixture.0, true);
+        drop(backend);
+    }
     use windows::Win32::Graphics::Direct3D11::{
         D3D11_SUBRESOURCE_DATA, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
     };

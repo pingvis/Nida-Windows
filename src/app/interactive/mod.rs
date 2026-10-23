@@ -171,6 +171,7 @@ impl super::VardaApp {
             }
         };
         let window_static: &'static Window = Box::leak(Box::new(window));
+        crate::renderer::capture_exclusion::window_created();
         let (deck_uuid, html_idx, width, height) = (
             target.deck_uuid.clone(),
             target.html_idx,

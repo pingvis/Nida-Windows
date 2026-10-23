@@ -294,6 +294,7 @@ impl VardaApp {
                 match event_loop.create_window(window_attrs) {
                     Ok(window) => {
                         let window_static: &'static Window = Box::leak(Box::new(window));
+                        crate::renderer::capture_exclusion::window_created();
                         match OutputWindow::new(&self.context, window_static, name.clone()) {
                             Ok(mut output) => {
                                 output.uuid.clone_from(&config.uuid);

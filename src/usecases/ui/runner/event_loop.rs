@@ -129,6 +129,7 @@ impl ApplicationHandler for UIRunner {
                 }
             };
             self.main_window_id = Some(window_static.id());
+            crate::renderer::capture_exclusion::window_created();
             self.window = Some(window_static);
 
             // Kick a redraw so macOS marks the window as "live" — required for

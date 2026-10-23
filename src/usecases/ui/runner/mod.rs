@@ -965,6 +965,7 @@ impl UIRunner {
     /// settings, preview textures, windows and screens, and what the UI
     /// shows.
     fn ui_before(&mut self, event_loop: &ActiveEventLoop) -> Option<crate::usecases::ui::UIData> {
+        crate::renderer::capture_exclusion::poll();
         if let (Some(ws), Some(varda)) = (&mut self.window_surface, &self.varda) {
             ws.set_vsync(varda.gpu_context(), varda.control_vsync());
             let hold = varda.frame_hold_secs();

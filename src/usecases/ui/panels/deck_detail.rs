@@ -459,7 +459,9 @@ fn render_capture_controls(
             let mut exclude = capture.exclude_varda;
             let resp = ui
                 .checkbox(&mut exclude, "Exclude Nida")
-                .on_hover_text("Omit Nida's own windows from this display capture");
+                .on_hover_text(if cfg!(target_os = "windows") {
+                    "Omit Nida's windows while any display input has this enabled. Windows applies this to all screen captures; a Nida window selected directly stays capturable."
+                } else { "Omit Nida's own windows from this display capture" });
             if resp.changed() {
                 send(actions, "exclude_varda", f32::from(u8::from(exclude)));
             }
