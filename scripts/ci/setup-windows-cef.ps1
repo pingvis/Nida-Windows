@@ -44,36 +44,53 @@ $ToolsDirectory = (Resolve-Path -LiteralPath $ToolsDirectory).Path
 $archive = Join-Path $ToolsDirectory "$name.tar.bz2"
 $cef = Join-Path $ToolsDirectory $name
 Write-Host "[CEF] SDK version: $version"
-if (!(Test-Path -LiteralPath $archive)) {
-    Write-Host "[CEF] Download URL: $url"
-    Invoke-CefSetupStage -Label 'Download SDK (10 minute timeout)' -Arguments @($url, $archive) -Action {
-        param($DownloadUrl, $Destination)
-        $ErrorActionPreference = 'Stop'
-        $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $Destination -TimeoutSec 600
-    } -ProgressDetail {
-        if (Test-Path -LiteralPath $archive) {
-            '{0:n1} MiB downloaded' -f ((Get-Item -LiteralPath $archive).Length / 1MB)
-        }
-    }
-} else {
-    Write-Host "[CEF] Reusing downloaded archive: $archive"
-}
-Write-Host ('[CEF] Archive size: {0:n1} MiB' -f ((Get-Item -LiteralPath $archive).Length / 1MB))
-Invoke-CefSetupStage -Label 'Verify SDK SHA256' -Arguments @($archive, $sha256) -Action {
-    param($ArchivePath, $ExpectedHash)
-    $ErrorActionPreference = 'Stop'
-    if ((Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $ExpectedHash) {
-        throw 'CEF SDK checksum mismatch.'
-    }
-}
-# A directory alone can be left by an interrupted extraction. Only reuse an
-# SDK that this script has fully extracted and validated.
+$requiredFiles = @(
+    'Release/libcef.dll', 'Release/libcef.lib', 'Release/bootstrap.exe',
+    'Resources/icudtl.dat', 'include/cef_version.h',
+    'cmake/FindCEF.cmake', 'libcef_dll/CMakeLists.txt'
+)
+# Check the restored SDK before touching the archive: an SDK cache deliberately
+# excludes the redundant .tar.bz2 download and incomplete staging directories.
 $marker = Join-Path $cef 'nida-cef-inputs.json'
 $ready = $false
 if (Test-Path -LiteralPath $marker) {
-    $inputs = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
-    $ready = $inputs.version -eq $version -and $inputs.sha256 -eq $sha256
+    try {
+        $inputs = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
+        $ready = $inputs.version -eq $version -and $inputs.sha256 -eq $sha256
+        foreach ($required in $requiredFiles) {
+            if (!(Test-Path -LiteralPath (Join-Path $cef $required) -PathType Leaf)) { $ready = $false }
+        }
+    } catch {
+        $ready = $false
+        Write-Host '[CEF] Invalid SDK completion marker; rebuilding the SDK.'
+    }
+}
+if ($ready) {
+    Write-Host '[CEF] Validated cached SDK; skipping download, archive hashing and extraction.'
+} else {
+    if (!(Test-Path -LiteralPath $archive)) {
+        Write-Host "[CEF] Download URL: $url"
+        Invoke-CefSetupStage -Label 'Download SDK (10 minute timeout)' -Arguments @($url, $archive) -Action {
+            param($DownloadUrl, $Destination)
+            $ErrorActionPreference = 'Stop'
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest -Uri $DownloadUrl -OutFile $Destination -TimeoutSec 600
+        } -ProgressDetail {
+            if (Test-Path -LiteralPath $archive) {
+                '{0:n1} MiB downloaded' -f ((Get-Item -LiteralPath $archive).Length / 1MB)
+            }
+        }
+    } else {
+        Write-Host "[CEF] Reusing downloaded archive: $archive"
+    }
+    Write-Host ('[CEF] Archive size: {0:n1} MiB' -f ((Get-Item -LiteralPath $archive).Length / 1MB))
+    Invoke-CefSetupStage -Label 'Verify SDK SHA256' -Arguments @($archive, $sha256) -Action {
+        param($ArchivePath, $ExpectedHash)
+        $ErrorActionPreference = 'Stop'
+        if ((Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $ExpectedHash) {
+            throw 'CEF SDK checksum mismatch.'
+        }
+    }
 }
 if (!$ready) {
     Write-Host "[CEF] Extracting SDK to: $cef"
@@ -122,7 +139,7 @@ if (!$ready) {
     Write-Host "[CEF] Reusing extracted SDK: $cef"
 }
 Write-Host '[CEF] Checking required SDK/runtime files'
-foreach ($required in @('Release/libcef.dll', 'Release/bootstrap.exe', 'Resources/icudtl.dat', 'include/cef_version.h')) {
+foreach ($required in $requiredFiles) {
     if (!(Test-Path -LiteralPath (Join-Path $cef $required))) { throw "Incomplete CEF SDK: $required" }
 }
 @{ version = $version; url = $url; sha256 = $sha256 } | ConvertTo-Json |

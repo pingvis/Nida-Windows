@@ -1,0 +1,22 @@
+name: Pinned Windows CEF SDK
+description: Restore the validated CEF SDK, prepare it on a miss, and save it before application compilation.
+runs:
+  using: composite
+  steps:
+    - name: Restore CEF SDK cache
+      id: cef-cache
+      uses: actions/cache/restore@v5
+      with:
+        # The script contains the exact SDK version and archive SHA256. Changes
+        # to either pin or to extraction code invalidate this shared cache.
+        key: ${{ runner.os }}-${{ runner.arch }}-cef-sdk-v1-${{ hashFiles('scripts/ci/setup-windows-cef.ps1', 'scripts/ci/extract-windows-cef.py') }}
+        path: ${{ runner.temp }}/nida-cef/cef_binary_*_windows64
+    - name: Validate or prepare pinned CEF SDK
+      shell: pwsh
+      run: ./scripts/ci/setup-windows-cef.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-cef')
+    - name: Save validated CEF SDK cache
+      if: steps.cef-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        key: ${{ steps.cef-cache.outputs.cache-primary-key }}
+        path: ${{ runner.temp }}/nida-cef/cef_binary_*_windows64

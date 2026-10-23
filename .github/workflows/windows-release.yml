@@ -20,6 +20,7 @@ on:
       - 'scripts/ci/setup-windows-cef.ps1'
       - 'scripts/ci/extract-windows-cef.py'
       - 'scripts/ci/test-windows-cef-extraction.py'
+      - '.github/actions/windows-cef/**'
       - 'assets/nida.ico'
 
 permissions:
@@ -65,6 +66,9 @@ jobs:
         run: ./scripts/ci/test-windows-package-helpers.ps1
       - name: Test CEF extraction and progress reporting
         run: python scripts/ci/test-windows-cef-extraction.py
+      - name: Test CEF cache validation
+        shell: pwsh
+        run: ./scripts/ci/test-windows-cef-cache.ps1
       - name: Set up FFmpeg 9 and libclang 20
         shell: pwsh
         env:
@@ -74,8 +78,7 @@ jobs:
         shell: pwsh
         run: ./scripts/ci/setup-inno.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-inno')
       - name: Set up pinned CEF SDK
-        shell: pwsh
-        run: ./scripts/ci/setup-windows-cef.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-cef')
+        uses: ./.github/actions/windows-cef
       - uses: Swatinem/rust-cache@v2
         with:
           key: windows-release-browser

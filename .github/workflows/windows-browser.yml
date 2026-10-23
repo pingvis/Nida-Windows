@@ -27,12 +27,14 @@ jobs:
           python-version: '3.12'
       - name: Test CEF extraction and progress reporting
         run: python scripts/ci/test-windows-cef-extraction.py
+      - name: Test CEF cache validation
+        shell: pwsh
+        run: ./scripts/ci/test-windows-cef-cache.ps1
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.99.1
       - name: Set up pinned CEF SDK
-        shell: pwsh
-        run: ./scripts/ci/setup-windows-cef.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-cef')
+        uses: ./.github/actions/windows-cef
       - name: Build sandboxed CEF helper
         shell: pwsh
         run: ./scripts/ci/build-windows-browser.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'Nida browser helper')
