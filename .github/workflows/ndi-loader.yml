@@ -1,0 +1,50 @@
+name: NDI runtime loader
+
+on:
+  pull_request:
+    paths:
+      - 'src/internal/ndi/sdk.rs'
+      - 'src/internal/ndi/ffi.rs'
+      - 'tests/ndi-loader/**'
+      - '.github/workflows/ndi-loader.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/internal/ndi/sdk.rs'
+      - 'src/internal/ndi/ffi.rs'
+      - 'tests/ndi-loader/**'
+      - '.github/workflows/ndi-loader.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  loader:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+          components: clippy, rustfmt
+      - name: Test production loader and runtime path regression cases
+        run: cargo test --locked --manifest-path tests/ndi-loader/Cargo.toml
+      - name: Lint production loader and probe
+        run: cargo clippy --locked --manifest-path tests/ndi-loader/Cargo.toml --all-targets -- -D warnings
+      - name: Check loader formatting
+        run: cargo fmt --manifest-path tests/ndi-loader/Cargo.toml -- --check
+      - name: Build native Windows runtime probe
+        if: runner.os == 'Windows'
+        run: cargo build --locked --release --manifest-path tests/ndi-loader/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: NDI-runtime-probe-windows-x64
+          path: tests/ndi-loader/target/release/nida-ndi-loader-checks.exe
+          retention-days: 7
+

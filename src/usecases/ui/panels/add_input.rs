@@ -767,8 +767,9 @@ fn ndi_body(ui: &mut egui::Ui, data: &UIData, state: &mut State) -> bool {
     if !data.ndi_available {
         ui.label(
             egui::RichText::new(
-                "NDI is not installed on this computer. Install the NDI runtime \
-                 (NDI Tools, from ndi.video) and start the app again.",
+                "NDI runtime could not be loaded. Install or repair the NDI runtime \
+                 (NDI Tools, from ndi.video) and restart the app. If it is already \
+                 installed, check the startup log for loading errors.",
             )
             .weak(),
         );
@@ -1523,7 +1524,7 @@ mod tests {
         let mut harness = harness(data, None);
         click(&mut harness, "NDI");
         assert!(harness
-            .query_by_label_contains("NDI is not installed")
+            .query_by_label_contains("NDI runtime could not be loaded")
             .is_some());
         assert!(harness.get_by_label("OK").accesskit_node().is_disabled());
     }

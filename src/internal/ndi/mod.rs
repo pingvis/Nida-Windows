@@ -298,7 +298,7 @@ impl NdiManager {
                 sdk = None;
             }
         } else {
-            log::info!("NDI SDK not found — NDI features disabled");
+            log::info!("NDI runtime could not be loaded — NDI features disabled");
         }
         let send_capability = sdk::NdiSendCapability::from_runtime_evidence(
             sdk.as_ref()
