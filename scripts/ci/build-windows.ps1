@@ -1,9 +1,10 @@
-# Experimental core Windows portable ZIP. Run from x64 Developer PowerShell.
+# Windows portable ZIP. Run from x64 Developer PowerShell.
 # Requires Python 3.11+, MSVC tools and the FFmpeg SDK used to link the app.
 [CmdletBinding()]
 param(
     [switch]$SkipBuild,
     [switch]$WithBrowser,
+    [string]$ReleaseVersion,
     [string]$CefRoot = $env:NIDA_CEF_ROOT,
     [string]$FfmpegRoot = $env:FFMPEG_DIR,
     [string]$Binary,
@@ -15,6 +16,10 @@ $ErrorActionPreference = 'Stop'
 if (!$IsWindows) { throw 'Build and smoke-test this package on Windows x64.' }
 Import-Module (Join-Path $PSScriptRoot 'windows-package.psm1') -Force
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+$versionLine = Select-String -LiteralPath (Join-Path $root 'Cargo.toml') -Pattern '^version = "([^"]+)"' | Select-Object -First 1
+if (!$versionLine) { throw 'Cannot read the application version.' }
+$packageVersion = $versionLine.Matches[0].Groups[1].Value
+$version = Resolve-WindowsReleaseVersion -RequestedVersion $ReleaseVersion -PackageVersion $packageVersion
 if (!$OutputDirectory) { $OutputDirectory = Join-Path $root 'dist/windows' }
 if (!$Binary) { $Binary = Join-Path $root 'target/release/varda.exe' }
 if (!$FfmpegRoot) { throw 'Set FFMPEG_DIR or pass -FfmpegRoot for the FFmpeg SDK used to build the application.' }
@@ -42,18 +47,16 @@ try {
     }
     New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
     $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
-    $versionLine = Select-String -LiteralPath (Join-Path $root 'Cargo.toml') -Pattern '^version = "([^"]+)"' | Select-Object -First 1
-    if (!$versionLine) { throw 'Cannot read the application version.' }
-    $version = $versionLine.Matches[0].Groups[1].Value
-    $revision = (& git rev-parse --short=12 HEAD).Trim()
+    $revision = (& git rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source revision.' }
-    $name = "Nida-$version-windows-x64-experimental-$revision"
+    $name = "Nida-$version-windows-x64-portable"
     # Only remove our own fresh temporary directory, never a caller's directory.
     $work = Join-Path $OutputDirectory ([guid]::NewGuid().ToString('N'))
     $stage = Join-Path $work $name
     New-Item -ItemType Directory -Path $stage -Force | Out-Null
     try {
         Copy-Item -LiteralPath $Binary -Destination (Join-Path $stage 'varda.exe')
+        Copy-Item -LiteralPath (Join-Path $root 'assets/nida.ico') -Destination $stage
         if ($WithBrowser) {
             & (Join-Path $PSScriptRoot 'build-windows-browser.ps1') -CefRoot $CefRoot -OutputDirectory $stage
             # Browser binaries live in their own DLL search directory.
@@ -84,7 +87,7 @@ try {
         (& (Join-Path $stage 'ffmpeg.exe') -hide_banner -version 2>&1) | Set-Content (Join-Path $licenses 'FFmpeg-build.txt')
         if ($LASTEXITCODE -ne 0) { throw 'Bundled FFmpeg cannot start.' }
         $metadata = [ordered]@{
-            version = $version; revision = (& git rev-parse HEAD).Trim(); experimental = $true
+            version = $version; package_version = $packageVersion; revision = $revision; experimental = $true
             features = @(if ($WithBrowser) { 'screen-capture'; 'windows-browser' } else { 'screen-capture' }); target = 'x86_64-pc-windows-msvc'
             rust = (& rustc --version).Trim(); ffmpeg = (Get-Content (Join-Path $licenses 'FFmpeg-build.txt') -First 1)
             files = @(Get-ChildItem -LiteralPath $stage -Recurse -File | Sort-Object FullName | ForEach-Object {
@@ -97,8 +100,7 @@ try {
         & (Join-Path $PSScriptRoot 'test-windows-package.ps1') -Archive $candidate
         $zip = Join-Path $OutputDirectory "$name.zip"
         Move-Item -LiteralPath $candidate -Destination $zip -Force
-        $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-        "$hash  $name.zip" | Set-Content -LiteralPath "$zip.sha256" -Encoding ascii
+        Write-PackageChecksum -Path $zip
         Write-Host "Verified experimental package: $zip"
     } finally { Remove-Item -LiteralPath $work -Recurse -Force }
 } finally {

@@ -29,7 +29,8 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
-UninstallDisplayIcon={app}\varda.exe
+SetupIconFile={#PayloadDir}\nida.ico
+UninstallDisplayIcon={app}\nida.ico
 VersionInfoVersion={#FileVersion}
 Compression=lzma2
 SolidCompression=yes
@@ -48,8 +49,8 @@ Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "installer-notes.txt"; DestDir: "{app}"
 
 [Icons]
-Name: "{autoprograms}\{#ProductName}"; Filename: "{app}\varda.exe"; WorkingDir: "{%USERPROFILE}"
-Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\varda.exe"; WorkingDir: "{%USERPROFILE}"; Tasks: desktopicon
+Name: "{autoprograms}\{#ProductName}"; Filename: "{app}\varda.exe"; WorkingDir: "{%USERPROFILE}"; IconFilename: "{app}\nida.ico"
+Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\varda.exe"; WorkingDir: "{%USERPROFILE}"; IconFilename: "{app}\nida.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\varda.exe"; Description: "Launch {#ProductName}"; WorkingDir: "{%USERPROFILE}"; Flags: nowait postinstall skipifsilent unchecked

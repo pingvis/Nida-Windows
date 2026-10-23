@@ -1,49 +1,55 @@
-name: Windows installer (files only)
+name: Windows portable and installer
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Optional setup version, e.g. 0.9.1-beta.2. This is a file label, not a branch or tag. Empty uses Cargo.toml.'
+        description: 'Version for both downloads, e.g. v0.9.1-beta.4. Empty uses the selected tag, or Cargo.toml on a branch.'
         required: false
         default: ''
         type: string
+  push:
+    tags: ['v*']
   pull_request:
     paths:
       - '.github/workflows/windows-release.yml'
       - 'scripts/windows/**'
       - 'scripts/ci/*windows*'
       - 'scripts/ci/setup-inno.ps1'
+      - 'scripts/ci/*browser*'
+      - 'scripts/ci/setup-windows-cef.ps1'
+      - 'assets/nida.ico'
 
 permissions:
   contents: read
 
 concurrency:
-  group: windows-installer-${{ github.ref }}
+  group: windows-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build and test Windows installer
+    name: Build browser-enabled portable ZIP and Inno installer
     runs-on: windows-2022
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       CARGO_TERM_COLOR: always
       CARGO_BUILD_JOBS: 4
     steps:
       - uses: actions/checkout@v5
-      - name: Select setup file version
+      - name: Select shared release version
         id: version
         shell: pwsh
         env:
-          SETUP_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          SOURCE_REF_TYPE: ${{ github.ref_type }}
+          SOURCE_REF_NAME: ${{ github.ref_name }}
         run: |
           $ErrorActionPreference = 'Stop'
           $packageVersion = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
-          $version = ([string]$env:SETUP_VERSION).Trim() -replace '^v', ''
-          if (!$version) { $version = $packageVersion }
-          if ($version -notmatch '^\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$') { throw 'Use a setup version such as 0.9.1-beta.2, or leave it empty.' }
-          if (($version -split '-')[0] -ne ($packageVersion -split '-')[0]) { throw 'The numeric setup version must match Cargo.toml.' }
+          Import-Module ./scripts/ci/windows-package.psm1 -Force
+          $tag = if ($env:SOURCE_REF_TYPE -eq 'tag') { $env:SOURCE_REF_NAME } else { '' }
+          $version = Resolve-WindowsReleaseVersion -RequestedVersion $env:RELEASE_VERSION -PackageVersion $packageVersion -TagVersion $tag
           "version=$version" >> $env:GITHUB_OUTPUT
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -63,13 +69,18 @@ jobs:
       - name: Set up pinned portable Inno Setup compiler
         shell: pwsh
         run: ./scripts/ci/setup-inno.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-inno')
+      - name: Set up pinned CEF SDK
+        shell: pwsh
+        run: ./scripts/ci/setup-windows-cef.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-cef')
       - uses: Swatinem/rust-cache@v2
         with:
-          key: windows-portable-core
+          key: windows-release-browser
           cache-on-failure: true
-      - name: Build and verify portable package
+      - name: Build and verify browser-enabled portable package
         shell: pwsh
-        run: ./scripts/ci/build-windows.ps1
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./scripts/ci/build-windows.ps1 -WithBrowser -ReleaseVersion $env:RELEASE_VERSION
       - name: Build installer and exercise install, upgrade and uninstall
         shell: pwsh
         env:
@@ -82,22 +93,27 @@ jobs:
           $first = ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion "$version-installer-test.1" -TestIdentity -OutputDirectory (Join-Path $env:RUNNER_TEMP 'installer-fixtures')
           $next = ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion "$version-installer-test.2" -TestIdentity -OutputDirectory (Join-Path $env:RUNNER_TEMP 'installer-fixtures')
           ./scripts/ci/test-windows-installer.ps1 -Installer $first.FullName -UpgradeInstaller $next.FullName
-      - name: Upload setup file and checksum
+      - name: Upload portable ZIP, installer and checksums
         uses: actions/upload-artifact@v4
         with:
-          name: Nida-Windows-installer
+          name: Nida-${{ steps.version.outputs.version }}-windows-x64
           path: |
+            dist/windows/*-portable.zip
+            dist/windows/*-portable.zip.sha256
             dist/windows-installer/*-Setup.exe
-            dist/windows-installer/*.sha256
+            dist/windows-installer/*-Setup.exe.sha256
           if-no-files-found: error
           retention-days: 14
       - name: Download instructions
         shell: pwsh
         run: |
           @'
-          ## Windows setup file
-          Download **Nida-Windows-installer** under this run's **Artifacts**, extract it, and run the file ending in **-Setup.exe**.
-          The artifact also includes its SHA256 checksum. The version input only labels the setup file; it does not select or create a Git ref.
+          ## Windows portable and installer
+          Download the versioned **Nida-…-windows-x64** artifact under this run's **Artifacts**.
+          It contains the portable ZIP, Inno Setup executable and their matching SHA256 files, already named for the selected version.
+          Both formats contain the same browser-enabled payload and Nida icon. Extract the portable ZIP fully, or run the file ending in **-Setup.exe**.
+          Select the source branch/tag with **Run workflow → Use workflow from**; the version input labels both downloads, not the source ref.
+          Tag builds use the selected tag version and reject a conflicting version input. Branch builds default to Cargo.toml if version is empty.
           This workflow has read-only repository access and does not create releases, tags or branches.
           '@ >> $env:GITHUB_STEP_SUMMARY
       - name: Upload failure diagnostics

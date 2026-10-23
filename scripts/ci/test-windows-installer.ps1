@@ -33,7 +33,9 @@ function Install-Test($path, $log, [switch]$Upgrade) {
     foreach ($shortcut in @($startShortcut, $desktopShortcut)) {
         $link = $shell.CreateShortcut($shortcut)
         if ($link.TargetPath -ne (Join-Path $program 'varda.exe') -or $link.WorkingDirectory -ne $env:USERPROFILE -or $link.Arguments) { throw 'Shortcut must launch the installed app from the user profile without replacing the workspace.' }
+        if ($link.IconLocation -ne ((Join-Path $program 'nida.ico') + ',0')) { throw 'Shortcut must use the installed Nida icon.' }
     }
+    if ($installed.DisplayIcon -ne (Join-Path $program 'nida.ico')) { throw 'Uninstall entry must use the installed Nida icon.' }
     & (Join-Path $PSScriptRoot 'test-windows-package.ps1') -PackageDirectory $program
 }
 function Uninstall-Test {
