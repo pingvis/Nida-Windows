@@ -13,6 +13,32 @@ use super::ffi::{
 use libloading::{Library, Symbol};
 use std::os::raw::{c_char, c_uint};
 
+/// NDI's Windows redistributable sets these directories without necessarily
+/// adding them to PATH. Prefer the newest runtime; old variables often point
+/// at that same directory, so each DLL is attempted only once.
+#[cfg(any(target_os = "windows", test))]
+fn windows_runtime_candidates(
+    mut variable: impl FnMut(&str) -> Option<std::ffi::OsString>,
+) -> Vec<std::path::PathBuf> {
+    let mut paths = Vec::new();
+    for name in [
+        "NDI_RUNTIME_DIR_V6",
+        "NDI_RUNTIME_DIR_V5",
+        "NDI_RUNTIME_DIR_V4",
+        "NDI_RUNTIME_DIR_V3",
+        "NDI_RUNTIME_DIR_V2",
+    ] {
+        let Some(directory) = variable(name).filter(|value| !value.is_empty()) else {
+            continue;
+        };
+        let path = std::path::PathBuf::from(directory).join("Processing.NDI.Lib.x64.dll");
+        if !paths.contains(&path) {
+            paths.push(path);
+        }
+    }
+    paths
+}
+
 /// Evidence available from the dynamically loaded runtime for high-bit sending.
 ///
 /// NDI 6 documents P216 submission through the same `send_send_video_v2`
@@ -121,6 +147,22 @@ impl NdiSdk {
         // Check app bundle Frameworks directory first (bundled NDI)
         if let Some(lib) = Self::try_load_from_bundle() {
             return Some(lib);
+        }
+
+        #[cfg(target_os = "windows")]
+        for path in windows_runtime_candidates(|name| std::env::var_os(name)) {
+            // Keep the installed runtime in place: no DLL copying or process-wide
+            // PATH/DLL-search changes are needed for an absolute runtime path.
+            match unsafe { Library::new(&path) } {
+                Ok(lib) => {
+                    log::info!("Loaded NDI runtime from: {}", path.display());
+                    return Some(lib);
+                }
+                Err(error) => log::warn!(
+                    "Failed to load NDI runtime from {}: {error}",
+                    path.display()
+                ),
+            }
         }
 
         let paths: &[&str] = if cfg!(target_os = "macos") {
@@ -287,7 +329,64 @@ impl NdiSdk {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_runtime_major, NdiSendCapability};
+    use super::{parse_runtime_major, windows_runtime_candidates, NdiSendCapability};
+
+    #[test]
+    fn windows_runtime_uses_installer_directory_without_path() {
+        let directory = std::path::PathBuf::from("C:/Program Files/NDI/NDI 6 Tools/Runtime");
+        let candidates = windows_runtime_candidates(|name| {
+            (name == "NDI_RUNTIME_DIR_V6").then(|| directory.clone().into_os_string())
+        });
+        assert_eq!(
+            candidates,
+            vec![directory.join("Processing.NDI.Lib.x64.dll")]
+        );
+    }
+
+    #[test]
+    fn windows_runtime_prefers_newest_and_retains_legacy_fallbacks() {
+        let candidates = windows_runtime_candidates(|name| Some(name.into()));
+        let versions: Vec<_> = candidates
+            .iter()
+            .map(|path| path.parent().unwrap().to_str().unwrap())
+            .collect();
+        assert_eq!(
+            versions,
+            [
+                "NDI_RUNTIME_DIR_V6",
+                "NDI_RUNTIME_DIR_V5",
+                "NDI_RUNTIME_DIR_V4",
+                "NDI_RUNTIME_DIR_V3",
+                "NDI_RUNTIME_DIR_V2"
+            ]
+        );
+    }
+
+    #[test]
+    fn windows_runtime_skips_unset_empty_and_duplicate_directories() {
+        let candidates = windows_runtime_candidates(|name| match name {
+            "NDI_RUNTIME_DIR_V6" | "NDI_RUNTIME_DIR_V5" => Some("installed runtime".into()),
+            "NDI_RUNTIME_DIR_V4" => Some(std::ffi::OsString::new()),
+            _ => None,
+        });
+        assert_eq!(
+            candidates,
+            vec![std::path::Path::new("installed runtime").join("Processing.NDI.Lib.x64.dll")]
+        );
+        assert!(windows_runtime_candidates(|_| None).is_empty());
+    }
+
+    #[test]
+    fn windows_runtime_preserves_unicode_directory_names() {
+        let directory = std::path::PathBuf::from("C:/Ąžuolas/NDI 运行库");
+        let candidates = windows_runtime_candidates(|name| {
+            (name == "NDI_RUNTIME_DIR_V5").then(|| directory.clone().into_os_string())
+        });
+        assert_eq!(
+            candidates,
+            vec![directory.join("Processing.NDI.Lib.x64.dll")]
+        );
+    }
 
     #[test]
     fn runtime_major_accepts_vendor_version_strings() {

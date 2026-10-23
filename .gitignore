@@ -33,3 +33,4 @@ __pycache__/
 /dist/
 /.windows-tools/
 /tools/stream-bitrate-probe/target/
+/tests/ndi-loader/target/
