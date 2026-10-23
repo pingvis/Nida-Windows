@@ -223,6 +223,7 @@ objc2-app-kit            = { version = "0.3", default-features = false, features
 # Windows Graphics Capture for the Windows screen/window capture backend
 # (spec/screen-capture.md). Microsoft-maintained, so no third-party binding.
 [target.'cfg(target_os = "windows")'.dependencies]
+windows-core = { version = "0.62", optional = true }
 windows-sys = { version = "0.61", features = ["Win32_System_Power", "Win32_System_Threading", "Win32_System_SystemServices", "Win32_System_JobObjects", "Win32_Foundation", "Win32_Security"] }
 windows = { version = "0.62", optional = true, features = [
     "Foundation",
@@ -237,8 +238,13 @@ windows = { version = "0.62", optional = true, features = [
     "Win32_Graphics_Dxgi",
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Gdi",
+    "Win32_Media_Audio",
     "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Performance",
     "Win32_System_Threading",
+    "Win32_System_Variant",
     "Win32_System_WinRT",
     "Win32_System_WinRT_Direct3D11",
     "Win32_System_WinRT_Graphics_Capture",
@@ -292,7 +298,7 @@ depth = ["dep:freenectrs"]
 # XDG portal + PipeWire on Wayland or GetImage on X11. The `dep:` entries below
 # are target-scoped, so each platform pulls only its own bindings.
 # See spec/screen-capture.md.
-screen-capture = ["dep:objc2-screen-capture-kit", "dep:windows", "dep:x11rb", "dep:ashpd", "dep:pipewire"]
+screen-capture = ["dep:objc2-screen-capture-kit", "dep:windows", "dep:windows-core", "dep:x11rb", "dep:ashpd", "dep:pipewire"]
 test-fixtures = ["dep:tempfile"]
 url = ["dep:url"]
 euclid = ["dep:euclid"]

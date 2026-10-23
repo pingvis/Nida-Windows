@@ -280,20 +280,27 @@ fn run(
     }
 }
 
-/// The real thing: Core Audio process taps (see [`crate::audio::app_sound`]).
+/// The platform backend: Core Audio taps or Windows process loopback.
 pub(super) struct SystemTaps;
 
 /// A tap and its device being read. Fields drop in order: the device stops
 /// before its tap goes.
+#[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
 struct SystemTaken {
     input: super::device::DeviceInput,
     _tap: crate::audio::app_sound::Tap,
 }
 
+#[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
 impl Taken for SystemTaken {
     fn failed(&self) -> bool {
         self.input.failed()
     }
+}
+
+#[cfg(all(target_os = "windows", feature = "screen-capture"))]
+impl Taken for crate::audio::app_sound::WindowsCapture {
+    fn failed(&self) -> bool { crate::audio::app_sound::WindowsCapture::failed(self) }
 }
 
 impl Taps for SystemTaps {
@@ -310,6 +317,13 @@ impl Taps for SystemTaps {
         bundle_id: &str,
         processes: &[u32],
     ) -> anyhow::Result<(Box<dyn Taken>, LiveFeed)> {
+        #[cfg(all(target_os = "windows", feature = "screen-capture"))]
+        {
+            let (capture, rx) = crate::audio::app_sound::open_windows(bundle_id, processes)?;
+            Ok((Box::new(capture), LiveFeed { rx, rate: 48_000, channels: 2 }))
+        }
+        #[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
+        {
         let tap = crate::audio::app_sound::Tap::create(bundle_id, processes)?;
         let (input, feed) = super::device::open_input(tap.device())?;
         // Checked when the tap was made; the stream must agree.
@@ -317,6 +331,7 @@ impl Taps for SystemTaps {
             anyhow::bail!("its device opened with {} channels, not the tap's two", feed.channels);
         }
         Ok((Box::new(SystemTaken { input, _tap: tap }), feed))
+        }
     }
 }
 

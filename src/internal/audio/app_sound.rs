@@ -12,6 +12,10 @@
 //!
 //! The app is muted on the Mac's own speakers while Nida takes its sound, so a
 //! room does not hear a call twice: it is heard through Nida's buses.
+//!
+//! Windows uses endpoint-independent WASAPI process loopback on build 20348+
+//! with the standard `screen-capture` build feature. It preserves ordinary app
+//! playback and feeds PCM directly, without a private aggregate device.
 
 /// An app making sound, or that has, which can be taken as an input.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
@@ -71,8 +75,16 @@ pub fn only_the_tap(channels: &[u32]) -> bool {
 #[cfg(target_os = "macos")]
 pub use mac::{app_name, processes, Tap};
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", all(target_os = "windows", feature = "screen-capture"))))]
 pub use other::{app_name, processes, Tap};
+
+#[cfg(all(target_os = "windows", feature = "screen-capture"))]
+#[path = "app_sound/windows.rs"]
+mod windows_backend;
+#[cfg(all(target_os = "windows", feature = "screen-capture"))]
+pub use windows_backend::{app_name, processes};
+#[cfg(all(target_os = "windows", feature = "screen-capture"))]
+pub(crate) use windows_backend::{open as open_windows, Capture as WindowsCapture};
 
 #[cfg(target_os = "macos")]
 mod mac {
@@ -470,7 +482,7 @@ mod mac {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", all(target_os = "windows", feature = "screen-capture"))))]
 mod other {
     use anyhow::{bail, Result};
 

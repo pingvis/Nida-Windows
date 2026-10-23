@@ -1418,8 +1418,12 @@ fn render_add_input(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions) {
         })
         .response
         .on_hover_text(
+            if cfg!(target_os = "windows") {
+                "Capture this app's sound into the mixer. Requires Windows 11 or build 20348+. The app keeps playing on its current Windows output."
+            } else {
             "An app's sound — a Zoom or Teams call's — straight from the app, no cable or \
-             driver. macOS asks once whether Nida may record other apps' sound.",
+             driver. macOS asks once whether Nida may record other apps' sound."
+            },
         );
     })
     .response

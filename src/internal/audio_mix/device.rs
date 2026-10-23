@@ -117,11 +117,13 @@ pub fn open(name: &str, first_channel: u16, ring: Arc<OutputRing>) -> Result<Dev
 
 /// A sound device read as an input — an app's sound, through its tap's
 /// device. Dropping it stops the device.
+#[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
 pub struct DeviceInput {
     failed: Arc<AtomicBool>,
     _stream: cpal::Stream,
 }
 
+#[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
 impl DeviceInput {
     /// Whether the device has reported an error (gone).
     pub fn failed(&self) -> bool {
@@ -136,6 +138,7 @@ impl DeviceInput {
 ///
 /// Returns an error if no input device has that name, it has no f32 input
 /// configuration, or the stream cannot be built or started.
+#[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
 pub fn open_input(name: &str) -> Result<(DeviceInput, super::LiveFeed)> {
     let host = cpal::default_host();
     let device = host
