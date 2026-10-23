@@ -57,6 +57,28 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.99.1
+      - name: Keep dependency cache tied to the pinned Rust compiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # rust-cache hashes every installed toolchain. Extra Rust versions
+          # in the hosted runner image must not invalidate our dependency cache.
+          $active = ((& rustup show active-toolchain) -split '\s+')[0]
+          if ($LASTEXITCODE -ne 0 -or $active -notlike '1.99.1-*-pc-windows-msvc') {
+            throw "Expected pinned Rust 1.99.1, got: $active"
+          }
+          $installed = @(& rustup toolchain list --quiet)
+          if ($LASTEXITCODE -ne 0 -or $active -notin $installed) {
+            throw 'Could not confirm the active toolchain is installed.'
+          }
+          foreach ($toolchain in $installed) {
+            if ($toolchain -ne $active) {
+              Write-Host "Removing unused hosted-runner toolchain from cache identity: $toolchain"
+              & rustup toolchain uninstall $toolchain
+              if ($LASTEXITCODE -ne 0) { throw "Could not remove unused toolchain: $toolchain" }
+            }
+          }
+          Write-Host "Rust dependency cache compiler: $active"
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: actions/setup-python@v6
         with:
