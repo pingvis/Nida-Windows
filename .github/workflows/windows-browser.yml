@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Test CEF extraction and progress reporting
+        run: python scripts/ci/test-windows-cef-extraction.py
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.99.1

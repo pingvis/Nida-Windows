@@ -18,6 +18,8 @@ on:
       - 'scripts/ci/setup-inno.ps1'
       - 'scripts/ci/*browser*'
       - 'scripts/ci/setup-windows-cef.ps1'
+      - 'scripts/ci/extract-windows-cef.py'
+      - 'scripts/ci/test-windows-cef-extraction.py'
       - 'assets/nida.ico'
 
 permissions:
@@ -61,6 +63,8 @@ jobs:
       - name: Test packaging dependency handling
         shell: pwsh
         run: ./scripts/ci/test-windows-package-helpers.ps1
+      - name: Test CEF extraction and progress reporting
+        run: python scripts/ci/test-windows-cef-extraction.py
       - name: Set up FFmpeg 9 and libclang 20
         shell: pwsh
         env:

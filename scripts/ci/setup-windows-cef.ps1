@@ -67,15 +67,57 @@ Invoke-CefSetupStage -Label 'Verify SDK SHA256' -Arguments @($archive, $sha256) 
         throw 'CEF SDK checksum mismatch.'
     }
 }
-# Always validate the archive even when reusing an extracted SDK.
-if (!(Test-Path -LiteralPath $cef)) {
+# A directory alone can be left by an interrupted extraction. Only reuse an
+# SDK that this script has fully extracted and validated.
+$marker = Join-Path $cef 'nida-cef-inputs.json'
+$ready = $false
+if (Test-Path -LiteralPath $marker) {
+    $inputs = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
+    $ready = $inputs.version -eq $version -and $inputs.sha256 -eq $sha256
+}
+if (!$ready) {
     Write-Host "[CEF] Extracting SDK to: $cef"
-    Invoke-CefSetupStage -Label 'Extract SDK with tar' -Arguments @($archive, $ToolsDirectory) -Action {
-        param($ArchivePath, $Destination)
-        $ErrorActionPreference = 'Stop'
-        & tar -xjf $ArchivePath -C $Destination
-        if ($LASTEXITCODE -ne 0) { throw "Could not extract CEF SDK (tar exit code $LASTEXITCODE)." }
+    $staging = Join-Path $ToolsDirectory "$name.extracting"
+    # These are fixed children of the resolved tools directory, never arbitrary
+    # caller-supplied deletion targets. Retry partial extraction in a fresh tree.
+    foreach ($target in @($staging, $cef)) {
+        if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($target)) -ne $ToolsDirectory.TrimEnd('\', '/')) {
+            throw "CEF extraction path is outside the tools directory: $target"
+        }
+        if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
     }
+    New-Item -ItemType Directory -Path $staging | Out-Null
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = (Get-Command python -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardInput = $true
+    foreach ($argument in @('-u', (Join-Path $PSScriptRoot 'extract-windows-cef.py'), $archive, $staging, $name)) {
+        $start.ArgumentList.Add($argument)
+    }
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $start
+    $processStarted = $false
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    Write-Host "[CEF] Extractor: $($start.FileName); hard timeout: 600s"
+    try {
+        if (!$process.Start()) { throw 'Could not start CEF extractor.' }
+        $processStarted = $true
+        $process.StandardInput.Close()
+        while (!$process.WaitForExit(30000)) {
+            Write-Host ("[CEF] Extraction process running ({0:n0}s elapsed, {1:n1}s CPU)" -f $timer.Elapsed.TotalSeconds, $process.TotalProcessorTime.TotalSeconds)
+            if ($timer.Elapsed.TotalSeconds -ge 600) { throw 'CEF extraction exceeded 600 seconds; aborting instead of hanging the build.' }
+        }
+        if ($process.ExitCode -ne 0) { throw "CEF extraction failed (Python exit code $($process.ExitCode))." }
+    } finally {
+        if ($processStarted -and !$process.HasExited) {
+            $process.Kill($true)
+            $process.WaitForExit()
+        }
+        $process.Dispose()
+    }
+    Move-Item -LiteralPath (Join-Path $staging $name) -Destination $cef
+    Remove-Item -LiteralPath $staging
 } else {
     Write-Host "[CEF] Reusing extracted SDK: $cef"
 }
