@@ -27,6 +27,8 @@ jobs:
           python-version: '3.12'
       - name: Test CEF extraction and progress reporting
         run: python scripts/ci/test-windows-cef-extraction.py
+      - name: Test browser smoke-test frame readiness
+        run: python scripts/ci/test-browser-host-expect.py
       - name: Test CEF cache validation
         shell: pwsh
         run: ./scripts/ci/test-windows-cef-cache.ps1

@@ -18,6 +18,12 @@ import tempfile
 import threading
 import time
 
+# A white foreground alone cannot distinguish the white-theme fixture from a
+# transient all-white navigation frame. This opaque, uniquely colored marker
+# proves that the fixture document has actually painted before testing alpha.
+READY_BGRA = (73, 37, 19, 255)
+READY = b'<div style="position:absolute;left:150px;top:10px;width:2px;height:2px;background:rgb(19,37,73)"></div>'
+
 PAGE = b'''<!doctype html><style>html,body{margin:0;background:transparent}#box{width:40px;height:40px}</style>
 <div id="box"></div><div style="position:absolute;left:60px;top:0;width:30px;height:30px;background:rgba(128,64,0,0.5)"></div><script>
 let n=+(localStorage.getItem('nida-test')||0)+1;localStorage.setItem('nida-test',n);
@@ -84,6 +90,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 host = 'www.youtube.com.evil.invalid' if 'other=1' in self.path else 'www.youtube.com'
                 fixture = 'new Function("location", ' + json.dumps(script) + ')(' + json.dumps({'hostname': host, 'pathname': '/live_chat'}) + ');'
                 page += ('<script>' + fixture + '</script>').encode()
+            page += READY
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.send_header('Content-Length', str(len(page)))
@@ -100,6 +107,49 @@ def exact(stream, length):
             raise EOFError('browser pipe closed')
         data.extend(block)
     return data
+
+
+def expect_frame(messages, source, generation, size, bgra, timeout=30):
+    deadline = time.monotonic() + timeout
+    last = 'no matching frame received'
+    while time.monotonic() < deadline:
+        try:
+            message = messages.get(timeout=max(0.01, deadline - time.monotonic()))
+        except queue.Empty:
+            break
+        if isinstance(message, Exception):
+            raise message
+        magic, actual_source, actual_generation, width, height, data = message
+        if magic == b'NDE1':
+            if data:
+                raise AssertionError(data.decode(errors='replace'))
+            continue
+        if (actual_source, actual_generation, width, height) != (source, generation, *size):
+            continue
+        pixel = (10 * width + 10) * 4
+        ready = (11 * width + 151) * 4
+        foreground = data[pixel:pixel + 4]
+        marker = data[ready:ready + 4]
+        last = f'foreground={tuple(foreground)}, readiness marker={tuple(marker)}'
+        if foreground != bytes(bgra) or marker != bytes(READY_BGRA):
+            continue
+        # Readiness is independent of transparency: once the fixture paints,
+        # opaque backgrounds and broken premultiplied alpha still fail here.
+        clear = (100 * width + 100) * 4
+        assert data[clear + 3] == 0, (
+            f'page background lost transparency: source={source}, generation={generation}, '
+            f'background BGRA={tuple(data[clear:clear + 4])}'
+        )
+        translucent = (10 * width + 70) * 4
+        actual = data[translucent:translucent + 4]
+        assert all(abs(a - b) <= 2 for a, b in zip(actual, (0, 32, 64, 128))), (
+            f'CEF premultiplied alpha contract changed: BGRA={tuple(actual)}'
+        )
+        return
+    raise AssertionError(
+        f'expected browser pixels did not arrive: source={source}, generation={generation}, '
+        f'expected foreground={bgra}; {last}'
+    )
 
 
 def exercise(helper):
@@ -137,30 +187,7 @@ def exercise(helper):
             process.stdin.flush()
 
         def expect(source, generation, size, bgra):
-            deadline = time.monotonic() + 30
-            while time.monotonic() < deadline:
-                message = messages.get(timeout=max(0.01, deadline - time.monotonic()))
-                if isinstance(message, Exception):
-                    raise message
-                magic, actual_source, actual_generation, width, height, data = message
-                if magic == b'NDE1':
-                    if data:
-                        raise AssertionError(data.decode(errors='replace'))
-                    continue
-                if (actual_source, actual_generation, width, height) != (source, generation, *size):
-                    continue
-                pixel = (10 * width + 10) * 4
-                if data[pixel:pixel + 4] != bytes(bgra):
-                    continue
-                # An actual painted foreground establishes this is not a blank
-                # startup placeholder before checking transparent background.
-                clear = (100 * width + 100) * 4
-                assert data[clear + 3] == 0, 'page background lost transparency'
-                translucent = (10 * width + 70) * 4
-                actual = data[translucent:translucent + 4]
-                assert all(abs(a - b) <= 2 for a, b in zip(actual, (0, 32, 64, 128))), 'CEF premultiplied alpha contract changed'
-                return
-            raise AssertionError('expected browser pixels did not arrive')
+            expect_frame(messages, source, generation, size, bgra)
 
         url = f'http://127.0.0.1:{server.server_port}/overlay'
         try:
