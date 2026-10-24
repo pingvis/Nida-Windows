@@ -109,7 +109,26 @@ fn main() -> anyhow::Result<()> {
     varda::app::tool_path::find_tools_anywhere();
     #[cfg(unix)]
     log_to_file();
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    let mut logger =
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"));
+    #[cfg(target_os = "windows")]
+    let mut windows_log_path = None;
+    #[cfg(target_os = "windows")]
+    if let Some(path) = varda::app::windows_log::path(
+        std::env::var_os("VARDA_LOG_FILE").as_deref(),
+        dirs::data_local_dir().as_deref(),
+    ) {
+        match varda::app::windows_log::WindowsLog::open(&path) {
+            Ok(file) => {
+                // Trace files use the same directory. Set before worker threads.
+                std::env::set_var("VARDA_LOG_FILE", &path);
+                logger.target(env_logger::Target::Pipe(Box::new(file)));
+                windows_log_path = Some(path);
+            }
+            Err(error) => eprintln!("Could not open log {}: {error}", path.display()),
+        }
+    }
+    logger
         .filter_module("naga", log::LevelFilter::Error)
         .filter_module("egui_wgpu", log::LevelFilter::Error)
         .filter_module("ort", log::LevelFilter::Error)
@@ -130,6 +149,10 @@ fn main() -> anyhow::Result<()> {
     }
 
     log::info!("Nida - Starting up...");
+    #[cfg(target_os = "windows")]
+    if let Some(path) = windows_log_path {
+        log::info!("Application log: {}", path.display());
+    }
     if config.headless {
         log::info!("Headless mode enabled (API port {})", config.api_port);
     }
