@@ -28,12 +28,29 @@ is observed while borrowing the engine; the normal exit handler saves and
 stops the engine after the borrow is returned. This allows a clean API quit
 while MIDI discovery is still pending.
 
-This is an upstream candidate: the worker, persistence and startup view are
-cross-platform. The measured slow native call was Windows-specific evidence;
-Mac and Linux runtime validation remains necessary before an upstream PR.
-No PR has been opened.
+The MIDI discovery/persistence portion is submitted as draft
+[Nida #13](https://github.com/kristijonasatpro/Nida/pull/13), based directly on
+upstream `a312a18`. It is cross-platform code backed by Windows measurements;
+Mac/Linux native validation remains necessary before merge. The startup view,
+windowed shutdown fix, Windows logger and benchmark changes are integrated
+separately in the Windows fork, outside that focused MIDI PR.
 
 ## Implementation validation
+
+PR preparation on the combined Windows fork, including its newer NDI runtime
+loader fix, ran the complete core library suite: **3,459 passed, zero failed,
+14 ignored**. The `ui_integration` suite passed **88 tests**. Commands used
+`--locked --offline --no-default-features --features screen-capture`.
+
+The upstream-requested full static checks are not green: isolated upstream
+Windows core check and all-target Clippy encounter DeckLink's Unix-only
+`libc::clock_gettime` / `CLOCK_THREAD_CPUTIME_ID` references. The same two core
+build failures were reproduced on pristine `a312a18`. Changed-file rustfmt
+findings match pristine upstream exactly (92 differing lines in existing
+code). The combined fork's all-target Clippy and repository-wide formatting
+also retain existing findings outside the MIDI patch. New test assertion/name
+lint findings were corrected without suppressions. See the draft PR for the
+validation contexts and remaining platform work.
 
 - Application library regression suite: **304 passed, zero failed, one
   ignored**. Includes pending MIDI save/adoption/failure, explicit mapping and
