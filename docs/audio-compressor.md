@@ -1,6 +1,6 @@
-# First Dynamics section
+# Historical FFmpeg compressor prototype
 
-Experimental implementation for upstream review in PR #11.
+Superseded by upstream 0.9.2 native DSP. The current **Processing** page adds low cut, leveling, limiting and LUFS readings; the fork keeps its optional EQ page. See [current audio processing](16-audio-mixer.md#processing). The prototype details and measurements below are historical.
 Open a source or bus gear, expand using the icon immediately left of X, then
 choose **Dynamics**, below **General**. Compact settings remain unchanged.
 Headphones have no compressor category. Opening/navigating does not change sound.

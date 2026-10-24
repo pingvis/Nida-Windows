@@ -349,7 +349,7 @@ fn same_value(a: &crate::params::ParamValue, b: &crate::params::ParamValue) -> b
 /// two copies may differ in these and still be one picture.
 const PLACEMENT: &[&str] = &["pos_x", "pos_y", "scale", "scale_mode", "scale_x", "scale_y"];
 
-/// A deck's effects that are on, in order.
+/// A deck's effects that are on, in order (an offline one is not run).
 fn enabled_effects(deck: &Deck) -> Vec<&crate::deck::Effect> {
     deck.effects.iter().filter(|e| e.is_active()).collect()
 }

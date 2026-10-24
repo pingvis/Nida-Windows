@@ -1,5 +1,10 @@
 # Windows feature audit — 24 October 2026
 
+Later update: background MIDI discovery, the startup screen and Windows logs
+are implemented. Upstream 0.9.2 is now integrated with the fork's additions;
+see [the integration notes](windows-upstream-092.md). The review below records
+the earlier 0.9.1 baseline and is retained as historical context.
+
 Scope: read-only code/history review of fork main `e519c84`, current macOS
 Nida main, and current original Varda main. No application or hardware tests
 were run for this audit. Existing validation results below are historical.

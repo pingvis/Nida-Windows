@@ -952,7 +952,8 @@ fn edit_plays(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIAct
     let runnable: Vec<(&str, &str, &str, bool)> = data
         .channels
         .iter()
-        .flat_map(|ch| ch.decks.iter().map(move |d| (ch, d)))
+        // Front first, as the lists of a channel's layers.
+        .flat_map(|ch| ch.decks.iter().rev().map(move |d| (ch, d)))
         .filter(|(_, d)| {
             d.video_playback.is_some()
                 || d.playlist.is_some()

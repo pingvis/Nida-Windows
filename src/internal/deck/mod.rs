@@ -5,6 +5,7 @@ pub mod playlist;
 mod render;
 mod source;
 pub mod svg;
+pub mod presenter;
 pub mod timer;
 
 pub use render::get_current_date;
@@ -415,6 +416,22 @@ pub enum DeckSource {
     Playlist(Box<playlist::Playlist>),
     /// A count down, count up or clock drawn as text (see [`timer`]).
     Timer(Box<timer::Timer>),
+    /// A PowerPoint input's show for the speaker's screen (see
+    /// [`presenter`]).
+    Presenter(Box<presenter::Presenter>),
+    /// An input that could not be opened as its show loaded — a file moved
+    /// or renamed, a drive not there, a camera unplugged: drawn clear, kept
+    /// as saved (see [`OfflineSource`]).
+    Offline(Box<OfflineSource>),
+}
+
+/// What a layer whose input could not be opened keeps: the input as saved,
+/// written back as it was at every save — left out, the show lost it at the
+/// next one — and why it is offline. Opening the show again tries it anew.
+#[derive(Debug, Clone)]
+pub struct OfflineSource {
+    pub saved: crate::scene::SourceConfig,
+    pub reason: String,
 }
 
 /// Discriminant for external source types sharing the same `DeckSource` layout.
@@ -502,6 +519,9 @@ pub struct ScreenCaptureState {
     /// config to the manager and clears it. The deck layer never reaches up into
     /// a device, so the change travels down rather than sideways.
     pub config_dirty: bool,
+    /// A PowerPoint input: the deck PowerPoint plays in the captured window.
+    /// Its window is found by the presentation worker, never by name.
+    pub presentation: Option<crate::presentation::PresentationConfig>,
 }
 
 /// What a tap deck reads. See spec/program-tap.md.
@@ -637,6 +657,13 @@ pub struct Effect {
     /// The pass that mixes the effect in through its mask, made when there
     /// first is one.
     mask_pass: Option<crate::renderer::mask::MaskPass>,
+    /// The shader's path as the show named it, when that file was gone and
+    /// this copy's shader of the same name stood in (see
+    /// [`Effect::saved_path`]).
+    show_path: Option<String>,
+    /// Why its shader could not be loaded, when it could not: the effect is
+    /// then kept as saved, drawing nothing (see `persistence::restore_effect_kept`).
+    offline: Option<String>,
 }
 
 // Effect impl is in effect.rs
@@ -808,6 +835,9 @@ pub struct Deck {
     /// the texture already has this frame's picture, so rendering is skipped
     /// (see [`Deck::still_frame`]).
     rendered_still: Option<StillFrame>,
+    /// Which textures the deck has: one more each time they are made anew,
+    /// empty (see [`Deck::texture_generation`]).
+    texture_generation: u32,
 
     /// The parts of the frame that show of this deck once the opaque decks
     /// over it are drawn, set by its channel each frame; `None` for all of
@@ -866,6 +896,14 @@ impl Deck {
     }
 
     /// Get the source name (shader name, video filename, etc.)
+    /// Which textures the deck has: one more each time they are made anew,
+    /// empty, as a resize makes them — what was drawn into the old ones is
+    /// gone.
+    #[must_use]
+    pub fn texture_generation(&self) -> u32 {
+        self.texture_generation
+    }
+
     pub fn source_name(&self) -> &str {
         &self.source_name
     }
@@ -873,6 +911,13 @@ impl Deck {
     /// Override the display name (e.g. when loading a preset with a custom name).
     pub fn set_source_name(&mut self, name: String) {
         self.source_name = name;
+    }
+
+    /// Keep `path`, the show's, as the source path a save writes — this
+    /// copy's shader stood in for a file gone (see
+    /// `persistence::saved_shader`).
+    pub(crate) fn keep_source_path(&mut self, path: String) {
+        self.source_path = Some(path);
     }
 
     /// Get the source file path (for persistence). None for solid color / camera.
@@ -926,6 +971,8 @@ impl Deck {
             DeckSource::ComputeShader { .. } => "compute_shader",
             DeckSource::Playlist(_) => "playlist",
             DeckSource::Timer(_) => "timer",
+            DeckSource::Presenter(_) => "presenter",
+            DeckSource::Offline(_) => "offline",
         }
     }
 
@@ -1229,6 +1276,30 @@ impl Deck {
     pub fn timer_mut(&mut self) -> Option<&mut timer::Timer> {
         match &mut self.source {
             DeckSource::Timer(timer) => Some(timer),
+            _ => None,
+        }
+    }
+
+    /// What an offline layer keeps of its input (see [`OfflineSource`]), if
+    /// it is one.
+    pub fn offline(&self) -> Option<&OfflineSource> {
+        match &self.source {
+            DeckSource::Offline(offline) => Some(offline),
+            _ => None,
+        }
+    }
+
+    /// The presenter view this deck shows, if it is one.
+    pub fn presenter(&self) -> Option<&presenter::Presenter> {
+        match &self.source {
+            DeckSource::Presenter(presenter) => Some(presenter),
+            _ => None,
+        }
+    }
+
+    pub fn presenter_mut(&mut self) -> Option<&mut presenter::Presenter> {
+        match &mut self.source {
+            DeckSource::Presenter(presenter) => Some(presenter),
             _ => None,
         }
     }
@@ -1570,6 +1641,7 @@ impl Deck {
             DeckSource::ExternalSource { .. } => !self.transparent,
             _ => false,
         };
+        // An offline effect is kept, not run: it changes nothing.
         source_opaque
             && self
                 .effects
@@ -1767,6 +1839,37 @@ impl Deck {
             } => Some(*id),
             _ => None,
         }
+    }
+
+    /// Point a screen-capture deck at another capture session — its window
+    /// has come (a PowerPoint show started) or is a new one — and give back
+    /// the session it held.
+    pub fn rebind_screen_capture(
+        &mut self,
+        capture_id: crate::screen_capture::CaptureId,
+        identity: crate::screen_capture::backend::TargetIdentity,
+        config: crate::screen_capture::backend::CaptureConfig,
+        width: u32,
+        height: u32,
+    ) -> Option<crate::screen_capture::CaptureId> {
+        let state = self.screen_capture.as_mut()?;
+        let old = state.capture_id;
+        state.capture_id = capture_id;
+        state.identity = identity;
+        state.config = config;
+        state.config_dirty = false;
+        if let DeckSource::ExternalSource {
+            kind: ExternalSourceKind::ScreenCapture(id),
+            source_width,
+            source_height,
+            ..
+        } = &mut self.source
+        {
+            *id = capture_id;
+            *source_width = width;
+            *source_height = height;
+        }
+        Some(old)
     }
 
     /// Push the live source dimensions of an external source down from its

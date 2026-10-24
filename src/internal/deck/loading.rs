@@ -128,7 +128,7 @@ impl Effect {
 
     /// True only when this effect can contribute to the current picture.
     pub fn is_active(&self) -> bool {
-        self.enabled && self.pipeline.is_some()
+        self.enabled && self.offline().is_none() && self.pipeline.is_some()
     }
 
     /// Install only resources. Edits, bypass, masks, UUID and chain position
@@ -298,6 +298,13 @@ mod tests {
         assert!(!broken.is_active());
         assert_eq!(good.load_state(), EffectLoadState::Ready);
         assert!(good.is_active());
+        good.keep_show_path("missing/invert.fs".into());
+        good.set_offline("Saved shader is unavailable".into());
+        assert!(
+            !good.is_active(),
+            "an offline effect must stay bypassed after a background build"
+        );
+        assert_eq!(good.saved_path(), "missing/invert.fs");
         assert_eq!(
             gpu.errors.fault_count(),
             faults,

@@ -46,7 +46,7 @@ some documentation using `block_size`.
 
 ## Controls and signal flow
 
-Gear -> expand beside X -> **Equalizer**, between General and Dynamics.
+Gear -> expand beside X -> **Equalizer**, between General and Processing.
 Compact settings are unchanged; headphones have no EQ category.
 
 - Master Enable EQ and Reset EQ (reset restores flat settings and bypasses).
@@ -61,17 +61,17 @@ Compact settings are unchanged; headphones have no EQ category.
   preview while bypassed, not a measured spectrum, and displays a ±24 dB range.
 - Stereo sample-peak Pre EQ / Post EQ meters, before compressor and fader.
 
-Sources: raw PFL -> EQ -> compressor -> input sync delay -> fader/balance/
+Sources: EQ -> low cut -> leveler -> compressor -> processed PFL -> input sync delay -> fader/balance/
 mute/Audio Auto -> existing strip meter -> sends. EQ runs once per source,
 not once per destination. Both stereo channels use the same coefficients but
 independent state; EQ does not collapse or cross-feed them.
 
-Buses: sum -> EQ -> compressor -> fader/mute -> existing meter -> normal
-headphones monitor -> sync delay -> output consumers. Raw solo/PFL stays raw.
+Buses: sum -> EQ -> compressor -> fader/mute -> limiter/loudness -> existing meter -> normal
+headphones monitor -> sync delay -> output consumers. Solo/PFL hears EQ and source processing, before the source fader.
 Legacy direct-device recording passthrough still bypasses the mixer entirely.
 
 Boosts can exceed output headroom; use trim and watch the calibrated bus meters.
-Neither EQ nor the existing compressor is a safety/true-peak limiter. Existing
+EQ and compression are not safety/true-peak limiters. Upstream 0.9.2 adds a separate bus sample-peak limiter. Existing
 delivery clipping remains; the graph's display range is not a peak ceiling.
 
 ## Live edits, lifecycle and failure
@@ -178,6 +178,6 @@ No additional DSP runtime or Faust-generated code is linked into production.
 
 Before release, listen to speech, music and stereo sustained tones; drag controls,
 bypass, reset, pause/resume, seek/loop and reconnect while recording/streaming and
-rendering. Check output headroom, raw PFL and independent bus behavior. Review the
+rendering. Check output headroom, processed PFL and independent bus behavior. Review the
 curve at small/high-DPI window sizes and regenerate platform-appropriate golden
 images only after visual review; comparisons are not weakened here.

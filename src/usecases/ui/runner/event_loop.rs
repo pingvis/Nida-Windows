@@ -33,7 +33,10 @@ pub(crate) trait WindowHost {
     /// Refresh the engine's cached monitor list.
     fn refresh_monitors(&self, varda: &mut VardaApp);
     /// Create any queued interactive (HTML) surfaces.
-    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+    #[cfg(any(
+        feature = "html",
+        all(target_os = "windows", feature = "windows-browser")
+    ))]
     fn create_pending_interactive(&self, varda: &mut VardaApp);
 }
 
@@ -50,7 +53,10 @@ impl WindowHost for ActiveEventLoop {
         varda.refresh_monitors(self);
     }
 
-    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+    #[cfg(any(
+        feature = "html",
+        all(target_os = "windows", feature = "windows-browser")
+    ))]
     fn create_pending_interactive(&self, varda: &mut VardaApp) {
         varda.create_pending_interactive(self);
     }
@@ -229,7 +235,10 @@ impl ApplicationHandler for UIRunner {
                     | WindowEvent::Moved(_)
                     | WindowEvent::Occluded(_)
                     | WindowEvent::KeyboardInput { .. }
-            ) || cfg!(any(feature = "html", all(target_os = "windows", feature = "windows-browser")));
+            ) || cfg!(any(
+                feature = "html",
+                all(target_os = "windows", feature = "windows-browser")
+            ));
             if wanted {
                 let handled = self.with_engine(|this| {
                     if let Some(varda) = this.varda.as_mut() {
@@ -247,6 +256,20 @@ impl ApplicationHandler for UIRunner {
         if self.shut_down {
             return;
         }
+        // The API's Shutdown or Ctrl-C: the windowed app saves and quits as
+        // on ⌘Q (headless does so in `render_headless`) — Ctrl-C while the
+        // GPU is still being set up included. Answered "ok", it went on
+        // running.
+        if !self.config.headless
+            && self
+                .shutdown_flag
+                .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            log::info!("Shutdown requested: saving workspace and exiting...");
+            self.quit(event_loop);
+            return;
+        }
+
         if let Some((gpu, started)) = self.engine_init_pending.take() {
             self.finish_engine_init(gpu, started, event_loop);
         }
@@ -331,6 +354,12 @@ impl ApplicationHandler for UIRunner {
             log::info!("Quit: saving workspace and exiting...");
             self.shut_down();
         }
+        // Night Shift, if Nida holds it off, given back however it ends:
+        // headless too, whose Quit (⌘Q, the Dock) comes here without its
+        // shutdown flag (see `night_shift`).
+        if let Some(kept) = self.night_shift.give_back_now() {
+            log::info!("Quit: {kept:?}");
+        }
     }
 }
 
@@ -341,7 +370,10 @@ const UI_FALLBACK: std::time::Duration = std::time::Duration::from_millis(100);
 /// An event on an output window (main thread, engine borrowed).
 fn output_window_event(varda: &mut VardaApp, window_id: WindowId, event: WindowEvent) {
     // Interactive HTML window: forward input to the WebView and consume.
-    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+    #[cfg(any(
+        feature = "html",
+        all(target_os = "windows", feature = "windows-browser")
+    ))]
     if varda.handle_interactive_event(window_id, &event) {
         return;
     }
@@ -410,6 +442,10 @@ impl UIRunner {
         }
         if let Some(api) = self.api_handle.take() {
             api.shutdown();
+        }
+        // Night Shift, if Nida holds it off, given back (see `night_shift`).
+        if let Some(kept) = self.night_shift.give_back_now() {
+            log::info!("Quit: {kept:?}");
         }
     }
 }
