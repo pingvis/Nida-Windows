@@ -28,12 +28,12 @@ is observed while borrowing the engine; the normal exit handler saves and
 stops the engine after the borrow is returned. This allows a clean API quit
 while MIDI discovery is still pending.
 
-The MIDI discovery/persistence portion is submitted as draft
+The MIDI discovery/persistence and startup-view changes are submitted as draft
 [Nida #13](https://github.com/kristijonasatpro/Nida/pull/13), based directly on
 upstream `a312a18`. It is cross-platform code backed by Windows measurements;
-Mac/Linux native validation remains necessary before merge. The startup view,
-windowed shutdown fix, Windows logger and benchmark changes are integrated
-separately in the Windows fork, outside that focused MIDI PR.
+Mac/Linux native validation remains necessary before merge. The windowed API
+shutdown fix, Windows logger and benchmark changes are integrated separately
+in the Windows fork, outside that focused startup PR.
 
 ## Implementation validation
 
