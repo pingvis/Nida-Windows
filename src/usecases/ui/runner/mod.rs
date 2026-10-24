@@ -24,6 +24,7 @@ mod engine_thread;
 mod event_loop;
 mod preview;
 mod shows;
+mod startup;
 mod vsync;
 
 pub(crate) use event_loop::WindowHost;
@@ -156,6 +157,7 @@ pub struct UIRunner {
     // ── Deferred GPU init (avoids Metal dispatch-queue deadlock on Rosetta/Intel) ──
     gpu_init_handle: Option<std::thread::JoinHandle<anyhow::Result<(GpuContext, WindowSurface)>>>,
     startup_t0: Option<std::time::Instant>,
+    engine_init_pending: Option<(GpuContext, std::time::Instant)>,
 
     // ── Undo/redo ─────────────────────────────────────────────────────
     // The undo/redo timeline itself lives on `VardaApp` (shared with the
@@ -262,6 +264,7 @@ impl UIRunner {
             gpu: None,
             gpu_init_handle: None,
             startup_t0: None,
+            engine_init_pending: None,
             prev_gesture_active: false,
             publish_counter: 0,
             api_handle: None,
@@ -563,10 +566,26 @@ impl UIRunner {
                 }
             }
         }
-        if let Some(ws) = win_surface {
+        if let Some(mut ws) = win_surface {
+            ws.resize(&gpu, self.cached_screen_size);
             self.window_surface = Some(ws);
         }
 
+        if self.window.is_some() {
+            self.gpu = Some(gpu.clone());
+            self.paint_startup();
+            self.engine_init_pending = Some((gpu, startup_t0));
+        } else {
+            self.finish_engine_init(gpu, startup_t0, event_loop);
+        }
+    }
+
+    fn finish_engine_init(
+        &mut self,
+        gpu: GpuContext,
+        startup_t0: std::time::Instant,
+        event_loop: &ActiveEventLoop,
+    ) {
         // Create engine now that GPU is ready
         log::info!("[STARTUP] Creating engine (audio, MIDI, shaders, mixer)...");
         let mut varda = match VardaApp::new(gpu, &self.config) {
@@ -665,6 +684,10 @@ impl UIRunner {
             "[STARTUP] Initialization complete ({:.0?})",
             startup_t0.elapsed()
         );
+        if let Some(window) = self.window {
+            window.set_title("Nida");
+            window.request_redraw();
+        }
     }
 
     /// Advance the cadence anchor after a frame completes (render or headless).
@@ -961,10 +984,29 @@ impl UIRunner {
         self.ui_parts.add(part, since.elapsed());
     }
 
+    /// Ask winit to exit while the engine is borrowed. `exiting` saves/stops
+    /// it after `with_engine` has put it back, without a recursive borrow.
+    fn exit_if_requested(&self, host: &dyn WindowHost) -> bool {
+        if self.varda.as_ref().is_some_and(|app| app.shutdown_requested)
+            || self
+                .shutdown_flag
+                .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            log::info!("Shutdown requested, saving workspace and exiting...");
+            host.exit();
+            true
+        } else {
+            false
+        }
+    }
+
     /// Before the UI is laid out, with the engine: the control window's
     /// settings, preview textures, windows and screens, and what the UI
     /// shows.
     fn ui_before(&mut self, event_loop: &ActiveEventLoop) -> Option<crate::usecases::ui::UIData> {
+        if self.exit_if_requested(event_loop) {
+            return None;
+        }
         crate::renderer::capture_exclusion::poll();
         if let (Some(ws), Some(varda)) = (&mut self.window_surface, &self.varda) {
             ws.set_vsync(varda.gpu_context(), varda.control_vsync());
@@ -2186,6 +2228,43 @@ mod tests {
         assert_eq!(
             runner.publish_counter, 0,
             "shutdown returns before the publish gate"
+        );
+    }
+
+    #[test]
+    fn windowed_shutdown_saves_while_midi_discovery_is_pending() {
+        let Some(mut runner) = headless_runner() else {
+            return;
+        };
+        runner.config.headless = false;
+        let folder = runner.varda.as_ref().unwrap().show_folder().to_path_buf();
+        runner.named_after = folder.clone();
+        runner.recent_file = Some(folder.join("recent-shows.json"));
+        let (_send, receive) = std::sync::mpsc::channel();
+        let app = runner.varda.as_mut().unwrap();
+        app.input.midi_pending = Some(receive);
+        app.input.saved_midi = Some(
+            serde_json::from_value(serde_json::json!({
+                "version": 1,
+                "mappings": [{"device_name": "Pending controller", "msg_type": "cc",
+                    "channel": 0, "number": 7, "param_path": "master/opacity"}]
+            }))
+            .unwrap(),
+        );
+        let path = app.show_folder().join(".varda/midi.json");
+        let host = FakeHost::default();
+        assert!(!runner.exit_if_requested(&host));
+        runner
+            .varda
+            .as_mut()
+            .unwrap()
+            .execute_command(crate::engine::EngineCommand::Shutdown);
+        assert!(runner.exit_if_requested(&host));
+        assert_eq!(host.exits.get(), 1);
+        runner.shut_down();
+        assert_eq!(
+            crate::midi::MidiConfig::load(path).unwrap().mappings[0].device_name,
+            "Pending controller"
         );
     }
 
