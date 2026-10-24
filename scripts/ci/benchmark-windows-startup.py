@@ -13,10 +13,22 @@ import time
 import urllib.request
 
 
-def measure(executable, directory, flags, shader_library=None):
+def prepare_workspace(directory, shader_library=None):
+    if (directory / '.varda').exists():
+        raise RuntimeError(f'Benchmark requires a fresh workspace: {directory}; choose a new output directory')
     directory.mkdir(parents=True, exist_ok=True)
     if shader_library:
-        shutil.copytree(shader_library, directory / '.varda' / 'shaders', dirs_exist_ok=True)
+        # A shader library is not a saved show. Creating .varda without a stage
+        # makes the loader correctly quarantine the incomplete show's routing.
+        shutil.copytree(shader_library, directory / 'shaders', dirs_exist_ok=True)
+
+
+def error_record(line):
+    return 'PANIC:' in line or re.search(r'\bERROR\s+[^\]]*\]', line) is not None
+
+
+def measure(executable, directory, flags, shader_library=None):
+    prepare_workspace(directory, shader_library)
     environment = os.environ.copy()
     environment['VARDA_NO_CLI_INSTALL'] = '1'
     environment['RUST_LOG'] = 'info'
@@ -36,7 +48,9 @@ def measure(executable, directory, flags, shader_library=None):
             received.put((round(time.perf_counter() - start, 4), line.rstrip()))
         received.put(None)
 
-    threading.Thread(target=read, daemon=True).start()
+    reader = threading.Thread(target=read, daemon=True)
+    reader.start()
+    forced_shutdown = False
     try:
         deadline = time.perf_counter() + 60
         while time.perf_counter() < deadline:
@@ -50,6 +64,8 @@ def measure(executable, directory, flags, shader_library=None):
                 break
             at, line = event
             events.append({'seconds': at, 'message': line})
+            if 'PANIC:' in line:
+                raise RuntimeError('Application panicked during startup; see ' + str(directory / 'startup-log.json'))
             if '[STARTUP]' in line:
                 print(f'{directory.name}: {at:.3f}s {line}', flush=True)
             if 'HTTP API server listening on' in line:
@@ -62,7 +78,6 @@ def measure(executable, directory, flags, shader_library=None):
         # Let the first real frames run before requesting a graceful exit.
         time.sleep(0.5)
     finally:
-        (directory / 'startup-log.json').write_text(json.dumps(events, indent=2), encoding='utf-8')
         if api and process.poll() is None:
             try:
                 request = urllib.request.Request(api + '/api/shutdown', method='POST')
@@ -72,11 +87,25 @@ def measure(executable, directory, flags, shader_library=None):
         try:
             process.wait(timeout=10)
         except subprocess.TimeoutExpired:
+            forced_shutdown = True
             process.kill()
             process.wait()
+        reader.join(timeout=2)
+        while not received.empty():
+            event = received.get_nowait()
+            if event is not None:
+                at, line = event
+                events.append({'seconds': at, 'message': line})
         process.stdout.close()
+        (directory / 'startup-log.json').write_text(json.dumps(events, indent=2), encoding='utf-8')
+    if forced_shutdown or process.returncode != 0:
+        raise RuntimeError(f'Application did not exit cleanly (exit={process.returncode}, killed={forced_shutdown})')
+    errors = [event['message'] for event in events if error_record(event['message'])]
+    if errors:
+        raise RuntimeError(f'Application reported an error: {errors[0]}; see {directory / "startup-log.json"}')
     phases = [event for event in events if '[STARTUP]' in event['message']]
-    return {'flags': flags, 'phases': phases, 'log': str(directory / 'startup-log.json')}
+    return {'flags': flags, 'phases': phases, 'exit_code': process.returncode,
+            'log': str(directory / 'startup-log.json')}
 
 
 if __name__ == '__main__':
