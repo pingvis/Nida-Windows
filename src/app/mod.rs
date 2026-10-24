@@ -31,9 +31,9 @@ mod snapshot;
 pub(crate) mod state;
 mod surfaces;
 pub mod tool_path;
-mod workspace;
 #[cfg(any(target_os = "windows", test))]
 pub mod windows_log;
+mod workspace;
 
 pub use workspace::WorkspaceLoad;
 

@@ -987,7 +987,10 @@ impl UIRunner {
     /// Ask winit to exit while the engine is borrowed. `exiting` saves/stops
     /// it after `with_engine` has put it back, without a recursive borrow.
     fn exit_if_requested(&self, host: &dyn WindowHost) -> bool {
-        if self.varda.as_ref().is_some_and(|app| app.shutdown_requested)
+        if self
+            .varda
+            .as_ref()
+            .is_some_and(|app| app.shutdown_requested)
             || self
                 .shutdown_flag
                 .load(std::sync::atomic::Ordering::Relaxed)
