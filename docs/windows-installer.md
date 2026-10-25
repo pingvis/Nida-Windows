@@ -74,3 +74,11 @@ Installer test fixtures use `-TestIdentity` with a separate AppId, shortcuts and
 temporary install folder; only these fixtures may use different prerelease
 labels to exercise an upgrade. The automated test refuses production installers.
 Test logs are retained, and user-data fixtures survive uninstall.
+
+The combined workflow uses `build-windows-installer.ps1 -TestInstallUpgrade`
+to extract and validate the portable payload once for all three installers.
+The two disposable fixtures use ZIP compression; the downloadable installer
+keeps LZMA2 compression. Installed and upgraded payloads are still independently
+smoke-tested. The packaging workflow does not compile or run the application
+library's GPU backend unit tests.
+Artifact upload also avoids recompressing the already compressed ZIP and EXE.
