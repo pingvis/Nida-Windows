@@ -4,6 +4,7 @@ param([switch]$DefineOnly)
 $ErrorActionPreference = 'Stop'
 $script:powerpoint = $null
 $script:ended = @{}
+$script:showWindows = @{}
 
 function Get-PowerPoint {
     param([switch]$Create)
@@ -68,8 +69,29 @@ function Get-Step($deck, $window) {
 }
 
 function Get-ShowHwnd($window) {
-    # Office exposes HWND as a signed 32-bit Long, even from 64-bit Office.
-    return [NidaPowerPointNative]::Handle([int]$window.HWND)
+    $path = [string]$window.Presentation.FullName
+    $cached = $script:showWindows[$path]
+    if ($null -ne $cached -and [NidaPowerPointNative]::IsWindow($cached)) { return $cached }
+    # SlideShowWindow has no HWND in some Office versions. Activating this
+    # COM show identifies its native slideshow window without localized
+    # title prefixes. Cache it so polling never changes keyboard focus.
+    $window.Activate()
+    $pidOfApp = 0
+    $appHwnd = [NidaPowerPointNative]::Handle([int]$window.Application.HWND)
+    if ($appHwnd -ne [IntPtr]::Zero) {
+        $null = [NidaPowerPointNative]::GetWindowThreadProcessId($appHwnd, [ref]$pidOfApp)
+    }
+    $file = [IO.Path]::GetFileName($path)
+    $deadline = [DateTime]::UtcNow.AddSeconds(2)
+    do {
+        $hwnd = [NidaPowerPointNative]::FindSlideShow($file, $pidOfApp)
+        if ($hwnd -ne [IntPtr]::Zero) {
+            $script:showWindows[$path] = $hwnd
+            return $hwnd
+        }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw 'PowerPoint started its show, but its native window could not be identified'
 }
 
 function Get-Reading($deck) {
@@ -96,13 +118,15 @@ function Set-ShowPlacement($window, $at) {
     if (![NidaPowerPointNative]::SetWindowPos($hwnd, [IntPtr]::Zero,
         [int]$at.left, [int]$at.top, [Math]::Max(64, [int]$at.width),
         [Math]::Max(64, [int]$at.height), 0x0034)) {
-        throw 'Cannot position the PowerPoint slide show window'
+        throw "Cannot position PowerPoint window $hwnd (Office HWND $($window.HWND), Windows error $([Runtime.InteropServices.Marshal]::GetLastWin32Error()))"
     }
 }
 
 function Move-Show($deck, $window, $to) {
     $key = [string]$deck.FullName
     $view = $window.View
+    $wasEnded = $script:ended[$key]
+    if ($wasEnded -and $to -ne 'next') { $view.State = 1 }
     if ($to -isnot [string]) {
         $target = [Math]::Max(1, [Math]::Min([int]$deck.Slides.Count, [int]$to.slide))
         $view.GotoSlide($target)
@@ -187,7 +211,7 @@ function Invoke-PowerPointCommand($request) {
     if ($request.op -eq 'open') {
         try { $null = Find-Deck $app $path; return 'opened' }
         catch { if ($_.Exception.Message -ne 'nopres') { throw } }
-        $app.Visible = -1
+        if ([int]$app.Visible -ne -1) { $app.Visible = -1 }
         $security = $app.AutomationSecurity
         try {
             $app.AutomationSecurity = 3
@@ -208,6 +232,7 @@ function Invoke-PowerPointCommand($request) {
             $settings.ShowScrollbar = 0
             $settings.ShowPresenterView = 0
             $settings.LoopUntilStopped = 0
+            $script:showWindows.Remove($path)
             $window = $settings.Run()
             Set-ShowPlacement $window $request.at
             $script:ended.Remove($path)
@@ -231,6 +256,7 @@ function Invoke-PowerPointCommand($request) {
         'end' {
             try { (Get-Show $deck).View.Exit() } catch { if ($_.Exception.Message -ne 'noshow') { throw } }
             $script:ended.Remove($path)
+            $script:showWindows.Remove($path)
             return 'ended'
         }
         'close' {
@@ -238,6 +264,7 @@ function Invoke-PowerPointCommand($request) {
             $deck.Saved = -1
             $deck.Close()
             $script:ended.Remove($path)
+            $script:showWindows.Remove($path)
             return 'closed'
         }
         'video' {
@@ -254,17 +281,51 @@ try {
     Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Text;
 public static class NidaPowerPointNative {
     public static IntPtr Handle(int hwnd) { return new IntPtr(unchecked((long)(uint)hwnd)); }
+    private delegate bool WindowCallback(IntPtr hwnd, IntPtr data);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(WindowCallback callback, IntPtr data);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder name, int count);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int count);
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hwnd);
+    public static IntPtr FindSlideShow(string filename, int pid) {
+        var named = new List<IntPtr>();
+        EnumWindows(delegate(IntPtr hwnd, IntPtr data) {
+            var name = new StringBuilder(256);
+            GetClassName(hwnd, name, name.Capacity);
+            bool slideClass = String.Equals(name.ToString(), "screenClass", StringComparison.OrdinalIgnoreCase);
+            bool frameClass = String.Equals(name.ToString(), "PPTFrameClass", StringComparison.OrdinalIgnoreCase);
+            if (!slideClass && !frameClass) return true;
+            int owner;
+            GetWindowThreadProcessId(hwnd, out owner);
+            if (pid != 0 && owner != pid) return true;
+            try {
+                if (!String.Equals(System.Diagnostics.Process.GetProcessById(owner).ProcessName, "POWERPNT", StringComparison.OrdinalIgnoreCase)) return true;
+            } catch { return true; }
+            var title = new StringBuilder(2048);
+            GetWindowText(hwnd, title, title.Capacity);
+            bool hasName = title.ToString().IndexOf(filename, StringComparison.OrdinalIgnoreCase) >= 0;
+            if (slideClass || (hasName && hwnd == GetForegroundWindow()) ||
+                title.ToString().IndexOf("PowerPoint Slide Show", StringComparison.OrdinalIgnoreCase) >= 0) {
+                if (hasName) named.Add(hwnd);
+            }
+            return true;
+        }, IntPtr.Zero);
+        IntPtr front = GetForegroundWindow();
+        if (named.Contains(front)) return front;
+        return named.Count == 1 ? named[0] : IntPtr.Zero;
+    }
     [StructLayout(LayoutKind.Sequential)]
     public struct Rect { public int Left, Top, Right, Bottom; }
-    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out Rect rect);
+    [DllImport("user32.dll", SetLastError=true)] public static extern bool GetWindowRect(IntPtr hwnd, out Rect rect);
     [DllImport("user32.dll", EntryPoint="GetWindowLongW")] public static extern int GetWindowLong(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint="SetWindowLongW")] public static extern int SetWindowLong(IntPtr hwnd, int index, int value);
-    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int width, int height, uint flags);
+    [DllImport("user32.dll", SetLastError=true)] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out int pid);
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll", SetLastError=true)] public static extern bool SetForegroundWindow(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
 }
 '@
@@ -278,6 +339,9 @@ public static class NidaPowerPointNative {
             $response = @{ reply = [string]$reply }
         } catch {
             $message = $_.Exception.Message
+            if ($message -match '0x80048240|0x80010001|0x8001010A') {
+                $message += '. Close PowerPoint dialogs and check that desktop PowerPoint is activated.'
+            }
             $code = if ($message -in @('notinstalled', 'notrunning', 'nopres', 'noshow')) { $message } else { 'failed' }
             $response = @{ error = $code; message = $message }
         }

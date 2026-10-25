@@ -51,6 +51,14 @@ Assert-Equal (Move-Show $deck $window ([pscustomobject]@{ slide = 0 })) "step`t1
 Assert-Equal (Move-Show $deck $window 'last') "step`t3`t3`trunning" 'last'
 Assert-Equal (Move-Show $deck $window 'first') "step`t1`t1`trunning" 'first'
 
+# A first/goto command must leave the emulated end screen.
+$view.Slide.SlideIndex = 3
+$view.CurrentShowPosition = 3
+$view.Click = $view.Clicks
+$null = Move-Show $deck $window 'next'
+Assert-Equal (Move-Show $deck $window 'first') (('step', 1, 1, 'running') -join [char]9) 'first restores slide after end'
+Assert-Equal $view.State 1 'first clears the black end state'
+
 # Verify that Player is addressed by shape ID rather than collection index.
 $player = [pscustomobject]@{ State = 0; CurrentPosition = 1250 }
 $player | Add-Member ScriptMethod Play { $this.State = 0 }

@@ -42,6 +42,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: windows-powerpoint
+          cache-on-failure: true
       - name: Check Windows application and tests
         run: cargo check --all-targets --locked --no-default-features --features screen-capture
       - name: Test presentation worker and Windows helper transport

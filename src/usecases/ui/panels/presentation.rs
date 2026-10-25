@@ -240,9 +240,13 @@ pub(super) fn render_deck_column(
     if cfg!(target_os = "macos") {
         powerpoint_sound(ui, data, deck, actions);
     } else {
-        ui.label(egui::RichText::new(
-            "Slide audio plays through PowerPoint. Use an audio input to route it into the mixer.",
-        ).small().weak());
+        ui.label(
+            egui::RichText::new(
+                "Slide audio plays through PowerPoint. Use an audio input to route it into the mixer.",
+            )
+            .small()
+            .weak(),
+        );
     }
     ui.horizontal(|ui| {
         if ui
@@ -795,6 +799,7 @@ mod tests {
     /// PowerPoint's sound into the mixer in one click, as this input's;
     /// once it is there, said so — no second.
     #[test]
+    #[cfg(target_os = "macos")]
     fn powerpoints_sound_is_taken_into_the_mixer_in_one_click() {
         use crate::audio_mix::{AudioSourceKind, AudioSourceSnapshot};
         let mut data = with_deck();
@@ -868,6 +873,17 @@ mod tests {
             *deck = None;
         }
         harness(&data).get_by_label("PowerPoint's sound: in the audio mixer, tied to no input");
+    }
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn powerpoint_audio_uses_the_windows_device_route() {
+        let data = with_deck();
+        let view = harness(&data);
+        view.get_by_label(
+            "Slide audio plays through PowerPoint. Use an audio input to route it into the mixer.",
+        );
+        assert!(view.query_by_label("PowerPoint's sound to the mixer").is_none());
     }
 
     /// A presenter view's time of day switched off, and its clocks moved

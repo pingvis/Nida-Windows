@@ -593,7 +593,7 @@ fn powerpoint_body(ui: &mut egui::Ui, state: &mut State) {
     ui.add_space(8.0);
     ui.label(
         egui::RichText::new(if cfg!(target_os = "windows") {
-            "Needs the desktop version of Microsoft PowerPoint installed on this PC."
+            "Requires an installed, activated desktop version of Microsoft PowerPoint on this PC."
         } else {
             "Needs Microsoft PowerPoint on this Mac. The first time, macOS asks whether \
                  Nida may control PowerPoint: allow it."
