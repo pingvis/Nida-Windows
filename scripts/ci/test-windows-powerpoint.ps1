@@ -15,10 +15,13 @@ function Assert-Equal($actual, $expected, $label) {
 # A real path comparison must not confuse two decks sharing a filename.
 $unicode = [string][char]0x10c
 $path = ('C:\Talks\' + $unicode + ' '' dollar$().pptx')
+Assert-Equal (Convert-DeckPath ('\\?\' + $path)) $path 'extended drive path'
+Assert-Equal (Convert-DeckPath '\\?\UNC\server\share\talk.pptx') '\\server\share\talk.pptx' 'extended UNC path'
 $first = [pscustomobject]@{ FullName = $path }
 $second = [pscustomobject]@{ FullName = 'C:\Other\talk.pptx' }
 $app = [pscustomobject]@{ Presentations = @($first, $second) }
 Assert-Equal (Find-Deck $app $path.ToUpperInvariant()).FullName $path 'case-insensitive full path'
+Assert-Equal (Find-Deck $app ('\\?\' + $path)).FullName $path 'canonical Windows path matches Office'
 try { $null = Find-Deck $app 'D:\talk.pptx'; throw 'Should reject basename-only matches' }
 catch { Assert-Equal $_.Exception.Message 'nopres' 'missing deck' }
 

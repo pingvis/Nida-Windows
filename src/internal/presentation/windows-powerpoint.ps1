@@ -20,9 +20,23 @@ function Get-PowerPoint {
     return $script:powerpoint
 }
 
+function Convert-DeckPath([string]$path) {
+    # Rust canonicalize uses extended-length Windows paths; Office FullName
+    # uses ordinary drive/UNC paths. Compare and open the same representation.
+    $path = $path.Replace('/', '\')
+    if ($path.StartsWith('\\?\UNC\', [StringComparison]::OrdinalIgnoreCase)) {
+        return '\\' + $path.Substring(8)
+    }
+    if ($path.StartsWith('\\?\', [StringComparison]::OrdinalIgnoreCase)) {
+        return $path.Substring(4)
+    }
+    return $path
+}
+
 function Find-Deck($app, [string]$path) {
+    $path = Convert-DeckPath $path
     foreach ($deck in $app.Presentations) {
-        if ([string]::Equals([string]$deck.FullName, $path, [StringComparison]::OrdinalIgnoreCase)) {
+        if ([string]::Equals((Convert-DeckPath ([string]$deck.FullName)), $path, [StringComparison]::OrdinalIgnoreCase)) {
             return $deck
         }
     }
@@ -169,7 +183,7 @@ function Invoke-PowerPointCommand($request) {
         return 'focused'
     }
     $app = Get-PowerPoint -Create:($request.op -eq 'open')
-    $path = [string]$request.path
+    $path = Convert-DeckPath ([string]$request.path)
     if ($request.op -eq 'open') {
         try { $null = Find-Deck $app $path; return 'opened' }
         catch { if ($_.Exception.Message -ne 'nopres') { throw } }
