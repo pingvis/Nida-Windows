@@ -237,7 +237,13 @@ pub(super) fn render_deck_column(
         ui.label(egui::RichText::new(text).small().weak());
     }
     plays_on(ui, data, deck, p, actions);
-    powerpoint_sound(ui, data, deck, actions);
+    if cfg!(target_os = "macos") {
+        powerpoint_sound(ui, data, deck, actions);
+    } else {
+        ui.label(egui::RichText::new(
+            "Slide audio plays through PowerPoint. Use an audio input to route it into the mixer.",
+        ).small().weak());
+    }
     ui.horizontal(|ui| {
         if ui
             .button("Restart show")
@@ -376,7 +382,7 @@ fn plays_on(
     };
     let chosen = match &p.plays_on {
         PlaysOn::Auto => "Automatic".to_string(),
-        PlaysOn::Main => "This Mac's screen".to_string(),
+        PlaysOn::Main => "Primary screen".to_string(),
         PlaysOn::Screen(identity) => {
             named(identity).unwrap_or_else(|| "A screen not connected".to_string())
         }
@@ -391,13 +397,13 @@ fn plays_on(
                     .selectable_label(p.plays_on == PlaysOn::Auto, "Automatic")
                     .on_hover_text(
                         "Where it plays sharpest: a spare screen — connected, with no output \
-                         on it — when it is as sharp as this Mac's",
+                         on it — when it is as sharp as the primary screen",
                     );
                 if auto.clicked() {
                     picked = Some(PlaysOn::Auto);
                 }
                 if ui
-                    .selectable_label(p.plays_on == PlaysOn::Main, "This Mac's screen")
+                    .selectable_label(p.plays_on == PlaysOn::Main, "Primary screen")
                     .clicked()
                 {
                     picked = Some(PlaysOn::Main);

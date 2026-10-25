@@ -1,5 +1,7 @@
 # PowerPoint
 
+On Windows, see [PowerPoint inputs on Windows](windows-powerpoint.md). The macOS-specific permissions and audio routing below apply only to the Mac backend.
+
 A PowerPoint deck as an input, as vMix's PowerPoint input: played by
 **PowerPoint itself**, on the Mac running Nida, so its transitions,
 animations and videos are exactly as PowerPoint plays them — and moved on

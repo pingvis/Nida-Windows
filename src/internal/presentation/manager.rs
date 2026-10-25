@@ -16,8 +16,8 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use super::powerpoint::{
-    Go, MediaAction, Moved, Osascript, Placement, PowerPoint, Reading, Runner, Screen, ScriptError,
-    ShowState, Video, VideoReading, VideoState, POWERPOINT_ID,
+    platform_runner, Go, MediaAction, Moved, Placement, PowerPoint, Reading, Runner, Screen, ScriptError,
+    ShowState, Video, VideoReading, VideoState, POWERPOINT_CAPTURE_ID, POWERPOINT_ID,
 };
 use super::pptx;
 use super::screens::ScreenSpot;
@@ -272,7 +272,7 @@ pub fn pick_window<S: std::hash::BuildHasher>(
     let sized: Vec<&CaptureTargetInfo> = targets
         .iter()
         .filter(|t| t.kind == CaptureTargetKind::Window && !t.is_varda)
-        .filter(|t| t.app.as_deref() == Some(POWERPOINT_ID))
+        .filter(|t| t.app.as_deref().is_some_and(|app| app.eq_ignore_ascii_case(POWERPOINT_ID) || app.eq_ignore_ascii_case(POWERPOINT_CAPTURE_ID)))
         .filter(|t| !taken.contains(&t.platform_id))
         .filter(|t| near(t.width, window.width) && near(t.height, window.height))
         .collect();
@@ -815,7 +815,17 @@ impl<R: Runner, F: WindowFinder> Worker<R, F> {
                 return;
             }
         };
-        let Some(target) = pick_window(&windows, state.window, &deck_path, &taken) else {
+        let target = match self.ppt.window_id(&deck_path) {
+            Ok(Some(id)) => windows.iter().find(|target| {
+                target.platform_id == id && target.kind == CaptureTargetKind::Window && !target.is_varda
+            }).cloned(),
+            Ok(None) => pick_window(&windows, state.window, &deck_path, &taken),
+            Err(error) => {
+                self.status(deck, Status::NoWindow(error.to_string()));
+                return;
+            }
+        };
+        let Some(target) = target else {
             if waited {
                 if let Some(session) = self.sessions.get_mut(deck) {
                     session.looking_since = Some(now);
@@ -1154,7 +1164,7 @@ impl PresentationManager {
     /// The worker on PowerPoint and the screen's windows.
     #[must_use]
     pub fn new() -> Self {
-        Self::start(Osascript, ScreenWindows, main_display_scale())
+        Self::start(platform_runner(), ScreenWindows, main_display_scale())
     }
 
     pub fn start<R: Runner, F: WindowFinder>(runner: R, finder: F, scale: f64) -> Self {

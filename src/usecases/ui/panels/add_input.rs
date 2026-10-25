@@ -77,8 +77,8 @@ impl Kind {
             kinds.push(Self::Web);
         }
         kinds.extend([Self::Colour, Self::Generator, Self::Timer]);
-        // PowerPoint for Mac plays the deck: macOS only.
-        if cfg!(target_os = "macos") {
+        // A native PowerPoint backend is available on macOS and Windows.
+        if cfg!(any(target_os = "macos", target_os = "windows")) {
             kinds.push(Self::PowerPoint);
         }
         kinds.push(Self::Input);
@@ -562,7 +562,7 @@ fn playlist_body(ui: &mut egui::Ui, state: &mut State) {
 fn powerpoint_body(ui: &mut egui::Ui, state: &mut State) {
     ui.label(match &state.layer_of {
         None => {
-            "A PowerPoint deck, played by PowerPoint on this Mac in a window Nida shows — \
+            "A PowerPoint deck, played by PowerPoint on this computer in a window Nida shows — \
              its transitions, animations and videos as PowerPoint plays them. ◀ ▶ on its \
              tile, PageDown and PageUp (a presentation clicker) move it on."
         }
@@ -587,8 +587,12 @@ fn powerpoint_body(ui: &mut egui::Ui, state: &mut State) {
     ui.add_space(8.0);
     ui.label(
         egui::RichText::new(
-            "Needs Microsoft PowerPoint on this Mac. The first time, macOS asks whether \
-             Nida may control PowerPoint: allow it.",
+            if cfg!(target_os = "windows") {
+                "Needs the desktop version of Microsoft PowerPoint installed on this PC."
+            } else {
+                "Needs Microsoft PowerPoint on this Mac. The first time, macOS asks whether \
+                 Nida may control PowerPoint: allow it."
+            },
         )
         .small()
         .weak(),
@@ -1120,6 +1124,14 @@ fn add(ctx: &egui::Context, data: &UIData, actions: &mut UIActions, state: &Stat
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn powerpoint_is_offered_where_a_native_backend_exists() {
+        let supported = cfg!(any(target_os = "macos", target_os = "windows"));
+        for layer in [false, true] {
+            assert_eq!(Kind::offered(layer).contains(&Kind::PowerPoint), supported);
+        }
+    }
     use egui_kittest::kittest::{NodeT, Queryable};
 
     #[derive(Default)]

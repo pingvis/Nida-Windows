@@ -13,7 +13,7 @@ use crate::engine::value::presentation::{
     Go, PlaysOn, PresentationSnapshot, PresentationStatus, Screen,
 };
 use crate::presentation::manager::{PresentationManager, Status};
-use crate::presentation::powerpoint::POWERPOINT_ID;
+use crate::presentation::powerpoint::{POWERPOINT_CAPTURE_ID, POWERPOINT_ID};
 use crate::presentation::screens::{self, ScreenSpot, Want};
 use crate::presentation::PresentationConfig;
 use crate::screen_capture::backend::{CaptureConfig, TargetIdentity};
@@ -89,7 +89,7 @@ impl VardaApp {
         let state = ScreenCaptureState {
             capture_id: crate::screen_capture::UNBOUND_CAPTURE_ID,
             identity: TargetIdentity::Window {
-                app: POWERPOINT_ID.to_string(),
+                app: POWERPOINT_CAPTURE_ID.to_string(),
                 title: name.clone(),
             },
             config: CaptureConfig {
@@ -309,7 +309,29 @@ impl VardaApp {
             .screens_at
             .is_none_or(|at| at.elapsed() >= std::time::Duration::from_secs(1));
         if due && !p.screens_given {
-            p.screens = screens::connected();
+            #[cfg(not(target_os = "windows"))]
+            {
+                p.screens = screens::connected();
+            }
+            #[cfg(target_os = "windows")]
+            {
+                // The cached winit monitors use physical pixels, as does
+                // the PMv2 Windows PowerPoint helper. Indexes are transient;
+                // persisted choices still use the monitor's identity.
+                p.screens = self.output.cached_monitors.iter().enumerate().map(|(index, (_, monitor))| {
+                    let position = monitor.position();
+                    let size = monitor.size();
+                    ScreenSpot {
+                        display: u32::try_from(index).unwrap_or(u32::MAX),
+                        left: position.x,
+                        top: position.y,
+                        width: i32::try_from(size.width).unwrap_or(i32::MAX),
+                        height: i32::try_from(size.height).unwrap_or(i32::MAX),
+                        scale: 1.0,
+                        main: position.x == 0 && position.y == 0,
+                    }
+                }).collect();
+            }
             p.screens_at = Some(std::time::Instant::now());
         }
         &p.screens
@@ -346,7 +368,31 @@ impl VardaApp {
             .zip(&self.output.screen_facts)
             .filter(|((name, _), _)| waiting.contains(&name.as_str()))
             .filter_map(|(_, fact)| fact.display_id);
-        on.into_iter().chain(waited).collect()
+        #[allow(unused_mut)]
+        let mut displays: std::collections::HashSet<u32> = on.into_iter().chain(waited).collect();
+        #[cfg(target_os = "windows")]
+        for output in &self.output.outputs {
+            if let crate::renderer::context::UnifiedOutput::Window(window) = output {
+                if let Some(position) = window.position {
+                    for screen in &self.presentations.screens {
+                        if screen.holds(crate::presentation::powerpoint::Placement {
+                            left: position.x, top: position.y, width: 1, height: 1,
+                        }) {
+                            displays.insert(screen.display);
+                        }
+                    }
+                }
+            }
+        }
+        #[cfg(target_os = "windows")]
+        for (index, (name, _)) in self.output.cached_monitors.iter().enumerate() {
+            if waiting.contains(&name.as_str()) {
+                if let Ok(display) = u32::try_from(index) {
+                    displays.insert(display);
+                }
+            }
+        }
+        displays
     }
 
     /// The screen a deck's show plays on, as its input asks.
@@ -364,7 +410,18 @@ impl VardaApp {
                 .screen_facts
                 .iter()
                 .find(|f| f.identity == *identity)
-                .and_then(|f| f.display_id)
+                .and_then(|f| {
+                    #[cfg(target_os = "windows")]
+                    {
+                        self.presentations.screens.iter()
+                            .find(|screen| (screen.left, screen.top) == f.position)
+                            .map(|screen| screen.display)
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        f.display_id
+                    }
+                })
                 .map_or(Want::Auto, Want::Display),
         };
         let aspect = self
@@ -387,6 +444,10 @@ impl VardaApp {
     /// How the screen `spot` is named: the name given it, else what macOS
     /// calls it — this Mac's own said so.
     fn presentation_screen_name(&self, spot: &ScreenSpot) -> String {
+        #[cfg(target_os = "windows")]
+        if let Some((name, _)) = self.output.cached_monitors.get(spot.display as usize) {
+            return name.clone();
+        }
         let name = self
             .output
             .screen_facts

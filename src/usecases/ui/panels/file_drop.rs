@@ -88,7 +88,7 @@ pub(super) fn handle_file_drop(ui: &egui::Ui, data: &UIData, actions: &mut UIAct
     // A PowerPoint deck is an input of its own, wherever it lands.
     let (decks, files): (Vec<PathBuf>, Vec<PathBuf>) = files
         .into_iter()
-        .partition(|f| cfg!(target_os = "macos") && super::presentation::is_deck(f));
+        .partition(|f| cfg!(any(target_os = "macos", target_os = "windows")) && super::presentation::is_deck(f));
     for deck in decks {
         log::info!("PowerPoint deck dropped: {}", deck.display());
         actions.commands.push(EngineCommand::AddInput {
@@ -149,7 +149,7 @@ fn describe(files: &[PathBuf]) -> (String, usize) {
     let (mut images, mut videos, mut sounds, mut shaders, mut other) = (0, 0, 0, 0, 0);
     let mut decks = 0;
     for f in files {
-        if cfg!(target_os = "macos") && super::presentation::is_deck(f) {
+        if cfg!(any(target_os = "macos", target_os = "windows")) && super::presentation::is_deck(f) {
             decks += 1;
             continue;
         }

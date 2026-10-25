@@ -19,6 +19,29 @@ use std::time::{Duration, Instant};
 /// PowerPoint's bundle id: found wherever it is installed, whatever it is
 /// called.
 pub const POWERPOINT_ID: &str = "com.microsoft.Powerpoint";
+/// Process identity used by the native window capture backend.
+#[cfg(not(target_os = "windows"))]
+pub const POWERPOINT_CAPTURE_ID: &str = POWERPOINT_ID;
+#[cfg(target_os = "windows")]
+pub const POWERPOINT_CAPTURE_ID: &str = "POWERPNT";
+
+#[cfg(not(target_os = "windows"))]
+pub type PlatformRunner = Osascript;
+#[cfg(target_os = "windows")]
+pub type PlatformRunner = super::windows::WindowsCom;
+
+/// Construct the platform's native automation runner.
+#[must_use]
+pub fn platform_runner() -> PlatformRunner {
+    #[cfg(target_os = "windows")]
+    {
+        PlatformRunner::default()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Osascript
+    }
+}
 
 /// How long a command may take before its `osascript` is killed. Opening a
 /// large deck takes longest; a step should take a few milliseconds.
@@ -320,6 +343,21 @@ pub trait Runner: Send + 'static {
     ///
     /// Why it did not run or what it complained of, as [`ScriptError`].
     fn run(&self, script: &str, timeout: Duration) -> Result<String, ScriptError>;
+    /// Execute a structured command. AppleScript runners use the supplied
+    /// script; Windows sends the command to its persistent COM helper.
+    ///
+    /// # Errors
+    ///
+    /// The same errors as [`Self::run`].
+    fn request(
+        &self,
+        _command: &serde_json::Value,
+        script: &str,
+        timeout: Duration,
+    ) -> Result<String, ScriptError> {
+        self.run(script, timeout)
+    }
+
     /// Open `path` in PowerPoint without bringing it forward.
     ///
     /// # Errors
@@ -330,6 +368,15 @@ pub trait Runner: Send + 'static {
     /// again, so its keys (Space cuts) do not go to PowerPoint. macOS may
     /// say no; then a click in Nida does it.
     fn refocus(&self) {}
+
+    /// The exact native slide-show window, when the backend exposes one.
+    ///
+    /// # Errors
+    ///
+    /// PowerPoint no longer has the deck or show, or did not answer.
+    fn window_id(&self, _path: &Path) -> Result<Option<u64>, ScriptError> {
+        Ok(None)
+    }
 }
 
 /// The real runner.
@@ -436,13 +483,13 @@ impl Runner for Osascript {
 /// Each command fails with the [`ScriptError`] that says why: PowerPoint
 /// missing, not allowed, not running, the deck not open or its show not
 /// running, no answer in time, or PowerPoint's own complaint.
-pub struct PowerPoint<R: Runner = Osascript> {
+pub struct PowerPoint<R: Runner = PlatformRunner> {
     runner: R,
 }
 
-impl Default for PowerPoint<Osascript> {
+impl Default for PowerPoint<PlatformRunner> {
     fn default() -> Self {
-        Self::new(Osascript)
+        Self::new(platform_runner())
     }
 }
 
@@ -451,14 +498,19 @@ impl<R: Runner> PowerPoint<R> {
         Self { runner }
     }
 
-    fn run(&self, script: &str) -> Result<String, ScriptError> {
-        self.runner.run(script, COMMAND_TIMEOUT)
+    fn run(&self, command: serde_json::Value, script: &str) -> Result<String, ScriptError> {
+        self.runner.request(&command, script, COMMAND_TIMEOUT)
     }
 
     /// As `run`, given longer when it walks to a slide.
-    fn run_walking(&self, script: &str, walks: bool) -> Result<String, ScriptError> {
+    fn run_walking(
+        &self,
+        command: serde_json::Value,
+        script: &str,
+        walks: bool,
+    ) -> Result<String, ScriptError> {
         let timeout = if walks { WALK_TIMEOUT } else { COMMAND_TIMEOUT };
-        self.runner.run(script, timeout)
+        self.runner.request(&command, script, timeout)
     }
 
     /// Open `path` (absolute, as the file system names it) and wait, up to
@@ -530,7 +582,13 @@ impl<R: Runner> PowerPoint<R> {
         slide: Option<u32>,
     ) -> Result<ShowState, ScriptError> {
         let walks = slide.is_some_and(|n| n > 1);
-        Self::showing(&self.run_walking(&scripts::start(path, at, slide), walks)?)
+        Self::showing(&self.run_walking(
+            serde_json::json!({"op": "start", "path": path, "at": {
+                "left": at.left, "top": at.top, "width": at.width, "height": at.height
+            }, "slide": slide}),
+            &scripts::start(path, at, slide),
+            walks,
+        )?)
     }
 
     /// A step, answered briefly: a whole reading took twice as long
@@ -541,7 +599,11 @@ impl<R: Runner> PowerPoint<R> {
     /// As for every command (see [`PowerPoint`]).
     pub fn go(&self, path: &Path, to: Go) -> Result<Moved, ScriptError> {
         let walks = matches!(to, Go::Slide(_));
-        Moved::parse(&self.run_walking(&scripts::go(path, to), walks)?)
+        Moved::parse(&self.run_walking(
+            serde_json::json!({"op": "go", "path": path, "to": to}),
+            &scripts::go(path, to),
+            walks,
+        )?)
     }
 
     /// Black or white the screen out, or show the slide again.
@@ -550,7 +612,10 @@ impl<R: Runner> PowerPoint<R> {
     ///
     /// As for every command (see [`PowerPoint`]).
     pub fn screen(&self, path: &Path, screen: Screen) -> Result<Moved, ScriptError> {
-        Moved::parse(&self.run(&scripts::screen(path, screen))?)
+        Moved::parse(&self.run(
+            serde_json::json!({"op": "screen", "path": path, "screen": screen}),
+            &scripts::screen(path, screen),
+        )?)
     }
 
     /// Move the show's window.
@@ -559,14 +624,22 @@ impl<R: Runner> PowerPoint<R> {
     ///
     /// As for every command (see [`PowerPoint`]).
     pub fn place(&self, path: &Path, at: Placement) -> Result<ShowState, ScriptError> {
-        Self::showing(&self.run(&scripts::place(path, at))?)
+        Self::showing(&self.run(
+            serde_json::json!({"op": "place", "path": path, "at": {
+                "left": at.left, "top": at.top, "width": at.width, "height": at.height
+            }}),
+            &scripts::place(path, at),
+        )?)
     }
 
     /// # Errors
     ///
     /// As for every command (see [`PowerPoint`]).
     pub fn read(&self, path: &Path) -> Result<Reading, ScriptError> {
-        Reading::parse(&self.run(&scripts::read(path))?)
+        Reading::parse(&self.run(
+            serde_json::json!({"op": "read", "path": path}),
+            &scripts::read(path),
+        )?)
     }
 
     /// End the show, leaving the deck open.
@@ -575,7 +648,11 @@ impl<R: Runner> PowerPoint<R> {
     ///
     /// As for every command (see [`PowerPoint`]).
     pub fn end(&self, path: &Path) -> Result<(), ScriptError> {
-        self.run(&scripts::end(path)).map(|_| ())
+        self.run(
+            serde_json::json!({"op": "end", "path": path}),
+            &scripts::end(path),
+        )
+        .map(|_| ())
     }
 
     /// Close the deck without saving: Nida only changed how it plays.
@@ -584,7 +661,11 @@ impl<R: Runner> PowerPoint<R> {
     ///
     /// As for every command (see [`PowerPoint`]).
     pub fn close(&self, path: &Path) -> Result<(), ScriptError> {
-        self.run(&scripts::close(path)).map(|_| ())
+        self.run(
+            serde_json::json!({"op": "close", "path": path}),
+            &scripts::close(path),
+        )
+        .map(|_| ())
     }
 
     /// The video on the slide on screen — the shape `known` holds when its
@@ -600,7 +681,27 @@ impl<R: Runner> PowerPoint<R> {
         known: Option<(u32, u32)>,
         action: Option<MediaAction>,
     ) -> Result<VideoReading, ScriptError> {
-        VideoReading::parse(&self.run(&scripts::video(path, known, action))?)
+        let (control, position) = match action {
+            None => ("read", None),
+            Some(MediaAction::Play) => ("play", None),
+            Some(MediaAction::Pause) => ("pause", None),
+            Some(MediaAction::Seek(ms)) => ("seek", Some(ms)),
+            Some(MediaAction::Restart) => ("restart", None),
+        };
+        VideoReading::parse(&self.run(
+            serde_json::json!({"op": "video", "path": path, "known": known,
+                "control": control, "position": position}),
+            &scripts::video(path, known, action),
+        )?)
+    }
+
+    /// The exact native slide-show window, if supported by this runner.
+    ///
+    /// # Errors
+    ///
+    /// As for every command (see [`PowerPoint`]).
+    pub fn window_id(&self, path: &Path) -> Result<Option<u64>, ScriptError> {
+        self.runner.window_id(path)
     }
 
     fn showing(reply: &str) -> Result<ShowState, ScriptError> {
