@@ -1,0 +1,65 @@
+name: Windows build and upload release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag without v, e.g. 0.9.2. Existing release assets are replaced; new releases are drafts.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Serialize replacements of the same release, without cancelling any build.
+concurrency:
+  group: windows-publish-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate release version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check plain version against selected source
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: python3 scripts/ci/publish-windows-release.py --tag "$RELEASE_TAG" --validate-only
+      - name: Test release asset handling
+        run: python3 scripts/ci/test-publish-windows-release.py
+
+  build:
+    needs: validate
+    uses: ./.github/workflows/windows-release.yml
+    with:
+      version: ${{ inputs.tag }}
+    permissions:
+      contents: read
+
+  publish:
+    name: Upload and verify release downloads
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: Nida-${{ inputs.tag }}-windows-x64
+          path: release-assets
+      - name: Replace existing downloads or create a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          SOURCE_SHA: ${{ github.sha }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 scripts/ci/publish-windows-release.py \
+            --tag "$RELEASE_TAG" --source-sha "$SOURCE_SHA" \
+            --repository "$RELEASE_REPOSITORY" --assets release-assets
