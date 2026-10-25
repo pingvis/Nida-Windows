@@ -45,6 +45,6 @@ jobs:
       - name: Check Windows application and tests
         run: cargo check --all-targets --locked --no-default-features --features screen-capture
       - name: Test presentation worker and Windows helper transport
-        run: cargo test --lib --locked --no-default-features --features screen-capture presentation::
+        run: 'cargo test --lib --locked --no-default-features --features screen-capture presentation::'
       - name: Test PowerPoint input availability
         run: cargo test --lib --locked --no-default-features --features screen-capture powerpoint_is_offered
