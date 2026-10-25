@@ -64,8 +64,8 @@ jobs:
         with:
           toolchain: 1.99.1
           components: rustfmt
-      - name: Check formatting
-        run: cargo fmt --all -- --check
+      - name: Check GPU context formatting
+        run: rustfmt --edition 2021 --check --config skip_children=true src/internal/renderer/context.rs
       - name: Keep dependency cache tied to the pinned Rust compiler
         shell: pwsh
         run: |

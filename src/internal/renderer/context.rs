@@ -1710,7 +1710,8 @@ impl OutputWindow {
         let shown = take_presented_times(&self.surface);
         if !shown.is_empty() {
             let refresh = self.refresh_interval().map_or(0.0, |r| r.as_secs_f64());
-            self.on_screen.record(&shown, self.frame_period.max(refresh));
+            self.on_screen
+                .record(&shown, self.frame_period.max(refresh));
             if TRACE.recording() {
                 let times = shown.clone();
                 TRACE.note(&self.name, 0, Step::Shown { times });
@@ -1919,9 +1920,9 @@ impl OutputWindow {
             lock: std::sync::Arc::clone(&self.present_lock),
             pipeline: self.blit_pipeline.render_pipeline().clone(),
             picture,
-            refresh: std::time::Duration::from_secs_f64(
-                refresh.map_or(self.frame_period, |r| r.as_secs_f64().max(self.frame_period)),
-            ),
+            refresh: std::time::Duration::from_secs_f64(refresh.map_or(self.frame_period, |r| {
+                r.as_secs_f64().max(self.frame_period)
+            })),
             held: self.frame_hold.is_some(),
             stats: std::sync::Arc::clone(&self.present_stats),
         };
@@ -3089,7 +3090,9 @@ mod macos_window {
 
     impl HiderOwner {
         fn new() -> Retained<Self> {
-            let this = Self::alloc().set_ivars(HiderIvars { hidden: Cell::new(false) });
+            let this = Self::alloc().set_ivars(HiderIvars {
+                hidden: Cell::new(false),
+            });
             // Safety: NSObject's designated initialiser.
             unsafe { msg_send![super(this), init] }
         }
@@ -3247,7 +3250,11 @@ mod tests {
         let mut pictures = super::PresentPictures::default();
 
         let held: Vec<_> = (0..super::PresentPictures::MOST)
-            .map(|_| pictures.free(&gpu.device, &window, &blit).expect("a picture"))
+            .map(|_| {
+                pictures
+                    .free(&gpu.device, &window, &blit)
+                    .expect("a picture")
+            })
             .collect();
         for (i, a) in held.iter().enumerate() {
             for b in &held[i + 1..] {
@@ -3271,7 +3278,9 @@ mod tests {
         );
 
         let bigger = like(128, 72);
-        let fresh = pictures.free(&gpu.device, &bigger, &blit).expect("a picture");
+        let fresh = pictures
+            .free(&gpu.device, &bigger, &blit)
+            .expect("a picture");
         assert_eq!((fresh.texture.width(), fresh.texture.height()), (128, 72));
     }
 
@@ -3639,15 +3648,30 @@ mod tests {
     fn a_blackmagic_output_fits_its_picture_into_the_format() {
         let hd = |master, scale, rotation| fitted_in_format(master, scale, rotation, 1920, 1080);
         let close = |a: [f32; 4], b: [f32; 4]| a.iter().zip(b).all(|(a, b)| (a - b).abs() < 1e-4);
-        assert_eq!(hd([1920, 1080], [1.0, 1.0], OutputRotation::Deg0), [0.0, 0.0, 1.0, 1.0]);
-        assert_eq!(hd([3840, 2160], [1.0, 1.0], OutputRotation::Deg0), [0.0, 0.0, 1.0, 1.0]);
+        assert_eq!(
+            hd([1920, 1080], [1.0, 1.0], OutputRotation::Deg0),
+            [0.0, 0.0, 1.0, 1.0]
+        );
+        assert_eq!(
+            hd([3840, 2160], [1.0, 1.0], OutputRotation::Deg0),
+            [0.0, 0.0, 1.0, 1.0]
+        );
         // A 32:9 LED master: full width, half height.
-        assert!(close(hd([3840, 1080], [1.0, 1.0], OutputRotation::Deg0), [0.0, 0.25, 1.0, 0.5]));
+        assert!(close(
+            hd([3840, 1080], [1.0, 1.0], OutputRotation::Deg0),
+            [0.0, 0.25, 1.0, 0.5]
+        ));
         // Its left half as a bus is 16:9 again.
-        assert_eq!(hd([3840, 1080], [0.5, 1.0], OutputRotation::Deg0), [0.0, 0.0, 1.0, 1.0]);
+        assert_eq!(
+            hd([3840, 1080], [0.5, 1.0], OutputRotation::Deg0),
+            [0.0, 0.0, 1.0, 1.0]
+        );
         // A square bus of it: pillarboxed.
         let [x, _, w, h] = hd([3840, 1080], [0.28125, 1.0], OutputRotation::Deg0);
-        assert!((w - 0.5625).abs() < 1e-4 && h == 1.0 && (x - 0.21875).abs() < 1e-4, "{w} {x}");
+        assert!(
+            (w - 0.5625).abs() < 1e-4 && h == 1.0 && (x - 0.21875).abs() < 1e-4,
+            "{w} {x}"
+        );
         // Turned a quarter, a 16:9 master stands 9:16 in the frame.
         let [_, _, w, h] = hd([1920, 1080], [1.0, 1.0], OutputRotation::Deg90);
         assert!((w - 0.316_406).abs() < 1e-4 && h == 1.0, "{w}");
