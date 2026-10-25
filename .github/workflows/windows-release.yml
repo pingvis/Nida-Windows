@@ -10,6 +10,12 @@ on:
         type: string
   push:
     tags: ['v*']
+    branches: [main]
+    paths:
+      - 'src/internal/renderer/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/windows-release.yml'
   pull_request:
     paths:
       - '.github/workflows/windows-release.yml'
@@ -57,6 +63,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.99.1
+          components: rustfmt
+      - name: Check formatting
+        run: cargo fmt --all -- --check
       - name: Keep dependency cache tied to the pinned Rust compiler
         shell: pwsh
         run: |
@@ -112,6 +121,8 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: ./scripts/ci/build-windows.ps1 -WithBrowser -ReleaseVersion $env:RELEASE_VERSION
+      - name: Test GPU backend selection
+        run: cargo test --release --lib --locked --no-default-features --features screen-capture,windows-browser gpu_backend_
       - name: Build installer and exercise install, upgrade and uninstall
         shell: pwsh
         env:

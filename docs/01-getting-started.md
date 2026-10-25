@@ -54,6 +54,11 @@ The table above covers local file content. Nida can also route live and network 
 
 Requires FFmpeg **9 or newer** (commands and development libraries), [Rust](https://rustup.rs/) (stable) and a GPU with Metal (macOS), Vulkan (Linux), or DirectX 12 (Windows) support.
 
+Windows uses DirectX 12 for both windowed and headless startup. This avoids
+enumerating unused Vulkan drivers, which can stall startup on hybrid GPU systems.
+For graphics diagnostics, set `WGPU_BACKEND` explicitly (for example, `dx12` or
+`vulkan`); the startup log records the enabled backends before adapter selection.
+
 ### Ubuntu / Debian
 
 ```bash

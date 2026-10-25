@@ -24,6 +24,30 @@ pub use super::config::{
 /// their own formats and are deliberately excluded.
 pub const COLOR_PATH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
 
+fn gpu_instance_descriptor(backend_override: Option<wgpu::Backends>) -> wgpu::InstanceDescriptor {
+    // Enumerating every backend also calls unused Vulkan ICDs. On hybrid Windows
+    // laptops an old integrated-GPU ICD can hang there, before DX12 is selected.
+    // Use the native Windows backend without loading unrelated driver stacks.
+    #[cfg(target_os = "windows")]
+    let defaults = wgpu::Backends::DX12;
+    #[cfg(not(target_os = "windows"))]
+    let defaults = wgpu::Backends::all();
+
+    wgpu::InstanceDescriptor {
+        backends: backend_override.unwrap_or(defaults),
+        flags: wgpu::InstanceFlags::default(),
+        backend_options: wgpu::BackendOptions::default(),
+        display: None,
+        memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
+    }
+}
+
+fn create_gpu_instance() -> wgpu::Instance {
+    let descriptor = gpu_instance_descriptor(wgpu::Backends::from_env());
+    log::info!("Initializing GPU backends: {:?}", descriptor.backends);
+    wgpu::Instance::new(descriptor)
+}
+
 fn resolve_eight_bit_presentation(
     request: PresentationRequest,
     pixel_format: PresentationPixelFormat,
@@ -316,13 +340,7 @@ impl GpuContext {
         winit::dpi::PhysicalSize<u32>,
     )> {
         let size = window.inner_size();
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
-            flags: wgpu::InstanceFlags::default(),
-            backend_options: wgpu::BackendOptions::default(),
-            display: None,
-            memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
-        });
+        let instance = create_gpu_instance();
         let surface = instance
             .create_surface(window)
             .context("Failed to create surface")?;
@@ -510,13 +528,7 @@ impl GpuContext {
     /// Returns an error if no GPU adapter is available at all, or if the
     /// headless device request fails.
     pub fn new_headless() -> Result<Self> {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
-            flags: wgpu::InstanceFlags::default(),
-            backend_options: wgpu::BackendOptions::default(),
-            display: None,
-            memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
-        });
+        let instance = create_gpu_instance();
 
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -3189,6 +3201,20 @@ mod macos_window {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn gpu_backend_windows_default_does_not_enumerate_vulkan() {
+        let descriptor = super::gpu_instance_descriptor(None);
+        assert_eq!(descriptor.backends, wgpu::Backends::DX12);
+    }
+
+    #[test]
+    fn gpu_backend_explicit_selection_is_preserved() {
+        let requested = wgpu::Backends::VULKAN;
+        let descriptor = super::gpu_instance_descriptor(Some(requested));
+        assert_eq!(descriptor.backends, requested);
+    }
+
     /// A picture a frame on its way to the screen holds is never drawn into
     /// again until the frame lets it go; there are never more than a frame
     /// waiting, one presented and one drawn need; and a window of another

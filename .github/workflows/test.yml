@@ -25,10 +25,8 @@ env:
   # The adapter is pinned by VK_DRIVER_FILES, exported to $GITHUB_ENV by the
   # install step below because the ICD path is discovered rather than fixed.
   #
-  # Note WGPU_BACKEND is deliberately *not* set: `GpuContext::new_headless`
-  # builds its instance with `Backends::all()` and never reads it, and the one
-  # thing that did honour it (egui_kittest, via egui-wgpu's `Backends::from_env`)
-  # no longer runs here. Loader-level pinning is what actually constrains this.
+  # WGPU_BACKEND is not set: the Linux default enables all compiled backends.
+  # Loader-level pinning constrains Vulkan to the software adapter chosen below.
   #
   # Turn `tests/common/mod.rs`'s no-adapter skip into a hard failure. Without
   # this the entire GPU suite reports green on a runner with a broken driver.
