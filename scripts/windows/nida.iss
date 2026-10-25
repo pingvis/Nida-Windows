@@ -32,7 +32,13 @@ MinVersion=10.0.17763
 SetupIconFile={#PayloadDir}\nida.ico
 UninstallDisplayIcon={app}\nida.ico
 VersionInfoVersion={#FileVersion}
+#ifdef TestInstaller
+; Disposable upgrade fixtures exercise the same files and installer behavior.
+; Avoid recompressing the full Chromium payload with LZMA twice for each run.
+Compression=zip
+#else
 Compression=lzma2
+#endif
 SolidCompression=yes
 WizardStyle=modern
 SetupLogging=yes

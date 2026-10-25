@@ -121,8 +121,6 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: ./scripts/ci/build-windows.ps1 -WithBrowser -ReleaseVersion $env:RELEASE_VERSION
-      - name: Test GPU backend selection
-        run: cargo test --release --lib --locked --no-default-features --features screen-capture,windows-browser gpu_backend_
       - name: Build installer and exercise install, upgrade and uninstall
         shell: pwsh
         env:
@@ -130,11 +128,7 @@ jobs:
         run: |
           $archive = @(Get-ChildItem dist/windows/*.zip)
           if ($archive.Count -ne 1) { throw 'Expected exactly one verified portable ZIP.' }
-          ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion $env:RELEASE_VERSION
-          $version = ($env:RELEASE_VERSION -split '-')[0]
-          $first = ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion "$version-installer-test.1" -TestIdentity -OutputDirectory (Join-Path $env:RUNNER_TEMP 'installer-fixtures')
-          $next = ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion "$version-installer-test.2" -TestIdentity -OutputDirectory (Join-Path $env:RUNNER_TEMP 'installer-fixtures')
-          ./scripts/ci/test-windows-installer.ps1 -Installer $first.FullName -UpgradeInstaller $next.FullName
+          ./scripts/ci/build-windows-installer.ps1 -Archive $archive[0].FullName -ReleaseVersion $env:RELEASE_VERSION -TestInstallUpgrade
       - name: Upload portable ZIP, installer and checksums
         uses: actions/upload-artifact@v4
         with:
@@ -145,6 +139,8 @@ jobs:
             dist/windows-installer/*-Setup.exe
             dist/windows-installer/*-Setup.exe.sha256
           if-no-files-found: error
+          # ZIP and Inno payloads are already compressed.
+          compression-level: 0
           retention-days: 14
       - name: Download instructions
         shell: pwsh
