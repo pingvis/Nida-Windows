@@ -26,11 +26,17 @@ pub struct WindowsCom {
 
 impl WindowsCom {
     fn send(&self, command: &serde_json::Value, timeout: Duration) -> Result<String, ScriptError> {
-        let mut bridge = self.bridge.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut bridge = self
+            .bridge
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if bridge.is_none() {
             *bridge = Some(Bridge::start(HELPER)?);
         }
-        let result = bridge.as_mut().expect("helper started").exchange(command, timeout);
+        let result = bridge
+            .as_mut()
+            .expect("helper started")
+            .exchange(command, timeout);
         match result {
             Ok(reply) => reply.result(),
             Err(error) => {
@@ -44,7 +50,9 @@ impl WindowsCom {
 
 impl Runner for WindowsCom {
     fn run(&self, _script: &str, _timeout: Duration) -> Result<String, ScriptError> {
-        Err(ScriptError::Failed("Windows requires a structured PowerPoint command".into()))
+        Err(ScriptError::Failed(
+            "Windows requires a structured PowerPoint command".into(),
+        ))
     }
 
     fn request(
@@ -57,13 +65,22 @@ impl Runner for WindowsCom {
     }
 
     fn open(&self, path: &Path) -> Result<(), ScriptError> {
-        self.send(&serde_json::json!({"op": "open", "path": path}), COMMAND_TIMEOUT)
-            .map(|_| ())
+        self.send(
+            &serde_json::json!({"op": "open", "path": path}),
+            COMMAND_TIMEOUT,
+        )
+        .map(|_| ())
     }
 
     fn window_id(&self, path: &Path) -> Result<Option<u64>, ScriptError> {
-        let reply = self.send(&serde_json::json!({"op": "window", "path": path}), COMMAND_TIMEOUT)?;
-        reply.parse::<u64>().map(Some).map_err(|e| ScriptError::Failed(format!("invalid PowerPoint HWND: {e}")))
+        let reply = self.send(
+            &serde_json::json!({"op": "window", "path": path}),
+            COMMAND_TIMEOUT,
+        )?;
+        reply
+            .parse::<u64>()
+            .map(Some)
+            .map_err(|e| ScriptError::Failed(format!("invalid PowerPoint HWND: {e}")))
     }
 
     fn refocus(&self) {
@@ -91,7 +108,8 @@ impl Reply {
             Some("nopres") => Err(ScriptError::NotOpen),
             Some("noshow") => Err(ScriptError::NoShow),
             Some(_) => Err(ScriptError::Failed(
-                self.message.unwrap_or_else(|| "Windows automation failed".into()),
+                self.message
+                    .unwrap_or_else(|| "Windows automation failed".into()),
             )),
         }
     }
@@ -109,12 +127,22 @@ impl Bridge {
         // embedded helper is sent as UTF-8 base64, then reads JSON lines.
         let bootstrap = r"[Console]::InputEncoding = New-Object Text.UTF8Encoding; [Console]::OutputEncoding = New-Object Text.UTF8Encoding; $code = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([Console]::ReadLine())); & ([ScriptBlock]::Create($code))";
         let encoded = base64::engine::general_purpose::STANDARD.encode(
-            bootstrap.encode_utf16().flat_map(u16::to_le_bytes).collect::<Vec<_>>(),
+            bootstrap
+                .encode_utf16()
+                .flat_map(u16::to_le_bytes)
+                .collect::<Vec<_>>(),
         );
         let system = std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into());
         let executable = Path::new(&system).join("System32/WindowsPowerShell/v1.0/powershell.exe");
         let mut child = Command::new(executable)
-            .args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Sta", "-EncodedCommand", &encoded])
+            .args([
+                "-NoLogo",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Sta",
+                "-EncodedCommand",
+                &encoded,
+            ])
             .creation_flags(CREATE_NO_WINDOW)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -127,14 +155,19 @@ impl Bridge {
         std::thread::spawn(move || {
             for line in BufReader::new(stdout).lines() {
                 let reply = line.map_err(|e| e.to_string()).and_then(|line| {
-                    serde_json::from_str::<Reply>(&line).map_err(|e| format!("invalid helper reply: {e}"))
+                    serde_json::from_str::<Reply>(&line)
+                        .map_err(|e| format!("invalid helper reply: {e}"))
                 });
                 if sender.send(reply).is_err() {
                     break;
                 }
             }
         });
-        let mut bridge = Self { child, stdin, replies };
+        let mut bridge = Self {
+            child,
+            stdin,
+            replies,
+        };
         let code = base64::engine::general_purpose::STANDARD.encode(helper.as_bytes());
         writeln!(bridge.stdin, "{code}")
             .and_then(|()| bridge.stdin.flush())
@@ -154,9 +187,9 @@ impl Bridge {
             Ok(Ok(reply)) => Ok(reply),
             Ok(Err(error)) => Err(ScriptError::Failed(error)),
             Err(mpsc::RecvTimeoutError::Timeout) => Err(ScriptError::TimedOut),
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                Err(ScriptError::Failed("Windows PowerPoint helper stopped".into()))
-            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => Err(ScriptError::Failed(
+                "Windows PowerPoint helper stopped".into(),
+            )),
         }
     }
 }
@@ -173,6 +206,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn embedded_helper_initializes_without_office() {
+        let runner = WindowsCom::default();
+        assert_eq!(
+            runner.send(&serde_json::json!({"op": "ping"}), Duration::from_secs(20)),
+            Ok("ready".into())
+        );
+    }
+
+    #[test]
     fn helper_transport_keeps_unicode_paths_as_data() {
         let script = r#"
 while ($null -ne ($line = [Console]::ReadLine())) {
@@ -182,15 +224,20 @@ while ($null -ne ($line = [Console]::ReadLine())) {
 "#;
         let mut bridge = Bridge::start(script).unwrap();
         let path = "C:/Talks/Čiurlionis ' $() ` deck.pptx";
-        let reply = bridge.exchange(
-            &serde_json::json!({"path": path}),
-            Duration::from_secs(20),
-        ).unwrap().result().unwrap();
+        let reply = bridge
+            .exchange(&serde_json::json!({"path": path}), Duration::from_secs(20))
+            .unwrap()
+            .result()
+            .unwrap();
         assert_eq!(reply, path);
-        let reply = bridge.exchange(
-            &serde_json::json!({"path": "another deck"}),
-            Duration::from_secs(5),
-        ).unwrap().result().unwrap();
+        let reply = bridge
+            .exchange(
+                &serde_json::json!({"path": "another deck"}),
+                Duration::from_secs(5),
+            )
+            .unwrap()
+            .result()
+            .unwrap();
         assert_eq!(reply, "another deck");
     }
 
@@ -211,7 +258,11 @@ while ($null -ne ($line = [Console]::ReadLine())) {
             ("nopres", ScriptError::NotOpen),
             ("noshow", ScriptError::NoShow),
         ] {
-            let reply = Reply { reply: String::new(), error: Some(code.into()), message: None };
+            let reply = Reply {
+                reply: String::new(),
+                error: Some(code.into()),
+                message: None,
+            };
             assert_eq!(reply.result(), Err(expected));
         }
     }

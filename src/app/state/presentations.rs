@@ -318,19 +318,25 @@ impl VardaApp {
                 // The cached winit monitors use physical pixels, as does
                 // the PMv2 Windows PowerPoint helper. Indexes are transient;
                 // persisted choices still use the monitor's identity.
-                p.screens = self.output.cached_monitors.iter().enumerate().map(|(index, (_, monitor))| {
-                    let position = monitor.position();
-                    let size = monitor.size();
-                    ScreenSpot {
-                        display: u32::try_from(index).unwrap_or(u32::MAX),
-                        left: position.x,
-                        top: position.y,
-                        width: i32::try_from(size.width).unwrap_or(i32::MAX),
-                        height: i32::try_from(size.height).unwrap_or(i32::MAX),
-                        scale: 1.0,
-                        main: position.x == 0 && position.y == 0,
-                    }
-                }).collect();
+                p.screens = self
+                    .output
+                    .cached_monitors
+                    .iter()
+                    .enumerate()
+                    .map(|(index, (_, monitor))| {
+                        let position = monitor.position();
+                        let size = monitor.size();
+                        ScreenSpot {
+                            display: u32::try_from(index).unwrap_or(u32::MAX),
+                            left: position.x,
+                            top: position.y,
+                            width: i32::try_from(size.width).unwrap_or(i32::MAX),
+                            height: i32::try_from(size.height).unwrap_or(i32::MAX),
+                            scale: 1.0,
+                            main: position.x == 0 && position.y == 0,
+                        }
+                    })
+                    .collect();
             }
             p.screens_at = Some(std::time::Instant::now());
         }
@@ -376,7 +382,10 @@ impl VardaApp {
                 if let Some(position) = window.position {
                     for screen in &self.presentations.screens {
                         if screen.holds(crate::presentation::powerpoint::Placement {
-                            left: position.x, top: position.y, width: 1, height: 1,
+                            left: position.x,
+                            top: position.y,
+                            width: 1,
+                            height: 1,
                         }) {
                             displays.insert(screen.display);
                         }
@@ -413,7 +422,9 @@ impl VardaApp {
                 .and_then(|f| {
                     #[cfg(target_os = "windows")]
                     {
-                        self.presentations.screens.iter()
+                        self.presentations
+                            .screens
+                            .iter()
                             .find(|screen| (screen.left, screen.top) == f.position)
                             .map(|screen| screen.display)
                     }

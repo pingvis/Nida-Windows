@@ -498,19 +498,19 @@ impl<R: Runner> PowerPoint<R> {
         Self { runner }
     }
 
-    fn run(&self, command: serde_json::Value, script: &str) -> Result<String, ScriptError> {
-        self.runner.request(&command, script, COMMAND_TIMEOUT)
+    fn run(&self, command: &serde_json::Value, script: &str) -> Result<String, ScriptError> {
+        self.runner.request(command, script, COMMAND_TIMEOUT)
     }
 
     /// As `run`, given longer when it walks to a slide.
     fn run_walking(
         &self,
-        command: serde_json::Value,
+        command: &serde_json::Value,
         script: &str,
         walks: bool,
     ) -> Result<String, ScriptError> {
         let timeout = if walks { WALK_TIMEOUT } else { COMMAND_TIMEOUT };
-        self.runner.request(&command, script, timeout)
+        self.runner.request(command, script, timeout)
     }
 
     /// Open `path` (absolute, as the file system names it) and wait, up to
@@ -583,7 +583,7 @@ impl<R: Runner> PowerPoint<R> {
     ) -> Result<ShowState, ScriptError> {
         let walks = slide.is_some_and(|n| n > 1);
         Self::showing(&self.run_walking(
-            serde_json::json!({"op": "start", "path": path, "at": {
+            &serde_json::json!({"op": "start", "path": path, "at": {
                 "left": at.left, "top": at.top, "width": at.width, "height": at.height
             }, "slide": slide}),
             &scripts::start(path, at, slide),
@@ -600,7 +600,7 @@ impl<R: Runner> PowerPoint<R> {
     pub fn go(&self, path: &Path, to: Go) -> Result<Moved, ScriptError> {
         let walks = matches!(to, Go::Slide(_));
         Moved::parse(&self.run_walking(
-            serde_json::json!({"op": "go", "path": path, "to": to}),
+            &serde_json::json!({"op": "go", "path": path, "to": to}),
             &scripts::go(path, to),
             walks,
         )?)
@@ -613,7 +613,7 @@ impl<R: Runner> PowerPoint<R> {
     /// As for every command (see [`PowerPoint`]).
     pub fn screen(&self, path: &Path, screen: Screen) -> Result<Moved, ScriptError> {
         Moved::parse(&self.run(
-            serde_json::json!({"op": "screen", "path": path, "screen": screen}),
+            &serde_json::json!({"op": "screen", "path": path, "screen": screen}),
             &scripts::screen(path, screen),
         )?)
     }
@@ -625,7 +625,7 @@ impl<R: Runner> PowerPoint<R> {
     /// As for every command (see [`PowerPoint`]).
     pub fn place(&self, path: &Path, at: Placement) -> Result<ShowState, ScriptError> {
         Self::showing(&self.run(
-            serde_json::json!({"op": "place", "path": path, "at": {
+            &serde_json::json!({"op": "place", "path": path, "at": {
                 "left": at.left, "top": at.top, "width": at.width, "height": at.height
             }}),
             &scripts::place(path, at),
@@ -637,7 +637,7 @@ impl<R: Runner> PowerPoint<R> {
     /// As for every command (see [`PowerPoint`]).
     pub fn read(&self, path: &Path) -> Result<Reading, ScriptError> {
         Reading::parse(&self.run(
-            serde_json::json!({"op": "read", "path": path}),
+            &serde_json::json!({"op": "read", "path": path}),
             &scripts::read(path),
         )?)
     }
@@ -649,7 +649,7 @@ impl<R: Runner> PowerPoint<R> {
     /// As for every command (see [`PowerPoint`]).
     pub fn end(&self, path: &Path) -> Result<(), ScriptError> {
         self.run(
-            serde_json::json!({"op": "end", "path": path}),
+            &serde_json::json!({"op": "end", "path": path}),
             &scripts::end(path),
         )
         .map(|_| ())
@@ -662,7 +662,7 @@ impl<R: Runner> PowerPoint<R> {
     /// As for every command (see [`PowerPoint`]).
     pub fn close(&self, path: &Path) -> Result<(), ScriptError> {
         self.run(
-            serde_json::json!({"op": "close", "path": path}),
+            &serde_json::json!({"op": "close", "path": path}),
             &scripts::close(path),
         )
         .map(|_| ())
@@ -689,7 +689,7 @@ impl<R: Runner> PowerPoint<R> {
             Some(MediaAction::Restart) => ("restart", None),
         };
         VideoReading::parse(&self.run(
-            serde_json::json!({"op": "video", "path": path, "known": known,
+            &serde_json::json!({"op": "video", "path": path, "known": known,
                 "control": control, "position": position}),
             &scripts::video(path, known, action),
         )?)

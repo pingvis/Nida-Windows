@@ -14,7 +14,7 @@ function Assert-Equal($actual, $expected, $label) {
 
 # A real path comparison must not confuse two decks sharing a filename.
 $unicode = [string][char]0x10c
-$path = "C:\Talks\$unicode ' dollar\$().pptx"
+$path = ('C:\Talks\' + $unicode + ' '' dollar$().pptx')
 $first = [pscustomobject]@{ FullName = $path }
 $second = [pscustomobject]@{ FullName = 'C:\Other\talk.pptx' }
 $app = [pscustomobject]@{ Presentations = @($first, $second) }

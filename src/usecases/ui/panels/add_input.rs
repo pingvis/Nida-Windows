@@ -73,7 +73,10 @@ impl Kind {
             Self::Screen,
             Self::Stream,
         ];
-        if cfg!(any(feature = "html", all(target_os = "windows", feature = "windows-browser"))) {
+        if cfg!(any(
+            feature = "html",
+            all(target_os = "windows", feature = "windows-browser")
+        )) {
             kinds.push(Self::Web);
         }
         kinds.extend([Self::Colour, Self::Generator, Self::Timer]);
@@ -372,8 +375,11 @@ fn kind_body(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions, state: &
         }
         Kind::Web => {
             ui.label("Address of the page:");
-            ui.add(egui::TextEdit::singleline(&mut state.web_url)
-                .desired_width(ui.available_width()).clip_text(true));
+            ui.add(
+                egui::TextEdit::singleline(&mut state.web_url)
+                    .desired_width(ui.available_width())
+                    .clip_text(true),
+            );
             false
         }
         Kind::Colour => {
@@ -586,14 +592,12 @@ fn powerpoint_body(ui: &mut egui::Ui, state: &mut State) {
     }
     ui.add_space(8.0);
     ui.label(
-        egui::RichText::new(
-            if cfg!(target_os = "windows") {
-                "Needs the desktop version of Microsoft PowerPoint installed on this PC."
-            } else {
-                "Needs Microsoft PowerPoint on this Mac. The first time, macOS asks whether \
+        egui::RichText::new(if cfg!(target_os = "windows") {
+            "Needs the desktop version of Microsoft PowerPoint installed on this PC."
+        } else {
+            "Needs Microsoft PowerPoint on this Mac. The first time, macOS asks whether \
                  Nida may control PowerPoint: allow it."
-            },
-        )
+        })
         .small()
         .weak(),
     );
@@ -1234,7 +1238,10 @@ mod tests {
     }
 
     #[test]
-    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+    #[cfg(any(
+        feature = "html",
+        all(target_os = "windows", feature = "windows-browser")
+    ))]
     fn browser_sources_are_offered_for_both_inputs_and_layers() {
         let url = "https://www.youtube.com/live_chat?is_popout=1&v=Tk6E7lbvBzI";
         for layer in [None, Some("a0000000")] {
@@ -1248,8 +1255,14 @@ mod tests {
             h.run_steps(2);
             click(&mut h, "OK");
             assert!(added(&h).iter().any(|command| match command {
-                EngineCommand::AddInput { source: InputSource::Html { url: actual }, .. } => layer.is_none() && actual == url,
-                EngineCommand::AddHtmlDeck { channel_uuid, url: actual } => layer.as_ref() == Some(channel_uuid) && actual == url,
+                EngineCommand::AddInput {
+                    source: InputSource::Html { url: actual },
+                    ..
+                } => layer.is_none() && actual == url,
+                EngineCommand::AddHtmlDeck {
+                    channel_uuid,
+                    url: actual,
+                } => layer.as_ref() == Some(channel_uuid) && actual == url,
                 _ => false,
             }));
         }

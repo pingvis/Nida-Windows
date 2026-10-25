@@ -53,12 +53,17 @@ function Get-Step($deck, $window) {
     return ("step", $index, [int]$view.CurrentShowPosition, (Get-ShowScreen $deck $view)) -join "`t"
 }
 
+function Get-ShowHwnd($window) {
+    # Office exposes HWND as a signed 32-bit Long, even from 64-bit Office.
+    return [NidaPowerPointNative]::Handle([int]$window.HWND)
+}
+
 function Get-Reading($deck) {
     try { $window = Get-Show $deck }
     catch { return ("noshow", [int]$deck.Slides.Count) -join "`t" }
     $view = $window.View
     $rect = New-Object NidaPowerPointNative+Rect
-    if (![NidaPowerPointNative]::GetWindowRect([IntPtr][long]$window.HWND, [ref]$rect)) {
+    if (![NidaPowerPointNative]::GetWindowRect((Get-ShowHwnd $window), [ref]$rect)) {
         throw 'Cannot read the PowerPoint slide show window'
     }
     $kind = if ([int]$window.IsFullScreen -eq -1) { 'full' } else { 'window' }
@@ -68,7 +73,7 @@ function Get-Reading($deck) {
 }
 
 function Set-ShowPlacement($window, $at) {
-    $hwnd = [IntPtr][long]$window.HWND
+    $hwnd = Get-ShowHwnd $window
     # Only the slide show window is made borderless. Pixel coordinates avoid
     # PowerPoint's point/DPI conversions and match Windows Graphics Capture.
     $style = [NidaPowerPointNative]::GetWindowLong($hwnd, -16)
@@ -97,7 +102,7 @@ function Move-Show($deck, $window, $to) {
                     # Keep a captured black end screen instead of letting
                     # PowerPoint close the window on the final Next.
                     if ([int]$view.Slide.SlideIndex -ge $last -and
-                        ($view.GetClickIndex() -eq -2 -or $view.GetClickIndex() -ge $view.GetClickCount())) {
+                        ($view.GetClickCount() -eq 0 -or $view.GetClickIndex() -eq -2 -or $view.GetClickIndex() -ge $view.GetClickCount())) {
                         $view.State = 3
                         $script:ended[$key] = $true
                     } else { $view.Next() }
@@ -149,6 +154,7 @@ function Get-Video($deck, $window, $request) {
 }
 
 function Invoke-PowerPointCommand($request) {
+    if ($request.op -eq 'ping') { return 'ready' }
     if ($request.op -eq 'refocus') {
         $front = [NidaPowerPointNative]::GetForegroundWindow()
         $pidOnTop = 0
@@ -178,7 +184,10 @@ function Invoke-PowerPointCommand($request) {
     $deck = Find-Deck $app $path
     switch ($request.op) {
         'read' { return Get-Reading $deck }
-        'window' { return [string][long](Get-Show $deck).HWND }
+        'window' {
+            $hwnd = Get-ShowHwnd (Get-Show $deck)
+            return [string]$hwnd.ToInt64()
+        }
         'start' {
             $settings = $deck.SlideShowSettings
             $settings.ShowType = 2
@@ -232,6 +241,7 @@ try {
 using System;
 using System.Runtime.InteropServices;
 public static class NidaPowerPointNative {
+    public static IntPtr Handle(int hwnd) { return new IntPtr(unchecked((long)(uint)hwnd)); }
     [StructLayout(LayoutKind.Sequential)]
     public struct Rect { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out Rect rect);
