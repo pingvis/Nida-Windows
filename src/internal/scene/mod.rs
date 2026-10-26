@@ -939,6 +939,8 @@ pub enum OutputTargetConfig {
     Recording {
         path: String,
         codec: String,
+        #[serde(default)]
+        encoder: crate::engine::value::render::RecordingEncoder,
         /// Audio passthrough device name (None = silent). See spec/audio-passthrough.md.
         #[serde(default)]
         audio_device: Option<String>,
@@ -2682,6 +2684,7 @@ mod tests {
         let restored: OutputTargetConfig = serde_json::from_str(legacy).unwrap();
         match restored {
             OutputTargetConfig::Recording {
+                encoder: _,
                 path,
                 codec,
                 audio_device,
@@ -2697,6 +2700,7 @@ mod tests {
     #[test]
     fn scene_config_roundtrip_recording_with_audio() {
         let target = OutputTargetConfig::Recording {
+            encoder: Default::default(),
             path: "set.mp4".to_string(),
             codec: "ProRes 422".to_string(),
             audio_device: Some("Scarlett 2i2".to_string()),
@@ -2705,6 +2709,7 @@ mod tests {
         let restored: OutputTargetConfig = serde_json::from_str(&json).unwrap();
         match restored {
             OutputTargetConfig::Recording {
+                encoder: _,
                 path,
                 codec,
                 audio_device,

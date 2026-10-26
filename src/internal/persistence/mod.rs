@@ -955,10 +955,12 @@ fn target_to_config(target: &OutputTarget) -> OutputTargetConfig {
         OutputTarget::Recording {
             path,
             codec,
+            encoder,
             audio_device,
         } => OutputTargetConfig::Recording {
             path: path.clone(),
             codec: codec.to_string(),
+            encoder: *encoder,
             audio_device: audio_device.clone(),
         },
         OutputTarget::SrtStream {
@@ -1039,9 +1041,11 @@ fn config_to_target(config: &OutputTargetConfig) -> OutputTarget {
         OutputTargetConfig::Recording {
             path,
             codec,
+            encoder,
             audio_device,
         } => OutputTarget::Recording {
             path: path.clone(),
+            encoder: *encoder,
             codec: match codec.as_str() {
                 "prores" | "ProRes" | "ProRes 422" => RecordingCodec::ProRes,
                 "prores_4444" | "ProRes4444" | "ProRes 4444" => RecordingCodec::ProRes4444,
@@ -3045,6 +3049,7 @@ mod tests {
     fn output_audio_device_survives_target_config_roundtrip() {
         // audio_device must round-trip live OutputTarget ↔ persisted config.
         let recording = OutputTarget::Recording {
+            encoder: Default::default(),
             path: "set.mov".into(),
             codec: RecordingCodec::ProRes,
             audio_device: Some("Scarlett 2i2".into()),
@@ -3063,6 +3068,20 @@ mod tests {
             config_to_target(&target_to_config(&silent)).audio_device(),
             None
         );
+    }
+
+    #[test]
+    fn recording_encoder_survives_stage_config_roundtrip() {
+        let target = OutputTarget::Recording {
+            path: "show.mp4".into(),
+            codec: RecordingCodec::H265,
+            encoder: crate::engine::value::render::RecordingEncoder::NvidiaNvenc,
+            audio_device: Some("Capture".into()),
+        };
+        let config = target_to_config(&target);
+        let json = serde_json::to_string(&config).unwrap();
+        let restored: OutputTargetConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(target, config_to_target(&restored));
     }
 
     /// A Blackmagic output is kept with the show: its device and format, by

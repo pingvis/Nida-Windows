@@ -2523,6 +2523,7 @@ mod tests {
             &mut app,
             crate::engine::EngineCommand::CreateHeadlessOutput {
                 target: crate::engine::value::render::OutputTarget::Recording {
+                    encoder: Default::default(),
                     path: "unused.mp4".into(),
                     codec: crate::renderer::context::RecordingCodec::H264,
                     audio_device: None,

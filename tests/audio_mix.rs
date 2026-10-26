@@ -549,6 +549,7 @@ fn a_recording_carries_the_master_bus_by_default() {
         &mut app,
         EngineCommand::CreateHeadlessOutput {
             target: varda::renderer::context::OutputTarget::Recording {
+                encoder: Default::default(),
                 path: file.to_string_lossy().into_owned(),
                 codec: varda::renderer::context::RecordingCodec::H264,
                 audio_device: None,

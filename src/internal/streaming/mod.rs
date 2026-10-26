@@ -422,7 +422,10 @@ pub fn try_encoders_meanwhile() {
             let _ = crate::record::prores_hardware();
             crate::renderer::subprocess::find_streaming_capabilities();
             #[cfg(target_os = "windows")]
-            let _ = nvenc::available();
+            {
+                let _ = nvenc::available();
+                crate::renderer::subprocess::warm_recording_encoders();
+            }
         });
     if let Err(e) = spawned {
         log::warn!("Encoders not tried ahead: {e}");

@@ -16,6 +16,7 @@ pub(super) fn render_output_section(ui: &mut egui::Ui, data: &UIData, actions: &
             use crate::renderer::context::RecordingCodec;
             actions.commands.push(EngineCommand::CreateHeadlessOutput {
                 target: OutputTarget::Recording {
+                    encoder: Default::default(),
                     path: crate::record::RecordOptions::default()
                         .folder
                         .join("Recording.mp4")
@@ -510,6 +511,7 @@ fn render_headless_controls(
 
     // Inline config for Recording outputs
     if let OutputTarget::Recording {
+        encoder,
         ref path,
         ref codec,
         ref audio_device,
@@ -538,6 +540,14 @@ fn render_headless_controls(
                                 actions.commands.push(EngineCommand::SetOutputTarget {
                                     output_uuid: output_uuid.to_string(),
                                     target: OutputTarget::Recording {
+                                        encoder: if matches!(
+                                            c,
+                                            RecordingCodec::H264 | RecordingCodec::H265
+                                        ) {
+                                            encoder
+                                        } else {
+                                            Default::default()
+                                        },
                                         path: path.clone(),
                                         codec: c.clone(),
                                         audio_device: audio_device.clone(),
@@ -546,6 +556,37 @@ fn render_headless_controls(
                             }
                         }
                     });
+            });
+        }
+        if cfg!(target_os = "windows")
+            && matches!(codec, RecordingCodec::H264 | RecordingCodec::H265)
+        {
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new("Encoder:").small());
+                ui.add_enabled_ui(!output.is_active, |ui| {
+                    egui::ComboBox::from_id_salt(("recording_encoder", output_uuid))
+                        .selected_text(encoder.to_string())
+                        .show_ui(ui, |ui| {
+                            for choice in [
+                                crate::renderer::context::RecordingEncoder::Software,
+                                crate::renderer::context::RecordingEncoder::NvidiaNvenc,
+                            ] {
+                                if ui.selectable_label(encoder == choice, choice.to_string()).clicked() {
+                                    actions.commands.push(EngineCommand::SetOutputTarget {
+                                        output_uuid: output_uuid.to_string(),
+                                        target: OutputTarget::Recording {
+                                            path: path.clone(),
+                                            codec: codec.clone(),
+                                            encoder: choice,
+                                            audio_device: audio_device.clone(),
+                                        },
+                                    });
+                                }
+                            }
+                        })
+                        .response
+                        .on_hover_text("NVIDIA uses the GPU's video encoder. If unavailable, this take uses the CPU and reports the fallback.");
+                });
             });
         }
         ui.horizontal_wrapped(|ui| {
@@ -1728,6 +1769,7 @@ mod tests {
             sample_output(crate::engine::value::render::ResolvedPresentation::default());
         output.is_windowed = false;
         output.target = OutputTarget::Recording {
+            encoder: Default::default(),
             path: "Clean.mp4".into(),
             codec: crate::renderer::context::RecordingCodec::H264,
             audio_device: None,
@@ -1772,6 +1814,7 @@ mod tests {
             output.is_windowed = false;
             output.is_active = false;
             output.target = OutputTarget::Recording {
+                encoder: Default::default(),
                 path: "Clean.mp4".into(),
                 codec: crate::renderer::context::RecordingCodec::H264,
                 audio_device: None,

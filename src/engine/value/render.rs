@@ -418,6 +418,9 @@ pub enum OutputTarget {
     Recording {
         path: String,
         codec: RecordingCodec,
+        /// Software by default for existing shows; NVENC falls back if unavailable.
+        #[serde(default)]
+        encoder: RecordingEncoder,
         /// Audio passthrough device NAME (None = silent). See spec/audio-passthrough.md.
         #[serde(default)]
         audio_device: Option<String>,
@@ -603,6 +606,34 @@ impl std::fmt::Display for OutputTarget {
 }
 
 // ── ffmpeg codecs ────────────────────────────────────────────────────
+
+/// Encoder preference for output recordings, independent of the file's codec.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    serde::Serialize,
+    serde::Deserialize,
+    utoipa::ToSchema,
+)]
+pub enum RecordingEncoder {
+    #[default]
+    Software,
+    /// NVIDIA hardware encoding for H.264 and HEVC on Windows.
+    NvidiaNvenc,
+}
+
+impl std::fmt::Display for RecordingEncoder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Software => "CPU (software)",
+            Self::NvidiaNvenc => "NVIDIA (NVENC)",
+        })
+    }
+}
 
 /// Recording codec for ffmpeg subprocess.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -923,6 +954,7 @@ mod tests {
         assert!(ndi.is_headless());
         assert!(!ndi.is_windowed());
         let rec = OutputTarget::Recording {
+            encoder: Default::default(),
             path: "/tmp/out.mov".into(),
             codec: RecordingCodec::H264,
             audio_device: None,
@@ -931,10 +963,41 @@ mod tests {
     }
 
     #[test]
+    fn legacy_recording_defaults_to_software_and_encoder_roundtrips() {
+        let legacy = r#"{"Recording":{"path":"show.mp4","codec":"H265"}}"#;
+        let target: OutputTarget = serde_json::from_str(legacy).unwrap();
+        assert!(matches!(
+            target,
+            OutputTarget::Recording {
+                encoder: RecordingEncoder::Software,
+                ..
+            }
+        ));
+        let target = OutputTarget::Recording {
+            path: "show.mp4".into(),
+            codec: RecordingCodec::H265,
+            encoder: RecordingEncoder::NvidiaNvenc,
+            audio_device: Some("Capture".into()),
+        };
+        let restored: OutputTarget =
+            serde_json::from_str(&serde_json::to_string(&target).unwrap()).unwrap();
+        assert!(matches!(
+            restored,
+            OutputTarget::Recording {
+                encoder: RecordingEncoder::NvidiaNvenc,
+                codec: RecordingCodec::H265,
+                ..
+            }
+        ));
+        assert_eq!(restored.audio_device(), Some("Capture"));
+    }
+
+    #[test]
     fn target_audio_device_only_for_configured_ffmpeg_targets() {
         // No audio configured → None even on an ffmpeg target.
         assert_eq!(
             OutputTarget::Recording {
+                encoder: Default::default(),
                 path: "/tmp/a.mov".into(),
                 codec: RecordingCodec::H264,
                 audio_device: None,
@@ -966,6 +1029,7 @@ mod tests {
     #[test]
     fn target_with_audio_device_updates_ffmpeg_targets() {
         let rec = OutputTarget::Recording {
+            encoder: Default::default(),
             path: "/tmp/a.mov".into(),
             codec: RecordingCodec::H264,
             audio_device: None,

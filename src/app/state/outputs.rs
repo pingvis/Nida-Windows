@@ -397,15 +397,21 @@ impl VardaApp {
                     audio_input,
                 )
             }
-            OutputTarget::Recording { path, codec, .. } => {
+            OutputTarget::Recording {
+                path,
+                codec,
+                encoder,
+                ..
+            } => {
                 let path = crate::record::output_recording_base(
                     crate::record::output_recording_folder(path),
                     &name,
                     codec,
                 );
-                crate::renderer::FfmpegSubprocess::spawn_recording_with_presentation(
+                crate::renderer::FfmpegSubprocess::spawn_recording_with_encoder(
                     &path.display().to_string(),
                     codec,
+                    *encoder,
                     width,
                     height,
                     fps,
@@ -1558,6 +1564,7 @@ mod tests {
         for _ in 0..2 {
             assert!(matches!(
                 app.cmd_create_headless_output(OutputTarget::Recording {
+                    encoder: Default::default(),
                     path: configured.display().to_string(),
                     codec: RecordingCodec::H264,
                     audio_device: None

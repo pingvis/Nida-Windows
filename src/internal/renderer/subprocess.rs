@@ -14,8 +14,8 @@ use std::sync::Arc;
 use crate::audio::PcmChunk;
 use crate::engine::value::render::{
     AlphaMode, PresentationColorProfile, PresentationDepth, PresentationPixelFormat,
-    PresentationRequest, RecordingCodec, ResolvedPresentation, RtmpCodecContract, SrtCodec,
-    StreamingCodec,
+    PresentationRequest, RecordingCodec, RecordingEncoder, ResolvedPresentation, RtmpCodecContract,
+    SrtCodec, StreamingCodec,
 };
 use crate::renderer::{ReadbackFormat, ReadbackFrame};
 
@@ -236,8 +236,33 @@ impl RecordingPlan {
         readback: ReadbackFormat,
         encoder_help: Option<&str>,
     ) -> Self {
-        let encoder = recording_encoder(codec);
-        let ten_bit_output = ten_bit_output_format(codec);
+        Self::resolve_encoder(
+            codec,
+            request,
+            readback,
+            encoder_help,
+            recording_encoder(codec),
+        )
+    }
+
+    fn resolve_encoder(
+        codec: &RecordingCodec,
+        request: PresentationRequest,
+        readback: ReadbackFormat,
+        encoder_help: Option<&str>,
+        encoder: &str,
+    ) -> Self {
+        let nvenc = encoder.ends_with("_nvenc");
+        let ten_bit_output = if nvenc && matches!(codec, RecordingCodec::H265) {
+            Some("p010le")
+        } else {
+            ten_bit_output_format(codec)
+        };
+        let eight_bit_output = if nvenc {
+            "nv12"
+        } else {
+            eight_bit_output_format(codec)
+        };
         let codec_supports_ten_bit = ten_bit_output.is_some();
         let encoder_supports_ten_bit = ten_bit_output.is_some_and(|format| {
             encoder_help.is_some_and(|help| encoder_supports_pixel_format(help, format))
@@ -294,7 +319,7 @@ impl RecordingPlan {
             && readback == ReadbackFormat::Nv12
             && matches!(codec, RecordingCodec::H264 | RecordingCodec::H265)
         {
-            ("nv12", eight_bit_output_format(codec), ReadbackFormat::Nv12)
+            ("nv12", eight_bit_output, ReadbackFormat::Nv12)
         } else if use_ten_bit {
             if matches!(codec, RecordingCodec::ProRes4444) {
                 (
@@ -310,11 +335,7 @@ impl RecordingPlan {
                 )
             }
         } else {
-            (
-                "rgba",
-                eight_bit_output_format(codec),
-                ReadbackFormat::Rgba8,
-            )
+            ("rgba", eight_bit_output, ReadbackFormat::Rgba8)
         };
         let alpha_mode = if codec_preserves_alpha(codec) {
             AlphaMode::Straight
@@ -340,7 +361,11 @@ impl RecordingPlan {
             dither: request.dither,
             fallback_reason,
         };
-        let video_args = recording_video_args(codec, resolved_depth, output_pixel_format);
+        let video_args = if nvenc {
+            nvenc_recording_args(encoder, output_pixel_format)
+        } else {
+            recording_video_args(codec, resolved_depth, output_pixel_format)
+        };
 
         Self {
             resolved,
@@ -353,6 +378,29 @@ impl RecordingPlan {
     }
 }
 
+fn prefer_nvenc_recording(
+    mut software: RecordingPlan,
+    codec: &RecordingCodec,
+    request: PresentationRequest,
+    readback: ReadbackFormat,
+    hardware: Option<(&'static str, &str)>,
+) -> (RecordingPlan, &'static str) {
+    if let Some((encoder, help)) = hardware {
+        let plan = RecordingPlan::resolve_encoder(codec, request, readback, Some(help), encoder);
+        // Do not sacrifice precision just to enable acceleration.
+        if plan.resolved.resolved == software.resolved.resolved {
+            return (plan, encoder);
+        }
+    }
+    let encoder = recording_encoder(codec);
+    let reason = format!("NVIDIA recording encoder unavailable or not yet qualified for {codec} at this precision; using CPU ({encoder})");
+    software.resolved.fallback_reason = Some(match software.resolved.fallback_reason.take() {
+        Some(existing) => format!("{existing}; {reason}"),
+        None => reason,
+    });
+    (software, encoder)
+}
+
 fn recording_encoder(codec: &RecordingCodec) -> &'static str {
     match codec {
         RecordingCodec::H264 => "libx264",
@@ -360,6 +408,173 @@ fn recording_encoder(codec: &RecordingCodec) -> &'static str {
         RecordingCodec::AV1 => "libsvtav1",
         RecordingCodec::ProRes | RecordingCodec::ProRes4444 => "prores_ks",
         RecordingCodec::Hap | RecordingCodec::HapAlpha | RecordingCodec::HapQ => "hap",
+    }
+}
+
+fn nvenc_recording_args(encoder: &str, pixel_format: &str) -> Vec<String> {
+    let profile = if encoder == "hevc_nvenc" {
+        if pixel_format == "p010le" {
+            "main10"
+        } else {
+            "main"
+        }
+    } else {
+        "high"
+    };
+    // CQ is encoder-specific, not equivalent to software CRF. Disable
+    // lookahead and B frames to bound buffering across simultaneous takes.
+    [
+        "-c:v",
+        encoder,
+        "-preset",
+        "p4",
+        "-tune",
+        "ll",
+        "-rc",
+        "vbr",
+        "-cq",
+        "20",
+        "-b:v",
+        "0",
+        "-bf",
+        "0",
+        "-rc-lookahead",
+        "0",
+        "-profile:v",
+        profile,
+        "-pix_fmt",
+        pixel_format,
+        "-color_primaries",
+        "bt709",
+        "-color_trc",
+        "bt709",
+        "-colorspace",
+        "bt709",
+        "-color_range",
+        "tv",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+fn nvenc_recording_available(encoder: &'static str, pixel_format: &'static str) -> bool {
+    // REC must never wait for the background driver probe. A request before
+    // qualification finishes safely uses software for that take.
+    cfg!(target_os = "windows")
+        && recording_probe_index(encoder, pixel_format)
+            .is_some_and(|index| RECORDING_NVENC_SUPPORT[index].load(Ordering::Acquire) == 2)
+}
+
+static RECORDING_NVENC_SUPPORT: [std::sync::atomic::AtomicU8; 3] = [
+    std::sync::atomic::AtomicU8::new(0),
+    std::sync::atomic::AtomicU8::new(0),
+    std::sync::atomic::AtomicU8::new(0),
+];
+
+fn recording_probe_index(encoder: &str, pixel_format: &str) -> Option<usize> {
+    match (encoder, pixel_format) {
+        ("h264_nvenc", "nv12") => Some(0),
+        ("hevc_nvenc", "nv12") => Some(1),
+        ("hevc_nvenc", "p010le") => Some(2),
+        _ => None,
+    }
+}
+
+fn probe_nvenc_recording(encoder: &str, pixel_format: &str) -> bool {
+    let mut command = Command::new("ffmpeg");
+    command
+        .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=320x180:rate=50",
+            "-frames:v",
+            "3",
+        ])
+        .args(nvenc_recording_args(encoder, pixel_format))
+        .args(["-f", "null", "-"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let Ok(mut child) = command.spawn() else {
+        return false;
+    };
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return false;
+            }
+        }
+    }
+}
+
+/// Qualify recording options separately from the streaming rate-change probe.
+pub(crate) fn warm_recording_encoders() {
+    for (encoder, pixel_format) in [
+        ("h264_nvenc", "nv12"),
+        ("hevc_nvenc", "nv12"),
+        ("hevc_nvenc", "p010le"),
+    ] {
+        let state = &RECORDING_NVENC_SUPPORT
+            [recording_probe_index(encoder, pixel_format).expect("known probe")];
+        if state
+            .compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
+            continue;
+        }
+        let available = probe_nvenc_recording(encoder, pixel_format);
+        state.store(if available { 2 } else { 3 }, Ordering::Release);
+        log::info!(
+            "Recording encoder {encoder} ({pixel_format}): {}",
+            if available {
+                "available"
+            } else {
+                "unavailable"
+            }
+        );
+    }
+}
+
+fn request_recording_encoder_probe() {
+    // Headless/API engines do not run the UI's startup-probe hook. Start the
+    // same background qualification on demand without blocking their frames.
+    static STARTED: std::sync::Once = std::sync::Once::new();
+    if !cfg!(target_os = "windows") { return; }
+    STARTED.call_once(|| {
+        if let Err(error) = std::thread::Builder::new().name("recording-probe".into())
+            .spawn(warm_recording_encoders) {
+            log::warn!("Recording encoders could not be qualified: {error}");
+        }
+    });
+}
+
+fn recording_nvenc(
+    codec: &RecordingCodec,
+    depth: PresentationDepth,
+) -> Option<(&'static str, &'static str)> {
+    match codec {
+        RecordingCodec::H264 => Some(("h264_nvenc", "nv12")),
+        RecordingCodec::H265 => Some((
+            "hevc_nvenc",
+            if depth == PresentationDepth::Sdr10 {
+                "p010le"
+            } else {
+                "nv12"
+            },
+        )),
+        _ => None,
     }
 }
 
@@ -1832,11 +2047,66 @@ impl FfmpegSubprocess {
         request: PresentationRequest,
         readback_format: ReadbackFormat,
     ) -> anyhow::Result<Self> {
+        Self::spawn_recording_with_encoder(
+            path,
+            codec,
+            RecordingEncoder::Software,
+            width,
+            height,
+            fps,
+            audio,
+            request,
+            readback_format,
+        )
+    }
+
+    /// Unsupported hardware falls back before the take starts. Failures during
+    /// a take remain recording errors; switching encoders mid-file is unsafe.
+    #[allow(clippy::too_many_arguments, reason = "fixed output recording contract")]
+    pub fn spawn_recording_with_encoder(
+        path: &str,
+        codec: &RecordingCodec,
+        preference: RecordingEncoder,
+        width: u32,
+        height: u32,
+        fps: u32,
+        audio: Option<AudioInput>,
+        request: PresentationRequest,
+        readback_format: ReadbackFormat,
+    ) -> anyhow::Result<Self> {
+        if preference == RecordingEncoder::NvidiaNvenc {
+            request_recording_encoder_probe();
+        }
         let encoder = recording_encoder(codec);
         let encoder_help = probe_encoder_help(encoder).ok_or_else(|| {
             anyhow::anyhow!("FFmpeg encoder '{encoder}' is not installed or cannot be queried")
         })?;
-        let plan = RecordingPlan::resolve(codec, request, readback_format, Some(&encoder_help));
+        let mut plan = RecordingPlan::resolve(codec, request, readback_format, Some(&encoder_help));
+        let mut actual_encoder = encoder;
+        if preference == RecordingEncoder::NvidiaNvenc {
+            let candidate = recording_nvenc(codec, plan.resolved.resolved)
+                .filter(|(encoder, pixel)| nvenc_recording_available(encoder, pixel));
+            let hardware = candidate
+                .and_then(|(encoder, _)| probe_encoder_help(encoder).map(|help| (encoder, help)));
+            (plan, actual_encoder) = prefer_nvenc_recording(
+                plan,
+                codec,
+                request,
+                readback_format,
+                hardware
+                    .as_ref()
+                    .map(|(encoder, help)| (*encoder, help.as_str())),
+            );
+            if actual_encoder == encoder {
+                log::warn!(
+                    "{}",
+                    plan.resolved
+                        .fallback_reason
+                        .as_deref()
+                        .unwrap_or("using CPU recording")
+                );
+            }
+        }
         let file = crate::record::OutputRecordingFile::reserve(std::path::Path::new(path))?;
         let path = file.path().to_string_lossy().into_owned();
         // Recording keeps the device's native sample rate (Decision 5).
@@ -1872,7 +2142,7 @@ impl FfmpegSubprocess {
             .map_err(|e| anyhow::anyhow!("Failed to spawn ffmpeg: {e}. Is ffmpeg installed?"))?;
 
         log::info!(
-            "Recording started: {path} ({codec}, {width}x{height} @ {fps}fps, {} -> {})",
+            "Recording started: {path} ({codec}, {actual_encoder}, {width}x{height} @ {fps}fps, {} -> {})",
             plan.input_pixel_format,
             plan.output_pixel_format
         );
@@ -3488,6 +3758,122 @@ mod tests {
             dither: true,
             video_levels: false,
         }
+    }
+
+    #[test]
+    fn nvenc_recording_keeps_nv12_without_software_encoder_options() {
+        let plan = RecordingPlan::resolve_encoder(
+            &RecordingCodec::H264,
+            PresentationRequest::default(),
+            ReadbackFormat::Nv12,
+            Some("Supported pixel formats: yuv420p nv12 p010le"),
+            "h264_nvenc",
+        );
+        assert_eq!(plan.expected_readback, ReadbackFormat::Nv12);
+        assert_eq!(plan.input_pixel_format, "nv12");
+        assert_eq!(plan.output_pixel_format, "nv12");
+        assert_eq!(plan.resolved.resolved, PresentationDepth::Sdr8);
+        assert!(plan
+            .video_args
+            .windows(2)
+            .any(|a| a == ["-c:v", "h264_nvenc"]));
+        assert!(!plan
+            .video_args
+            .iter()
+            .any(|a| a == "-crf" || a == "ultrafast"));
+    }
+
+    #[test]
+    fn unavailable_nvenc_falls_back_without_changing_precision_or_readback() {
+        let codec = RecordingCodec::H265;
+        let request = ten_bit_request();
+        let software = RecordingPlan::resolve(
+            &codec,
+            request,
+            ReadbackFormat::Rgb10A2,
+            Some("Supported pixel formats: yuv420p yuv420p10le"),
+        );
+        let (plan, encoder) =
+            prefer_nvenc_recording(software, &codec, request, ReadbackFormat::Rgb10A2, None);
+        assert_eq!(encoder, "libx265");
+        assert_eq!(plan.resolved.resolved, PresentationDepth::Sdr10);
+        assert_eq!(plan.expected_readback, ReadbackFormat::Rgb10A2);
+        assert_eq!(plan.output_pixel_format, "yuv420p10le");
+        assert!(plan.resolved.fallback_reason.unwrap().contains("using CPU"));
+        assert!(plan.video_args.windows(2).any(|a| a == ["-c:v", "libx265"]));
+    }
+
+    #[test]
+    fn nvenc_precision_downgrade_keeps_software_main10_instead() {
+        let codec = RecordingCodec::H265;
+        let request = ten_bit_request();
+        let software = RecordingPlan::resolve(
+            &codec,
+            request,
+            ReadbackFormat::Rgb10A2,
+            Some("Supported pixel formats: yuv420p10le"),
+        );
+        let (plan, encoder) = prefer_nvenc_recording(
+            software,
+            &codec,
+            request,
+            ReadbackFormat::Rgb10A2,
+            Some(("hevc_nvenc", "Supported pixel formats: nv12")),
+        );
+        assert_eq!(encoder, "libx265");
+        assert_eq!(plan.resolved.resolved, PresentationDepth::Sdr10);
+    }
+
+    #[test]
+    fn nvenc_hevc_main10_uses_p010_and_preserves_rgb10_readback() {
+        let plan = RecordingPlan::resolve_encoder(
+            &RecordingCodec::H265,
+            ten_bit_request(),
+            ReadbackFormat::Rgb10A2,
+            Some("Supported pixel formats: nv12 p010le"),
+            "hevc_nvenc",
+        );
+        assert_eq!(plan.resolved.resolved, PresentationDepth::Sdr10);
+        assert_eq!(plan.expected_readback, ReadbackFormat::Rgb10A2);
+        assert_eq!(plan.output_pixel_format, "p010le");
+        assert!(plan.resolved.fallback_reason.is_none());
+        assert!(plan
+            .video_args
+            .windows(2)
+            .any(|a| a == ["-profile:v", "main10"]));
+    }
+
+    #[test]
+    fn nvenc_cannot_claim_ten_bit_without_driver_pixel_format_support() {
+        let plan = RecordingPlan::resolve_encoder(
+            &RecordingCodec::H265,
+            ten_bit_request(),
+            ReadbackFormat::Rgb10A2,
+            Some("Supported pixel formats: nv12"),
+            "hevc_nvenc",
+        );
+        assert_eq!(plan.resolved.resolved, PresentationDepth::Sdr8);
+        assert!(plan.resolved.fallback_reason.is_some());
+        assert_eq!(plan.output_pixel_format, "nv12");
+    }
+
+    #[test]
+    fn recording_nvenc_does_not_replace_alpha_or_unsupported_codecs() {
+        for codec in [
+            RecordingCodec::ProRes,
+            RecordingCodec::ProRes4444,
+            RecordingCodec::AV1,
+            RecordingCodec::Hap,
+            RecordingCodec::HapAlpha,
+            RecordingCodec::HapQ,
+        ] {
+            assert!(recording_nvenc(&codec, PresentationDepth::Sdr8).is_none());
+        }
+        assert_eq!(
+            recording_nvenc(&RecordingCodec::H265, PresentationDepth::Sdr10),
+            Some(("hevc_nvenc", "p010le"))
+        );
+        assert!(!nvenc_recording_available("unsupported", "nv12"));
     }
 
     #[test]

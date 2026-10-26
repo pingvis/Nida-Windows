@@ -9,8 +9,8 @@ use winit::window::Window;
 pub use super::config::{
     AlphaMode, CalibrationMode, OutputRotation, OutputSource, OutputTarget,
     PresentationCapabilities, PresentationColorProfile, PresentationDepth, PresentationFormat,
-    PresentationPixelFormat, PresentationRequest, RecordingCodec, ResolvedPresentation,
-    RtmpCodecContract, SrtCodec, StreamingCodec,
+    PresentationPixelFormat, PresentationRequest, RecordingCodec, RecordingEncoder,
+    ResolvedPresentation, RtmpCodecContract, SrtCodec, StreamingCodec,
 };
 
 /// Linear-light format used by the entire color path: deck render targets, all
@@ -3611,6 +3611,7 @@ mod tests {
             "RGBA16 Test".into(),
             super::OutputSource::Master,
             OutputTarget::Recording {
+                encoder: Default::default(),
                 path: "alpha.mov".into(),
                 codec: crate::engine::value::render::RecordingCodec::ProRes4444,
                 audio_device: None,
