@@ -76,7 +76,22 @@ class GitHub:
             raise
 
     def release(self, tag):
-        return self.request("releases/tags/" + urllib.parse.quote(tag, safe=""))
+        release = self.request("releases/tags/" + urllib.parse.quote(tag, safe=""))
+        if release is not None:
+            return release
+        # A draft with a pending tag can be absent from the tag endpoint.
+        # List all pages before deciding it is safe to create a new draft.
+        page = 1
+        while True:
+            releases = self.request(f"releases?per_page=100&page={page}")
+            if not isinstance(releases, list):
+                raise ValueError("Invalid release listing response.")
+            for release in releases:
+                if release["tag_name"] == tag:
+                    return release
+            if len(releases) < 100:
+                return None
+            page += 1
 
     def create_draft(self, tag, source_sha):
         return self.request("releases", {

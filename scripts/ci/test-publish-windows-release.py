@@ -125,5 +125,55 @@ class ReleaseTests(unittest.TestCase):
                 publisher.GitHub("owner/repo").verify_downloads(TAG, [source])
 
 
+    def test_published_release_lookup_needs_no_listing(self):
+        client = publisher.GitHub("owner/repo")
+        release = {"tag_name": TAG, "draft": False}
+        with patch.object(client, "request", return_value=release) as request:
+            self.assertEqual(client.release(TAG), release)
+            request.assert_called_once_with("releases/tags/" + TAG)
+
+    def test_existing_pending_draft_on_later_page_is_reused(self):
+        client = publisher.GitHub("owner/repo")
+        draft = {"tag_name": TAG, "draft": True, "html_url": "https://example.com/draft"}
+        first_page = [{"tag_name": f"other-{index}"} for index in range(100)]
+        with patch.object(client, "request", side_effect=[None, first_page, [draft]]) as request, \
+                patch.object(client, "create_draft") as create, \
+                patch.object(client, "upload"), patch.object(client, "verify_downloads"):
+            url, created = publisher.publish(client, TAG, SHA, [])
+            self.assertEqual(url, draft["html_url"])
+            self.assertFalse(created)
+            create.assert_not_called()
+            self.assertEqual([call.args[0] for call in request.call_args_list],
+                             ["releases/tags/" + TAG, "releases?per_page=100&page=1",
+                              "releases?per_page=100&page=2"])
+
+    def test_absent_release_checks_all_full_pages_then_creates_draft(self):
+        client = publisher.GitHub("owner/repo")
+        first_page = [{"tag_name": f"other-{index}"} for index in range(100)]
+        with patch.object(client, "request", side_effect=[None, first_page, []]), \
+                patch.object(client, "create_draft", return_value={"html_url": "https://example.com/new"}) as create, \
+                patch.object(client, "upload"), patch.object(client, "verify_downloads"):
+            self.assertTrue(publisher.publish(client, TAG, SHA, [])[1])
+            create.assert_called_once_with(TAG, SHA)
+
+    def test_release_listing_failure_never_creates_draft(self):
+        client = publisher.GitHub("owner/repo")
+        for failure in (RuntimeError("API unavailable"),):
+            with self.subTest(failure=failure), \
+                    patch.object(client, "request", side_effect=[None, failure]), \
+                    patch.object(client, "create_draft") as create, \
+                    patch.object(client, "upload"), self.assertRaises(type(failure)):
+                publisher.publish(client, TAG, SHA, [])
+            create.assert_not_called()
+
+    def test_missing_listing_is_an_error_not_a_missing_release(self):
+        client = publisher.GitHub("owner/repo")
+        with patch.object(client, "request", side_effect=[None, None]), \
+                patch.object(client, "create_draft") as create, \
+                patch.object(client, "upload"), self.assertRaises(ValueError):
+            publisher.publish(client, TAG, SHA, [])
+        create.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
