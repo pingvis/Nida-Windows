@@ -1,5 +1,34 @@
 # Windows portable and installer downloads
 
+## Build and upload to a release
+
+Use the separate **Actions → Windows build and upload release → Run workflow**
+to build and upload both downloads. Choose the source branch under **Use
+workflow from** (normally `main`) and enter a plain tag such as `0.9.2`.
+This workflow rejects a leading `v`. Its numeric version must match
+`Cargo.toml` on the selected branch.
+
+For an existing release, the workflow replaces only the matching portable ZIP,
+Setup EXE and their two checksum assets. Its title, notes, draft/published status
+and Git tag remain unchanged; other assets are retained. For a new release, it
+creates a draft named after the plain tag, targeting the selected source commit,
+then uploads the four files. Nothing is automatically published.
+
+The workflow reuses the optimized packaging job below, then validates the ZIP's
+version/source manifest and checksums before upload. It downloads all four assets
+again and compares SHA256 hashes to verify the replacements. A failed upload or
+verification fails the run; replacements are not an atomic transaction, so rerun
+the workflow if interrupted. Download and extract the replacement ZIP yourself;
+previously extracted copies on your PC do not change.
+
+Rebuilding an existing release from `main` deliberately leaves its existing Git
+tag in place. The portable `build-info.json` and workflow summary identify the
+actual build commit. Only the upload job receives repository write permission.
+The original **Windows portable and installer** action still only builds Actions
+artifacts and does not upload release assets.
+
+## Build Actions artifacts only
+
 Use **Actions → Windows portable and installer → Run workflow**. Select the
 source branch or tag in **Use workflow from**, then optionally enter a version
 such as `v0.9.1-beta.4`. That one version labels both downloads. On a tag, the tag

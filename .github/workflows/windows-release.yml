@@ -1,6 +1,12 @@
 name: Windows portable and installer
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        default: ''
+        type: string
   workflow_dispatch:
     inputs:
       version:
