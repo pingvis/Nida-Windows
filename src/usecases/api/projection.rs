@@ -447,7 +447,7 @@ pub(crate) mod tests {
             uuid: "out-rec".into(),
             name: "Rec".into(),
             target: crate::renderer::context::OutputTarget::Recording {
-                encoder: Default::default(),
+                encoder: crate::renderer::context::RecordingEncoder::default(),
                 path: "/tmp/out.mp4".into(),
                 codec: crate::renderer::context::RecordingCodec::H264,
                 audio_device: Some("Scarlett 2i2".into()),

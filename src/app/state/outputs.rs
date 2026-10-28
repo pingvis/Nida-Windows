@@ -1564,7 +1564,7 @@ mod tests {
         for _ in 0..2 {
             assert!(matches!(
                 app.cmd_create_headless_output(OutputTarget::Recording {
-                    encoder: Default::default(),
+                    encoder: crate::renderer::context::RecordingEncoder::default(),
                     path: configured.display().to_string(),
                     codec: RecordingCodec::H264,
                     audio_device: None

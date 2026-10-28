@@ -2684,13 +2684,14 @@ mod tests {
         let restored: OutputTargetConfig = serde_json::from_str(legacy).unwrap();
         match restored {
             OutputTargetConfig::Recording {
-                encoder: _,
+                encoder,
                 path,
                 codec,
                 audio_device,
             } => {
                 assert_eq!(path, "set.mp4");
                 assert_eq!(codec, "H.264");
+                assert_eq!(encoder, crate::engine::value::render::RecordingEncoder::Software);
                 assert_eq!(audio_device, None, "legacy scene → video-only");
             }
             _ => panic!("Expected Recording target"),
@@ -2700,7 +2701,7 @@ mod tests {
     #[test]
     fn scene_config_roundtrip_recording_with_audio() {
         let target = OutputTargetConfig::Recording {
-            encoder: Default::default(),
+            encoder: crate::renderer::context::RecordingEncoder::default(),
             path: "set.mp4".to_string(),
             codec: "ProRes 422".to_string(),
             audio_device: Some("Scarlett 2i2".to_string()),

@@ -16,7 +16,7 @@ pub(super) fn render_output_section(ui: &mut egui::Ui, data: &UIData, actions: &
             use crate::renderer::context::RecordingCodec;
             actions.commands.push(EngineCommand::CreateHeadlessOutput {
                 target: OutputTarget::Recording {
-                    encoder: Default::default(),
+                    encoder: crate::renderer::context::RecordingEncoder::default(),
                     path: crate::record::RecordOptions::default()
                         .folder
                         .join("Recording.mp4")
@@ -546,7 +546,7 @@ fn render_headless_controls(
                                         ) {
                                             encoder
                                         } else {
-                                            Default::default()
+                                            crate::renderer::context::RecordingEncoder::default()
                                         },
                                         path: path.clone(),
                                         codec: c.clone(),
@@ -1769,7 +1769,7 @@ mod tests {
             sample_output(crate::engine::value::render::ResolvedPresentation::default());
         output.is_windowed = false;
         output.target = OutputTarget::Recording {
-            encoder: Default::default(),
+            encoder: crate::renderer::context::RecordingEncoder::default(),
             path: "Clean.mp4".into(),
             codec: crate::renderer::context::RecordingCodec::H264,
             audio_device: None,
@@ -1805,6 +1805,45 @@ mod tests {
         harness.get_by_label("▶ Start");
     }
 
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn recording_encoder_picker_preserves_codec_path_and_audio() {
+        use crate::renderer::context::{RecordingCodec, RecordingEncoder};
+        let mut data = UIData::test_fixture();
+        let mut output = sample_output(Default::default());
+        output.is_windowed = false;
+        output.is_active = false;
+        output.target = OutputTarget::Recording {
+            path: "C:/Recordings/Main.mp4".into(),
+            codec: RecordingCodec::H265,
+            encoder: RecordingEncoder::Software,
+            audio_device: Some("Capture audio".into()),
+        };
+        data.outputs = vec![output];
+        let mut harness = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(600.0, 1000.0))
+            .build_ui_state(
+                move |ui, actions: &mut UIActions| render_output_section(ui, &data, actions),
+                UIActions::new(),
+            );
+        harness.run();
+        harness.get_by_value("CPU (software)").click();
+        harness.run_steps(2);
+        harness.get_by_label("NVIDIA (NVENC)").click();
+        harness.run_steps(2);
+        assert!(harness
+            .state()
+            .commands
+            .iter()
+            .any(|command| matches!(command,
+            EngineCommand::SetOutputTarget {
+                output_uuid,
+                target: OutputTarget::Recording { path, codec: RecordingCodec::H265,
+                    encoder: RecordingEncoder::NvidiaNvenc, audio_device },
+            } if output_uuid == "out00001" && path == "C:/Recordings/Main.mp4"
+                && audio_device.as_deref() == Some("Capture audio"))));
+    }
+
     #[test]
     fn recording_pencil_commits_enter_cancels_escape_and_folder_picker_is_addressed() {
         for cancel in [false, true] {
@@ -1814,7 +1853,7 @@ mod tests {
             output.is_windowed = false;
             output.is_active = false;
             output.target = OutputTarget::Recording {
-                encoder: Default::default(),
+                encoder: crate::renderer::context::RecordingEncoder::default(),
                 path: "Clean.mp4".into(),
                 codec: crate::renderer::context::RecordingCodec::H264,
                 audio_device: None,

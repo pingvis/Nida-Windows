@@ -15,7 +15,7 @@ function between(text,start,end) {
 const rb=between(readback,'pub enum ReadbackFormat','\nimpl ReadbackFormat');
 const block=between(source,'struct RecordingPlan','#[derive(Debug, Clone, Copy, Default)]\n// Each flag');
 const tests=between(source,'    fn ten_bit_request()','    #[test]\n    fn hap_family_ten_bit_request');
-const header=`#![allow(dead_code)]\n#[path=${JSON.stringify(path.join(root,'src/engine/value/render.rs').replaceAll('\\','/'))}]\nmod render;\nuse render::*;\nuse std::process::{Command,Stdio};\nuse std::sync::atomic::Ordering;\n#[derive(Debug,Clone,Copy,PartialEq,Eq)]\n${rb}\n#[derive(Debug,Clone)]\n`;
+const header=`#![allow(dead_code)]\n#[path=${JSON.stringify(path.join(root,'src/engine/value/render.rs').replaceAll('\\','/'))}]\nmod render;\nuse render::*;\nuse std::process::{Command,Stdio};\nuse std::sync::atomic::{AtomicBool,Ordering};\n#[derive(Debug,Clone,Copy,PartialEq,Eq)]\n${rb}\n#[derive(Debug,Clone)]\n`;
 const hardware=`
 #[test]
 fn real_nvenc_dual_1080p50_and_main10() {

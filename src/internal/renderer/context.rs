@@ -3611,7 +3611,7 @@ mod tests {
             "RGBA16 Test".into(),
             super::OutputSource::Master,
             OutputTarget::Recording {
-                encoder: Default::default(),
+                encoder: crate::renderer::context::RecordingEncoder::default(),
                 path: "alpha.mov".into(),
                 codec: crate::engine::value::render::RecordingCodec::ProRes4444,
                 audio_device: None,

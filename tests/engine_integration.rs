@@ -4446,7 +4446,7 @@ fn chaos_retarget_and_presentation_storm() {
             server_name: "Storm Syphon".into(),
         },
         OutputTarget::Recording {
-            encoder: Default::default(),
+            encoder: varda::renderer::context::RecordingEncoder::default(),
             path: "/tmp/varda-chaos-presentation.mov".into(),
             codec: RecordingCodec::Hap,
             audio_device: None,

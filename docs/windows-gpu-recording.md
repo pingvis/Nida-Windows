@@ -38,6 +38,8 @@ If a codec/platform/precision is unsupported, qualification fails, qualification
 is still pending, or encoder metadata cannot be queried, the take uses software.
 Its output presentation status and notification report that fallback. A pending
 probe does not switch a running take later; stop/start after qualification to retry.
+A later explicit start request retries failed qualification in the background, so
+a temporary startup failure does not disable acceleration for the whole session.
 Runtime failures (for example, exhausted sessions or unsupported output sizes)
 remain recording errors. There is no mid-take encoder switch or automatic restart.
 The startup probe is a general capability check, not a reservation of GPU resources.

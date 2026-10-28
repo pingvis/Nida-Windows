@@ -3049,7 +3049,7 @@ mod tests {
     fn output_audio_device_survives_target_config_roundtrip() {
         // audio_device must round-trip live OutputTarget ↔ persisted config.
         let recording = OutputTarget::Recording {
-            encoder: Default::default(),
+            encoder: crate::renderer::context::RecordingEncoder::default(),
             path: "set.mov".into(),
             codec: RecordingCodec::ProRes,
             audio_device: Some("Scarlett 2i2".into()),

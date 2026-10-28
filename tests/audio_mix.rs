@@ -549,7 +549,7 @@ fn a_recording_carries_the_master_bus_by_default() {
         &mut app,
         EngineCommand::CreateHeadlessOutput {
             target: varda::renderer::context::OutputTarget::Recording {
-                encoder: Default::default(),
+                encoder: varda::renderer::context::RecordingEncoder::default(),
                 path: file.to_string_lossy().into_owned(),
                 codec: varda::renderer::context::RecordingCodec::H264,
                 audio_device: None,
@@ -871,6 +871,126 @@ fn assert_together(offsets: &[f64], what: &str) {
         offsets.iter().all(|o| o.abs() < 0.05),
         "{what}: the sound lands {ms:?} ms from the picture (more than 50 ms is visible)"
     );
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+#[ignore = "requires NVIDIA hardware; records and checks two output soundtracks"]
+fn nvenc_output_recordings_keep_sound_with_picture() {
+    use varda::renderer::context::{OutputTarget, RecordingCodec, RecordingEncoder, UnifiedOutput};
+    // Isolate recording acceleration from the operator's decoding preference.
+    std::env::set_var("VARDA_SOFTWARE_DECODE", "1");
+    varda::streaming::try_encoders_meanwhile();
+    let dir = tempfile::tempdir().unwrap();
+    let path = flash_clip(dir.path()).expect("FFmpeg required for NVENC validation");
+    let Rig {
+        mut app, pgm, deck, ..
+    } = rig(&path).expect("GPU required for NVENC validation");
+    cut(&mut app, &pgm, BusInputRef::Deck(deck));
+    ok(send_cmd(&mut app, EngineCommand::SetTargetFps { fps: 50 }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetRenderResolution {
+            width: 320,
+            height: 180,
+        },
+    ));
+    let mut outputs = Vec::new();
+    for codec in [RecordingCodec::H264, RecordingCodec::H265] {
+        ok(send_cmd(
+            &mut app,
+            EngineCommand::CreateHeadlessOutput {
+                target: OutputTarget::Recording {
+                    path: dir.path().join("output.mp4").to_string_lossy().into_owned(),
+                    codec,
+                    encoder: RecordingEncoder::NvidiaNvenc,
+                    audio_device: None,
+                },
+            },
+        ));
+        let uuid = app
+            .build_engine_state()
+            .outputs
+            .windows
+            .last()
+            .unwrap()
+            .uuid
+            .clone();
+        ok(send_cmd(
+            &mut app,
+            EngineCommand::SetOutputSource {
+                output_uuid: uuid.clone(),
+                source: varda::engine::OutputSource::BusProgram(pgm.clone()),
+            },
+        ));
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            ok(send_cmd(
+                &mut app,
+                EngineCommand::StartOutput {
+                    output_uuid: uuid.clone(),
+                },
+            ));
+            let accelerated = app.outputs_ref().iter().any(|output| matches!(output,
+                UnifiedOutput::Headless(h) if h.uuid == uuid && h.resolved_presentation.fallback_reason.is_none()
+            ));
+            if accelerated {
+                break;
+            }
+            ok(send_cmd(
+                &mut app,
+                EngineCommand::StopOutput {
+                    output_uuid: uuid.clone(),
+                },
+            ));
+            assert!(
+                Instant::now() < deadline,
+                "NVENC qualification did not succeed"
+            );
+            std::thread::sleep(Duration::from_millis(300));
+        }
+        let file = app
+            .outputs_ref()
+            .iter()
+            .find_map(|output| match output {
+                UnifiedOutput::Headless(h) if h.uuid == uuid => h.recording_file.clone(),
+                _ => None,
+            })
+            .unwrap();
+        outputs.push((uuid, PathBuf::from(file)));
+    }
+    let end = Instant::now() + Duration::from_secs(8);
+    while Instant::now() < end {
+        app.render_mixer_frame();
+        app.render_outputs();
+        std::thread::sleep(Duration::from_millis(18));
+    }
+    for (uuid, _) in &outputs {
+        ok(send_cmd(
+            &mut app,
+            EngineCommand::StopOutput {
+                output_uuid: uuid.clone(),
+            },
+        ));
+    }
+    for (_, file) in outputs {
+        let (flashes, beeps) = flashes_and_beeps(&file);
+        let offsets: Vec<f64> = flashes
+            .iter()
+            .filter_map(|flash| {
+                beeps
+                    .iter()
+                    .map(|beep| beep - flash)
+                    .filter(|offset| offset.abs() < 0.9)
+                    .min_by(|a, b| a.abs().total_cmp(&b.abs()))
+            })
+            .collect();
+        assert!(
+            offsets.len() >= 3,
+            "Too few flash/beep pairs: {flashes:?}, {beeps:?}"
+        );
+        assert_together(&offsets, "NVENC output recording");
+    }
 }
 
 /// A frame drawn for a screen's refresh goes to the recording timed by that

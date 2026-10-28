@@ -954,7 +954,7 @@ mod tests {
         assert!(ndi.is_headless());
         assert!(!ndi.is_windowed());
         let rec = OutputTarget::Recording {
-            encoder: Default::default(),
+            encoder: crate::renderer::context::RecordingEncoder::default(),
             path: "/tmp/out.mov".into(),
             codec: RecordingCodec::H264,
             audio_device: None,
@@ -997,7 +997,7 @@ mod tests {
         // No audio configured → None even on an ffmpeg target.
         assert_eq!(
             OutputTarget::Recording {
-                encoder: Default::default(),
+                encoder: crate::renderer::context::RecordingEncoder::default(),
                 path: "/tmp/a.mov".into(),
                 codec: RecordingCodec::H264,
                 audio_device: None,
@@ -1029,7 +1029,7 @@ mod tests {
     #[test]
     fn target_with_audio_device_updates_ffmpeg_targets() {
         let rec = OutputTarget::Recording {
-            encoder: Default::default(),
+            encoder: crate::renderer::context::RecordingEncoder::default(),
             path: "/tmp/a.mov".into(),
             codec: RecordingCodec::H264,
             audio_device: None,

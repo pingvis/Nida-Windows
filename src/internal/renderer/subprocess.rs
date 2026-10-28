@@ -483,6 +483,11 @@ fn recording_probe_index(encoder: &str, pixel_format: &str) -> Option<usize> {
 
 fn probe_nvenc_recording(encoder: &str, pixel_format: &str) -> bool {
     let mut command = Command::new("ffmpeg");
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt as _;
+        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
     command
         .args([
             "-hide_banner",
@@ -528,10 +533,7 @@ pub(crate) fn warm_recording_encoders() {
     ] {
         let state = &RECORDING_NVENC_SUPPORT
             [recording_probe_index(encoder, pixel_format).expect("known probe")];
-        if state
-            .compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire)
-            .is_err()
-        {
+        if !claim_recording_probe(state) {
             continue;
         }
         let available = probe_nvenc_recording(encoder, pixel_format);
@@ -547,17 +549,38 @@ pub(crate) fn warm_recording_encoders() {
     }
 }
 
+fn claim_recording_probe(state: &std::sync::atomic::AtomicU8) -> bool {
+    let previous = state.load(Ordering::Acquire);
+    matches!(previous, 0 | 3)
+        && state
+            .compare_exchange(previous, 1, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+}
+
 fn request_recording_encoder_probe() {
     // Headless/API engines do not run the UI's startup-probe hook. Start the
     // same background qualification on demand without blocking their frames.
-    static STARTED: std::sync::Once = std::sync::Once::new();
-    if !cfg!(target_os = "windows") { return; }
-    STARTED.call_once(|| {
-        if let Err(error) = std::thread::Builder::new().name("recording-probe".into())
-            .spawn(warm_recording_encoders) {
-            log::warn!("Recording encoders could not be qualified: {error}");
-        }
-    });
+    static RUNNING: AtomicBool = AtomicBool::new(false);
+    if !cfg!(target_os = "windows")
+        || RECORDING_NVENC_SUPPORT
+            .iter()
+            .all(|state| state.load(Ordering::Acquire) == 2)
+        || RUNNING
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+    {
+        return;
+    }
+    if let Err(error) = std::thread::Builder::new()
+        .name("recording-probe".into())
+        .spawn(|| {
+            warm_recording_encoders();
+            RUNNING.store(false, Ordering::Release);
+        })
+    {
+        RUNNING.store(false, Ordering::Release);
+        log::warn!("Recording encoders could not be qualified: {error}");
+    }
 }
 
 fn recording_nvenc(
@@ -2062,6 +2085,15 @@ impl FfmpegSubprocess {
 
     /// Unsupported hardware falls back before the take starts. Failures during
     /// a take remain recording errors; switching encoders mid-file is unsafe.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if encoder metadata, the output file, audio endpoint,
+    /// or FFmpeg process cannot be opened.
+    ///
+    /// # Panics
+    ///
+    /// Panics if piped stdin is unavailable or the frame writer cannot start.
     #[allow(clippy::too_many_arguments, reason = "fixed output recording contract")]
     pub fn spawn_recording_with_encoder(
         path: &str,
@@ -2968,9 +3000,10 @@ impl FfmpegSubprocess {
     /// Mode switching/adaptation are qualified separately from manual bitrate.
     pub fn changes_rate_mode_live(&self) -> bool {
         self.native.is_some()
-            && self.rate_plan.as_ref().is_some_and(|plan| {
-                plan.encoder == crate::streaming::StreamEncoder::Hardware
-            })
+            && self
+                .rate_plan
+                .as_ref()
+                .is_some_and(|plan| plan.encoder == crate::streaming::StreamEncoder::Hardware)
     }
 
     /// How the stream is encoded, as it runs (see [`crate::streaming::RatePlan`]).
@@ -3784,6 +3817,17 @@ mod tests {
     }
 
     #[test]
+    fn failed_recording_qualification_can_retry_without_reprobing_success() {
+        use std::sync::atomic::AtomicU8;
+        let failed = AtomicU8::new(3);
+        assert!(claim_recording_probe(&failed));
+        assert_eq!(failed.load(Ordering::Acquire), 1);
+        assert!(!claim_recording_probe(&failed));
+        assert!(!claim_recording_probe(&AtomicU8::new(2)));
+        assert!(claim_recording_probe(&AtomicU8::new(0)));
+    }
+
+    #[test]
     fn unavailable_nvenc_falls_back_without_changing_precision_or_readback() {
         let codec = RecordingCodec::H265;
         let request = ten_bit_request();
@@ -4527,6 +4571,95 @@ mod tests {
         let _ = std::fs::remove_file(actual);
     }
 
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[ignore = "requires NVIDIA hardware and FFmpeg; exercises real recording workers"]
+    fn nvenc_recording_workers_stop_and_restart_with_unique_files() {
+        warm_recording_encoders();
+        assert!(nvenc_recording_available("h264_nvenc", "nv12"));
+        assert!(nvenc_recording_available("hevc_nvenc", "nv12"));
+        let folder = tempfile::tempdir().unwrap();
+        let mut files = Vec::new();
+        for _take in 0..2 {
+            let mut recordings = Vec::new();
+            for codec in [RecordingCodec::H264, RecordingCodec::H265] {
+                let base = folder.path().join(format!("{codec}.mp4"));
+                let sub = FfmpegSubprocess::spawn_recording_with_encoder(
+                    base.to_str().unwrap(),
+                    &codec,
+                    RecordingEncoder::NvidiaNvenc,
+                    320,
+                    180,
+                    50,
+                    None,
+                    PresentationRequest::default(),
+                    ReadbackFormat::Nv12,
+                )
+                .unwrap();
+                assert!(sub.presentation().unwrap().fallback_reason.is_none());
+                assert!(sub.takes_nv12());
+                files.push(std::path::PathBuf::from(sub.label()));
+                recordings.push(sub);
+            }
+            let mut frame = vec![128_u8; 320 * 180 * 3 / 2];
+            for index in 0..60_u8 {
+                frame[..320 * 180].fill(16 + index);
+                for sub in &mut recordings {
+                    assert!(
+                        sub.feed_nv12(&frame, std::time::Instant::now()),
+                        "{}",
+                        sub.label()
+                    );
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            for sub in &mut recordings {
+                sub.stop();
+                sub.stop(); // Idempotent, without invalidating the completed take.
+                assert!(!sub.feed_nv12(&frame, std::time::Instant::now()));
+            }
+        }
+        let unique: std::collections::HashSet<_> = files.iter().collect();
+        assert_eq!(unique.len(), 4);
+        for file in files {
+            let probe = Command::new("ffprobe")
+                .args([
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "stream=r_frame_rate,nb_frames:stream_tags=encoder",
+                    "-of",
+                    "json",
+                ])
+                .arg(&file)
+                .output()
+                .unwrap();
+            assert!(
+                probe.status.success(),
+                "{}",
+                String::from_utf8_lossy(&probe.stderr)
+            );
+            let value: serde_json::Value = serde_json::from_slice(&probe.stdout).unwrap();
+            let stream = &value["streams"][0];
+            assert_eq!(stream["r_frame_rate"], "50/1");
+            assert!(
+                stream["nb_frames"]
+                    .as_str()
+                    .unwrap()
+                    .parse::<u64>()
+                    .unwrap()
+                    >= 50
+            );
+            assert!(
+                stream["tags"]["encoder"]
+                    .as_str()
+                    .unwrap()
+                    .contains("nvenc"),
+                "{value}"
+            );
+        }
+    }
+
     #[test]
     fn spawn_recording_stop_is_idempotent() {
         if !ffmpeg_available() {
@@ -4988,7 +5121,9 @@ mod tests {
         let start = std::time::Instant::now();
         let mut timeline = Timeline::new(Some(start), 60.0);
         let placed: Vec<Placed> = (0..240)
-            .map(|i| timeline.place(start + std::time::Duration::from_secs_f64(f64::from(i) / 120.0)))
+            .map(|i| {
+                timeline.place(start + std::time::Duration::from_secs_f64(f64::from(i) / 120.0))
+            })
             .collect();
         // The last frame, drawn at 239/120 s, falls in slot 120: every slot
         // from 0 to 120 written once, every other frame left out.

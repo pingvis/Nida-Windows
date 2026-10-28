@@ -92,6 +92,7 @@ impl Runner for WindowsCom {
 }
 
 #[derive(serde::Deserialize)]
+#[allow(clippy::struct_field_names, reason = "reply matches the bridge wire format")]
 struct Reply {
     #[serde(default)]
     reply: String,
