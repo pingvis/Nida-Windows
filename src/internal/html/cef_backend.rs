@@ -41,7 +41,13 @@ impl CefEngine {
         if thread::Builder::new()
             .name("html-cef-control".into())
             .spawn(move || {
-                let _ = run(incoming, &worker_frames);
+                if let Err(error) = run(incoming, &worker_frames) {
+                    // Only our transport/OS error is reported; Chromium stderr
+                    // stays suppressed because browser URLs can contain tokens.
+                    log::warn!("CEF transport worker stopped: {error}");
+                    #[cfg(test)]
+                    eprintln!("CEF transport worker stopped: {error}");
+                }
                 worker_alive.store(false, Ordering::Release);
             })
             .is_err()
@@ -104,8 +110,7 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     // sharing Chromium's profile lock or touching their cookies. Release
     // builds always retain the normal persistent profile above.
     #[cfg(all(debug_assertions, not(test)))]
-    let profile = std::env::var_os("NIDA_BROWSER_DEBUG_PROFILE")
-        .map_or(profile, PathBuf::from);
+    let profile = std::env::var_os("NIDA_BROWSER_DEBUG_PROFILE").map_or(profile, PathBuf::from);
     std::fs::create_dir_all(&profile)?;
     // Current CEF requires LPAC read/execute access to its public runtime files.
     // Apply only to the browser runtime, never to show files or profile data.
@@ -135,7 +140,8 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()?;
-    let job = super::cef_job::attach(&mut child)?;
+    let job = super::cef_job::attach(&mut child)
+        .map_err(|error| std::io::Error::other(format!("attach CEF process job: {error}")))?;
     let mut stdin = child.stdin.take().unwrap();
     let mut stdout = child.stdout.take().unwrap();
     let frames = outgoing.clone();
@@ -145,16 +151,20 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
         .name("html-cef-frames".into())
         .spawn(move || {
             // Opt-in throughput diagnostics, with no URLs or page contents.
-            let mut measured = std::env::var_os("NIDA_BROWSER_PERF")
-                .map(|_| (std::time::Instant::now(), 0u64));
+            let mut measured =
+                std::env::var_os("NIDA_BROWSER_PERF").map(|_| (std::time::Instant::now(), 0u64));
             while let Ok(frame) = read_message(&mut stdout) {
                 if frame.error.is_none() {
                     if let Some((since, count)) = measured.as_mut() {
                         *count += 1;
                         let elapsed = since.elapsed().as_secs_f64();
                         if elapsed >= 5.0 {
-                            log::info!("CEF decoded {:.1} fps ({} frames in {:.2}s, all browser sources)",
-                                *count as f64 / elapsed, count, elapsed);
+                            log::info!(
+                                "CEF decoded {:.1} fps ({} frames in {:.2}s, all browser sources)",
+                                *count as f64 / elapsed,
+                                count,
+                                elapsed
+                            );
                             *since = std::time::Instant::now();
                             *count = 0;
                         }
@@ -195,8 +205,13 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     // Monitor independently of blocking pipe writes. A wedged browser can fill
     // stdin, but cannot hold this worker, the render loop, or shutdown forever.
     let result = (|| loop {
-        if child.try_wait()?.is_some() || !reader_alive.load(Ordering::Acquire) {
-            return Err(std::io::Error::other("browser host stopped"));
+        if let Some(status) = child.try_wait()? {
+            return Err(std::io::Error::other(format!(
+                "browser host exited with {status}"
+            )));
+        }
+        if !reader_alive.load(Ordering::Acquire) {
+            return Err(std::io::Error::other("browser frame pipe closed"));
         }
         if !writer_alive.load(Ordering::Acquire) {
             return Ok(());

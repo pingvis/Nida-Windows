@@ -509,6 +509,11 @@ impl HtmlManager {
 
     /// Reload an existing instance, re-fetching its current URL.
     pub fn reload(&mut self, idx: usize) {
+        // Validate before restarting CEF: an unknown source must not spawn a
+        // host or contend for the existing manager's Chromium profile.
+        if self.instances.get(idx).and_then(Option::as_ref).is_none() {
+            return;
+        }
         let available = self.is_available();
         #[cfg(all(target_os = "windows", feature = "windows-browser"))]
         if self.is_available() && self.cef.as_ref().is_none_or(|cef| !cef.is_alive()) {
@@ -615,8 +620,18 @@ mod tests {
         let mut mgr = HtmlManager::new();
         mgr.reload(0);
         mgr.reload(999);
+        // Removed sources leave an empty slot; these must also remain no-ops.
+        mgr.instances.push(None);
+        mgr.reload(0);
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        assert!(
+            mgr.cef.is_none(),
+            "unknown sources must not start a browser host"
+        );
         let mut disabled = HtmlManager::new_disabled();
         disabled.reload(0);
+        #[cfg(all(target_os = "windows", feature = "windows-browser"))]
+        assert!(disabled.cef.is_none());
     }
 
     #[cfg(feature = "html")]

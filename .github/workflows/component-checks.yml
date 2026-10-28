@@ -191,6 +191,11 @@ jobs:
       - name: Build sandboxed CEF helper
         shell: pwsh
         run: ./scripts/ci/build-windows-browser.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'Nida browser helper')
+      - name: Test real browser pixels and live updates
+        shell: pwsh
+        run: |
+          python scripts/ci/test-browser-host.py (Join-Path $env:RUNNER_TEMP 'Nida browser helper/browser/nida-browser-host.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'CEF browser source smoke test failed.' }
       - name: Test Rust browser manager and Windows transport
         env:
           NIDA_BROWSER_TEST_HELPER: '${{ runner.temp }}\Nida browser helper\browser\nida-browser-host.exe'
