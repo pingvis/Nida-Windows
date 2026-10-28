@@ -1,9 +1,9 @@
 # Laptop GPU recording validation
 
-Test date: 28 October 2026. Work stays on
-`codex/investigate-dual-recording-performance`; no pull request, push, or merge
-to main was performed by this recording task. The branch was rebased onto fork
-main `13a5b92` (Nida 0.9.4).
+Test date: 28 October 2026. Work was developed on
+`codex/investigate-dual-recording-performance` and rebased onto fork main
+`13a5b92` (Nida 0.9.4). Publishing this validated change to the fork's main uses
+`[skip ci]` to suppress push-triggered GitHub Actions, as requested by the user.
 
 ## Machine and build
 
@@ -18,6 +18,9 @@ main `13a5b92` (Nida 0.9.4).
   optimized dependencies.
 - A private runtime was assembled under
   `target/performance-investigation/runtime/`. The installed Nida was not replaced.
+- The final optimized application build succeeded and reports version 0.9.4.
+  The tested source is `5bda570`; binary SHA-256 and base revision are recorded
+  in the final run's `provenance.json`. Later changes to this report are documentation only.
 
 ## Workload and measurement
 
@@ -43,34 +46,48 @@ timestamps do not align with the show clock.
 This is a short, fixed-order comparison, not a thermal soak or a quality/size
 equivalence test. NVENC CQ 20 and software CRF are different quality controls.
 
-## Initial application results
+## Final 0.9.4 application results
 
-The first native build, before rebasing to 0.9.4, produced these results:
+Two simultaneous recordings, measured within the same application run:
 
 | Two recording outputs | App + encoder CPU | Render FPS | Encoder drops per output during samples | Padded frames per output |
 |---|---:|---:|---:|---:|
-| H.264 software | 20.30% | 41.98 | 0 / 0 | 235 / 235 |
-| H.264 NVENC | 8.77% | 41.68 | 0 / 0 | 239 / 239 |
-| HEVC NVENC | 8.91% | 44.04 | 0 / 0 | 174 / 174 |
-| HEVC software | 83.71% | 47.85 | 180 / 499 | 248 / 568 |
+| H.264 software | 20.07% | 46.70 | 0 / 0 | 106 / 106 |
+| H.264 NVENC | 8.90% | 42.34 | 0 / 0 | 220 / 221 |
+| HEVC NVENC | 8.53% | 43.73 | 0 / 0 | 184 / 184 |
+| HEVC Main10 NVENC | 29.63% | 48.50 | 0 / 0 | 41 / 42 |
+| HEVC software | 65.89% | 49.62 | 0 / 0 | 19 / 19 |
 
-The no-recording baseline rendered 41.69 fps. NVENC substantially reduced CPU
-load and avoided the HEVC software encoder backlog. It did **not** remove the
-remaining render/pacing limitation. Faster rendering alone is not proof that
-recording kept up: software HEVC rendered faster in this run while losing many
-more frames downstream.
+The no-recording baseline rendered an estimated 41.77 fps. NVENC substantially
+reduced CPU load, but did **not** remove the render/pacing limitation or improve
+render FPS in this comparison. Main10 still uses CPU conversion from packed
+RGB10 to P010; it consumes more CPU than the NV12 eight-bit path.
 
-All eight files had 50/1 video, AAC audio and the expected encoder tags. Full
-FFmpeg decode of every stream completed without errors. H.264 NVENC had three
-startup drops per output, outside the measured interval; this is not a claim
-of zero drops across the entire take.
+All ten files had 1920×1080, 50/1 video, AAC audio and the expected encoder tags.
+Both Main10 files retained the Main 10 profile and `yuv420p10le` pixel format.
+Full FFmpeg decode of every stream completed without errors. Representative
+H.264 and Main10 frames were also visually inspected. Startup counters included
+two drops on one H.264 NVENC output and four on one Main10 output, outside the
+measured interval; this is not a claim of zero drops across the entire take.
 
-Artifacts: `target/performance-investigation/full-app-20261028-105741/`, including
-`measured-summary.json`, full sample data, encoder logs and `file-verification.json`.
+The displayed FPS can conceal uneven pacing: H.264 NVENC's sampled displayed
+average was 49.64, while frame-count/time deltas gave about 42.34. The current
+`src/app/render.rs` averages instantaneous `1 / dt` values; this is not the
+same as frames divided by elapsed time when frame intervals vary. That metric
+and the pacing behavior need separate follow-up; they were not changed here.
+
+Artifacts: `target/performance-investigation/full-app-20261028-113225/`, including
+`measured-summary.json`, full sample data, encoder logs, `file-verification.json`
+and binary provenance. An earlier pre-0.9.4 run is retained at
+`full-app-20261028-105741/`: H.264 CPU fell from 20.30% to 8.77%, and HEVC CPU
+from 83.71% to 8.91%. That earlier software HEVC run also dropped 180/499 frames
+during the sample interval; this overload was **not reproduced** in the final
+run. These are short comparisons under different revisions/runs, not a
+controlled before/after test of the 0.9.4 update.
 
 ## Additional application and hardware checks
 
-On the initial native build:
+The final native build also passed these checks:
 
 - 26 recording-related native unit/UI tests passed, with one hardware test
   separately invoked; 11 NVENC-related tests passed.
@@ -81,12 +98,13 @@ On the initial native build:
   less-than-50-ms synchronization assertion.
 - Real app smoke tests passed repeated H.264 takes, HEVC Main10 through Nida's
   RGB10-to-P010 path, active output state, encoder persistence across save/load,
-  and orderly shutdown. These lifecycle/Main10 smoke tests used 320×180 at 50 fps;
-  they do not establish end-to-end 1080p50 Main10 performance.
+  and orderly shutdown. Lifecycle smoke tests used 320×180 at 50 fps; the
+  separate final benchmark above exercised Main10 at 1080p50 with two outputs.
 - A deliberate NVENC session exhaustion test made a recording fail and stop,
   while the API stayed healthy. After the test sessions were freed, restarting
   that same output produced an active GPU recording. No mid-file CPU switch
-  occurred. Artifacts: `target/performance-investigation/api-smoke-20261028-015102/`.
+  occurred. The recovered take contained 154 H.264 NVENC frames and AAC audio.
+  Artifacts: `target/performance-investigation/api-smoke-20261028-113144/`.
 
 The isolated recording-plan harness and three simultaneous direct-FFmpeg
 1080p50 sessions (H.264, HEVC Main, HEVC Main10) also passed earlier. These are
@@ -138,4 +156,5 @@ a working GPU renderer; unavailable hardware is not treated as a passing result.
   `target/performance-investigation/final-clippy-strict-*.log`.
 - Investigate the remaining render/pacing issue separately. GPU encoding does
   not repair GPU decode stutter or turn a 29.97 fps input into evenly spaced
-  50 fps motion.
+  50 fps motion. Correct the displayed FPS calculation so it does not mask
+  irregular intervals.
