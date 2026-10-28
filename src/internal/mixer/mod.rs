@@ -527,10 +527,30 @@ impl Mixer {
             .map(|(i, ch)| (ch.uuid().to_string(), i))
             .collect();
         let mut master_tapped = false;
+        // Where each Slides layer is: a presenter view of one shows its
+        // picture, so draws after it, as a tap does.
+        let slides_at: std::collections::HashMap<String, usize> = self
+            .channels
+            .iter()
+            .enumerate()
+            .flat_map(|(i, ch)| {
+                ch.decks
+                    .iter()
+                    .filter(|slot| slot.deck.slides().is_some())
+                    .map(move |slot| (slot.deck.uuid().to_string(), i))
+            })
+            .collect();
         // The channels each channel's decks show.
         let mut shows: Vec<Vec<usize>> = vec![Vec::new(); self.channels.len()];
         for (at, channel) in self.channels.iter().enumerate() {
             for slot in &channel.decks {
+                if let Some(&shown) = slot
+                    .deck
+                    .presenter()
+                    .and_then(|p| slides_at.get(p.follows()))
+                {
+                    shows[at].push(shown);
+                }
                 match slot.deck.tap.as_ref().map(|t| &t.source) {
                     Some(crate::deck::TapSource::MasterProgram) => master_tapped = true,
                     Some(crate::deck::TapSource::Channel(uuid)) => {
@@ -1325,6 +1345,13 @@ fn channel_name(index: usize) -> String {
     format!("Ch {index}")
 }
 
+/// Whether `name` is one a channel was given when made ("Ch 25"), not one
+/// it was named: its number counts every channel ever made, not where it is.
+pub fn is_default_channel_name(name: &str) -> bool {
+    name.strip_prefix("Ch ")
+        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
 /// The order to render channels in, given the channels each one's decks
 /// show: every channel after the ones it shows, otherwise as they stand.
 /// Round a loop no order can do that, so the loop's first channel found goes
@@ -1522,6 +1549,17 @@ mod tests {
         assert_eq!(channel_name(0), "Ch 0");
         assert_eq!(channel_name(1), "Ch 1");
         assert_eq!(channel_name(42), "Ch 42");
+    }
+
+    /// The name a channel is made with is told from one it was given.
+    #[test]
+    fn a_made_name_is_told_from_a_given_one() {
+        for made in [channel_name(0), channel_name(25)] {
+            assert!(is_default_channel_name(&made), "{made}");
+        }
+        for given in ["Ch A", "Ch ", "Ch 2a", "Ch 25 talk", "Camera", "1_Forward", ""] {
+            assert!(!is_default_channel_name(given), "{given:?}");
+        }
     }
 
     // ── Mixer-level DnD data model tests ─────────────────────────────

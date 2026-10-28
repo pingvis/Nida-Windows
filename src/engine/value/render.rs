@@ -473,6 +473,15 @@ pub enum OutputTarget {
         /// Old outputs already saved an audio bus, so absence stays video-only.
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         embedded_audio: bool,
+        /// `mode` follows the show's rate — 1080p at it, or the nearest the
+        /// device has — chosen again as it starts and as the rate changes;
+        /// off, the format picked by hand stays. On unless said: one saved
+        /// before had its format chosen from the show's rate as it was made.
+        #[serde(
+            default = "crate::engine::value::render::follows_show",
+            skip_serializing_if = "crate::engine::value::render::is_true"
+        )]
+        follow_show: bool,
     },
     /// The stream: one encode sent to up to four RTMP destinations. Its
     /// settings live with the stream (`crate::streaming`), and it never
@@ -487,7 +496,13 @@ impl OutputTarget {
     /// The mixer bus used at startup. A saved bus alone never opts a legacy
     /// Blackmagic output into scheduled playback (on Windows or macOS).
     pub fn mixer_audio_bus<'a>(&self, bus: Option<&'a str>) -> Option<&'a str> {
-        if matches!(self, Self::DeckLink { embedded_audio: false, .. }) {
+        if matches!(
+            self,
+            Self::DeckLink {
+                embedded_audio: false,
+                ..
+            }
+        ) {
             None
         } else {
             bus
@@ -533,6 +548,20 @@ impl OutputTarget {
         }
         target
     }
+}
+
+/// A Blackmagic output's format follows the show's rate unless told
+/// otherwise (see [`OutputTarget::DeckLink`]).
+#[must_use]
+pub fn follows_show() -> bool {
+    true
+}
+
+/// Whether `value` is true: a field written only when it is not.
+#[allow(clippy::trivially_copy_pass_by_ref)]
+#[must_use]
+pub fn is_true(value: &bool) -> bool {
+    *value
 }
 
 impl std::fmt::Display for OutputTarget {
@@ -992,13 +1021,18 @@ mod tests {
             mode: "1080p60".into(),
             full_range: false,
             embedded_audio: false,
+            follow_show: true,
         };
-        assert_eq!(blackmagic.to_string(), "Blackmagic: UltraStudio Monitor 3G (1080p60)");
+        assert_eq!(
+            blackmagic.to_string(),
+            "Blackmagic: UltraStudio Monitor 3G (1080p60)"
+        );
         let full = OutputTarget::DeckLink {
             device: "UltraStudio Monitor 3G".into(),
             mode: "1080p60".into(),
             full_range: true,
             embedded_audio: false,
+            follow_show: true,
         };
         assert_eq!(
             full.to_string(),

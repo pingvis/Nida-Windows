@@ -2,10 +2,11 @@ mod effect;
 pub(crate) mod loading;
 pub mod media;
 pub mod playlist;
+pub mod presenter;
 mod render;
+pub mod slides;
 mod source;
 pub mod svg;
-pub mod presenter;
 pub mod timer;
 
 pub use render::get_current_date;
@@ -414,6 +415,9 @@ pub enum DeckSource {
     },
     /// Clips and pictures one after another (see [`playlist`]).
     Playlist(Box<playlist::Playlist>),
+    /// A conference's presentations in running order, one on at a time
+    /// (see [`slides`]).
+    Slides(Box<slides::Slides>),
     /// A count down, count up or clock drawn as text (see [`timer`]).
     Timer(Box<timer::Timer>),
     /// A PowerPoint input's show for the speaker's screen (see
@@ -851,6 +855,9 @@ pub struct Deck {
     /// Draws the picture cropped and placed in one pass, made when first
     /// needed (see `Deck::fold`).
     placed: Option<crate::renderer::placed_picture::PlacedPicturePipeline>,
+    /// A clip's frames put in its texture: none yet, and it shows nothing
+    /// (see [`Deck::has_video_frame`]).
+    frames_uploaded: u64,
 }
 
 /// Everything a still image deck's picture depends on: its size, how the
@@ -933,6 +940,7 @@ impl Deck {
                 audio.as_ref().map(crate::audio_mix::ClipAudio::shared)
             }
             DeckSource::Playlist(list) => list.clip_audio(),
+            DeckSource::Slides(slides) => slides.clip_audio(),
             _ => None,
         }
     }
@@ -946,6 +954,16 @@ impl Deck {
             }
             DeckSource::Playlist(list) => Some(std::ptr::from_ref(list.as_ref()) as usize),
             _ => None,
+        }
+    }
+
+    /// Whether a clip has put a frame in its texture: until then its
+    /// picture is empty — a Slides talk waits for it. True for anything but
+    /// a clip.
+    pub fn has_video_frame(&self) -> bool {
+        match &self.source {
+            DeckSource::Video { .. } | DeckSource::HapVideo { .. } => self.frames_uploaded > 0,
+            _ => true,
         }
     }
 
@@ -970,6 +988,7 @@ impl Deck {
             DeckSource::ExternalSource { kind, .. } => kind.source_type(),
             DeckSource::ComputeShader { .. } => "compute_shader",
             DeckSource::Playlist(_) => "playlist",
+            DeckSource::Slides(_) => "slides",
             DeckSource::Timer(_) => "timer",
             DeckSource::Presenter(_) => "presenter",
             DeckSource::Offline(_) => "offline",
@@ -1007,6 +1026,10 @@ impl Deck {
                 list.set_output_fps(fps);
                 list.for_each_deck(|d| d.set_video_output_fps(fps));
             }
+            DeckSource::Slides(slides) => {
+                slides.set_output_fps(fps);
+                slides.for_each_deck(|d| d.set_video_output_fps(fps));
+            }
             _ => {}
         }
     }
@@ -1019,6 +1042,9 @@ impl Deck {
                 handle.set_suspended(suspended);
             }
             DeckSource::Playlist(list) => list.for_each_deck(|d| d.set_video_suspended(suspended)),
+            DeckSource::Slides(slides) => {
+                slides.for_each_deck(|d| d.set_video_suspended(suspended));
+            }
             _ => {}
         }
     }
@@ -1181,6 +1207,7 @@ impl Deck {
             | DeckSource::HapVideo { scaling_mode, .. }
             | DeckSource::ExternalSource { scaling_mode, .. } => Some(*scaling_mode),
             DeckSource::Playlist(list) => Some(list.scaling_mode()),
+            DeckSource::Slides(slides) => Some(slides.scaling_mode()),
             _ => None,
         }
     }
@@ -1222,6 +1249,7 @@ impl Deck {
             | DeckSource::HapVideo { scaling_mode, .. }
             | DeckSource::ExternalSource { scaling_mode, .. } => *scaling_mode = mode,
             DeckSource::Playlist(list) => list.set_scaling_mode(mode),
+            DeckSource::Slides(slides) => slides.set_scaling_mode(mode),
             _ => {}
         }
     }
@@ -1243,6 +1271,21 @@ impl Deck {
     pub fn playlist_mut(&mut self) -> Option<&mut playlist::Playlist> {
         match &mut self.source {
             DeckSource::Playlist(list) => Some(list),
+            _ => None,
+        }
+    }
+
+    /// The Slides layer this deck is, if it is one.
+    pub fn slides(&self) -> Option<&slides::Slides> {
+        match &self.source {
+            DeckSource::Slides(slides) => Some(slides),
+            _ => None,
+        }
+    }
+
+    pub fn slides_mut(&mut self) -> Option<&mut slides::Slides> {
+        match &mut self.source {
+            DeckSource::Slides(slides) => Some(slides),
             _ => None,
         }
     }

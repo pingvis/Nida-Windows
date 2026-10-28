@@ -37,6 +37,7 @@ enum Kind {
     Generator,
     Timer,
     PowerPoint,
+    Presentations,
     Input,
     Audio,
 }
@@ -56,6 +57,7 @@ impl Kind {
             Self::Generator => "Generator",
             Self::Timer => "Timer / Clock",
             Self::PowerPoint => "PowerPoint",
+            Self::Presentations => "Presentations",
             Self::Input => "Another input",
             Self::Audio => "Audio Input",
         }
@@ -83,6 +85,8 @@ impl Kind {
         // A native PowerPoint backend is available on macOS and Windows.
         if cfg!(any(target_os = "macos", target_os = "windows")) {
             kinds.push(Self::PowerPoint);
+            // Talks in running order: PowerPoint and PDF play on macOS.
+            kinds.push(Self::Presentations);
         }
         kinds.push(Self::Input);
         if !layer {
@@ -398,6 +402,10 @@ fn kind_body(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions, state: &
             powerpoint_body(ui, state);
             false
         }
+        Kind::Presentations => {
+            presentations_body(ui, state);
+            false
+        }
         Kind::Input => input_body(ui, data, state),
         Kind::Audio => audio_body(ui, data, actions, state),
     }
@@ -442,13 +450,13 @@ fn input_body(ui: &mut egui::Ui, data: &UIData, state: &mut State) -> bool {
     for other in &data.channels {
         if !input_allowed(data, state, &other.uuid) {
             if state.layer_of.as_deref() != Some(other.uuid.as_str()) {
-                ui.add_enabled(false, egui::Button::selectable(false, other.name.as_str()))
+                ui.add_enabled(false, egui::Button::selectable(false, other.numbered()))
                     .on_disabled_hover_text(format!("{} shows this input already", other.name));
             }
             continue;
         }
         let selected = state.input.as_deref() == Some(other.uuid.as_str());
-        let (clicked, twice) = row(ui, selected, &other.name);
+        let (clicked, twice) = row(ui, selected, &other.numbered());
         if clicked || twice {
             state.input = Some(other.uuid.clone());
         }
@@ -565,6 +573,45 @@ fn playlist_body(ui: &mut egui::Ui, state: &mut State) {
 }
 
 /// A PowerPoint deck: chosen, it opens in PowerPoint, which plays it.
+/// A Slides input: the day's talks in running order, each started with
+/// one press, managed in the Presentations panel.
+fn presentations_body(ui: &mut egui::Ui, state: &mut State) {
+    if state.layer_of.is_some() {
+        ui.label(
+            "A Slides layer in this input: talks in running order, one on at a time. OK adds \
+             it empty; its talks are put in order and started in Layout ▸ Panels ▸ \
+             Presentations.",
+        );
+        return;
+    }
+    ui.label(
+        "The day's talks in running order, in one input — PowerPoint decks, PDFs, web \
+         presentations, clips and pictures — prepared before the show and each started with \
+         one press. Whatever shows this input (a picture-in-picture, a presenter view) follows \
+         the talk on.",
+    );
+    ui.add_space(8.0);
+    if ui
+        .add(egui::Button::new(
+            egui::RichText::new("Choose files…").size(15.0),
+        ))
+        .on_hover_text("The talks: added to the show's Slides input, made when there is none")
+        .clicked()
+    {
+        super::slides::choose_talks(ui.ctx());
+        state.open = false;
+    }
+    ui.add_space(8.0);
+    ui.label(
+        egui::RichText::new(
+            "OK makes an empty Slides input. Its talks are put in order, named and started in \
+             Layout ▸ Panels ▸ Presentations.",
+        )
+        .small()
+        .weak(),
+    );
+}
+
 fn powerpoint_body(ui: &mut egui::Ui, state: &mut State) {
     ui.label(match &state.layer_of {
         None => {
@@ -1064,6 +1111,8 @@ fn source(data: &UIData, state: &State) -> Option<InputSource> {
             .map(|channel_uuid| InputSource::Input { channel_uuid }),
         // An empty list, filled in its window.
         Kind::Playlist => Some(InputSource::Playlist { items: Vec::new() }),
+        // Its talks added in the Presentations panel.
+        Kind::Presentations => Some(InputSource::Slides { paths: Vec::new() }),
         Kind::Timer => Some(InputSource::Timer {
             settings: Some(state.timer.clone()),
         }),
@@ -1520,14 +1569,14 @@ mod tests {
             fresh.channels[0].uuid.clone(),
             fresh.channels[1].uuid.clone(),
         );
-        let (a_name, b_name) = (
-            fresh.channels[0].name.clone(),
-            fresh.channels[1].name.clone(),
-        );
+        let a_name = fresh.channels[0].name.clone();
+        // Listed by number and name, as their tiles have them.
+        let (a_row, b_row) = (fresh.channels[0].numbered(), fresh.channels[1].numbered());
+        assert_eq!(b_row, format!("2  {}", fresh.channels[1].name));
         let mut harness_ = harness(fresh, Some(&a));
         click(&mut harness_, "Another input");
-        assert!(harness_.query_by_label(&a_name).is_none(), "not itself");
-        click(&mut harness_, &b_name);
+        assert!(harness_.query_by_label(&a_row).is_none(), "not itself");
+        click(&mut harness_, &b_row);
         click(&mut harness_, "OK");
         match added(&harness_).as_slice() {
             [EngineCommand::AddTapDeck {
@@ -1547,13 +1596,13 @@ mod tests {
         });
         let mut looped = harness(shows_a, Some(&a));
         click(&mut looped, "Another input");
-        click(&mut looped, &b_name);
+        click(&mut looped, &b_row);
         click(&mut looped, "OK");
         assert!(added(&looped).is_empty(), "{:?}", added(&looped));
 
         let mut copy = harness(data(), None);
         click(&mut copy, "Another input");
-        click(&mut copy, &a_name);
+        click(&mut copy, &a_row);
         click(&mut copy, "OK");
         match added(&copy).as_slice() {
             [EngineCommand::AddInput {

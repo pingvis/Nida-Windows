@@ -82,7 +82,9 @@ impl VardaApp {
                 }
                 // Its Blackmagic output (see `cmd_show_bus_on_blackmagic`).
                 UnifiedOutput::Headless(h) => {
-                    if h.name == old && matches!(&h.source, OutputSource::BusProgram(b) if b == uuid) {
+                    if h.name == old
+                        && matches!(&h.source, OutputSource::BusProgram(b) if b == uuid)
+                    {
                         h.name = name.to_string();
                     }
                 }
@@ -352,7 +354,11 @@ impl VardaApp {
     /// whatever it showed, becomes the bus's: named after it, sending it, and
     /// started; made the first time, in 1080p at the show's rate. As a screen
     /// chosen does, it takes the bus off its screen and any other device.
-    pub fn cmd_show_bus_on_blackmagic(&mut self, uuid: &str, device: Option<&str>) -> CommandResult {
+    pub fn cmd_show_bus_on_blackmagic(
+        &mut self,
+        uuid: &str,
+        device: Option<&str>,
+    ) -> CommandResult {
         self.show_bus_on_blackmagic_among(uuid, device, &crate::decklink::known_devices())
     }
 
@@ -389,7 +395,9 @@ impl VardaApp {
             .iter()
             .filter_map(|o| match o {
                 UnifiedOutput::Window(w)
-                    if w.surface_assignments.iter().any(|a| follows.contains(&a.surface_uuid)) =>
+                    if w.surface_assignments
+                        .iter()
+                        .any(|a| follows.contains(&a.surface_uuid)) =>
                 {
                     Some(w.uuid.clone())
                 }
@@ -433,6 +441,7 @@ impl VardaApp {
                     mode: format.name.clone(),
                     full_range: false,
                     embedded_audio: false,
+                    follow_show: true,
                 },
                 self.render_width,
                 self.render_height,
@@ -859,11 +868,19 @@ mod tests {
         });
         assert!(matches!(shown, CommandResult::OkWithId { .. }), "{shown:?}");
         let names = |app: &super::super::super::VardaApp| {
-            let outputs: Vec<String> = app.pending_outputs().iter().map(|c| c.name.clone()).collect();
-            let surfaces: Vec<String> = app.surface_snapshot().into_iter().map(|s| s.name).collect();
+            let outputs: Vec<String> = app
+                .pending_outputs()
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            let surfaces: Vec<String> =
+                app.surface_snapshot().into_iter().map(|s| s.name).collect();
             (outputs, surfaces)
         };
-        assert_eq!(names(&app), (vec!["TV".to_string()], vec!["TV".to_string()]));
+        assert_eq!(
+            names(&app),
+            (vec!["TV".to_string()], vec!["TV".to_string()])
+        );
 
         let rename = |app: &mut super::super::super::VardaApp, name: &str| {
             app.execute_command(EngineCommand::RenameBus {
@@ -928,9 +945,11 @@ mod tests {
                 .iter()
                 .filter_map(|o| match o {
                     UnifiedOutput::Headless(h) => match &h.target {
-                        OutputTarget::DeckLink { device, mode, .. } => {
-                            Some((h.name.clone(), format!("{device} {mode}"), h.source.to_string()))
-                        }
+                        OutputTarget::DeckLink { device, mode, .. } => Some((
+                            h.name.clone(),
+                            format!("{device} {mode}"),
+                            h.source.to_string(),
+                        )),
                         _ => None,
                     },
                     UnifiedOutput::Window(_) => None,
@@ -940,15 +959,27 @@ mod tests {
         let on_box = Some("Test Box (Blackmagic)".to_string());
 
         let sent = app.show_bus_on_blackmagic_among(&tv, Some("Test Box"), &devices);
-        assert!(matches!(sent, CommandResult::Err { .. }), "the start is tried: {sent:?}");
-        let tv_source = crate::engine::value::render::OutputSource::BusProgram(tv.clone()).to_string();
+        assert!(
+            matches!(sent, CommandResult::Err { .. }),
+            "the start is tried: {sent:?}"
+        );
+        let tv_source =
+            crate::engine::value::render::OutputSource::BusProgram(tv.clone()).to_string();
         assert_eq!(
             blackmagic(&app),
-            [("TV".to_string(), "Test Box 1080p60".to_string(), tv_source.clone())]
+            [(
+                "TV".to_string(),
+                "Test Box 1080p60".to_string(),
+                tv_source.clone()
+            )]
         );
         assert_eq!(app.bus_screen(&tv), on_box);
         let api = app.build_engine_state();
-        let reported = api.buses.iter().find(|b| b.uuid == tv).and_then(|b| b.screen.clone());
+        let reported = api
+            .buses
+            .iter()
+            .find(|b| b.uuid == tv)
+            .and_then(|b| b.screen.clone());
         assert_eq!(reported, on_box, "and the API says so");
         // Again: the same output, not a second.
         let _ = app.show_bus_on_blackmagic_among(&tv, Some("Test Box"), &devices);
@@ -960,9 +991,16 @@ mod tests {
             crate::engine::value::render::OutputSource::BusProgram(projector.clone()).to_string();
         assert_eq!(
             blackmagic(&app),
-            [("Projector".to_string(), "Test Box 1080p60".to_string(), projector_source)]
+            [(
+                "Projector".to_string(),
+                "Test Box 1080p60".to_string(),
+                projector_source
+            )]
         );
-        assert_eq!((app.bus_screen(&tv), app.bus_screen(&projector)), (None, on_box.clone()));
+        assert_eq!(
+            (app.bus_screen(&tv), app.bus_screen(&projector)),
+            (None, on_box.clone())
+        );
 
         // Renamed, its output follows.
         let renamed = app.execute_command(EngineCommand::RenameBus {
@@ -983,7 +1021,10 @@ mod tests {
         // The device chosen: off the screen.
         let _ = app.show_bus_on_blackmagic_among(&projector, Some("Test Box"), &devices);
         assert_eq!(blackmagic(&app).len(), 1);
-        assert!(app.pending_outputs().is_empty(), "its screen's output let go");
+        assert!(
+            app.pending_outputs().is_empty(),
+            "its screen's output let go"
+        );
         assert_eq!(app.bus_screen(&projector), on_box);
 
         // Off: off both.
@@ -1044,6 +1085,10 @@ mod tests {
         assert!(matches!(renamed, CommandResult::Ok));
         assert_eq!(name(&app).as_deref(), Some("PGM test"));
         app.execute_command(EngineCommand::Undo);
-        assert_eq!(name(&app).as_deref(), Some("PGM"), "renamed back with the bus");
+        assert_eq!(
+            name(&app).as_deref(),
+            Some("PGM"),
+            "renamed back with the bus"
+        );
     }
 }

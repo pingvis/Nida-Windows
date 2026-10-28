@@ -228,7 +228,7 @@ fn render_strip(
     );
     // Read from the bottom up, as a folded name on a spine.
     let galley = painter.layout_no_wrap(
-        format!("{}  {}", ch.ch_idx + 1, ch.name),
+        ch.numbered(),
         egui::FontId::proportional(15.0),
         egui::Color32::WHITE,
     );
@@ -262,10 +262,7 @@ fn render_strip(
             },
         );
     }
-    ui.ctx().memory_mut(|m| {
-        m.data
-            .insert_temp(egui::Id::new("ch_drop_rect").with(ch.ch_idx), rect);
-    });
+    super::publish_drop_rect(ui, ch.ch_idx, rect);
     super::dnd::publish_channel_surface_fx(ui.ctx(), &ch.uuid, ch.ch_idx, rect);
     super::mixer::handle_deck_drop(ui, ch, rect, accent, actions);
     reorder_target(ui, ch, rect, data, actions);
@@ -375,7 +372,7 @@ fn render_tile(
         egui::vec2(width - 2.0 * PAD, TITLE_HEIGHT),
     );
     painter.rect_filled(title, 2.0, accent.linear_multiply(0.25));
-    let name = format!("{}  {}", ch.ch_idx + 1, ch.name);
+    let name = ch.numbered();
     painter.with_clip_rect(title).text(
         title.left_center() + egui::vec2(6.0, 0.0),
         egui::Align2::LEFT_CENTER,
@@ -487,10 +484,18 @@ fn render_tile(
         // Rows at the foot of the picture, from the bottom: a timer's, a
         // presentation's, a clip's.
         let timer = usize::from(super::timer::of_channel(ch).is_some());
-        let slides = usize::from(super::presentation::of_channel(ch).is_some());
-        super::transport::overlay_on_picture(ui, picture_rect, ch, timer + slides, actions);
+        let powerpoint = usize::from(super::presentation::of_channel(ch).is_some());
+        let talks = usize::from(super::slides::of_channel(ch).is_some());
+        super::transport::overlay_on_picture(
+            ui,
+            picture_rect,
+            ch,
+            timer + powerpoint + talks,
+            actions,
+        );
         super::timer::overlay_on_picture(ui, picture_rect, ch, actions);
         super::presentation::overlay_on_picture(ui, picture_rect, ch, timer, actions);
+        super::slides::overlay_on_picture(ui, picture_rect, ch, timer + powerpoint, actions);
     }
 
     render_title_bar(ui, ch, title, data, actions);
@@ -509,10 +514,7 @@ fn render_tile(
     }
     response.context_menu(|ui| super::mixer::channel_context_menu(ui, data, actions, ch));
 
-    ui.ctx().memory_mut(|m| {
-        m.data
-            .insert_temp(egui::Id::new("ch_drop_rect").with(ch.ch_idx), rect);
-    });
+    super::publish_drop_rect(ui, ch.ch_idx, rect);
     super::dnd::publish_channel_surface_fx(ui.ctx(), &ch.uuid, ch.ch_idx, rect);
     super::mixer::handle_deck_drop(ui, ch, rect, accent, actions);
     reorder_target(ui, ch, rect, data, actions);
@@ -1109,9 +1111,7 @@ mod tests {
     fn a_tile_catches_drops_for_its_channel() {
         let data = main_mode_fixture();
         let harness = harness(data);
-        let rect: Option<egui::Rect> = harness
-            .ctx
-            .memory(|m| m.data.get_temp(egui::Id::new("ch_drop_rect").with(1_usize)));
+        let rect: Option<egui::Rect> = super::super::drop_rects(&harness.ctx, 1).first().copied();
         assert!(rect.is_some_and(|r| r.width() >= MIN_TILE_WIDTH));
     }
 

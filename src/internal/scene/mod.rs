@@ -662,6 +662,27 @@ pub enum SourceConfig {
         #[serde(default)]
         scaling_mode: crate::deck::ScalingMode,
     },
+    /// A conference's presentations in running order, one on at a time:
+    /// the talk on when saved (`live`) is started again where it was.
+    Slides {
+        #[serde(default)]
+        talks: Vec<crate::engine::value::slides::Talk>,
+        #[serde(default)]
+        settings: crate::engine::value::slides::SlidesSettings,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        live: Option<String>,
+        /// The talk picked to come next, by hand.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        next: Option<String>,
+        /// The talk on, when it had been taken out of the list: its record,
+        /// and the place it had in the list.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        live_talk: Option<Box<crate::engine::value::slides::Talk>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        live_at: Option<usize>,
+        #[serde(default)]
+        scaling_mode: crate::deck::ScalingMode,
+    },
     /// A count down, count to a time, count up or the time of day, drawn as
     /// text over clear.
     Timer {
@@ -968,6 +989,11 @@ pub enum OutputTargetConfig {
         /// A legacy `audio_bus` does not enable the scheduled embedded path.
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         embedded_audio: bool,
+        #[serde(
+            default = "crate::engine::value::render::follows_show",
+            skip_serializing_if = "crate::engine::value::render::is_true"
+        )]
+        follow_show: bool,
     },
 }
 
@@ -1224,7 +1250,10 @@ impl SourceConfig {
                 presentation,
                 ..
             } => {
-                if presentation.as_ref().is_some_and(|p| p.path.trim().is_empty()) {
+                if presentation
+                    .as_ref()
+                    .is_some_and(|p| p.path.trim().is_empty())
+                {
                     errors.push(format!("{prefix}: PowerPoint input has no file"));
                 }
                 match target {
@@ -1271,6 +1300,19 @@ impl SourceConfig {
             // A missing file is skipped as the list plays, not refused here;
             // a timer's settings out of range are brought into it.
             SourceConfig::Playlist { .. } | SourceConfig::Timer { .. } => {}
+            // A missing file is said in the panel; two talks may not share
+            // one id, or one would be lost.
+            SourceConfig::Slides { talks, .. } => {
+                let mut seen = std::collections::HashSet::new();
+                for talk in talks {
+                    if talk.id.trim().is_empty() || !seen.insert(talk.id.as_str()) {
+                        errors.push(format!(
+                            "{prefix}: talk id '{}' is empty or used twice",
+                            talk.id
+                        ));
+                    }
+                }
+            }
             SourceConfig::Presenter { follows, .. } => {
                 if follows.trim().is_empty() {
                     errors.push(format!(

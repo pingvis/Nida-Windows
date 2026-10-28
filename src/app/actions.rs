@@ -84,7 +84,10 @@ impl VardaApp {
                 | EngineCommand::SetRundownMain { .. }
                 | EngineCommand::SetRundownOverlay { .. }
                 | EngineCommand::SetRundownPlay { .. }
+                | EngineCommand::SetRundownUntilNext { .. }
+                | EngineCommand::SetRundownTimer { .. }
                 | EngineCommand::SetRundownThen { .. }
+                | EngineCommand::SetRundownAt { .. }
                 | EngineCommand::CaptureRundownStep { .. }
                 | EngineCommand::SetRundownNext { .. }
                 | EngineCommand::SetRundownFade { .. } => Some("Step not changed"),
@@ -222,6 +225,7 @@ pub(crate) fn command_is_deck_add(cmd: &EngineCommand) -> bool {
             | EngineCommand::AddTimerDeck { .. }
             | EngineCommand::AddPresentationDeck { .. }
             | EngineCommand::AddPresenterDeck { .. }
+            | EngineCommand::AddSlidesDeck { .. }
     )
 }
 
@@ -311,8 +315,13 @@ mod tests {
                 channel_uuid: ch(),
                 deck_uuid: "d1".into(),
             },
+            EngineCommand::AddSlidesDeck {
+                channel_uuid: ch(),
+                paths: Vec::new(),
+                settings: None,
+            },
         ];
-        assert_eq!(deck_adds.len(), 17, "expected 17 deck-add variants");
+        assert_eq!(deck_adds.len(), 18, "expected 18 deck-add variants");
         for cmd in &deck_adds {
             assert!(command_is_deck_add(cmd), "not recognized: {cmd:?}");
         }

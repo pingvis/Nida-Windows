@@ -343,9 +343,11 @@ pub(super) fn render_channel_settings(
         });
     if let Some(inner) = &window {
         let rect = inner.response.rect;
-        // Files and Library items dropped on the window go into this channel.
+        // Files and Library items dropped on the window go into this channel
+        // — where nothing is in front of it.
+        let on = inner.response.layer_id;
         ctx.memory_mut(|m| {
-            m.data.insert_temp(drop_window_id(), (ch.ch_idx, rect));
+            m.data.insert_temp(drop_window_id(), (ch.ch_idx, rect, on));
         });
         // Effects dropped on it go on what it is editing.
         if let Some(layer) = layer {
@@ -365,8 +367,8 @@ pub(super) fn render_channel_settings(
 }
 
 /// Where the open window takes drops, for the drop handlers: which channel,
-/// and the window's rect. It is checked before the channel views, since the
-/// window is drawn over them.
+/// the window's rect, and its layer. It is checked before the channel views,
+/// since the window is drawn over them — unless another is in front of it.
 pub(super) fn drop_window_id() -> egui::Id {
     egui::Id::new("ch_drop_window")
 }
@@ -1755,7 +1757,7 @@ mod tests {
             harness.state().commands.iter().any(|c| matches!(
                 c,
                 EngineCommand::SetPresenterLayout { deck_uuid, layout }
-                    if *deck_uuid == uuid && !layout.timer && layout.clock
+                    if *deck_uuid == uuid && !layout.timer && !layout.clock
             )),
             "{:?}",
             harness.state().commands

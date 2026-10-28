@@ -28,6 +28,14 @@ fn drag_start_id() -> egui::Id {
     egui::Id::new("deck_adjust_drag_start")
 }
 
+/// The corner of the picture's outline a drag began on, if it did.
+fn drag_corner_id() -> egui::Id {
+    egui::Id::new("deck_adjust_drag_corner")
+}
+
+/// How near a corner of the outline (in points) a drag takes it.
+const CORNER_REACH: f32 = 10.0;
+
 /// Open the input settings window on a deck — a layer of its channel. The
 /// name is the adjuster's that the window replaced.
 pub(super) fn open(ctx: &egui::Context, deck_uuid: &str) {
@@ -59,34 +67,33 @@ pub(super) fn render_preview(
 
     let picking = super::super::preview_picker::current(ui.ctx());
     ui.add_enabled_ui(picking.is_none(), |ui| {
-    ui.horizontal_wrapped(|ui| {
-        ui.label(egui::RichText::new("Show:").small());
-        let pick = |ui: &mut egui::Ui, v: View, label: &str, hover: &str| {
-            if ui
-                .selectable_label(view == v, egui::RichText::new(label).small())
-                .on_hover_text(hover)
-                .clicked()
-            {
-                ui.ctx().memory_mut(|m| m.data.insert_temp(view_id(), v));
+        ui.horizontal_wrapped(|ui| {
+            ui.label(egui::RichText::new("Show:").small());
+            let pick = |ui: &mut egui::Ui, v: View, label: &str, hover: &str| {
+                if ui
+                    .selectable_label(view == v, egui::RichText::new(label).small())
+                    .on_hover_text(hover)
+                    .clicked()
+                {
+                    ui.ctx().memory_mut(|m| m.data.insert_temp(view_id(), v));
+                }
+            };
+            if deck.is_some() {
+                pick(ui, View::Input, "This layer", "This layer on its own");
             }
-        };
-        if deck.is_some() {
-            pick(ui, View::Input, "This layer", "This layer on its own");
-        }
-        pick(
-            ui,
-            View::Channel,
-            ch_name,
-            "The channel, every layer in it composited",
-        );
-        pick(ui, View::Main, "Main output", "The main output");
-        for (i, out) in data.outputs.iter().enumerate() {
-            if out.is_windowed {
-                pick(ui, View::Output(i), &out.name, "What this screen shows");
+            pick(
+                ui,
+                View::Channel,
+                ch_name,
+                "The channel, every layer in it composited",
+            );
+            pick(ui, View::Main, "Main output", "The main output");
+            for (i, out) in data.outputs.iter().enumerate() {
+                if out.is_windowed {
+                    pick(ui, View::Output(i), &out.name, "What this screen shows");
+                }
             }
-        }
-    });
-
+        });
     });
 
     let (texture, width, height) = match view {
@@ -117,10 +124,14 @@ pub(super) fn render_preview(
     };
     let (texture, width, height) = if let Some(pick) = &picking {
         match &data.colour_pick_preview {
-            Some((effect, texture, size)) if *effect == pick.effect => (Some(*texture), size[0], size[1]),
+            Some((effect, texture, size)) if *effect == pick.effect => {
+                (Some(*texture), size[0], size[1])
+            }
             _ => (None, data.render_width, data.render_height),
         }
-    } else { (texture, width, height) };
+    } else {
+        (texture, width, height)
+    };
     let size = super::utils::preview_size(
         egui::vec2(ui.available_width(), max_height.max(120.0)),
         width,
@@ -141,7 +152,9 @@ pub(super) fn render_preview(
     response
         .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Other, true, "Adjust preview"));
 
-    if super::super::preview_picker::handle(ui, &response, data, actions) { return; }
+    if super::super::preview_picker::handle(ui, &response, data, actions) {
+        return;
+    }
 
     // Drawing a mask: the picture is the frame the mask is in, so not a
     // screen's own picture; the drag draws it, and does not move the layer.
@@ -161,8 +174,12 @@ pub(super) fn render_preview(
     let Some(deck) = deck else {
         return;
     };
-    let can_interact = view == View::Input && deck.is_html
-        && deck.browser.as_ref().is_some_and(|browser| browser.interactive);
+    let can_interact = view == View::Input
+        && deck.is_html
+        && deck
+            .browser
+            .as_ref()
+            .is_some_and(|browser| browser.interactive);
     if can_interact && response.double_clicked() {
         actions.commands.push(EngineCommand::OpenHtmlInteractive {
             deck_uuid: deck.uuid.clone(),
@@ -210,11 +227,11 @@ pub(super) fn render_preview(
 
     ui.horizontal_wrapped(|ui| {
         let hint = if can_interact && transform.is_some() {
-            "Double-click to interact · Drag to move · Shift-drag or scroll to resize"
+            "Double-click to interact · Drag to move · drag a corner, Shift-drag or scroll to resize"
         } else if can_interact {
             "Double-click to interact with this browser source"
         } else if transform.is_some() {
-            "Drag the picture to move it · Shift-drag or scroll to resize"
+            "Drag the picture to move it · drag a corner, Shift-drag or scroll to resize"
         } else {
             "Switch on Transform under Position to move it here"
         };
@@ -412,7 +429,10 @@ impl Transform {
     /// The deck's first transform effect, if it has one switched on. `render`
     /// is the frame's size, which a fitted picture's bars depend on.
     fn of(deck: &DeckUIInfo, render: (u32, u32)) -> Option<Self> {
-        let at = deck.effects.iter().position(|(_, n, ..)| n == "transform")?;
+        let at = deck
+            .effects
+            .iter()
+            .position(|(_, n, ..)| n == "transform")?;
         let (uuid, _, enabled, params) = &deck.effects[at];
         if !enabled {
             return None;
@@ -503,16 +523,52 @@ impl Transform {
             return Guides::default();
         }
         let mut guides = Guides::default();
+        let rect = response.rect;
+        let corners = self.corners(rect);
+        let near = |at: egui::Pos2| {
+            (0..4)
+                .filter(|&i| corners[i].distance(at) <= CORNER_REACH)
+                .min_by(|&a, &b| corners[a].distance(at).total_cmp(&corners[b].distance(at)))
+        };
+        // Over a corner, the pointer says it resizes — the corner being
+        // dragged, while it is, whatever other corner it passes.
+        let dragged_corner = response
+            .dragged()
+            .then(|| {
+                ui.ctx()
+                    .memory(|m| m.data.get_temp::<usize>(drag_corner_id()))
+            })
+            .flatten();
+        let hovered_corner = response.hover_pos().and_then(near);
+        if let Some(i) = dragged_corner.or(hovered_corner) {
+            // Along the corner's diagonal as it lies on screen, turned or not.
+            let diagonal = corners[i] - corners[(i + 2) % 4];
+            ui.ctx().set_cursor_icon(if diagonal.x * diagonal.y >= 0.0 {
+                egui::CursorIcon::ResizeNwSe
+            } else {
+                egui::CursorIcon::ResizeNeSw
+            });
+        }
         if response.drag_started() {
             let start = (self.pos, self.scale);
-            ui.ctx()
-                .memory_mut(|m| m.data.insert_temp(drag_start_id(), start));
+            let corner = ui.input(|i| i.pointer.press_origin()).and_then(near);
+            ui.ctx().memory_mut(|m| {
+                m.data.insert_temp(drag_start_id(), start);
+                if let Some(i) = corner {
+                    m.data.insert_temp(drag_corner_id(), i);
+                } else {
+                    m.data.remove::<usize>(drag_corner_id());
+                }
+            });
         }
         if response.dragged() {
             let (start, start_scale) = ui
                 .ctx()
                 .memory(|m| m.data.get_temp::<(egui::Vec2, f32)>(drag_start_id()))
                 .unwrap_or((self.pos, self.scale));
+            let corner = ui
+                .ctx()
+                .memory(|m| m.data.get_temp::<usize>(drag_corner_id()));
             let (moved, shift, free) = ui.input(|i| {
                 let moved = i
                     .pointer
@@ -521,7 +577,56 @@ impl Transform {
                     .map_or(egui::Vec2::ZERO, |(from, to)| to - from);
                 (moved, i.modifiers.shift, i.modifiers.command)
             });
-            if shift {
+            if let Some(i) = corner {
+                // A corner drawn out or in: the picture grows or shrinks, its
+                // opposite corner staying where it was.
+                let begun = Self {
+                    pos: start,
+                    scale: start_scale,
+                    ..self.at_scale(start_scale)
+                };
+                let was = begun.corners(rect);
+                let anchor = was[(i + 2) % 4];
+                let diagonal = was[i] - anchor;
+                let pulled = was[i] + moved - anchor;
+                let ratio = pulled.dot(diagonal) / diagonal.length_sq().max(1e-6);
+                // The centre moves with the size, from the anchor: at
+                // `ratio`, position = `from + by × ratio`. How far it may
+                // grow or shrink keeps that position within ±1 and the
+                // scale within its range, so the anchor never moves.
+                let centre = rect.center() + start * size;
+                let from = (anchor - rect.center()) / size;
+                let by = (centre - anchor) / size;
+                let start_scale = start_scale.max(1e-6);
+                let sizes = (0.01 / start_scale, 5.0 / start_scale);
+                let (mut low, mut high) = sizes;
+                for (f, b) in [(from.x, by.x), (from.y, by.y)] {
+                    if b.abs() > 1e-6 {
+                        let (a, z) = ((-1.0 - f) / b, (1.0 - f) / b);
+                        low = low.max(a.min(z));
+                        high = high.min(a.max(z));
+                    }
+                }
+                // Placed past ±1 already (an old show): no size keeps the
+                // anchor there, so only the scale's own range holds.
+                if low > high {
+                    (low, high) = sizes;
+                }
+                let mut scale = start_scale * ratio.clamp(low, high);
+                if !free {
+                    scale = begun.snap_size(scale, others, SNAP_PIXELS / size.x);
+                }
+                let ratio = (scale / start_scale).clamp(low, high);
+                let scale = start_scale * ratio;
+                let pos = from + by * ratio;
+                actions.commands.push(self.set("scale", scale));
+                actions
+                    .commands
+                    .push(self.set("pos_x", pos.x.clamp(-1.0, 1.0)));
+                actions
+                    .commands
+                    .push(self.set("pos_y", pos.y.clamp(-1.0, 1.0)));
+            } else if shift {
                 // Shift-drag resizes, as in vMix: right or down grows it,
                 // half the preview's width doubling it.
                 let grow = (moved.x + moved.y) / size.x * 2.0;
@@ -549,8 +654,10 @@ impl Transform {
             actions.session.gesture_active = true;
         }
         if response.drag_stopped() {
-            ui.ctx()
-                .memory_mut(|m| m.data.remove::<(egui::Vec2, f32)>(drag_start_id()));
+            ui.ctx().memory_mut(|m| {
+                m.data.remove::<(egui::Vec2, f32)>(drag_start_id());
+                m.data.remove::<usize>(drag_corner_id());
+            });
         }
         if response.hovered() {
             let (scroll, pinch) = ui.input(|i| (i.smooth_scroll_delta.y, i.zoom_delta()));
@@ -578,10 +685,22 @@ impl Transform {
             .map_or(scale, |w| w / per_scale)
     }
 
-    /// Outline what shows of the deck's picture in the preview — the part
-    /// the crop keeps, turned with it — so a picture with transparent or
-    /// black edges can still be found.
-    fn outline(&self, ui: &egui::Ui, rect: egui::Rect) {
+    /// The same picture at another `scale`: its stretch follows.
+    fn at_scale(&self, scale: f32) -> Self {
+        let per = self.stretch / self.scale.max(1e-6);
+        Self {
+            effect_uuid: self.effect_uuid.clone(),
+            pos: self.pos,
+            scale,
+            stretch: per * scale,
+            rotation: self.rotation,
+            kept: self.kept,
+        }
+    }
+
+    /// The corners of what shows of the picture in the preview `rect` —
+    /// top left, top right, bottom right, bottom left — turned with it.
+    fn corners(&self, rect: egui::Rect) -> [egui::Pos2; 4] {
         let centre =
             rect.center() + egui::vec2(self.pos.x * rect.width(), self.pos.y * rect.height());
         let (sin, cos) = self.rotation.sin_cos();
@@ -591,17 +710,28 @@ impl Transform {
             centre + egui::vec2(x * cos - y * sin, x * sin + y * cos)
         };
         let k = self.kept;
-        let corners = [
+        [
             corner(k.left(), k.top()),
             corner(k.right(), k.top()),
             corner(k.right(), k.bottom()),
             corner(k.left(), k.bottom()),
-        ];
+        ]
+    }
+
+    /// Outline what shows of the deck's picture in the preview — the part
+    /// the crop keeps, turned with it — so a picture with transparent or
+    /// black edges can still be found; its corners are handles to resize it.
+    fn outline(&self, ui: &egui::Ui, rect: egui::Rect) {
+        let corners = self.corners(rect);
         let stroke = egui::Stroke::new(1.5, egui::Color32::from_rgb(90, 170, 255));
         let painter = ui.painter_at(rect);
         for i in 0..4 {
             painter.line_segment([corners[i], corners[(i + 1) % 4]], stroke);
-            painter.circle_filled(corners[i], 3.0, stroke.color);
+        }
+        for at in corners {
+            let handle = egui::Rect::from_center_size(at, egui::vec2(9.0, 9.0));
+            painter.rect_filled(handle, 1.0, egui::Color32::WHITE);
+            painter.rect_stroke(handle, 1.0, stroke, egui::StrokeKind::Inside);
         }
     }
 }
@@ -677,7 +807,10 @@ mod tests {
             .iter_mut()
             .find(|e| e.1 == "transform")
             .expect("transform");
-        transform.3.params.push(setting("flip_x", ParamValue::Bool(true)));
+        transform
+            .3
+            .params
+            .push(setting("flip_x", ParamValue::Bool(true)));
         let after = kept(deck);
         assert!(
             after.min.x.abs() < 1e-6 && (after.max.x - 0.5).abs() < 1e-6,
@@ -736,28 +869,39 @@ mod tests {
             deck.is_html = browser;
             deck.browser = Some(crate::html::BrowserSnapshot {
                 settings: crate::html::BrowserSettings {
-                    url: "https://example.com".into(), ..Default::default()
+                    url: "https://example.com".into(),
+                    ..Default::default()
                 },
-                ready: true, interactive, error: None,
+                ready: true,
+                interactive,
+                error: None,
             });
             let selected = uuid.clone();
             let mut h = egui_kittest::Harness::builder()
                 .with_size(egui::vec2(1280.0, 900.0))
                 .with_step_dt(1.0 / 60.0)
-                .build_ui_state(move |ui, commands: &mut Vec<EngineCommand>| {
-                    ui.ctx().memory_mut(|m| m.data.insert_temp(view_id(), view));
-                    let layer = data.channels[0].decks.iter().find(|d| d.uuid == selected);
-                    let mut actions = UIActions::new();
-                    render_preview(ui, 0, "Ch A", layer, 500.0, &data, &mut actions);
-                    commands.extend(actions.commands);
-                }, Vec::new());
+                .build_ui_state(
+                    move |ui, commands: &mut Vec<EngineCommand>| {
+                        ui.ctx().memory_mut(|m| m.data.insert_temp(view_id(), view));
+                        let layer = data.channels[0].decks.iter().find(|d| d.uuid == selected);
+                        let mut actions = UIActions::new();
+                        render_preview(ui, 0, "Ch A", layer, 500.0, &data, &mut actions);
+                        commands.extend(actions.commands);
+                    },
+                    Vec::new(),
+                );
             h.run();
-            assert_eq!(h.query_by_label("🖱 Interact").is_some(),
-                browser && interactive && view == View::Input);
+            assert_eq!(
+                h.query_by_label("🖱 Interact").is_some(),
+                browser && interactive && view == View::Input
+            );
             let preview = h.get_by_label("Adjust preview").rect();
             if browser && interactive && view == View::Input {
                 let button = h.get_by_label("🖱 Interact").rect();
-                assert!(preview.contains_rect(button), "interaction stays inside the picture");
+                assert!(
+                    preview.contains_rect(button),
+                    "interaction stays inside the picture"
+                );
                 assert!((preview.right() - button.right() - 6.0).abs() < 1.0);
                 assert!((button.top() - preview.top() - 6.0).abs() < 1.0);
             }
@@ -767,23 +911,45 @@ mod tests {
             for _ in 0..2 {
                 for pressed in [true, false] {
                     h.event(egui::Event::PointerButton {
-                        pos, button: egui::PointerButton::Primary, pressed,
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed,
                         modifiers: egui::Modifiers::default(),
                     });
                     h.run();
                 }
             }
-            let opens = h.state().iter().filter(|c| matches!(c,
-                EngineCommand::OpenHtmlInteractive { deck_uuid } if deck_uuid == &uuid)).count();
-            assert_eq!(opens, usize::from(browser && interactive && view == View::Input));
-            assert!(!h.state().iter().any(|c| matches!(c,
-                EngineCommand::CloseHtmlInteractive | EngineCommand::SetEffectParam { .. })));
+            let opens = h
+                .state()
+                .iter()
+                .filter(|c| {
+                    matches!(c,
+                EngineCommand::OpenHtmlInteractive { deck_uuid } if deck_uuid == &uuid)
+                })
+                .count();
+            assert_eq!(
+                opens,
+                usize::from(browser && interactive && view == View::Input)
+            );
+            assert!(!h.state().iter().any(|c| matches!(
+                c,
+                EngineCommand::CloseHtmlInteractive | EngineCommand::SetEffectParam { .. }
+            )));
             if browser && interactive && view == View::Input {
                 h.get_by_label("🖱 Interact").click();
                 h.run();
-                assert_eq!(h.state().iter().filter(|c| matches!(c,
-                    EngineCommand::OpenHtmlInteractive { deck_uuid } if deck_uuid == &uuid)).count(), 2);
-                assert!(!h.state().iter().any(|c| matches!(c, EngineCommand::SetEffectParam { .. })));
+                assert_eq!(
+                    h.state()
+                        .iter()
+                        .filter(|c| matches!(c,
+                    EngineCommand::OpenHtmlInteractive { deck_uuid } if deck_uuid == &uuid))
+                        .count(),
+                    2
+                );
+                assert!(!h
+                    .state()
+                    .iter()
+                    .any(|c| matches!(c, EngineCommand::SetEffectParam { .. })));
             }
         }
     }
@@ -817,30 +983,60 @@ mod tests {
         use super::super::super::preview_picker::{self, Pick};
         let mut data = UIData::test_fixture();
         let deck = deck_with_transform(&mut data);
-        let layer = data.channels[0].decks.iter_mut().find(|d| d.uuid == deck).unwrap();
+        let layer = data.channels[0]
+            .decks
+            .iter_mut()
+            .find(|d| d.uuid == deck)
+            .unwrap();
         layer.is_html = true;
         layer.browser = Some(crate::html::BrowserSnapshot {
-            settings: crate::html::BrowserSettings { url: "https://example.com".into(), ..Default::default() },
-            ready: true, interactive: true, error: None,
+            settings: crate::html::BrowserSettings {
+                url: "https://example.com".into(),
+                ..Default::default()
+            },
+            ready: true,
+            interactive: true,
+            error: None,
         });
         data.colour_pick_preview = Some(("key".into(), egui::TextureId::User(42), [1920, 1080]));
         let mut h = harness_for(data, &deck);
-        let request = Pick { owner: format!("deck/{deck}"), effect: "key".into(), alpha: 0.4, uv: None, waiting: false, rgb: None };
+        let request = Pick {
+            owner: format!("deck/{deck}"),
+            effect: "key".into(),
+            alpha: 0.4,
+            uv: None,
+            waiting: false,
+            rgb: None,
+        };
         preview_picker::store(&h.ctx, request);
         h.step();
         let pos = h.get_by_label("Adjust preview").rect().center();
         h.event(egui::Event::PointerMoved(pos));
         h.step();
         for pressed in [true, false, true, false] {
-            h.event(egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::default() });
+            h.event(egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed,
+                modifiers: egui::Modifiers::default(),
+            });
             h.step();
         }
-        assert!(h.state().commands.is_empty(), "picking cannot transform or interact");
+        assert!(
+            h.state().commands.is_empty(),
+            "picking cannot transform or interact"
+        );
         let pending = preview_picker::current(&h.ctx).unwrap();
         assert!(pending.waiting);
         let uv = pending.uv.unwrap();
         assert!((uv[0] - 0.5).abs() < 1e-5 && (uv[1] - 0.5).abs() < 1e-5);
-        h.event(egui::Event::Key { key: egui::Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: egui::Modifiers::default() });
+        h.event(egui::Event::Key {
+            key: egui::Key::Escape,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::default(),
+        });
         h.step();
         assert!(preview_picker::current(&h.ctx).is_none());
         assert!(h.state().commands.is_empty(), "Escape preserves settings");
@@ -869,6 +1065,165 @@ mod tests {
             "a quarter of the width grows 0.5 by half: {scale}"
         );
         assert_eq!(sets(harness.state(), "pos_x"), None, "not moved");
+    }
+
+    /// A corner of the outline dragged out grows the picture and dragged in
+    /// shrinks it, the opposite corner staying where it was; over a corner
+    /// the pointer says so.
+    #[test]
+    fn dragging_a_corner_resizes_the_layer_about_the_opposite_corner() {
+        // At 0.1 across, half size: its corners a quarter of the preview
+        // from its centre.
+        let drag = |by: egui::Vec2| {
+            let mut data = UIData::test_fixture();
+            let deck = deck_with_transform(&mut data);
+            let mut harness = harness_for(data, &deck);
+            let preview = harness.get_by_label("Adjust preview").rect();
+            let size = preview.size();
+            let corner = preview.center() + egui::vec2(0.1 * size.x, 0.0) + size * 0.25;
+            harness.hover_at(corner);
+            harness.run();
+            let cursor = harness.output().platform_output.cursor_icon;
+            harness.drag_at(corner);
+            harness.run();
+            for t in [0.3_f32, 0.6, 1.0] {
+                harness.hover_at(corner + size * by * t);
+                harness.run();
+            }
+            let scale = sets(harness.state(), "scale").expect("the drag resizes");
+            let pos = egui::vec2(
+                sets(harness.state(), "pos_x").expect("placed"),
+                sets(harness.state(), "pos_y").expect("placed"),
+            );
+            (cursor, scale, pos)
+        };
+        // The top left corner, in frame units, before: 0.5 + 0.1 − 0.25.
+        let top_left = |scale: f32, pos: egui::Vec2| {
+            egui::vec2(0.5, 0.5) + pos - egui::vec2(scale, scale) / 2.0
+        };
+        let (cursor, bigger, pos) = drag(egui::vec2(0.125, 0.125));
+        assert_eq!(cursor, egui::CursorIcon::ResizeNwSe, "over the corner");
+        assert!((bigger - 0.625).abs() < 0.01, "a quarter more: {bigger}");
+        let kept = top_left(bigger, pos);
+        assert!(
+            (kept - egui::vec2(0.35, 0.25)).length() < 0.01,
+            "stays: {kept:?}"
+        );
+
+        let (_, smaller, pos) = drag(egui::vec2(-0.1, -0.1));
+        assert!((smaller - 0.4).abs() < 0.01, "a fifth less: {smaller}");
+        let kept = top_left(smaller, pos);
+        assert!(
+            (kept - egui::vec2(0.35, 0.25)).length() < 0.01,
+            "stays: {kept:?}"
+        );
+    }
+
+    /// Pulled far out, a corner grows the picture only as far as its centre
+    /// can go (±1): the opposite corner stays put. Turned a quarter, the
+    /// pointer's arrow turns with the corner.
+    #[test]
+    fn a_corner_drag_stops_where_the_anchor_would_move_and_turns_its_arrow() {
+        let mut data = UIData::test_fixture();
+        let deck = deck_with_transform(&mut data);
+        let mut harness = harness_for(data, &deck);
+        let preview = harness.get_by_label("Adjust preview").rect();
+        let size = preview.size();
+        let corner = preview.center() + egui::vec2(0.1 * size.x, 0.0) + size * 0.25;
+        harness.hover_at(corner);
+        harness.drag_at(corner);
+        harness.run();
+        for t in [0.3_f32, 0.6, 1.0] {
+            harness.hover_at(corner + egui::vec2(2500.0, 2500.0) * t);
+            harness.run();
+        }
+        let scale = sets(harness.state(), "scale").expect("resized");
+        let pos = egui::vec2(
+            sets(harness.state(), "pos_x").expect("placed"),
+            sets(harness.state(), "pos_y").expect("placed"),
+        );
+        assert!(
+            (pos.x - 1.0).abs() < 1e-3,
+            "as far as its centre can go: {pos:?}"
+        );
+        let top_left = egui::vec2(0.5, 0.5) + pos - egui::vec2(scale, scale) / 2.0;
+        assert!(
+            (top_left - egui::vec2(0.35, 0.25)).length() < 0.01,
+            "stays: {top_left:?} at {scale}"
+        );
+
+        // Turned a quarter: the bottom right corner lies down and to the left.
+        let mut data = UIData::test_fixture();
+        let deck = deck_with_transform(&mut data);
+        let fx = &mut data.channels[0].decks[0].effects.last_mut().unwrap().3;
+        for p in &mut fx.params {
+            if p.name == "rotation" {
+                p.value = ParamValue::Float(std::f32::consts::FRAC_PI_2);
+            }
+        }
+        let mut harness = harness_for(data, &deck);
+        let centre = preview.center() + egui::vec2(0.1 * size.x, 0.0);
+        let turned = centre + egui::vec2(-0.25 * size.y, 0.25 * size.x);
+        harness.hover_at(turned);
+        harness.run();
+        assert_eq!(
+            harness.output().platform_output.cursor_icon,
+            egui::CursorIcon::ResizeNeSw
+        );
+    }
+
+    /// A layer placed past ±1 already, at the largest size, is never made
+    /// larger by a corner; and while a corner is dragged, its arrow stays its
+    /// own as it passes another corner.
+    #[test]
+    fn a_corner_drag_keeps_the_size_range_and_its_own_arrow() {
+        let set = |data: &mut UIData, values: &[(&str, f32)]| {
+            let fx = &mut data.channels[0].decks[0].effects.last_mut().unwrap().3;
+            for (name, v) in values {
+                fx.params
+                    .iter_mut()
+                    .find(|p| p.name == *name)
+                    .unwrap()
+                    .value = ParamValue::Float(*v);
+            }
+        };
+        let mut data = UIData::test_fixture();
+        let deck = deck_with_transform(&mut data);
+        set(&mut data, &[("pos_x", 2.9), ("pos_y", 2.9), ("scale", 5.0)]);
+        let mut harness = harness_for(data, &deck);
+        let preview = harness.get_by_label("Adjust preview").rect();
+        let size = preview.size();
+        // Its top left corner, at 0.9 of the frame across and down.
+        let corner = preview.min + size * 0.9;
+        harness.hover_at(corner);
+        harness.drag_at(corner);
+        harness.run();
+        for t in [0.5_f32, 1.0] {
+            harness.hover_at(corner - egui::vec2(40.0, 40.0) * t);
+            harness.run();
+        }
+        let scale = sets(harness.state(), "scale").expect("resized");
+        assert!(scale <= 5.0 + 1e-4, "{scale}");
+
+        // Half size at 0.1 across: its bottom right corner dragged over to
+        // its bottom left one — the outline here is the one it began with.
+        let mut data = UIData::test_fixture();
+        let deck = deck_with_transform(&mut data);
+        let mut harness = harness_for(data, &deck);
+        let centre = preview.center() + egui::vec2(0.1 * size.x, 0.0);
+        let bottom_right = centre + size * 0.25;
+        let bottom_left = centre + egui::vec2(-0.25 * size.x, 0.25 * size.y);
+        harness.hover_at(bottom_right);
+        harness.drag_at(bottom_right);
+        harness.run();
+        for to in [centre, bottom_left + egui::vec2(2.0, 0.0)] {
+            harness.hover_at(to);
+            harness.run();
+        }
+        assert_eq!(
+            harness.output().platform_output.cursor_icon,
+            egui::CursorIcon::ResizeNwSe
+        );
     }
 
     fn rect(x0: f32, y0: f32, x1: f32, y1: f32) -> egui::Rect {

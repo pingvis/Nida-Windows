@@ -270,6 +270,8 @@ pub struct DeckUIInfo {
     pub tap: Option<TapUI>,
     /// A playlist's items and where it has got (None = not a playlist).
     pub playlist: Option<crate::engine::value::playlist::PlaylistSnapshot>,
+    /// A Slides input's talks and where it has got (None = not one).
+    pub slides: Option<crate::engine::value::slides::SlidesSnapshot>,
     /// A timer's settings and what it reads (None = not a timer).
     pub timer: Option<crate::engine::value::timer::TimerSnapshot>,
     /// A PowerPoint input's show (None = not a PowerPoint input).
@@ -326,6 +328,8 @@ pub struct ChannelUIInfo {
     pub ch_idx: usize,
     pub uuid: String,
     pub name: String,
+    /// Never named: `name` is "Input 8", by where it is, not one given.
+    pub unnamed: bool,
     pub opacity: f32,
     pub blend_mode: BlendMode,
     pub decks: Vec<DeckUIInfo>,
@@ -335,6 +339,24 @@ pub struct ChannelUIInfo {
     /// Where it is on air: "Main", or the name of the bus showing it (see
     /// `ChannelSnapshot::on_air`). `None` off air.
     pub on_air: Option<String>,
+}
+
+impl ChannelUIInfo {
+    /// Its number: where it is in the Inputs row, as its tile shows it.
+    pub fn number(&self) -> usize {
+        self.ch_idx + 1
+    }
+
+    /// Its number, then its name — as its tile, the Audio Mixer and the
+    /// lists to pick an input from show it. One never named is its number.
+    pub fn numbered(&self) -> String {
+        let number = self.number();
+        if self.unnamed {
+            format!("{number}  Input")
+        } else {
+            format!("{number}  {}", self.name)
+        }
+    }
 }
 
 /// Audio input device info for UI display.
@@ -478,6 +500,9 @@ pub struct UIData {
     /// All current keybindings (read-only snapshot for dispatch + settings panel)
     pub keymap_bindings:
         std::collections::HashMap<crate::keymap::KeyCombo, crate::keymap::KeyTarget>,
+    /// How the clicker read with another app in front stands (see
+    /// `crate::clicker`).
+    pub clicker: crate::clicker::ClickerStatus,
     /// Available transition shader names (from registry)
     pub transition_names: Vec<String>,
     /// Currently active transition name, if any

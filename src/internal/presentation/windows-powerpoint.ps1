@@ -206,6 +206,11 @@ function Invoke-PowerPointCommand($request) {
         }
         return 'focused'
     }
+    if ($request.op -eq 'slide_shows') {
+        try { $app = Get-PowerPoint }
+        catch { if ($_.Exception.Message -eq 'notrunning') { return 'notrunning' }; throw }
+        return "shows`t$([int]$app.SlideShowWindows.Count)"
+    }
     $app = Get-PowerPoint -Create:($request.op -eq 'open')
     $path = Convert-DeckPath ([string]$request.path)
     if ($request.op -eq 'open') {
@@ -221,6 +226,14 @@ function Invoke-PowerPointCommand($request) {
     }
     $deck = Find-Deck $app $path
     switch ($request.op) {
+        'save_pdf' {
+            if ([int]$app.SlideShowWindows.Count -gt 0) { return 'showing' }
+            $out = Convert-DeckPath ([string]$request.out)
+            # PDF copy, all slides (including hidden), leaving the deck unchanged.
+            # ExportAsFixedFormat requires a null PrintRange for all slides.
+            $deck.ExportAsFixedFormat($out, 2, 1, 0, 1, 1, -1, $null, 1)
+            return 'saved'
+        }
         'read' { return Get-Reading $deck }
         'window' {
             $hwnd = Get-ShowHwnd (Get-Show $deck)

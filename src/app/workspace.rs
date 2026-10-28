@@ -378,7 +378,8 @@ impl VardaApp {
         // A rundown step being waited on belongs to the show before: it must
         // not be taken into this one — whatever becomes of the load, a show
         // that is not there or opens only in part included.
-        self.rundown.hold();
+        self.rundown.drop_wait();
+        self.forget_rundown_live();
         self.input.saved_midi = None;
         self.input.pending_mtc = None;
         self.input.midi_mappings.clear_all();
@@ -555,6 +556,9 @@ impl VardaApp {
                     match self.replace_scene(&scene_config) {
                         Ok(()) => {
                             scene_is_the_requested_one = true;
+                            // Its decks are new, if under the same UUIDs: no
+                            // fade of the show before keeps them down.
+                            self.rundown_scene_replaced();
                             log::info!(
                                 "Loaded scene with {} channels",
                                 scene_config.channels.len()
@@ -578,7 +582,10 @@ impl VardaApp {
         // all of Main: at 1080p in a 4K show it would show a quarter of it.
         if buses_are_made_up {
             self.production_buses.rescale_canvases(
-                (crate::bus::DEFAULT_BUS_WIDTH, crate::bus::DEFAULT_BUS_HEIGHT),
+                (
+                    crate::bus::DEFAULT_BUS_WIDTH,
+                    crate::bus::DEFAULT_BUS_HEIGHT,
+                ),
                 (self.render_width, self.render_height),
             );
         }
@@ -1576,10 +1583,34 @@ impl VardaApp {
                 list.set_scaling_mode(*scaling_mode);
             }
         }
+        // A Slides layer's list and settings; the talk on, and what was
+        // picked to come next, are the show's — undo does not change them.
+        if let crate::scene::SourceConfig::Slides {
+            talks,
+            settings,
+            scaling_mode,
+            ..
+        } = &config.source
+        {
+            if let Some(slides) = slot.deck.slides_mut() {
+                let same = slides.talks().len() == talks.len()
+                    && slides
+                        .talks()
+                        .iter()
+                        .zip(talks)
+                        .all(|(a, b)| a.id == b.id && a.path == b.path && a.name == b.name);
+                if !same {
+                    slides.set_talks(talks.clone());
+                }
+                slides.set_settings(settings.clone());
+                slides.set_scaling_mode(*scaling_mode);
+            }
+        }
         if let crate::scene::SourceConfig::Timer { settings, .. } = &config.source {
             if let Some(timer) = slot.deck.timer_mut() {
                 if timer.settings() != settings {
-                    timer.set_settings(settings.clone());
+                    // A step's count this run stays.
+                    timer.restore_settings(settings.clone());
                 }
             }
         }
@@ -1904,7 +1935,11 @@ mod tests {
             return;
         };
         let _ = app.load_workspace();
-        let names: Vec<&str> = app.pending_outputs().iter().map(|c| c.name.as_str()).collect();
+        let names: Vec<&str> = app
+            .pending_outputs()
+            .iter()
+            .map(|c| c.name.as_str())
+            .collect();
         assert_eq!(names, ["LED", "TV"]);
     }
 
@@ -1972,7 +2007,11 @@ mod tests {
             .map(|w| w.uuid.clone())
             .collect();
         assert_eq!(still, [open[0].clone()], "the unlisted one closed");
-        let waiting: Vec<&str> = app.pending_outputs().iter().map(|c| c.name.as_str()).collect();
+        let waiting: Vec<&str> = app
+            .pending_outputs()
+            .iter()
+            .map(|c| c.name.as_str())
+            .collect();
         assert_eq!(waiting, ["New"], "the last show's waiting one let go");
     }
 
@@ -2166,7 +2205,11 @@ mod tests {
             "the save held the engine {handed_over:?}"
         );
         app.update_notifications();
-        assert!(!notices(&app).iter().any(|m| m.contains("saved")), "{:?}", notices(&app));
+        assert!(
+            !notices(&app).iter().any(|m| m.contains("saved")),
+            "{:?}",
+            notices(&app)
+        );
         assert_eq!(fade_time_in(tmp.path()), None, "not written yet");
         // Said by a frame once the files are there, as the engine's frames
         // look for what has landed.
@@ -2202,7 +2245,8 @@ mod tests {
         app.flush_saves();
         let said = notices(&app);
         assert!(
-            said.iter().any(|m| m.starts_with("Failed to save workspace: cannot make")),
+            said.iter()
+                .any(|m| m.starts_with("Failed to save workspace: cannot make")),
             "{said:?}"
         );
         assert!(!said.iter().any(|m| m.contains("saved")), "{said:?}");
@@ -2226,7 +2270,10 @@ mod tests {
         let t = std::time::Instant::now();
         app.process_commands();
         assert!(t.elapsed() < std::time::Duration::from_millis(150));
-        assert!(answer.try_recv().is_err(), "answered before the files were written");
+        assert!(
+            answer.try_recv().is_err(),
+            "answered before the files were written"
+        );
         let until = std::time::Instant::now() + std::time::Duration::from_secs(10);
         let answered = loop {
             if let Ok(result) = answer.try_recv() {
@@ -2298,7 +2345,8 @@ mod tests {
         app.flush_saves();
         let said = notices(&app);
         assert!(
-            said.iter().any(|m| m.starts_with("Failed to save workspace: keymap:")),
+            said.iter()
+                .any(|m| m.starts_with("Failed to save workspace: keymap:")),
             "{said:?}"
         );
         assert!(!said.iter().any(|m| m.contains("saved")), "{said:?}");
@@ -2333,20 +2381,22 @@ mod tests {
         app.slow_saves_for_test(SLOW_DISK);
         // A file Save As copies and no save writes, landing late.
         let late = first.join(".varda/presets/decks/late.json");
-        app.show_writer.submit(crate::persistence::writer::ShowSave {
-            dir: first.join(".varda/presets/decks"),
-            files: vec![crate::persistence::writer::ShowFile {
-                key: "preset",
-                label: "preset",
-                path: late,
-                content: Ok("{}".into()),
-            }],
-            show: "first".into(),
-            announce: false,
-            then: None,
-        });
+        app.show_writer
+            .submit(crate::persistence::writer::ShowSave {
+                dir: first.join(".varda/presets/decks"),
+                files: vec![crate::persistence::writer::ShowFile {
+                    key: "preset",
+                    label: "preset",
+                    path: late,
+                    content: Ok("{}".into()),
+                }],
+                show: "first".into(),
+                announce: false,
+                then: None,
+            });
         let second = tmp.path().join("second");
-        app.save_show_as(&second, &UILayoutState::default()).unwrap();
+        app.save_show_as(&second, &UILayoutState::default())
+            .unwrap();
         app.flush_saves();
         assert_eq!(app.show_name(), "second");
         assert!(second.join(".varda/presets/decks/late.json").is_file());
@@ -3481,6 +3531,7 @@ mod tests {
                 mode: "1080p60".into(),
                 full_range: false,
                 embedded_audio: false,
+                follow_show: true,
             },
             running,
             ..crate::scene::OutputConfig::default_windowed()
@@ -3488,7 +3539,8 @@ mod tests {
         let told = |app: &super::super::VardaApp| {
             app.session.notifications.visible().iter().any(|n| {
                 n.level == crate::notifications::NotificationLevel::Warning
-                    && n.message.contains("'No Such Blackmagic Device' is not connected")
+                    && n.message
+                        .contains("'No Such Blackmagic Device' is not connected")
                     && n.message.contains("it starts once it is")
             })
         };
@@ -3508,9 +3560,13 @@ mod tests {
         // Discovery tells of a device a moment after the stage opens: not
         // said missing at once, but if it stays so.
         assert!(!told(&app), "not said missing at once");
-        app.tell_outputs_still_waiting(std::time::Instant::now() + std::time::Duration::from_secs(1));
+        app.tell_outputs_still_waiting(
+            std::time::Instant::now() + std::time::Duration::from_secs(1),
+        );
         assert!(!told(&app), "nor a second on");
-        app.tell_outputs_still_waiting(std::time::Instant::now() + std::time::Duration::from_secs(6));
+        app.tell_outputs_still_waiting(
+            std::time::Instant::now() + std::time::Duration::from_secs(6),
+        );
         assert!(told(&app), "said missing once it stays so");
         let state = app.build_engine_state();
         let made: Vec<(&str, bool)> = state
@@ -3556,13 +3612,18 @@ mod tests {
                 mode: "1080p60".into(),
                 full_range: false,
                 embedded_audio: false,
+                follow_show: true,
             },
             running: true,
             ..crate::scene::OutputConfig::default_windowed()
         };
         for name in ["Box", "Other"] {
             let c = config(name);
-            app.restore_headless_output(&c, &c.name, crate::persistence::config_to_target_pub(&c.target));
+            app.restore_headless_output(
+                &c,
+                &c.name,
+                crate::persistence::config_to_target_pub(&c.target),
+            );
         }
         let waiting = |app: &super::super::VardaApp| {
             app.output
@@ -3587,7 +3648,7 @@ mod tests {
                 .map(|n| crate::decklink::DeckLinkDevice {
                     name: (*n).into(),
                     arrival: 0,
-            modes: vec![],
+                    modes: vec![],
                 })
                 .collect()
         };
@@ -3609,7 +3670,10 @@ mod tests {
         assert_eq!(warnings(&app), before + 4);
         // Stopped by hand: not kept running, saved stopped, not tried again.
         let uuid = app.output.outputs[1].uuid().to_string();
-        assert!(matches!(app.cmd_stop_output(&uuid), crate::engine::CommandResult::Ok));
+        assert!(matches!(
+            app.cmd_stop_output(&uuid),
+            crate::engine::CommandResult::Ok
+        ));
         assert_eq!(waiting(&app), [true, false]);
         assert!(!crate::persistence::output_config(&app.output.outputs[1]).running);
         app.start_outputs_whose_device_is_back(&devices(&[]));
