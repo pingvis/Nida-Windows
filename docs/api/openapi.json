@@ -18259,6 +18259,10 @@
                   "codec": {
                     "$ref": "#/components/schemas/RecordingCodec"
                   },
+                  "encoder": {
+                    "$ref": "#/components/schemas/RecordingEncoder",
+                    "description": "Software by default for existing shows; NVENC falls back if unavailable."
+                  },
                   "path": {
                     "type": "string"
                   }
@@ -19265,6 +19269,14 @@
           "Hap",
           "HapAlpha",
           "HapQ"
+        ]
+      },
+      "RecordingEncoder": {
+        "type": "string",
+        "description": "Encoder preference for output recordings, independent of the file's codec.",
+        "enum": [
+          "Software",
+          "NvidiaNvenc"
         ]
       },
       "RegionBody": {

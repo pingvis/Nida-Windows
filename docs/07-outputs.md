@@ -305,6 +305,13 @@ MacBook Pro drives itself. Its picture goes out on its HDMI and SDI at once.
 
 Click **+ Recording** to add a recording output; each runs its own ffmpeg subprocess, so several feeds can record at once. Use the pencil beside its title to set the filename prefix, and **Folder → Choose…** for its destination. Choose each output's source, audio and codec, then start and stop it independently. The actual file path remains visible after Stop. See [Recording more than one feed](19-recording.md#recording-more-than-one-feed).
 
+On Windows, H.264 and HEVC outputs also offer **Encoder → NVIDIA (NVENC)**.
+Stop the output before changing this setting. Software remains the default;
+Nida reports a CPU fallback if the NVIDIA encoder is unavailable or its background
+check has not finished. GPU encoding reduces CPU load but does not change a clip's
+frame rate. See [NVIDIA recording](windows-gpu-recording.md) for supported formats
+and qualification behavior.
+
 > **Sound.** Recording and all streaming targets carry an audio bus from the [Audio Mixer](16-audio-mixer.md) — **Bus: Master** by default — or a capture device directly, chosen in the output's **Audio:** menu. See also [Audio Passthrough](09-streaming-and-io.md#audio-passthrough).
 
 ## Persistence

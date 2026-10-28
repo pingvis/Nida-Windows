@@ -1810,7 +1810,7 @@ mod tests {
     fn recording_encoder_picker_preserves_codec_path_and_audio() {
         use crate::renderer::context::{RecordingCodec, RecordingEncoder};
         let mut data = UIData::test_fixture();
-        let mut output = sample_output(Default::default());
+        let mut output = sample_output(crate::engine::value::render::ResolvedPresentation::default());
         output.is_windowed = false;
         output.is_active = false;
         output.target = OutputTarget::Recording {

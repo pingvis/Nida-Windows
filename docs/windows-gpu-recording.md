@@ -79,9 +79,14 @@ sessions together. Generated test crates and videos stay under the ignored
 than the full application: it does not type-check the output UI, persistence wiring,
 or subprocess lifecycle integration.
 
-Before using this branch for a show, build with the repository's normal Windows
-MSVC/FFmpeg SDK setup, run the full recording and persistence tests, and repeat the
-real MP4 plus capture-card, two-output, 50 fps benchmark. Check actual encoder names
-in the startup/recording logs, padding, CPU use, audio synchronization and file playback.
-The laptop currently lacks MSVC and the FFmpeg development SDK; the installed app
-has been left untouched. No improvement to Nida's end-to-end FPS is claimed yet.
+The native Windows build and application checks are documented in
+[Laptop GPU recording validation](laptop-recording-validation.md), including
+CPU measurements, audio synchronization, Main10, output lifecycle and session
+exhaustion/recovery. MSVC and the FFmpeg development SDK are now available on
+the laptop. The installed app has been left untouched.
+
+GPU encoding reduced CPU load, but the measured render/pacing limitation remains.
+Before show use, repeat the real MP4 plus moving capture-card, two-output, 50 fps
+workload and a longer recording soak. The capture card was unavailable for these
+checks. Do not treat a file's 50 fps metadata as proof of fifty distinct frames
+each second; inspect padding and encoder drops separately.

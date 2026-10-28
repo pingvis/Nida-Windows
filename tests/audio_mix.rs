@@ -957,7 +957,7 @@ fn nvenc_output_recordings_keep_sound_with_picture() {
                 _ => None,
             })
             .unwrap();
-        outputs.push((uuid, PathBuf::from(file)));
+        outputs.push((uuid, file));
     }
     let end = Instant::now() + Duration::from_secs(8);
     while Instant::now() < end {
