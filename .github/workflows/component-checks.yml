@@ -1,0 +1,197 @@
+name: Component checks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: component-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Select affected components
+    runs-on: ubuntu-24.04
+    outputs:
+      decklink: ${{ steps.changes.outputs.decklink }}
+      ndi: ${{ steps.changes.outputs.ndi }}
+      powerpoint: ${{ steps.changes.outputs.powerpoint }}
+      browser: ${{ steps.changes.outputs.browser }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test component selection
+        run: python3 scripts/ci/test-component-changes.py
+      - name: Detect relevant file changes
+        id: changes
+        run: python3 scripts/ci/component-changes.py
+
+  module:
+    needs: changes
+    if: needs.changes.outputs.decklink == 'true'
+    name: DeckLink module (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - name: Prepare exact DeckLink source harness
+        run: python tests/decklink-native/prepare.py "${{ runner.temp }}/nida-decklink-check"
+      - name: Check real Windows COM apartments and Unicode names
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tests/decklink-native/check-windows-platform.ps1
+      - name: Compile native SDK shim and run module tests
+        # Priority calls are no-ops in this isolated module harness.
+        run: cargo test --manifest-path "${{ runner.temp }}/nida-decklink-check/Cargo.toml" -- --test-threads=1 --skip an_outputs_threads_run_in_real_time
+      - name: Lint production module with repository policy
+        run: cargo clippy --manifest-path "${{ runner.temp }}/nida-decklink-check/Cargo.toml" --lib -- -D warnings
+      - name: Measure optimized video and full range conversion
+        run: cargo test --release --manifest-path "${{ runner.temp }}/nida-decklink-check/Cargo.toml" converting_1080p_is_quick -- --ignored --nocapture
+      - name: Check new Rust file formatting
+        if: always() && runner.os == 'Linux'
+        run: |
+          rustfmt --edition 2021 --check build.rs src/internal/decklink/convert.rs
+          rustfmt --edition 2021 --check src/internal/decklink/audio.rs
+          rustfmt --edition 2021 --check src/internal/persistence/decklink_audio_tests.rs
+      - name: Compile shared shim against behavioral SDK double
+        if: runner.os == 'Linux'
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -pthread -Itests/decklink-native tests/decklink-native/shim_test.cpp -o /tmp/nida-decklink-shim-test
+          /tmp/nida-decklink-shim-test
+          /tmp/nida-decklink-shim-test --missing-driver
+
+
+  application:
+    needs: changes
+    if: needs.changes.outputs.decklink == 'true'
+    name: Application integration (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install application build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libvulkan-dev libsrt-gnutls-dev libasound2-dev libv4l-dev libpipewire-0.3-dev libwayland-dev libxkbcommon-dev libx11-dev libxrandr-dev libxi-dev libgtk-3-dev
+      - name: Select FFmpeg 9 SDK
+        uses: ./.github/actions/linux-ffmpeg
+      - name: Check application audio routing and output UI
+        run: cargo check --locked --lib --no-default-features --features screen-capture
+      - name: Check recording rename font coverage
+        run: cargo test --locked --lib --no-default-features --features screen-capture every_character_the_ui_writes_can_be_drawn
+      - name: Check recording rename commit and cancel
+        run: cargo test --locked --lib --no-default-features --features screen-capture recording_pencil_commits_enter_cancels_escape_and_folder_picker_is_addressed
+
+  ndi:
+    needs: changes
+    if: needs.changes.outputs.ndi == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+          components: clippy, rustfmt
+      - name: Test production loader and runtime path regression cases
+        run: cargo test --locked --manifest-path tests/ndi-loader/Cargo.toml
+      - name: Lint production loader and probe
+        run: cargo clippy --locked --manifest-path tests/ndi-loader/Cargo.toml --all-targets -- -D warnings
+      - name: Check loader formatting
+        run: cargo fmt --manifest-path tests/ndi-loader/Cargo.toml -- --check
+      - name: Build native Windows runtime probe
+        if: runner.os == 'Windows'
+        run: cargo build --locked --release --manifest-path tests/ndi-loader/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: NDI-runtime-probe-windows-x64
+          path: tests/ndi-loader/target/release/nida-ndi-loader-checks.exe
+          retention-days: 7
+
+  powerpoint:
+    needs: changes
+    if: needs.changes.outputs.powerpoint == 'true'
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+          components: rustfmt
+      - name: Test Windows PowerShell command handling
+        shell: powershell
+        run: ./scripts/ci/test-windows-powerpoint.ps1
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Set up FFmpeg and libclang
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/ci/setup-windows-build.ps1 -ToolsDirectory (Join-Path $env:RUNNER_TEMP 'nida-build-tools')
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-powerpoint
+          cache-on-failure: true
+      - name: Check Windows application and tests
+        run: cargo check --all-targets --locked --no-default-features --features screen-capture
+      - name: Test presentation worker and Windows helper transport
+        run: 'cargo test --lib --locked --no-default-features --features screen-capture presentation::'
+      - name: Test PowerPoint file drops
+        run: cargo test --lib --locked --no-default-features --features screen-capture powerpoint_drop_creates
+      - name: Test PowerPoint input availability
+        run: cargo test --lib --locked --no-default-features --features screen-capture powerpoint_is_offered
+
+  browser:
+    needs: changes
+    if: needs.changes.outputs.browser == 'true'
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_BUILD_JOBS: 4
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+      - name: Set up pinned CEF SDK
+        uses: ./.github/actions/windows-cef
+      - name: Build sandboxed CEF helper
+        shell: pwsh
+        run: ./scripts/ci/build-windows-browser.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'Nida browser helper')
+      - name: Test Rust browser manager and Windows transport
+        env:
+          NIDA_BROWSER_TEST_HELPER: '${{ runner.temp }}\Nida browser helper\browser\nida-browser-host.exe'
+        run: cargo test --locked --manifest-path browser/checks/Cargo.toml --features windows-browser --lib
