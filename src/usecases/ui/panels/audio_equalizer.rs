@@ -162,7 +162,7 @@ pub(super) fn render(ui: &mut egui::Ui, which: &Settings, data: &UIData, actions
                 ui.label(label);
                 let (rect, _) =
                     ui.allocate_exact_size(egui::vec2(54.0, 150.0), egui::Sense::hover());
-                let _ = meter(ui, rect, levels, None);
+                let _ = meter(ui, rect, levels, None, None);
                 ui.label(
                     egui::RichText::new(format!("L {:+.1}  R {:+.1} dBFS", levels[0], levels[1]))
                         .small(),

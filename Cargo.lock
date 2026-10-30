@@ -11917,7 +11917,7 @@ dependencies = [
 
 [[package]]
 name = "varda"
-version = "0.9.4"
+version = "0.9.6"
 dependencies = [
  "anyhow",
  "arc-swap",

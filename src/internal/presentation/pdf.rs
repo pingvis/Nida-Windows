@@ -174,6 +174,7 @@ impl PdfPages {
     /// Page `n`'s (from 1) width over height, as shown (turned as the file
     /// says).
     #[must_use]
+    #[cfg(target_os = "macos")]
     pub fn aspect(&self, n: u32) -> Option<f64> {
         let (w, h, _) = self.page_box(n)?;
         (h > 0.0).then(|| w / h)
@@ -195,8 +196,10 @@ impl PdfPages {
         })
     }
 
+    /// PDF page geometry is available only with the macOS backend.
+    #[must_use]
     #[cfg(not(target_os = "macos"))]
-    fn page_box(&self, _n: u32) -> Option<(f64, f64, i32)> {
+    pub fn aspect(&self, _n: u32) -> Option<f64> {
         None
     }
 
@@ -333,6 +336,7 @@ pub fn sample_pdf(pages: u32) -> Vec<u8> {
 
 /// A `pw × ph` page fitted into `size`, whole pixels, never under one.
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[cfg(any(target_os = "macos", test))]
 fn fitted(pw: f64, ph: f64, size: (u32, u32)) -> (u32, u32) {
     let (w, h) = (f64::from(size.0.max(1)), f64::from(size.1.max(1)));
     let scale = (w / pw).min(h / ph);

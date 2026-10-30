@@ -226,7 +226,17 @@ pub struct AudioMixConfig {
     pub strips: Vec<AudioStripConfig>,
     #[serde(default)]
     pub monitor: AudioMonitorConfig,
+    /// How long a clip's or playlist's sound fades out when Stop is pressed
+    /// on it — on its tile or in the Audio Mixer — before it pauses; 0 cuts.
+    /// Left out, [`DEFAULT_STOP_FADE_SECS`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stop_fade_secs: Option<f32>,
 }
+
+/// A Stop's fade, unless another is chosen.
+pub const DEFAULT_STOP_FADE_SECS: f32 = 2.0;
+/// The longest a Stop's fade can be.
+pub const MAX_STOP_FADE_SECS: f32 = 10.0;
 
 /// The operator's headphones.
 #[derive(
@@ -329,6 +339,9 @@ pub struct AudioSourceSnapshot {
     pub live: bool,
     /// Post-fader peak per side, in dB.
     pub meter_db: [f32; 2],
+    /// Its level before its fader, mute and Audio Auto, per side, in dB:
+    /// what it plays, whether or not anyone hears it.
+    pub signal_db: [f32; 2],
     /// Why an app's sound, its app running, could not be taken.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refused: Option<String>,
@@ -364,6 +377,12 @@ pub struct AudioMixSnapshot {
     pub input_devices: Vec<AudioInputDevice>,
     /// Apps whose sound can be taken as an input, making sound first.
     pub apps: Vec<crate::audio::app_sound::RunningApp>,
+    /// How long Stop fades a clip's or playlist's sound before it pauses;
+    /// 0 cuts.
+    pub stop_fade_secs: f32,
+    /// The clips and playlists whose sound is fading out to a stop now, by
+    /// deck UUID — a Stop pressed, or the rundown's fade.
+    pub stopping: Vec<String>,
 }
 
 // ── Engine ──────────────────────────────────────────────────────────
@@ -557,6 +576,36 @@ impl AudioEngine {
     /// The saved settings.
     pub fn config(&self) -> &AudioMixConfig {
         &self.config
+    }
+
+    /// Whether any meter moves: a bus heard above `floor_db` dBFS, or a
+    /// source playing above it — heard or not, as its strip shows it.
+    pub fn sounding(&self, floor_db: f32) -> bool {
+        let floor = 10f32.powf(floor_db / 20.0);
+        let Ok(core) = self.core.lock() else {
+            return false;
+        };
+        let loud = |[l, r]: reader::Frame| l.max(r) > floor;
+        core.buses.iter().any(|bus| loud(bus.meter()))
+            || core.sources.iter().any(|source| loud(source.signal()))
+    }
+
+    /// How long Stop fades a sound out before it pauses; 0 cuts.
+    pub fn stop_fade_secs(&self) -> f32 {
+        self.config
+            .stop_fade_secs
+            .filter(|secs| secs.is_finite())
+            .map_or(DEFAULT_STOP_FADE_SECS, |secs| secs.clamp(0.0, MAX_STOP_FADE_SECS))
+    }
+
+    /// Set how long Stop fades a sound out; 0 cuts. Refused unless finite
+    /// and from 0 to [`MAX_STOP_FADE_SECS`].
+    pub fn set_stop_fade_secs(&mut self, secs: f32) -> bool {
+        if !secs.is_finite() || !(0.0..=MAX_STOP_FADE_SECS).contains(&secs) {
+            return false;
+        }
+        self.config.stop_fade_secs = Some(secs);
+        true
     }
 
     /// Replace every setting, as a workspace load does.
@@ -1619,6 +1668,7 @@ impl AudioEngine {
                 solo: self.solos.contains(&uuid),
                 live: live.is_some(),
                 meter_db: live.map_or([-96.0; 2], |l| meter_db(l.meter())),
+                signal_db: live.map_or([-96.0; 2], |l| meter_db(l.signal())),
                 refused: self.apps_refused.get(&uuid).cloned(),
             });
         }
@@ -1640,6 +1690,8 @@ impl AudioEngine {
             output_devices: self.output_devices.clone(),
             input_devices: self.input_devices.clone(),
             apps: self.running_apps.clone(),
+            stop_fade_secs: self.stop_fade_secs(),
+            stopping: Vec::new(),
         }
     }
 
@@ -1746,7 +1798,6 @@ impl AudioEngine {
         let Ok(mut core) = self.core.lock() else {
             return;
         };
-        let buses: Vec<&str> = self.config.buses.iter().map(|b| b.uuid.as_str()).collect();
         for source in &mut core.sources {
             let strip = self.config.strips.iter().find(|s| s.uuid == source.uuid);
             // Only a level on its way somewhere scales the sound: a fade.
@@ -1765,12 +1816,11 @@ impl AudioEngine {
                 .unwrap_or(1.0)
                 .clamp(0.0, 1.0);
             source.gate = auto * step;
+            // A clip playing is decoded heard or not: its meter shows what it
+            // plays while nobody hears it — sent nowhere, muted, held down —
+            // and it is heard at once when let through, nothing to catch up.
             if let Feed::Clip(shared) = &source.feed {
-                let heard = source.solo
-                    || source.gate > 0.0
-                        && !source.muted
-                        && source.sends.iter().any(|s| buses.contains(&s.as_str()));
-                shared.set_wanted(heard);
+                shared.set_wanted(true);
             }
         }
     }
@@ -2503,6 +2553,30 @@ mod tests {
         assert_eq!(until(&mut engine, Some(false)), Some(false), "let go");
         assert_eq!(until(&mut engine, Some(true)), Some(true), "found again");
         assert!(tries.load(Ordering::Relaxed) >= 2);
+    }
+
+    /// A meter moving is sound: a source playing above the floor, heard or
+    /// not, or a bus heard above it; quieter, or nothing at all, is not.
+    #[test]
+    fn sound_is_a_meter_above_the_floor() {
+        let engine = AudioEngine::new();
+        assert!(!engine.sounding(-60.0), "nothing at all");
+        engine.core.lock().unwrap().sources.push(Source::new(
+            "mic00001",
+            Feed::Fifo(Arc::new(Mutex::new(std::collections::VecDeque::new()))),
+        ));
+        let set_source = |level: f32| {
+            engine.core.lock().unwrap().sources[0].set_signal_for_tests([level, 0.0]);
+        };
+        set_source(0.0005); // about −66 dBFS
+        assert!(!engine.sounding(-60.0), "below the floor");
+        set_source(0.01); // −40 dBFS
+        assert!(engine.sounding(-60.0), "a source playing");
+        set_source(0.0);
+        let bus = engine.core.lock().unwrap().buses.first().map(|b| b.uuid.clone());
+        assert!(bus.is_some(), "a show starts with Master");
+        engine.core.lock().unwrap().buses[0].set_meter_for_tests([0.0, 0.02]);
+        assert!(engine.sounding(-60.0), "a bus heard");
     }
 
     fn with_clip(uuid: &str) -> AudioEngine {

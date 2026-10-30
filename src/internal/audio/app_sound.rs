@@ -597,9 +597,11 @@ mod other {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_os = "macos")]
+    use super::process_birth;
     use super::{
         apps_of, device_name, is_web_talks, is_webkit_helper, only_the_tap, owning_app,
-        process_birth, set_web_talk_pids,
+        set_web_talk_pids,
     };
 
     /// A process's start is told, and is its own: this test's process has

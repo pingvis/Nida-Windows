@@ -334,6 +334,7 @@ pub fn frame<S: std::hash::BuildHasher>(
 /// A device of the clicker came (`here`) or went: on the main thread, from
 /// the device reader. One come is given the remap: its keys are not turned
 /// till then.
+#[cfg(any(target_os = "macos", test))]
 fn on_device(id: usize, here: bool) {
     with_state(|s| {
         if here {
@@ -580,6 +581,7 @@ fn usage_of(name: &str) -> Option<u32> {
 }
 
 /// The keyboard page's usages as macOS's key remapping writes them.
+#[cfg(any(target_os = "macos", test))]
 const PAGE: u64 = 0x7_0000_0000;
 
 /// Whether `read` — `hidutil property --get UserKeyMapping` for a device:
@@ -587,6 +589,7 @@ const PAGE: u64 = 0x7_0000_0000;
 /// least, and each one turns every key of `pairs` (usages, each with its
 /// spare's) into its spare. One service without them, and a press through
 /// it would reach a window while taken as turned.
+#[cfg(any(target_os = "macos", test))]
 fn turned_on_every_service(read: &str, pairs: &[(u32, u32)]) -> bool {
     let mut services: Vec<String> = Vec::new();
     for line in read.lines() {
@@ -699,6 +702,7 @@ impl State {
     /// control window too: its spare come here (the remap at work), or a key
     /// macOS had turned on that device before it was pressed. One pressed
     /// before — or on a device come since — reached the windows.
+    #[cfg(any(target_os = "macos", test))]
     fn turned(&self, id: usize, usage: u32, at: u64) -> bool {
         self.remap.iter().any(|&(key, spare, _)| {
             spare == usage
@@ -717,6 +721,7 @@ impl State {
 /// learning; else, the clicker's, the show's command sent — unless the
 /// control window, holding the keyboard, gets the same press as a
 /// keyboard's (a key not turned). What it did, for the tests.
+#[cfg(any(target_os = "macos", test))]
 fn on_key(device: &DeviceInfo, id: usize, usage: u32, down: bool, active: bool, at: u64) -> Heard {
     with_state(|s| {
         let in_front = active && s.focused;
@@ -812,6 +817,7 @@ fn on_key(device: &DeviceInfo, id: usize, usage: u32, down: bool, active: bool, 
 
 /// What a key did (see [`on_key`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(any(target_os = "macos", test))]
 enum Heard {
     Nothing,
     Learned,
@@ -841,6 +847,7 @@ pub fn command_for(id: ActionId) -> Option<EngineCommand> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(any(target_os = "macos", test))]
 enum Modifier {
     Command,
     Shift,
@@ -849,6 +856,7 @@ enum Modifier {
 }
 
 /// A modifier key of the keyboard page.
+#[cfg(any(target_os = "macos", test))]
 fn modifier_of(usage: u32) -> Option<Modifier> {
     match usage {
         0xE0 | 0xE4 => Some(Modifier::Control),

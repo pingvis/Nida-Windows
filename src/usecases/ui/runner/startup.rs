@@ -33,7 +33,7 @@ impl UIRunner {
                 }
             }
         }
-        self.present_ui(&jobs, output.pixels_per_point, None);
+        self.present_ui(&jobs, output.pixels_per_point);
         if let Some(renderer) = &mut self.egui_renderer {
             for id in &output.textures_delta.free {
                 renderer.free_texture(id);

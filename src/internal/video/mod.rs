@@ -98,6 +98,10 @@ pub struct PlaybackState {
     /// Set to true for one frame when playback reaches the out-point/EOF.
     /// Used by auto-transition `ClipEnd` trigger. Cleared each frame before advance.
     pub reached_end: bool,
+    /// How many times the playhead has been sent somewhere — a seek asked
+    /// for (done or failed), or a loop going round: a reader that asked for
+    /// one knows it has been dealt with once this has moved on.
+    pub seeks: u64,
     /// Last wall-clock time `advance_frame` was called (for real-time delta).
     last_advance: std::time::Instant,
     /// Fractional frame accumulator — tracks sub-frame position for pacing.
@@ -143,6 +147,7 @@ impl PlaybackState {
             duration,
             frame_rate,
             reached_end: false,
+            seeks: 0,
             last_advance: std::time::Instant::now(),
             frame_accumulator: 0.0,
             transport_sync: DeckTransportSync::default(),
@@ -593,6 +598,8 @@ pub struct PlaybackSnapshot {
     pub out_point: f64,
     pub reverse: bool,
     pub reached_end: bool,
+    /// See [`PlaybackState::seeks`].
+    pub seeks: u64,
     pub frame_rate: f64,
     /// Whether the ping-pong RAM cache was truncated (hit the memory cap).
     /// Always false for HAP sources (they reverse via seek, no cache).
@@ -611,6 +618,29 @@ pub struct PlaybackSnapshot {
 }
 
 impl PlaybackSnapshot {
+    /// A clip not playing, at its start, of no length yet.
+    pub fn stopped() -> Self {
+        Self {
+            playing: false,
+            position: 0.0,
+            duration: 0.0,
+            speed: 1.0,
+            effective_speed: 1.0,
+            position_offset: 0.0,
+            loop_mode: LoopMode::Loop,
+            in_point: 0.0,
+            out_point: 0.0,
+            reverse: false,
+            reached_end: false,
+            seeks: 0,
+            frame_rate: 30.0,
+            pingpong_cache_truncated: false,
+            hardware_decode: false,
+            suspended: false,
+            taken_at: std::time::Instant::now(),
+        }
+    }
+
     /// Effective out-point (uses duration if `out_point` is 0), mirroring
     /// [`PlaybackState::effective_out`] for readers that only have a snapshot.
     pub fn effective_out(&self) -> f64 {
@@ -636,6 +666,7 @@ impl PlaybackSnapshot {
             out_point: ps.out_point,
             reverse: ps.reverse,
             reached_end: ps.reached_end,
+            seeks: ps.seeks,
             frame_rate: ps.frame_rate,
             pingpong_cache_truncated: false,
             hardware_decode: false,
@@ -949,27 +980,9 @@ impl VideoDecodeHandle {
 
     /// Get the current playback snapshot (read-only copy).
     pub fn playback_snapshot(&self) -> PlaybackSnapshot {
-        self.snapshot.lock().map_or_else(
-            |_| PlaybackSnapshot {
-                playing: false,
-                position: 0.0,
-                duration: 0.0,
-                speed: 1.0,
-                effective_speed: 1.0,
-                position_offset: 0.0,
-                loop_mode: LoopMode::Loop,
-                in_point: 0.0,
-                out_point: 0.0,
-                reverse: false,
-                reached_end: false,
-                frame_rate: 30.0,
-                pingpong_cache_truncated: false,
-                hardware_decode: false,
-                suspended: false,
-                taken_at: std::time::Instant::now(),
-            },
-            |s| s.clone(),
-        )
+        self.snapshot
+            .lock()
+            .map_or_else(|_| PlaybackSnapshot::stopped(), |s| s.clone())
     }
 
     /// The cell the decode thread publishes its snapshot into, for a reader on
@@ -2152,6 +2165,9 @@ impl VideoPlayer {
     /// The file seeks to the keyframe at or before it; the frames from there
     /// to it are decoded, not shown (see `next_frame`).
     fn seek(&mut self, time_secs: f64) -> Result<()> {
+        // Counted when asked for, done or not: one that fails leaves the
+        // clip playing on from where it was.
+        self.playback.seeks = self.playback.seeks.wrapping_add(1);
         if self.can_decode_forward_to(time_secs) {
             // Retain reference frames, the queued next picture and the GPU
             // decoder's surfaces. Starting at the keyframe again for every

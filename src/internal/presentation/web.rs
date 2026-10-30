@@ -31,6 +31,7 @@ use crate::screen_capture::backend::{CaptureConfig, CaptureTargetInfo, ScreenCap
 pub const LOAD_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// A deck walked to a slide a key at a time goes at most this far.
+#[cfg(any(target_os = "macos", test))]
 const MAX_WALK: u32 = 300;
 
 /// What the web engine found. Each carries the opening of the page it is of
@@ -119,6 +120,7 @@ pub trait WebEngine: Send {
 
 /// The key a key press on the page stands for: (macOS key code, the
 /// character `AppKit` gives it).
+#[cfg(any(target_os = "macos", test))]
 fn key_of(to: Go) -> Option<(u16, u32)> {
     match to {
         // Arrow keys: what an HTML deck most surely answers to.
@@ -141,6 +143,7 @@ pub fn is_page_program(path: &str) -> bool {
 }
 
 /// How many steps on from the first a walk to slide `n` takes, at most.
+#[cfg(any(target_os = "macos", test))]
 fn walk(n: u32) -> u32 {
     n.clamp(1, MAX_WALK) - 1
 }

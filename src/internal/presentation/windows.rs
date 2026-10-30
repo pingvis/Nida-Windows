@@ -92,14 +92,14 @@ impl Runner for WindowsCom {
 }
 
 #[derive(serde::Deserialize)]
-struct Reply {
+struct HelperResponse {
     #[serde(default)]
     reply: String,
     error: Option<String>,
     message: Option<String>,
 }
 
-impl Reply {
+impl HelperResponse {
     fn result(self) -> Result<String, ScriptError> {
         match self.error.as_deref() {
             None => Ok(self.reply),
@@ -118,7 +118,7 @@ impl Reply {
 struct Bridge {
     child: Child,
     stdin: ChildStdin,
-    replies: mpsc::Receiver<Result<Reply, String>>,
+    replies: mpsc::Receiver<Result<HelperResponse, String>>,
 }
 
 impl Bridge {
@@ -155,7 +155,7 @@ impl Bridge {
         std::thread::spawn(move || {
             for line in BufReader::new(stdout).lines() {
                 let reply = line.map_err(|e| e.to_string()).and_then(|line| {
-                    serde_json::from_str::<Reply>(&line)
+                    serde_json::from_str::<HelperResponse>(&line)
                         .map_err(|e| format!("invalid helper reply: {e}"))
                 });
                 if sender.send(reply).is_err() {
@@ -179,7 +179,7 @@ impl Bridge {
         &mut self,
         command: &serde_json::Value,
         timeout: Duration,
-    ) -> Result<Reply, ScriptError> {
+    ) -> Result<HelperResponse, ScriptError> {
         writeln!(self.stdin, "{command}")
             .and_then(|()| self.stdin.flush())
             .map_err(|e| ScriptError::Failed(format!("sending PowerPoint command: {e}")))?;
@@ -258,7 +258,7 @@ while ($null -ne ($line = [Console]::ReadLine())) {
             ("nopres", ScriptError::NotOpen),
             ("noshow", ScriptError::NoShow),
         ] {
-            let reply = Reply {
+            let reply = HelperResponse {
                 reply: String::new(),
                 error: Some(code.into()),
                 message: None,

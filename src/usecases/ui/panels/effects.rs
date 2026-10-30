@@ -274,7 +274,7 @@ pub(super) fn render_channel_effect_detail(
         return;
     };
 
-    let accent = channel_color(ch_idx);
+    let accent = ch.accent();
     ui.horizontal(|ui| {
         ui.heading(egui::RichText::new(format!("🔮 {} Effects", ch.name)).color(accent));
 

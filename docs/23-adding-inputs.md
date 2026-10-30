@@ -76,7 +76,9 @@ Auto Next and Loop remain in the playlist window. Pictures have no video
 playhead.
 
 **▶** on the input's picture — its tile, its column header, its Properties —
-starts it without opening anything, and turns to a green **■** to stop it.
+starts it without opening anything, and turns to a green **■** to stop it —
+its sound fading out first, over 2 seconds unless its right-click chooses
+**Cut** or another fade (see [Audio Mixer](16-audio-mixer.md)).
 Beside it, the item on screen and the time before it moves on ("2 / 12 ·
 0:04"). A new playlist starts stopped on its first item.
 
