@@ -119,6 +119,7 @@ pub struct UIRunner {
     /// `crate::screen_rate`).
     screen_rate: crate::screen_rate::ScreenRate,
     night_shift: crate::night_shift::NightShift,
+    closing_builds: Option<(crate::renderer::builds::Builds, std::time::Instant, bool)>,
     /// Shows opened lately, for the Show menu.
     recent_shows: std::sync::Arc<Vec<std::path::PathBuf>>,
     /// The show folder the window is named after (see `show_changed`).
@@ -277,6 +278,7 @@ impl UIRunner {
             ui_waiting_most: 0,
             screen_rate: crate::screen_rate::ScreenRate::default(),
             night_shift: crate::night_shift::NightShift::default(),
+            closing_builds: None,
             recent_shows: std::sync::Arc::default(),
             named_after: std::path::PathBuf::new(),
             // A test's runner never reads or writes this computer's Recent
@@ -493,10 +495,21 @@ impl UIRunner {
 
         let event_loop = EventLoop::new()?;
         self.proxy = Some(event_loop.create_proxy());
-        event_loop
+        let result = event_loop
             .run_app(&mut self)
-            .map_err(|e| anyhow::anyhow!("Event loop error: {e:?}"))?;
-        Ok(())
+            .map_err(|e| anyhow::anyhow!("Event loop error: {e:?}"));
+        // The OS may end the loop directly (macOS Quit). Never let compiler
+        // global teardown race work still running outside the event loop.
+        let builds = self.closing_builds.as_ref().map(|(builds, _, _)| builds.clone())
+            .or_else(|| self.gpu.as_ref().map(|gpu| gpu.builds.clone()));
+        if let Some(builds) = builds {
+            builds.close();
+            if !builds.wait(std::time::Duration::from_secs(5)) {
+                log::warn!("Finishing background work before exit ({} jobs)", builds.pending());
+                while !builds.wait(std::time::Duration::from_secs(1)) {}
+            }
+        }
+        result
     }
 }
 
@@ -843,17 +856,10 @@ impl UIRunner {
                 .load(std::sync::atomic::Ordering::Relaxed)
         {
             log::info!("Shutdown requested, saving workspace and exiting...");
-            if let Err(e) = varda.save_workspace(&self.layout) {
-                log::error!("{e}");
+            self.shut_down();
+            if self.background_builds_finished() {
+                host.exit();
             }
-            varda.refuse_commands();
-            if let Some(api) = self.api_handle.take() {
-                api.shutdown();
-            }
-            if let Some(kept) = self.night_shift.give_back_now() {
-                log::info!("Shutdown: {kept:?}");
-            }
-            host.exit();
             return;
         }
 
@@ -1146,7 +1152,7 @@ impl UIRunner {
 
     /// Ask winit to exit while the engine is borrowed. `exiting` saves/stops
     /// it after `with_engine` has put it back, without a recursive borrow.
-    fn exit_if_requested(&self, host: &dyn WindowHost) -> bool {
+    fn exit_if_requested(&self, _host: &dyn WindowHost) -> bool {
         if self.varda.as_ref().is_some_and(|app| {
             app.shutdown_requested
                 .load(std::sync::atomic::Ordering::Relaxed)
@@ -1155,7 +1161,8 @@ impl UIRunner {
             .load(std::sync::atomic::Ordering::Relaxed)
         {
             log::info!("Shutdown requested, saving workspace and exiting...");
-            host.exit();
+            // about_to_wait quits once the engine borrow has been returned.
+            self.shutdown_flag.store(true, std::sync::atomic::Ordering::Relaxed);
             true
         } else {
             false
@@ -2836,12 +2843,29 @@ mod tests {
             .unwrap()
             .execute_command(crate::engine::EngineCommand::Shutdown);
         assert!(runner.exit_if_requested(&host));
-        assert_eq!(host.exits.get(), 1);
+        assert_eq!(host.exits.get(), 0, "exit is deferred until the engine borrow is returned");
         runner.shut_down();
         assert_eq!(
             crate::midi::MidiConfig::load(path).unwrap().mappings[0].device_name,
             "Pending controller"
         );
+    }
+
+    #[test]
+    fn shutdown_keeps_waiting_after_five_seconds_and_is_idempotent() {
+        let Some(mut runner) = headless_runner() else { return };
+        let builds = runner.varda.as_ref().unwrap().gpu_context().builds.clone();
+        let ticket = builds.reserve().unwrap();
+        assert!(ticket.start());
+        runner.shut_down();
+        runner.shut_down();
+        assert!(builds.reserve().is_none());
+        runner.closing_builds.as_mut().unwrap().1 = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_secs(6)).unwrap();
+        assert!(!runner.background_builds_finished());
+        assert!(runner.closing_builds.as_ref().unwrap().2);
+        drop(ticket);
+        assert!(runner.background_builds_finished());
     }
 
     /// A timeline drag pushes a mutation every frame it moves. Exactly one of

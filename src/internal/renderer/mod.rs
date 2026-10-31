@@ -1,4 +1,5 @@
 pub mod blit;
+pub mod builds;
 pub mod camera_profile;
 pub(crate) mod capture_exclusion;
 pub mod colour_pick;

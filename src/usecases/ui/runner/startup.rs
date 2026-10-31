@@ -4,6 +4,11 @@ use super::UIRunner;
 
 impl UIRunner {
     pub(super) fn paint_startup(&mut self) {
+        self.paint_waiting("Starting the engine and loading your show…");
+        log::info!("[STARTUP] Startup view submitted");
+    }
+
+    pub(super) fn paint_waiting(&mut self, message: &str) {
         let Some(window) = self.window else { return };
         let Some(state) = self.egui_state.as_mut() else {
             return;
@@ -18,7 +23,7 @@ impl UIRunner {
                     ui.heading("Nida");
                     ui.add_space(12.0);
                     ui.spinner();
-                    ui.label("Starting the engine and loading your show…");
+                    ui.label(message);
                 });
             });
         });
@@ -40,6 +45,5 @@ impl UIRunner {
             }
         }
         output.textures_delta.clear();
-        log::info!("[STARTUP] Startup view submitted");
     }
 }

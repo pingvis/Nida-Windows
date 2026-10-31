@@ -26,6 +26,7 @@ pub(super) enum EffectBuild {
 }
 
 struct Job {
+    ticket: crate::renderer::builds::Ticket,
     shader: ISFShader,
     format: wgpu::TextureFormat,
     alive: Weak<()>,
@@ -34,12 +35,13 @@ struct Job {
 
 pub(crate) struct EffectLoader {
     jobs: Sender<Job>,
+    builds: crate::renderer::builds::Builds,
 }
 
 impl EffectLoader {
     pub(crate) fn new(context: &GpuContext) -> Result<Self> {
         let context = context.clone();
-        Self::with_builder(move |shader, format| {
+        Self::with_builds(context.builds.clone(), move |shader, format| {
             // wgpu 30 scopes are thread-local. A bad build must not be blamed
             // on whichever live deck the show thread happens to be drawing.
             let validation = context
@@ -59,7 +61,15 @@ impl EffectLoader {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn with_builder(
+        builder: impl Fn(ISFShader, wgpu::TextureFormat) -> Result<Effect> + Send + Sync + 'static,
+    ) -> Result<Self> {
+        Self::with_builds(crate::renderer::builds::Builds::default(), builder)
+    }
+
+    fn with_builds(
+        builds: crate::renderer::builds::Builds,
         builder: impl Fn(ISFShader, wgpu::TextureFormat) -> Result<Effect> + Send + Sync + 'static,
     ) -> Result<Self> {
         let (jobs, receiver) = bounded::<Job>(QUEUED);
@@ -71,7 +81,7 @@ impl EffectLoader {
                 .name(format!("effect-loader-{index}"))
                 .spawn(move || {
                     while let Ok(job) = receiver.recv() {
-                        if job.alive.upgrade().is_none() {
+                        if job.alive.upgrade().is_none() || !job.ticket.start() {
                             continue;
                         }
                         let started = std::time::Instant::now();
@@ -90,15 +100,20 @@ impl EffectLoader {
                 })
                 .context("Could not start effect loader")?;
         }
-        Ok(Self { jobs })
+        Ok(Self { jobs, builds })
     }
 
     pub(crate) fn load(&self, shader: ISFShader, format: wgpu::TextureFormat) -> Result<Effect> {
+        let ticket = self
+            .builds
+            .reserve()
+            .context("Effect loading is shutting down")?;
         let mut effect = Effect::pending(shader.clone(), format);
         let (send, reply) = bounded(1);
         let alive = Arc::new(());
         self.jobs
             .try_send(Job {
+                ticket,
                 shader,
                 format,
                 alive: Arc::downgrade(&alive),
@@ -170,6 +185,30 @@ mod tests {
             void main() { gl_FragColor = IMG_THIS_PIXEL(inputImage); }"#,
         )
         .unwrap()
+    }
+
+    #[test]
+    fn shutdown_cancels_queued_effects_and_waits_for_active_builder() {
+        let builds = crate::renderer::builds::Builds::default();
+        let (started, starts) = bounded(2);
+        let (release, gate) = bounded::<()>(2);
+        let loader = EffectLoader::with_builds(builds.clone(), move |_, _| {
+            started.send(()).unwrap();
+            gate.recv().unwrap();
+            anyhow::bail!("test build finished")
+        }).unwrap();
+        let mut effects = Vec::new();
+        for _ in 0..WORKERS {
+            effects.push(loader.load(shader(), crate::renderer::context::COLOR_PATH_FORMAT).unwrap());
+        }
+        for _ in 0..WORKERS { starts.recv_timeout(Duration::from_secs(5)).unwrap(); }
+        effects.push(loader.load(shader(), crate::renderer::context::COLOR_PATH_FORMAT).unwrap());
+        builds.close();
+        assert!(loader.load(shader(), crate::renderer::context::COLOR_PATH_FORMAT).is_err());
+        assert!(!builds.wait(Duration::ZERO));
+        for _ in 0..WORKERS { release.send(()).unwrap(); }
+        assert!(builds.wait(Duration::from_secs(5)));
+        assert!(starts.try_recv().is_err(), "queued effect must not start");
     }
 
     #[test]

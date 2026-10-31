@@ -1191,6 +1191,19 @@ impl VardaApp {
         }
     }
 
+    /// Finish encoder files before waiting for background constructors. Called
+    /// only after the engine has stopped and its final show state was saved.
+    pub fn finish_outputs(&mut self) {
+        self.cmd_stop_recording();
+        self.cmd_stop_stream();
+        let outputs: Vec<_> = self.output.outputs.iter().map(|o| o.uuid().to_string()).collect();
+        for uuid in outputs {
+            self.cmd_stop_output(&uuid);
+        }
+        // Closing the queue lets idle effect workers release their GPU handles.
+        self.effect_loader.take();
+    }
+
     /// Helper: access auto-transition on a deck, creating if needed, then apply mutation.
     fn exec_auto_transition(
         &mut self,
