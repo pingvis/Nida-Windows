@@ -341,6 +341,10 @@ name = "audio_analysis"
 harness = false
 
 [[bench]]
+name = "analyzer_capture"
+harness = false
+
+[[bench]]
 name = "capture_resample"
 harness = false
 
