@@ -84,7 +84,7 @@ impl ReceivedFrame {
         }
         let Some(len) = (stride as usize)
             .checked_mul(height as usize)
-            .filter(|&n| n <= isize::MAX as usize)
+            .filter(|&n| isize::try_from(n).is_ok())
         else {
             return false;
         };
@@ -96,7 +96,7 @@ impl ReceivedFrame {
         self.bytes.extend_from_slice(src);
         if vf.FourCC == ffi::NDIlib_FourCC_video_type_e::BGRX {
             for row in self.bytes.chunks_exact_mut(stride as usize) {
-                for pixel in row[..width as usize * 4].chunks_exact_mut(4) {
+                for pixel in row[..width as usize * 4].as_chunks_mut::<4>().0 {
                     pixel[3] = 255;
                 }
             }
@@ -346,7 +346,7 @@ impl ReceiveTarget {
         }
         match frame.format {
             ReceivedFormat::Rgba | ReceivedFormat::Bgra => {
-                write(queue, &self.texture, frame, frame.width)
+                write(queue, &self.texture, frame, frame.width);
             }
             ReceivedFormat::Uyvy => {
                 let unpacker = unpacker.get_or_insert_with(|| UyvyUnpacker::new(device));
