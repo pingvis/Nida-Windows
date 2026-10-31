@@ -8,8 +8,9 @@ microbenchmarks, not a comparison with vMix or a guarantee of show frame rate.
 
 `benches/analyzer_capture.rs` measures serial submission, GPU completion,
 mapping and CPU row packing. Pipelines and buffers are created before timing.
-The baseline copies a full RGBA8 sRGB texture; the port reduces it on the GPU
-before copying. Twenty Criterion samples per case, 500 ms warm-up and at least
+The baseline copies a full zero-initialized RGBA8 sRGB texture; the port
+reduces that texture on the GPU before copying. This isolates transfer/reduction
+overhead rather than varying scene content or model inference. Twenty Criterion samples per case, 500 ms warm-up and at least
 two seconds of measurement; optimized release profile, thin LTO.
 
 | Source | Full readback | Brightness (256 px long edge) | Face (1920 px long edge) |
@@ -101,6 +102,36 @@ Original output: `target/varda-ports-ndi-benchmarks.log`. The extracted CPU
 conversion helper was checked byte-for-byte against its previous body, and
 all 46 NDI regressions passed after extraction. The opt-in SDK loopback test
 also passed with exact alpha preservation.
+
+## Shutdown qualification
+
+The combined Windows library suite passed 3,888 tests with zero failures and
+17 explicitly ignored tests, using normal local permissions, an external
+temporary directory and `VARDA_REQUIRE_GPU=1`. A subsequent correction keeps a
+late engine frame's app instead of detaching and discarding it after two
+seconds. All 69 runner/shutdown checks passed after that correction. A gated
+worker proves Quit returns promptly while the worker is held, then recovers
+the app and saves its changed crossfader state when released.
+
+Worker-lifetime tickets also cover destruction of captured GPU handles. The
+fork's idle effect workers stay tracked until their builder closure is
+destroyed, with a gated destructor regression confirming shutdown keeps waiting
+during cleanup. Production library and all three changed benchmarks pass
+Clippy with warnings denied.
+
+The final optimized release build and an isolated headless smoke passed on
+1 November. A real Gaussian blur effect was compiled asynchronously and made
+ready before recording. Two 640×360 H.264/AAC MP4 takes (2.55/2.59 seconds) were
+fully decoded after exit: one stopped before Quit, the other active at Quit.
+Both retained red pixels `[255,89,64]`; forced manual 123 BPM survived the audio
+range change. Process exit code was zero, about 451 ms after the shutdown
+request. This is one local result, not a promised shutdown deadline.
+
+Evidence: `target/varda-ports-full-library-final.log`,
+`target/varda-ports-late-engine-tests.log`,
+`target/varda-ports-clippy-qualified.log`,
+`target/varda-ports-release-final.log` and
+`target/varda-ports/smoke-1793484359380/result.json`.
 
 ## Reproduction
 
