@@ -345,6 +345,10 @@ name = "analyzer_capture"
 harness = false
 
 [[bench]]
+name = "ndi_receive"
+harness = false
+
+[[bench]]
 name = "capture_resample"
 harness = false
 
