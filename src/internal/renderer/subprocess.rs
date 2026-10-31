@@ -19,6 +19,21 @@ use crate::engine::value::render::{
 };
 use crate::renderer::{ReadbackFormat, ReadbackFrame};
 
+// Stop recording stays non-blocking during a show, but process exit must wait
+// for detached finalizers, including takes stopped before Quit was requested.
+fn recording_finalizers() -> &'static super::builds::Builds {
+    static FINALIZERS: std::sync::OnceLock<super::builds::Builds> = std::sync::OnceLock::new();
+    FINALIZERS.get_or_init(super::builds::Builds::default)
+}
+
+pub(crate) fn finalizing_recordings() -> usize {
+    recording_finalizers().pending()
+}
+
+pub(crate) fn wait_for_recordings(timeout: std::time::Duration) -> bool {
+    recording_finalizers().wait(timeout)
+}
+
 #[cfg(target_os = "macos")]
 mod native;
 #[cfg(target_os = "windows")]
@@ -3333,6 +3348,9 @@ impl FfmpegSubprocess {
         };
 
         if self.graceful_shutdown {
+            let finalization = recording_finalizers()
+                .reserve()
+                .expect("finalizer tracking stays open");
             // --- Recording path: finalize on a background thread ---
             // Move all owned resources out of `self` so the thread owns them.
             let mut audio = self.audio.take();
@@ -3346,6 +3364,7 @@ impl FfmpegSubprocess {
                 .spawn(move || {
                     const FINALIZE_TIMEOUT: std::time::Duration =
                         std::time::Duration::from_secs(30);
+                    let _finalization = finalization;
 
                     // 3a. Tear down the audio writer/socket so ffmpeg sees EOF on
                     //     both inputs.
@@ -3563,10 +3582,14 @@ mod tests {
                 .stderr(Stdio::null())
                 .spawn()
                 .expect("test child");
+            let (release, drain) = mpsc::channel::<()>();
+            let writer_thread = graceful_shutdown.then(|| std::thread::spawn(move || {
+                let _ = drain.recv();
+            }));
             let mut output = FfmpegSubprocess {
                 child: Some(child),
                 frame_tx: None,
-                writer_thread: None,
+                writer_thread,
                 counters: FrameCounters::new(),
                 write_failed: Arc::new(AtomicBool::new(false)),
                 shutting_down: Arc::new(AtomicBool::new(false)),
@@ -3584,6 +3607,12 @@ mod tests {
             };
 
             output.stop();
+            if graceful_shutdown {
+                assert!(finalizing_recordings() > 0, "the draining writer holds exit open");
+                assert!(!wait_for_recordings(std::time::Duration::ZERO));
+                release.send(()).unwrap();
+                assert!(wait_for_recordings(std::time::Duration::from_secs(5)));
+            }
             assert!(output.child.is_none(), "no replacement process remains");
             assert!(!output.is_running());
             assert!(!output.feed_frame(&[]));
