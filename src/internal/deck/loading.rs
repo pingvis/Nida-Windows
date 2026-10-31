@@ -75,11 +75,18 @@ impl EffectLoader {
         let (jobs, receiver) = bounded::<Job>(QUEUED);
         let builder = Arc::new(builder);
         for index in 0..WORKERS {
+            // Idle workers also own a builder/GPU context. Track their full
+            // lifetime, including destruction after the queue closes.
+            let worker_ticket = builds
+                .reserve()
+                .context("Effect loading is shutting down")?;
             let receiver = receiver.clone();
             let builder = Arc::clone(&builder);
             std::thread::Builder::new()
                 .name(format!("effect-loader-{index}"))
                 .spawn(move || {
+                    let _worker_ticket = worker_ticket;
+                    let worker_builder = builder;
                     while let Ok(job) = receiver.recv() {
                         if job.alive.upgrade().is_none() || !job.ticket.start() {
                             continue;
@@ -87,7 +94,7 @@ impl EffectLoader {
                         let started = std::time::Instant::now();
                         let name = job.shader.name();
                         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                            builder(job.shader, job.format)
+                            worker_builder(job.shader, job.format)
                         }))
                         .map_err(|_| {
                             "Effect loader panicked while constructing resources".to_string()
@@ -188,6 +195,41 @@ mod tests {
     }
 
     #[test]
+    fn shutdown_waits_for_idle_worker_resource_cleanup() {
+        struct Cleanup {
+            started: Sender<()>,
+            release: Receiver<()>,
+        }
+        impl Drop for Cleanup {
+            fn drop(&mut self) {
+                self.started.send(()).unwrap();
+                self.release.recv().unwrap();
+            }
+        }
+        let builds = crate::renderer::builds::Builds::default();
+        let (dropping, started) = bounded(1);
+        let (release, wait) = bounded(1);
+        let cleanup = Cleanup {
+            started: dropping,
+            release: wait,
+        };
+        let loader = EffectLoader::with_builds(builds.clone(), move |_, _| {
+            let _keep_alive = &cleanup;
+            anyhow::bail!("unused builder")
+        })
+        .unwrap();
+        builds.close();
+        drop(loader);
+        started.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(
+            !builds.wait(Duration::ZERO),
+            "resource destruction still holds shutdown open"
+        );
+        release.send(()).unwrap();
+        assert!(builds.wait(Duration::from_secs(5)));
+    }
+
+    #[test]
     fn shutdown_cancels_queued_effects_and_waits_for_active_builder() {
         let builds = crate::renderer::builds::Builds::default();
         let (started, starts) = bounded(2);
@@ -196,17 +238,33 @@ mod tests {
             started.send(()).unwrap();
             gate.recv().unwrap();
             anyhow::bail!("test build finished")
-        }).unwrap();
+        })
+        .unwrap();
         let mut effects = Vec::new();
         for _ in 0..WORKERS {
-            effects.push(loader.load(shader(), crate::renderer::context::COLOR_PATH_FORMAT).unwrap());
+            effects.push(
+                loader
+                    .load(shader(), crate::renderer::context::COLOR_PATH_FORMAT)
+                    .unwrap(),
+            );
         }
-        for _ in 0..WORKERS { starts.recv_timeout(Duration::from_secs(5)).unwrap(); }
-        effects.push(loader.load(shader(), crate::renderer::context::COLOR_PATH_FORMAT).unwrap());
+        for _ in 0..WORKERS {
+            starts.recv_timeout(Duration::from_secs(5)).unwrap();
+        }
+        effects.push(
+            loader
+                .load(shader(), crate::renderer::context::COLOR_PATH_FORMAT)
+                .unwrap(),
+        );
         builds.close();
-        assert!(loader.load(shader(), crate::renderer::context::COLOR_PATH_FORMAT).is_err());
+        assert!(loader
+            .load(shader(), crate::renderer::context::COLOR_PATH_FORMAT)
+            .is_err());
+        drop(loader); // Closing the queue also releases idle worker contexts.
         assert!(!builds.wait(Duration::ZERO));
-        for _ in 0..WORKERS { release.send(()).unwrap(); }
+        for _ in 0..WORKERS {
+            release.send(()).unwrap();
+        }
         assert!(builds.wait(Duration::from_secs(5)));
         assert!(starts.try_recv().is_err(), "queued effect must not start");
     }
