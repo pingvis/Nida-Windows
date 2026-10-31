@@ -110,24 +110,37 @@ Vendor wgpu-hal's 161 future-compat warnings are pre-existing.
 
 ## Remaining work
 
-1. Mixed-analyzer test and benchmark are committed and pushed to analyzer
-   branch as `e6c7887`. The fork-only capture_resample benchmark entry was
-   excluded when resolving Cargo.toml context. Focused checks and Clippy pass.
-2. Finish release build and analyzer/audio benchmarks. Record exact adapter,
-   build profile, timings and limits; do not equate serial transfer timing with
-   overall show FPS. There is no measured performance claim yet. GPU NDI's
-   packed upload halves transfer bytes for UYVY, but still needs a timing run.
-3. Run a workspace-only release smoke with an isolated show/API port, exercise
-   command/state/UI where appropriate and stop a short recording before Quit;
-   verify a playable finalized file and process exit. Never replace installed
-   binaries, publish releases or affect another running Nida instance.
-4. Run appropriate UI/integration checks for the BPM popover and command/state.
-   Update the four PR descriptions with verified results and remaining hardware
-   limits. Keep draft if meaningful validation remains.
-5. Review changed formatting without rewriting unrelated baseline code. Then
-   commit this checkpoint, push Windows main and updated review branches.
-   Physical NDI sender, camera/DeckLink, macOS/Linux hardware and real music
-   evaluation remain separate qualification; report them honestly.
+The Windows release build passed. Workspace-only headless smoke passed twice;
+the stronger run is target/varda-ports/smoke-1793468322870/result.json. Two
+640×360 H.264/AAC takes (2.55/2.58 seconds) decoded fully, with expected red
+pixels [255,89,64]. One take stopped before Quit; the other was active at Quit.
+Exit code 0, about 449 ms to exit. Forced manual 123 BPM survived changing the
+audio range. No installed application was changed. Reproducer:
+target/varda-ports/release-smoke.cjs (requires the build environment).
+
+1. Finish native analyzer/audio benchmarks. Current cargo bench session 56331
+   writes target/varda-ports-benchmarks.log. It uses the normal release features,
+   --config profile.bench.debug=false and profile.bench.strip="symbols" to
+   align dependencies with the release build. It may finish while this chat
+   waits for usage reset. Inspect the log/process before starting another build.
+   Record exact adapter/profile, timings and limitations; serial submit/map
+   timing is not show FPS. No measured speedup has been claimed yet.
+2. Add/perform representative GPU NDI timings and, if the local NDI runtime is
+   available, a controlled sender/receiver loopback without affecting other
+   applications. The packed UYVY upload halves transfer bytes but needs timing
+   and live-source validation. Preserve colour/alpha behavior and fallback.
+3. Review any relevant CI/reviewer findings and updated benchmark results. All
+   four PR descriptions now include test and release smoke results. Keep draft
+   until remaining meaningful validation is addressed; report physical source
+   and macOS/Linux hardware limits honestly. Upstream test builds currently
+   force the large Servo dev dependency graph on Windows.
+4. Windows main includes formatting commits affd70d and 545f05c and this final
+   checkpoint, pushed before yielding. Their clean
+   branch cherry-picks are pushed (beat b7404ca, shutdown eb3c34a); analyzer
+   e6c7887 is also pushed. Preserve the two untracked research documents.
+5. If upstream merges background-effects PR #5, reconcile build-ticket tracking
+   in that loader. Do not introduce the Windows-only loader into shutdown PR
+   merely to make its branch look identical to the fork.
 
 Source attribution: MIT-licensed `im-knots/varda`, pinned main
 `31133902cc1331563ba4d1cb02c85a46118be634`. Relevant commits: shutdown
@@ -142,5 +155,7 @@ five-hour consumption, save the checkpoint and create/update same-chat heartbeat
 “Continue Varda feature ports” after the reported resetsAt plus two minutes.
 Recheck usage when waking, preserve work, continue this scope and disable the
 heartbeat after completion. Initial reset: 31 October 2026 at 23:18 Vilnius;
-re-read rather than assuming. Last observed consumption: 89% five-hour, 59%
-weekly. No continuation automation has been created yet.
+re-read rather than assuming. Last observed consumption: 94% five-hour, 60% weekly. Same-chat heartbeat
+continue-varda-feature-ports is ACTIVE, scheduled once for 31 October at 23:21
+Europe/Vilnius, after the reported 23:18:44 reset plus two minutes. Read usage
+on waking and update this same automation if another continuation is needed.
