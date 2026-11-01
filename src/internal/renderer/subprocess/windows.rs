@@ -12,6 +12,9 @@ use crate::streaming::{RateMode, RatePlan, StreamEncoder, StreamOptions, VideoCo
 
 pub(super) type Opened = NvEncoder;
 
+// Windows recordings retain the existing FFmpeg encoder path.
+pub(super) fn open_for_record(_: VideoCodec, _: (u32, u32), _: u32, _: u32) -> Option<Opened> { None }
+
 pub(super) fn open(
     options: &StreamOptions,
     size: (u32, u32),
@@ -53,7 +56,7 @@ pub(super) fn start(
     mut encoder: Opened,
     mut stdin: std::process::ChildStdin,
     rx: mpsc::Receiver<(Instant, Vec<u8>)>,
-    (fps, codec, audio_kbps): (u32, VideoCodec, u32),
+    (fps, codec, audio_kbps, fill): (u32, VideoCodec, u32, u64),
     counters: FrameCounters,
     (write_failed, shutting_down): (Arc<AtomicBool>, Arc<AtomicBool>),
     label: &str,
@@ -100,7 +103,10 @@ pub(super) fn start(
                     if shutting_down.load(Ordering::SeqCst) {
                         break;
                     }
-                    let Placed::After(repeats) = timeline.place(made) else {
+                    let (skipped, placed) = timeline.place_live(made, fill);
+                    slot += skipped;
+                    counters.skipped.fetch_add(skipped, Ordering::Relaxed);
+                    let Some(Placed::After(repeats)) = placed else {
                         counters.left_out.fetch_add(1, Ordering::Relaxed);
                         continue;
                     };

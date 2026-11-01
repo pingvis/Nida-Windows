@@ -480,8 +480,15 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
             delay_ms: 0.0,
             device: Some("BMD HDMI".into()),
             first_channel: 0,
+            live: false,
+            live_frames: None,
+            insert: None,
+            pre_fader: false,
         },
         device_ok: Some(true),
+        device_note: None,
+        live: None,
+        insert_status: None,
         meter_db: [meter, meter - 2.0],
         peak_db: [meter,meter-2.0],
         equalizer:varda::audio_mix::EqualizerSnapshot::default(),
@@ -510,6 +517,8 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
             peak_db: [meter,meter-1.5],
             equalizer:varda::audio_mix::EqualizerSnapshot::default(),
             refused: None,
+            send_settings: std::collections::BTreeMap::default(),
+            sent_before: Vec::new(),
         };
     let deck = |ch: usize| data.channels[ch].decks[0].uuid.clone();
     let mut mic = clip("mic00001", "Lectern", 0.0, -4.0, -14.0);
@@ -540,6 +549,8 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
             ..Default::default()
         },
         output_devices: vec!["BMD HDMI".into()],
+        output_channels: std::collections::BTreeMap::new(),
+        effects: std::sync::Arc::default(),
         input_devices: vec![],
         apps: vec![],
         stop_fade_secs: varda::audio_mix::DEFAULT_STOP_FADE_SECS,

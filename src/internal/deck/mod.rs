@@ -1,5 +1,6 @@
 mod effect;
 pub(crate) mod loading;
+pub mod lower_third;
 pub mod media;
 pub mod playlist;
 pub mod presenter;
@@ -7,6 +8,7 @@ mod render;
 pub mod slides;
 mod source;
 pub mod svg;
+pub mod text;
 pub mod timer;
 
 pub use render::get_current_date;
@@ -420,6 +422,11 @@ pub enum DeckSource {
     Slides(Box<slides::Slides>),
     /// A count down, count up or clock drawn as text (see [`timer`]).
     Timer(Box<timer::Timer>),
+    /// A lower third: names and titles brought on air one at a time (see
+    /// [`lower_third`]).
+    LowerThird(Box<lower_third::LowerThird>),
+    /// Lines of text typed in (see [`text`]).
+    Text(Box<text::Text>),
     /// A PowerPoint input's show for the speaker's screen (see
     /// [`presenter`]).
     Presenter(Box<presenter::Presenter>),
@@ -990,6 +997,8 @@ impl Deck {
             DeckSource::Playlist(_) => "playlist",
             DeckSource::Slides(_) => "slides",
             DeckSource::Timer(_) => "timer",
+            DeckSource::LowerThird(_) => "lower_third",
+            DeckSource::Text(_) => "text",
             DeckSource::Presenter(_) => "presenter",
             DeckSource::Offline(_) => "offline",
         }
@@ -1022,6 +1031,8 @@ impl Deck {
             DeckSource::Image { .. }
             | DeckSource::SolidColor { .. }
             | DeckSource::Timer(_)
+            | DeckSource::LowerThird(_)
+            | DeckSource::Text(_)
             | DeckSource::Presenter(_)
             | DeckSource::Offline(_) => false,
         }
@@ -1350,6 +1361,36 @@ impl Deck {
     pub fn timer_mut(&mut self) -> Option<&mut timer::Timer> {
         match &mut self.source {
             DeckSource::Timer(timer) => Some(timer),
+            _ => None,
+        }
+    }
+
+    /// The lower third this deck shows, if it is one.
+    pub fn lower_third(&self) -> Option<&lower_third::LowerThird> {
+        match &self.source {
+            DeckSource::LowerThird(l) => Some(l),
+            _ => None,
+        }
+    }
+
+    /// The text this deck shows, if it is a text input.
+    pub fn text(&self) -> Option<&text::Text> {
+        match &self.source {
+            DeckSource::Text(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    pub fn text_mut(&mut self) -> Option<&mut text::Text> {
+        match &mut self.source {
+            DeckSource::Text(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    pub fn lower_third_mut(&mut self) -> Option<&mut lower_third::LowerThird> {
+        match &mut self.source {
+            DeckSource::LowerThird(l) => Some(l),
             _ => None,
         }
     }

@@ -223,6 +223,8 @@ pub(crate) fn command_is_deck_add(cmd: &EngineCommand) -> bool {
             | EngineCommand::AddBrowserDeck { .. }
             | EngineCommand::AddPlaylistDeck { .. }
             | EngineCommand::AddTimerDeck { .. }
+            | EngineCommand::AddLowerThirdDeck { .. }
+            | EngineCommand::AddTextDeck { .. }
             | EngineCommand::AddPresentationDeck { .. }
             | EngineCommand::AddPresenterDeck { .. }
             | EngineCommand::AddSlidesDeck { .. }
@@ -263,6 +265,7 @@ mod tests {
                 channel_uuid: ch(),
                 camera_id: 0,
                 mode: None,
+                audio: None,
             },
             EngineCommand::AddDepthSensorDeck {
                 channel_uuid: ch(),
@@ -307,6 +310,14 @@ mod tests {
                 channel_uuid: ch(),
                 settings: None,
             },
+            EngineCommand::AddLowerThirdDeck {
+                channel_uuid: ch(),
+                settings: None,
+            },
+            EngineCommand::AddTextDeck {
+                channel_uuid: ch(),
+                settings: None,
+            },
             EngineCommand::AddPresentationDeck {
                 channel_uuid: ch(),
                 path: "/talk.pptx".into(),
@@ -321,7 +332,7 @@ mod tests {
                 settings: None,
             },
         ];
-        assert_eq!(deck_adds.len(), 18, "expected 18 deck-add variants");
+        assert_eq!(deck_adds.len(), 20, "expected 20 deck-add variants");
         for cmd in &deck_adds {
             assert!(command_is_deck_add(cmd), "not recognized: {cmd:?}");
         }

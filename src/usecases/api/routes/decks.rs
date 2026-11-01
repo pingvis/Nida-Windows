@@ -467,6 +467,7 @@ pub async fn add_camera_deck(
             channel_uuid,
             camera_id: body.camera_id,
             mode: body.mode,
+            audio: None,
         })
         .await
     {

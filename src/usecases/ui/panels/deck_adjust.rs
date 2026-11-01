@@ -750,6 +750,7 @@ mod tests {
             value: ParamValue::Float(v),
             min: None,
             max: None,
+            choices: None,
         };
         deck.effects.push((
             "fxtrans1".into(),
@@ -779,6 +780,7 @@ mod tests {
             value,
             min: None,
             max: None,
+            choices: None,
         };
         let mut data = UIData::test_fixture();
         let uuid = deck_with_transform(&mut data);
