@@ -964,7 +964,7 @@ fn open_device(
     listed: &[AudioDeviceInfo],
     id: AudioSourceId,
     pcm_subs: PcmSubscribers,
-    tempo_range: Arc<AtomicU64>,
+    tempo_range: &Arc<AtomicU64>,
 ) -> Result<ActiveAudioSource> {
     // An id never listed — a show's modulator from another Mac — is not
     // looked for: listing the OS's devices is slow.
@@ -1105,7 +1105,7 @@ impl AudioManager {
             reopened_since_change: HashSet::new(),
             numbers: HashMap::new(),
             next_number: 0,
-            opener: Arc::new(move |devices, id, subs| open_device(devices, id, subs, opening_range.clone())),
+            opener: Arc::new(move |devices, id, subs| open_device(devices, id, subs, &opening_range)),
             opening: HashMap::new(),
             unclaimed: HashMap::new(),
             landed: 0,
@@ -3555,7 +3555,7 @@ mod tests {
         mgr.open_soon(5);
         assert!(mgr.opening.is_empty(), "never listed: not looked for");
         assert!(
-            super::open_device(&mgr.devices, 5, super::no_subscribers()).is_err(),
+            super::open_device(&mgr.devices, 5, super::no_subscribers(), &mgr.tempo_range).is_err(),
             "never listed"
         );
     }

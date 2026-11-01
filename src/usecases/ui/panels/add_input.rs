@@ -1865,6 +1865,7 @@ mod tests {
         });
         let mut taken = data();
         taken.audio_mix.sources = vec![crate::audio_mix::AudioSourceSnapshot {
+            equalizer: crate::audio_mix::EqualizerSnapshot::default(),
             dynamics: crate::audio_mix::DynamicsSnapshot::default(),
             uuid: "strip001".into(),
             name: "Blackmagic Design".into(),

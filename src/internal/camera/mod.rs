@@ -322,16 +322,19 @@ pub(crate) struct SignalSeen {
 
 /// How much of a camera's brightness samples to keep at each new look (see
 /// [`SignalSeen`]): a few seconds' worth of looks.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 const SIGNAL_KEEP: f64 = 0.9;
 
 /// Brightness under this, of 255, is well below video black (16): past the
 /// footroom and noise video keeps there.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 const VIDEO_BLACK_LOW: u8 = 8;
 
 /// Of a picture's brightness, sampled on a grid of 64 × 36, how many samples
 /// are well below video black (see [`VIDEO_BLACK_LOW`]), and how many were
 /// taken: each pixel's brightness byte at `first`, a pixel every `step`
 /// bytes, rows `stride` apart.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub(crate) fn below_black(
     bytes: &[u8],
     stride: usize,
@@ -551,6 +554,7 @@ impl Sink {
     /// What a picture says of the signal: its size, pixel format, matrix
     /// and range as read, and `(below, sampled)` of its brightness (see
     /// [`below_black`]), counted with those of the pictures before it.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn note_signal(&self, mut seen: SignalSeen, (below, sampled): (u32, u32)) {
         if let Ok(mut signal) = self.signal.lock() {
             let before = signal.take().unwrap_or_default();
@@ -761,6 +765,7 @@ impl Sink {
     /// frame, 32-bit, at [`OWN_SOUND_RATE`] — to the mixer, once it takes it;
     /// what a full feed throws away is counted, for it to put back as
     /// silence.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn put_sound(&self, samples: &[i32], channels: usize) {
         use crossbeam_channel::TrySendError;
         let Ok(mut sound) = self.sound.lock() else {

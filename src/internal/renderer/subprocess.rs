@@ -1855,6 +1855,7 @@ impl Timeline {
 
     /// One slot written outside [`Self::place`]: a frame repeated to mark
     /// a step of a long skip (see [`Self::place_live`]).
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     fn wrote_one(&mut self) {
         self.written += 1;
     }
@@ -1913,6 +1914,7 @@ impl Timeline {
 /// wait, the writer fallen behind real time, an engine shared or held up:
 /// then only the newest, its time skipped to as it is placed (see
 /// [`Timeline::place_live`]). With how many were let go.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn take_live<F>(mut waiting: Vec<(std::time::Instant, F)>) -> (Vec<(std::time::Instant, F)>, u64) {
     if waiting.len() < LIVE_BACKLOG {
         return (waiting, 0);
@@ -1927,10 +1929,12 @@ fn take_live<F>(mut waiting: Vec<(std::time::Instant, F)>) -> (Vec<(std::time::I
 /// slots counts only past them, already counted as lost; slots filled over
 /// them use them up too.
 #[derive(Debug, Default)]
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 struct RefusedCredit {
     open: u64,
 }
 
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 impl RefusedCredit {
     /// `n` more frames refused.
     fn refused(&mut self, n: u64) {

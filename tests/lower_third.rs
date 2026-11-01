@@ -957,6 +957,7 @@ fn undo_leaves_the_cue_where_show_left_it() {
 /// A list that could not be read is tried again, though its file's time
 /// has not changed (it was locked, and is not now); Stop following clears
 /// what was said of it.
+#[cfg(unix)]
 #[test]
 fn a_list_that_could_not_be_read_is_tried_again() {
     use std::os::unix::fs::PermissionsExt as _;

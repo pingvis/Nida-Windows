@@ -1,6 +1,6 @@
 # Nida Windows roadmap
 
-Updated: 20 October 2026.
+Updated: 1 November 2026 (0.9.7 integration; older entries retain their recorded status).
 
 This is the working checklist for incremental improvements to Nida Windows.
 Each feature gets a focused branch and PR. Update this file when its status
@@ -104,6 +104,10 @@ addresses first-load stalls. It does not require a full source-provider rewrite.
 
 ### 3. Source-provider foundation for text
 
+No longer a prerequisite for text: upstream 0.9.7 supplies native Text and
+Lower third sources using the current source model. Reassess a general
+provider migration only when a concrete source conversion needs it.
+
 - [ ] Recheck the relevant Varda interfaces against current source.
 - [ ] Convert one real source, Colour, end to end: creation, editing,
   rendering, UI/API, save and restore.
@@ -117,12 +121,17 @@ shows. A general output rewrite is outside this work.
 
 ### 4. Native text inputs
 
-- [ ] Add editable text with font, size, colour, alignment and transparency.
-- [ ] Integrate placement and Preview/Program operation into the broadcast desk.
-- [ ] Support save/reload and API editing; verify UUIDs and routing survive.
-- [ ] Keep text editing from triggering show-control keyboard shortcuts.
-- [ ] Verify representative titles, multiline text and Lithuanian characters.
-- [ ] Merge a text-only PR and verify the packaged build. PR: pending.
+Integrated from upstream 0.9.7, with the focused texture-reuse/error-reporting
+follow-up in [Nida #18](https://github.com/kristijonasatpro/Nida/pull/18).
+See [Windows integration and validation](windows-upstream-097.md). The older
+standalone prototype remains on its own branch and is superseded by upstream.
+
+- [x] Add editable text with font, size, colour, alignment and transparency.
+- [x] Integrate placement and Preview/Program operation into the broadcast desk.
+- [x] Support save/reload and API editing; verify UUIDs and routing survive.
+- [x] Keep text editing from triggering show-control keyboard shortcuts.
+- [x] Verify representative titles, multiline text and Lithuanian characters.
+- [ ] Verify the resulting packaged Windows build and collect operator feedback.
 
 Done means an operator can create, edit, position, take and reload a title in
 a real show. Subtitle/lyrics import is a separate follow-up.

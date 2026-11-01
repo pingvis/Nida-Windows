@@ -1063,19 +1063,11 @@ mod tests {
                 .equalizer
                 .configure(eq, Some(super::super::equalizer::Processor::prepare(eq))),
         );
-        source.dynamics.configure(
-            super::super::LowCutConfig::default(),
-            super::super::LevelerConfig::default(),
-            comp,
-        );
+        source.dynamics.configure(&super::super::dynamics::SourceSettings { compressor: comp, ..super::super::dynamics::SourceSettings::default() });
         let mut reference_eq = super::super::equalizer::Equalizer::default();
         drop(reference_eq.configure(eq, Some(super::super::equalizer::Processor::prepare(eq))));
         let mut reference_comp = super::super::dynamics::SourceChain::default();
-        reference_comp.configure(
-            super::super::LowCutConfig::default(),
-            super::super::LevelerConfig::default(),
-            comp,
-        );
+        reference_comp.configure(&super::super::dynamics::SourceSettings { compressor: comp, ..super::super::dynamics::SourceSettings::default() });
         let mut core = core_with(vec![source], &["main", "aux"]);
         let main = core.tap("main").unwrap();
         let aux = core.tap("aux").unwrap();
@@ -1560,11 +1552,7 @@ mod tests {
                 let (mut source, fifo) = fifo_source(&format!("probe-{index}"), 0.0, 0);
                 source.sends = vec!["main".into(), "aux".into()];
                 if compress {
-                    source.dynamics.configure(
-                        super::super::LowCutConfig::default(),
-                        super::super::LevelerConfig::default(),
-                        compressor,
-                    );
+                    source.dynamics.configure(&super::super::dynamics::SourceSettings { compressor: compressor, ..super::super::dynamics::SourceSettings::default() });
                 }
                 if mode != "disabled" {
                     let config = super::super::equalizer::fixture_config();

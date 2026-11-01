@@ -16957,26 +16957,26 @@
             "default": [
               {
                 "enabled": true,
-                "hz": 150.0,
                 "gain_db": 0.0,
+                "hz": 150.0,
                 "q": 0.7071067690849304
               },
               {
                 "enabled": true,
+                "gain_db": 0.0,
                 "hz": 350.0,
-                "gain_db": 0.0,
                 "q": 1.0
               },
               {
                 "enabled": true,
+                "gain_db": 0.0,
                 "hz": 3000.0,
-                "gain_db": 0.0,
                 "q": 1.0
               },
               {
                 "enabled": true,
-                "hz": 8000.0,
                 "gain_db": 0.0,
+                "hz": 8000.0,
                 "q": 0.7071067690849304
               }
             ]

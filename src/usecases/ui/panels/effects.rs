@@ -546,6 +546,7 @@ mod tests {
                 shader_name: name.into(),
                 params: vec![ParamUIInfo {
                     name: "amount".into(),
+                    choices: None,
                     label: Some(format!("{name} amount")),
                     value: ParamValue::Float(0.5),
                     min: Some(0.0),
