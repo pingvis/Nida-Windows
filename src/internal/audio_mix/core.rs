@@ -1552,7 +1552,7 @@ mod tests {
                 let (mut source, fifo) = fifo_source(&format!("probe-{index}"), 0.0, 0);
                 source.sends = vec!["main".into(), "aux".into()];
                 if compress {
-                    source.dynamics.configure(&super::super::dynamics::SourceSettings { compressor: compressor, ..super::super::dynamics::SourceSettings::default() });
+                    source.dynamics.configure(&super::super::dynamics::SourceSettings { compressor, ..super::super::dynamics::SourceSettings::default() });
                 }
                 if mode != "disabled" {
                     let config = super::super::equalizer::fixture_config();

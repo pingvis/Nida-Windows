@@ -68,6 +68,11 @@ Upstream PR CI's formatting job reports 144 unchanged source paths, none of
 the PR's source files. The same formatting failure was reproduced on an
 unmodified upstream file; do not describe repository-wide formatting as clean.
 Other upstream CI jobs may still be running when the local push completes.
+The broader local all-target Clippy run also reports existing test/diagnostic
+lints outside the focused text files (notably the new toolchain's empty-
+assertion lint); it is not clean. A redundant field in a migrated fork audio
+fixture was corrected. Production-library Clippy and the focused text files
+are clean; do not generalize that to every repository target.
 
 No installed application is replaced and no release is published by this work.
 macOS/Linux runtime tests, long shows, physical DeckLink/camera recovery,
