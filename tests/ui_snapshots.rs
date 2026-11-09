@@ -484,6 +484,7 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
             live_frames: None,
             insert: None,
             pre_fader: false,
+            echo_room: None,
         },
         device_ok: Some(true),
         device_note: None,
@@ -517,6 +518,7 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
             peak_db: [meter,meter-1.5],
             equalizer:varda::audio_mix::EqualizerSnapshot::default(),
             refused: None,
+            echo: Vec::new(),
             send_settings: std::collections::BTreeMap::default(),
             sent_before: Vec::new(),
         };

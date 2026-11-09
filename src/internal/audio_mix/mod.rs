@@ -27,6 +27,7 @@ mod core;
 mod device;
 mod dsp;
 mod dynamics;
+mod echo;
 mod equalizer;
 mod insert;
 mod live;
@@ -39,12 +40,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use self::core::{Bus, Feed, InputFeed, MixCore, OutputRing, Source};
+use self::core::{Bus, EchoPath, Feed, InputFeed, MixCore, OutputRing, RoomSound, Source};
 pub use self::core::{BusTap, BLOCK_FRAMES, MAX_DELAY_MS, SAMPLE_RATE};
 pub use clip::{ClipAudio, ClipAudioShared};
 pub use dsp::{
-    CompressorConfig, DeEsserConfig, EqBandConfig, EqConfig, GateConfig, LevelerConfig, LimiterConfig,
-    LoudnessSnapshot, LowCutConfig,
+    CompressorConfig, DeEsserConfig, EqBandConfig, EqConfig, GateConfig, LevelerConfig,
+    LimiterConfig, LoudnessSnapshot, LowCutConfig,
 };
 pub use dynamics::DynamicsSnapshot;
 pub use equalizer::{EqualizerBand, EqualizerConfig, EqualizerShelf, EqualizerSnapshot};
@@ -99,12 +100,28 @@ pub struct AudioBusConfig {
     /// mix as it is. Their mute, On and fades still count.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub pre_fader: bool,
+    /// Echo removal, for a call's bus: the bus the room's speakers play, by
+    /// UUID. The microphones sent here arrive with what that bus plays from
+    /// everything but microphones (the call, clips, other apps) taken out,
+    /// so a guest does not hear themselves come back from the room (see
+    /// `echo`). Other buses get the microphones as they are. Not on a live
+    /// bus.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub echo_room: Option<String>,
 }
 
 /// Where a send takes its source: as its bus does, or before or after the
 /// source's fader whatever the bus.
 #[derive(
-    Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema,
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    serde::Serialize,
+    serde::Deserialize,
+    utoipa::ToSchema,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum SendMode {
@@ -214,7 +231,9 @@ pub const LIVE_FRAMES: [u32; 4] = [32, 64, 128, 256];
 
 /// A live bus's buffer as set, or 64.
 fn live_frames_of(bus: &AudioBusConfig) -> u32 {
-    bus.live_frames.filter(|f| LIVE_FRAMES.contains(f)).unwrap_or(64)
+    bus.live_frames
+        .filter(|f| LIVE_FRAMES.contains(f))
+        .unwrap_or(64)
 }
 
 /// The buffer each live bus plays at: the smallest set among the live
@@ -257,6 +276,7 @@ impl AudioBusConfig {
             live_frames: None,
             insert: None,
             pre_fader: false,
+            echo_room: None,
         }
     }
 }
@@ -363,7 +383,11 @@ fn sanitized_sends(settings: BTreeMap<String, SendConfig>) -> BTreeMap<String, S
 impl AudioStripConfig {
     /// Its send to `bus`, as the mix plays it: level and point.
     pub fn send_to(&self, bus: &AudioBusConfig) -> core::Send {
-        let s = self.send_settings.get(&bus.uuid).copied().unwrap_or_default();
+        let s = self
+            .send_settings
+            .get(&bus.uuid)
+            .copied()
+            .unwrap_or_default();
         core::Send {
             bus: bus.uuid.clone(),
             gain: db_to_gain(s.gain_db),
@@ -510,6 +534,48 @@ impl AudioMixConfig {
             ..Self::default()
         }
     }
+
+    /// The room whose echo `bus` removes, as it plays: another bus there is,
+    /// and `bus` not live (its callback mixes its own mics).
+    pub fn echo_room_of<'a>(&self, bus: &'a AudioBusConfig) -> Option<&'a str> {
+        bus.echo_room
+            .as_deref()
+            .filter(|room| *room != bus.uuid && !bus.live)
+            .filter(|room| self.buses.iter().any(|b| b.uuid == *room))
+    }
+
+    /// The inputs that are microphones, by UUID: a sound device's input, not
+    /// an app's sound and not the sound of a camera or capture card (often a
+    /// laptop's, played in the room too).
+    fn mics(&self) -> impl Iterator<Item = &AudioInputConfig> {
+        self.inputs
+            .iter()
+            .filter(|i| i.app.is_none() && i.deck.is_none())
+    }
+
+    /// Each microphone and room it is to be cleaned of: every microphone,
+    /// for each room a bus removes the echo of, sent there or not. A send
+    /// turned on then has its canceller already knowing the room: made
+    /// afresh it let 40 ms of the echo through (Max5). About 46 µs a block
+    /// each.
+    fn echo_wanted(&self) -> Vec<(String, String)> {
+        let mut rooms: Vec<&str> = Vec::new();
+        for bus in &self.buses {
+            if let Some(room) = self.echo_room_of(bus) {
+                if !rooms.contains(&room) {
+                    rooms.push(room);
+                }
+            }
+        }
+        self.mics()
+            .filter(|mic| self.strips.iter().any(|s| s.uuid == mic.uuid))
+            .flat_map(|mic| {
+                rooms
+                    .iter()
+                    .map(|room| (mic.uuid.clone(), (*room).to_string()))
+            })
+            .collect()
+    }
 }
 
 // ── What the UI and API see ─────────────────────────────────────────
@@ -606,6 +672,24 @@ pub struct AudioSourceSnapshot {
     /// Why an app's sound, its app running, could not be taken.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refused: Option<String>,
+    /// Its echo removal: one for each room a bus it is sent to removes the
+    /// echo of (see [`AudioBusConfig::echo_room`]).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub echo: Vec<AudioEchoSnapshot>,
+}
+
+/// A microphone's echo removal, as its canceller has it.
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+pub struct AudioEchoSnapshot {
+    /// The bus the room's speakers play, by UUID.
+    pub room: String,
+    /// How far behind its sound the room's echo reaches the microphone, in
+    /// milliseconds, once found.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delay_ms: Option<i32>,
+    /// How much of the echo its filter takes out, in dB, once found.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub removed_db: Option<f32>,
 }
 
 /// The monitor, as shown.
@@ -760,8 +844,6 @@ impl LiveInput {
     }
 }
 
-
-
 /// A bus's insert running the Audio Unit `component`, loading on a thread
 /// of its own. Out of Nida's process; Apple's own may run in it.
 #[cfg(target_os = "macos")]
@@ -774,7 +856,11 @@ fn make_insert(bus: &str, component: &str, settings: Option<Vec<u8>>) -> insert:
             au_host::Hosted::open_as(&component, apple, settings.as_deref()).map(|hosted| {
                 log::info!(
                     "Audio insert '{component}' loaded {}, {:.1} ms latency",
-                    if hosted.in_process { "inside Nida (Apple's own)" } else { "out of process" },
+                    if hosted.in_process {
+                        "inside Nida (Apple's own)"
+                    } else {
+                        "out of process"
+                    },
                     hosted.latency_secs * 1000.0
                 );
                 Box::new(hosted) as Box<dyn insert::Effect>
@@ -785,7 +871,10 @@ fn make_insert(bus: &str, component: &str, settings: Option<Vec<u8>>) -> insert:
 
 #[cfg(not(target_os = "macos"))]
 fn make_insert(bus: &str, _component: &str, _settings: Option<Vec<u8>>) -> insert::Insert {
-    insert::Insert::new(bus, Box::new(|| Err("Audio Units are only on macOS".to_string())))
+    insert::Insert::new(
+        bus,
+        Box::new(|| Err("Audio Units are only on macOS".to_string())),
+    )
 }
 
 /// A live bus's processing as set: its own compressor, limiter and delay,
@@ -877,6 +966,8 @@ pub struct AudioEngine {
     remake_inserts: bool,
     /// Each running insert's settings changes as last taken, by bus.
     insert_settings_seen: HashMap<String, u64>,
+    /// Said once that there is no echo canceller here.
+    echo_unavailable_logged: bool,
     /// A listing of the sound devices being made (see [`Self::rescan_devices`]).
     listing: Option<std::sync::mpsc::Receiver<DeviceListing>>,
     /// Asked to list the devices while a listing was being made: listed
@@ -967,6 +1058,7 @@ impl AudioEngine {
             applied_inserts: HashMap::new(),
             remake_inserts: false,
             insert_settings_seen: HashMap::new(),
+            echo_unavailable_logged: false,
             input_devices: Vec::new(),
             listing: None,
             list_again: false,
@@ -1001,7 +1093,9 @@ impl AudioEngine {
         self.config
             .stop_fade_secs
             .filter(|secs| secs.is_finite())
-            .map_or(DEFAULT_STOP_FADE_SECS, |secs| secs.clamp(0.0, MAX_STOP_FADE_SECS))
+            .map_or(DEFAULT_STOP_FADE_SECS, |secs| {
+                secs.clamp(0.0, MAX_STOP_FADE_SECS)
+            })
     }
 
     /// Set how long Stop fades a sound out; 0 cuts. Refused unless finite
@@ -1052,6 +1146,11 @@ impl AudioEngine {
                 source.equalizer = equalizer::Equalizer::default();
                 source.dynamics = dynamics::SourceChain::default();
                 source.held_peak = [0.0; 2];
+                // Its cleanings' processing with it; what their cancellers
+                // learnt of the room stays.
+                for path in &mut source.echo {
+                    path.chain = dynamics::SourceChain::default();
+                }
             }
             for bus in &mut core.buses {
                 // In place: no allocation with the mixer held.
@@ -1087,7 +1186,11 @@ impl AudioEngine {
     /// # Errors
     ///
     /// No such bus.
-    pub fn set_insert(&mut self, uuid: &str, component: Option<String>) -> Result<(), AudioMixError> {
+    pub fn set_insert(
+        &mut self,
+        uuid: &str,
+        component: Option<String>,
+    ) -> Result<(), AudioMixError> {
         let has = self
             .config
             .buses
@@ -1101,7 +1204,9 @@ impl AudioEngine {
             return Ok(());
         }
         let insert = component.map(|component| AudioInsertConfig {
-            name: self.effect_name(&component).unwrap_or_else(|| component.clone()),
+            name: self
+                .effect_name(&component)
+                .unwrap_or_else(|| component.clone()),
             component,
             bypass: false,
             settings: None,
@@ -1122,7 +1227,10 @@ impl AudioEngine {
             .iter()
             .find(|b| b.uuid == uuid)
             .ok_or_else(|| format!("no audio bus with uuid '{uuid}'"))?;
-        let insert = bus.insert.as_ref().ok_or_else(|| format!("'{}' has no effect", bus.name))?;
+        let insert = bus
+            .insert
+            .as_ref()
+            .ok_or_else(|| format!("'{}' has no effect", bus.name))?;
         let handle = self
             .core
             .lock()
@@ -1134,7 +1242,11 @@ impl AudioEngine {
             let unit = handle
                 .downcast_ref::<au_host::SharedUnit>()
                 .ok_or_else(|| format!("'{}' has no window", insert.name))?;
-            au_editor::open(uuid.to_string(), format!("{} — {}", bus.name, insert.name), unit.clone());
+            au_editor::open(
+                uuid.to_string(),
+                format!("{} — {}", bus.name, insert.name),
+                unit.clone(),
+            );
             Ok(())
         }
         #[cfg(not(target_os = "macos"))]
@@ -1154,7 +1266,10 @@ impl AudioEngine {
 
     /// An installed effect's name, by its component codes.
     pub fn effect_name(&self, component: &str) -> Option<String> {
-        self.effects.iter().find(|e| e.component == component).map(|e| e.name.clone())
+        self.effects
+            .iter()
+            .find(|e| e.component == component)
+            .map(|e| e.name.clone())
     }
 
     /// The first bus, which new recordings and streams take.
@@ -1229,6 +1344,11 @@ impl AudioEngine {
         }
         if self.config.monitor.listen.as_deref() == Some(uuid) {
             self.config.monitor.listen = None;
+        }
+        for bus in &mut self.config.buses {
+            if bus.echo_room.as_deref() == Some(uuid) {
+                bus.echo_room = None;
+            }
         }
         // Its device is let go on the next frame, as it is no longer wanted.
         self.rings.remove(uuid);
@@ -1760,7 +1880,10 @@ impl AudioEngine {
             .iter()
             .filter_map(|i| {
                 let generation = self.apps_generation.get(&i.uuid).copied().unwrap_or(0);
-                i.app.clone().map(|app| (i.uuid.clone(), app, generation))
+                let muted = mutes_app(&self.config, self.solos.contains(&i.uuid), &i.uuid);
+                i.app
+                    .clone()
+                    .map(|app| (i.uuid.clone(), app, generation, muted))
             })
             .collect();
         self.apps.want(wanted);
@@ -1932,16 +2055,20 @@ impl AudioEngine {
             .filter(|b| b.live)
             .filter_map(|bus| {
                 let device = bus.device.as_deref()?;
-                let strip = |i: &AudioInputConfig| self.config.strips.iter().find(|s| s.uuid == i.uuid);
+                let strip =
+                    |i: &AudioInputConfig| self.config.strips.iter().find(|s| s.uuid == i.uuid);
                 let on_device = || {
                     self.config
                         .inputs
                         .iter()
                         .filter(|i| i.app.is_none() && i.device == device)
                 };
-                let sent = |i: &AudioInputConfig| strip(i).is_some_and(|s| s.sends.contains(&bus.uuid));
+                let sent =
+                    |i: &AudioInputConfig| strip(i).is_some_and(|s| s.sends.contains(&bus.uuid));
                 let kept = |i: &AudioInputConfig| {
-                    strip(i).is_some_and(|s| !s.sends.contains(&bus.uuid) && s.sent_before.contains(&bus.uuid))
+                    strip(i).is_some_and(|s| {
+                        !s.sends.contains(&bus.uuid) && s.sent_before.contains(&bus.uuid)
+                    })
                 };
                 // Its mics: those sent to it, then — while there is room —
                 // those whose send is off but kept (its settings saved): a send
@@ -1949,7 +2076,8 @@ impl AudioEngine {
                 // callback, not the device opened again (a gap for the whole
                 // bus, a click as it went). Listed in the inputs' own order, so
                 // a toggle never reorders them (another feed: the same reopen).
-                let mut room = crate::audio::LIVE_MICS.saturating_sub(on_device().filter(|i| sent(i)).count());
+                let mut room =
+                    crate::audio::LIVE_MICS.saturating_sub(on_device().filter(|i| sent(i)).count());
                 let chosen: std::collections::HashSet<&str> = on_device()
                     .filter(|i| {
                         if sent(i) {
@@ -1986,7 +2114,12 @@ impl AudioEngine {
         let mut refused: HashMap<String, String> = HashMap::new();
         for (bus, mics) in &direct {
             // A plug-in is not run in a device's callback (it may hang it).
-            if self.config.buses.iter().any(|b| b.uuid == *bus && b.insert.is_some()) {
+            if self
+                .config
+                .buses
+                .iter()
+                .any(|b| b.uuid == *bus && b.insert.is_some())
+            {
                 refused.insert(bus.clone(), "it has an Audio Unit insert".to_string());
                 continue;
             }
@@ -2019,18 +2152,27 @@ impl AudioEngine {
             }
             let source = connected[0].1.source_id;
             if connected.iter().any(|(_, live)| live.source_id != source) {
-                refused.insert(bus.clone(), "its mics are on more than one capture".to_string());
+                refused.insert(
+                    bus.clone(),
+                    "its mics are on more than one capture".to_string(),
+                );
                 continue;
             }
             if connected[0].1.rate != SAMPLE_RATE {
                 refused.insert(
                     bus.clone(),
-                    format!("its device runs at {} Hz, not {SAMPLE_RATE}", connected[0].1.rate),
+                    format!(
+                        "its device runs at {} Hz, not {SAMPLE_RATE}",
+                        connected[0].1.rate
+                    ),
                 );
                 continue;
             }
             if connected.len() > crate::audio::LIVE_MICS {
-                refused.insert(bus.clone(), format!("it has more than {} mics", crate::audio::LIVE_MICS));
+                refused.insert(
+                    bus.clone(),
+                    format!("it has more than {} mics", crate::audio::LIVE_MICS),
+                );
                 continue;
             }
             let list = connected
@@ -2055,7 +2197,10 @@ impl AudioEngine {
                 wanted.get(*bus).is_none_or(|(source, list)| {
                     *source != feed.source_id
                         || list.len() != feed.mics.len()
-                        || list.iter().zip(&feed.mics).any(|(a, b)| a.0 != b.0 || a.1 != b.1)
+                        || list
+                            .iter()
+                            .zip(&feed.mics)
+                            .any(|(a, b)| a.0 != b.0 || a.1 != b.1)
                 })
             })
             .map(|(bus, _)| bus.clone())
@@ -2373,10 +2518,7 @@ impl AudioEngine {
                 ),
                 config: b.clone(),
                 device_ok: b.device.as_ref().map(|_| self.outputs.is_playing(&b.uuid)),
-                device_note: b
-                    .device
-                    .as_ref()
-                    .and_then(|_| self.bus_note(b)),
+                device_note: b.device.as_ref().and_then(|_| self.bus_note(b)),
                 live: b.live.then(|| {
                     self.live_posted.contains(&b.uuid) && self.outputs.is_playing_live(&b.uuid)
                 }),
@@ -2502,6 +2644,19 @@ impl AudioEngine {
                 meter_db: live.map_or([-96.0; 2], |l| meter_db(l.meter())),
                 signal_db: live.map_or([-96.0; 2], |l| meter_db(l.signal())),
                 refused: self.apps_refused.get(&uuid).cloned(),
+                echo: live.map_or_else(Vec::new, |l| {
+                    l.echo
+                        .iter()
+                        .map(|p| {
+                            let stats = p.stats();
+                            AudioEchoSnapshot {
+                                room: p.room.clone(),
+                                delay_ms: stats.delay_ms,
+                                removed_db: stats.removed_db,
+                            }
+                        })
+                        .collect()
+                }),
             });
         }
         let monitor = AudioMonitorSnapshot {
@@ -2585,10 +2740,14 @@ impl AudioEngine {
         for cfg in &self.config.buses {
             let wanted = cfg.insert.as_ref().map(|i| &i.component);
             if self.remake_inserts || self.applied_inserts.get(&cfg.uuid) != wanted {
-                let settings = cfg.insert.as_ref().and_then(|i| i.settings.as_deref()).and_then(|b64| {
-                    use base64::Engine as _;
-                    base64::engine::general_purpose::STANDARD.decode(b64).ok()
-                });
+                let settings = cfg
+                    .insert
+                    .as_ref()
+                    .and_then(|i| i.settings.as_deref())
+                    .and_then(|b64| {
+                        use base64::Engine as _;
+                        base64::engine::general_purpose::STANDARD.decode(b64).ok()
+                    });
                 inserts.insert(
                     cfg.uuid.clone(),
                     wanted.map(|c| make_insert(&cfg.name, c, settings)),
@@ -2617,6 +2776,56 @@ impl AudioEngine {
             .filter_map(|b| Some((b.uuid.clone(), b.insert.as_ref()?.component.clone())))
             .collect();
         let mut let_go: Vec<insert::Insert> = Vec::new();
+        // Each microphone's echo cancellers it does not have yet, made here
+        // (up to a millisecond each), before the mixer is held.
+        let echo_wanted = self.config.echo_wanted();
+        let mut echo_made: HashMap<(String, String), echo::Canceller> = HashMap::new();
+        if !echo_wanted.is_empty() {
+            // One wanted again before the mixer let it go is kept from
+            // here, so it is there when the mixer is held below.
+            let missing: Vec<(String, String)> = match self.core.lock() {
+                Ok(mut core) => {
+                    let mut missing = Vec::new();
+                    for (mic, room) in &echo_wanted {
+                        let Some(source) = core.sources.iter_mut().find(|s| s.uuid == *mic) else {
+                            continue;
+                        };
+                        match source.echo.iter_mut().find(|p| p.room == *room) {
+                            Some(path) => path.wanted = true,
+                            None => missing.push((mic.clone(), room.clone())),
+                        }
+                    }
+                    missing
+                }
+                Err(_) => return,
+            };
+            for pair in missing {
+                match echo::Canceller::new() {
+                    Some(canceller) => {
+                        log::info!(
+                            "echo removal: input {} cleaned of bus {} ({})",
+                            pair.0,
+                            pair.1,
+                            echo::Canceller::version()
+                        );
+                        echo_made.insert(pair, canceller);
+                    }
+                    None => {
+                        if !self.echo_unavailable_logged {
+                            self.echo_unavailable_logged = true;
+                            log::warn!("echo removal: no echo canceller on this Mac; microphones go as they are");
+                        }
+                    }
+                }
+            }
+        }
+        let rooms: Vec<String> = self
+            .config
+            .buses
+            .iter()
+            .filter_map(|b| self.config.echo_room_of(b).map(str::to_string))
+            .collect();
+        let mics: Vec<String> = self.config.mics().map(|i| i.uuid.clone()).collect();
         let Ok(mut core) = self.core.lock() else {
             return;
         };
@@ -2651,27 +2860,79 @@ impl AudioEngine {
                 _ => Vec::new(),
             };
             // Played live, the rest of the bus to its callback.
-            bus.live = self
-                .live_taps
-                .get(&cfg.uuid)
-                .filter(|_| live)
-                .map(|feed| self::core::LiveSend {
-                    mics: feed.mics.iter().map(|(uuid, _, _)| uuid.clone()).collect(),
-                    tx: feed.rest.0.clone(),
-                });
+            bus.live =
+                self.live_taps
+                    .get(&cfg.uuid)
+                    .filter(|_| live)
+                    .map(|feed| self::core::LiveSend {
+                        mics: feed.mics.iter().map(|(uuid, _, _)| uuid.clone()).collect(),
+                        tx: feed.rest.0.clone(),
+                    });
             if let Some(gain) = self.live_bus_gains.get(&cfg.uuid) {
-                let g = if cfg.muted { 0.0 } else { db_to_gain(cfg.gain_db) };
+                let g = if cfg.muted {
+                    0.0
+                } else {
+                    db_to_gain(cfg.gain_db)
+                };
                 gain.store(g.to_bits(), Ordering::Relaxed);
+            }
+            // Echo removal on: its room. Off: the room kept while it fades
+            // out (the mixer lets it go then). Another room: this one faded
+            // out first, then that one in.
+            match self.config.echo_room_of(cfg) {
+                Some(room) if bus.echo_room.as_deref().is_none_or(|now| now == room) => {
+                    bus.echo_room = Some(room.to_string());
+                    bus.echo_on = true;
+                    bus.echo_next = None;
+                }
+                Some(room) => {
+                    bus.echo_on = false;
+                    bus.echo_next = Some(room.to_string());
+                }
+                None => {
+                    bus.echo_on = false;
+                    bus.echo_next = None;
+                }
+            }
+            // A room a bus removes the echo of: what it plays without its
+            // microphones is heard for (its delay and gain carried on).
+            if rooms.contains(&cfg.uuid) {
+                bus.room.get_or_insert_with(RoomSound::default);
+            } else {
+                bus.room = None;
             }
             core.buses.push(bus);
         }
         for source in &mut core.sources {
+            source.mic = mics.contains(&source.uuid);
+            // Its echo paths: those still wanted kept (what they learnt
+            // with them), the new ones added, starting from where its own
+            // processing is (a leveler that has settled); the rest cross
+            // back to the microphone as it is in the mixer, and go.
+            for path in &mut source.echo {
+                path.wanted = echo_wanted
+                    .iter()
+                    .any(|(mic, room)| *mic == source.uuid && *room == path.room);
+            }
+            for (mic, room) in echo_wanted.iter().filter(|(mic, _)| *mic == source.uuid) {
+                if source.echo.iter().any(|p| p.room == *room) {
+                    continue;
+                }
+                if let Some(canceller) = echo_made.remove(&(mic.clone(), room.clone())) {
+                    let mut path = EchoPath::new(room.clone(), canceller);
+                    path.chain = source.dynamics.clone();
+                    source.echo.push(path);
+                }
+            }
             if let Some(strip) = self.config.strips.iter().find(|s| s.uuid == source.uuid) {
                 source.gain_db = strip.gain_db;
                 source.muted = strip.muted;
                 source.balance = strip.balance;
                 source.delay_ms = strip.delay_ms;
                 source.dynamics.configure(&strip.processing());
+                for path in &mut source.echo {
+                    path.chain.configure(&strip.processing());
+                }
                 source.sends = strip
                     .sends
                     .iter()
@@ -2695,6 +2956,7 @@ impl AudioEngine {
         drop(core);
         // An old insert's thread ends once its side here is gone.
         drop(let_go);
+        drop(echo_made);
         self.apply_gates();
         drop(eq_retired);
         self.apply_live_settings();
@@ -2735,7 +2997,11 @@ impl AudioEngine {
                 .filter(|i| Some(&i.component) == running)
             {
                 use base64::Engine as _;
-                insert.settings = Some(base64::engine::general_purpose::STANDARD.encode(settings).into());
+                insert.settings = Some(
+                    base64::engine::general_purpose::STANDARD
+                        .encode(settings)
+                        .into(),
+                );
             }
         }
     }
@@ -2751,12 +3017,13 @@ impl AudioEngine {
             return;
         };
         for feed in self.live_taps.values() {
-            feed.control.set_levelers(feed.mics.iter().map(|(uuid, _, _)| {
-                core.sources
-                    .iter()
-                    .find(|s| s.uuid == *uuid)
-                    .map_or(f32::NAN, |s| s.dynamics.snapshot().leveler_gain_db)
-            }));
+            feed.control
+                .set_levelers(feed.mics.iter().map(|(uuid, _, _)| {
+                    core.sources
+                        .iter()
+                        .find(|s| s.uuid == *uuid)
+                        .map_or(f32::NAN, |s| s.dynamics.snapshot().leveler_gain_db)
+                }));
         }
     }
 
@@ -2796,12 +3063,24 @@ impl AudioEngine {
             // A live bus's mic: its gain as the bus's callback reads it — its
             // send's level, and the fader (unless the send is before it), On,
             // Audio Auto's fade and a rundown step's.
-            let on = if source.muted { 0.0 } else { source.gate.clamp(0.0, 1.0) };
+            let on = if source.muted {
+                0.0
+            } else {
+                source.gate.clamp(0.0, 1.0)
+            };
             for (bus, feed) in &self.live_taps {
-                let g = source.sends.iter().find(|s| s.bus == *bus).map_or(0.0, |send| {
-                    let fader = if send.pre { 1.0 } else { db_to_gain(source.gain_db) };
-                    send.gain * fader * on
-                });
+                let g = source
+                    .sends
+                    .iter()
+                    .find(|s| s.bus == *bus)
+                    .map_or(0.0, |send| {
+                        let fader = if send.pre {
+                            1.0
+                        } else {
+                            db_to_gain(source.gain_db)
+                        };
+                        send.gain * fader * on
+                    });
                 for (uuid, _, gain) in &feed.mics {
                     if *uuid == source.uuid {
                         gain.store(g.to_bits(), Ordering::Relaxed);
@@ -2866,8 +3145,71 @@ fn run_mixer(core: &Mutex<MixCore>, stop: &AtomicBool) {
     }
 }
 
+/// Whether the app an input takes is muted on the Mac's own speakers while
+/// tapped: while Nida plays it — its strip sending it to a bus there is, or
+/// it soloed to the monitor. Sent nowhere, the app plays as it would without
+/// Nida (Safari was silent while Nida ran, Max5). Its strip off — by hand or
+/// Audio Auto — keeps it muted: off is silence, not the app's own speakers.
+/// With no strip of its own its sound keeps the routing it had, so it stays
+/// muted too (Codex).
+///
+/// A send turned on reaches the mix at once and the mute a moment later,
+/// on the app sound thread: for that moment the app is heard twice.
+fn mutes_app(config: &AudioMixConfig, soloed: bool, input: &str) -> bool {
+    let Some(strip) = config.strips.iter().find(|s| s.uuid == input) else {
+        return true;
+    };
+    soloed
+        || strip
+            .sends
+            .iter()
+            .any(|send| config.buses.iter().any(|bus| &bus.uuid == send))
+}
+
 #[cfg(test)]
 mod tests {
+
+    /// An app is muted on the Mac's speakers while Nida plays it — its strip
+    /// sending it to a bus, its strip off too, or soloed — and keeps them
+    /// when it is sent nowhere, or only to a bus no longer there. With no
+    /// strip it keeps the routing it had: muted.
+    #[test]
+    fn an_app_is_muted_only_while_nida_plays_it() {
+        let strip = |uuid: &str, sends: &[&str], muted: bool| -> AudioStripConfig {
+            serde_json::from_value(serde_json::json!({
+                "uuid": uuid,
+                "sends": sends,
+                "muted": muted,
+            }))
+            .expect("a strip as a show keeps it")
+        };
+        let mut config = AudioMixConfig::with_master();
+        let bus = config.buses[0].uuid.clone();
+        config.strips = vec![
+            strip("zoom", &[&bus], false),
+            strip("zoom-off", &[&bus], true),
+            strip("safari", &[], false),
+            strip("gone-bus", &["no-such-bus"], false),
+        ];
+        assert!(mutes_app(&config, false, "zoom"));
+        assert!(mutes_app(&config, false, "zoom-off"), "off is silence");
+        assert!(
+            !mutes_app(&config, false, "safari"),
+            "sent nowhere: its own speakers"
+        );
+        assert!(
+            mutes_app(&config, true, "safari"),
+            "soloed: heard on the monitor"
+        );
+        assert!(
+            !mutes_app(&config, false, "gone-bus"),
+            "a bus no longer there"
+        );
+        assert!(
+            mutes_app(&config, false, "no-strip"),
+            "its routing as it was"
+        );
+    }
 
     /// A Reset input reopens the devices the inputs taken with its deck
     /// listen to — once each — and no other's.
@@ -3096,6 +3438,10 @@ mod tests {
         fn failed(&self) -> bool {
             false
         }
+
+        fn set_muted(&mut self, _muted: bool) -> anyhow::Result<()> {
+            Ok(())
+        }
     }
 
     impl apps::Taps for OneApp {
@@ -3115,6 +3461,7 @@ mod tests {
             &mut self,
             _bundle_id: &str,
             _processes: &[u32],
+            _muted: bool,
         ) -> anyhow::Result<(Box<dyn apps::Taken>, LiveFeed)> {
             let (tx, rx) = crossbeam_channel::bounded(8);
             Ok((
@@ -3622,8 +3969,18 @@ mod tests {
         let lectern = engine.add_input("Lectern", "Scarlett", 0, 0);
         let handheld = engine.add_input("Handheld", "Scarlett", 1, 1);
         let laptop = engine.add_input("Laptop", "USB Audio", 0, 1);
-        for (uuid, bus) in [(&lectern, &pa), (&lectern, &wedges), (&handheld, &pa), (&laptop, &pa)] {
-            let strip = engine.config.strips.iter_mut().find(|s| s.uuid == *uuid).expect("strip");
+        for (uuid, bus) in [
+            (&lectern, &pa),
+            (&lectern, &wedges),
+            (&handheld, &pa),
+            (&laptop, &pa),
+        ] {
+            let strip = engine
+                .config
+                .strips
+                .iter_mut()
+                .find(|s| s.uuid == *uuid)
+                .expect("strip");
             strip.sends.push(bus.clone());
         }
         let mut got: Vec<(String, Vec<String>)> = engine
@@ -3659,7 +4016,12 @@ mod tests {
         // Either way round: the smallest, not the last.
         for _ in 0..2 {
             let shared = live_frames_shared(&buses);
-            let of = |name: &str| buses.iter().find(|b| b.name == name).map(|b| shared.get(&b.uuid).copied());
+            let of = |name: &str| {
+                buses
+                    .iter()
+                    .find(|b| b.name == name)
+                    .map(|b| shared.get(&b.uuid).copied())
+            };
             assert_eq!(of("PA"), Some(Some(64)), "PA at the Wedges' 64");
             assert_eq!(of("Wedges"), Some(Some(64)));
             assert_eq!(of("Lobby"), Some(Some(128)), "another device: its own");
@@ -3674,9 +4036,15 @@ mod tests {
     fn a_live_bus_is_saved_and_shown_as_set() {
         let plain: AudioBusConfig =
             serde_json::from_value(serde_json::json!({ "uuid": "b", "name": "PA" })).expect("bus");
-        assert!(!plain.live && plain.live_frames.is_none(), "an older show: not live");
+        assert!(
+            !plain.live && plain.live_frames.is_none(),
+            "an older show: not live"
+        );
         let saved = serde_json::to_value(&plain).expect("saved");
-        assert!(saved.get("live").is_none() && saved.get("live_frames").is_none(), "{saved}");
+        assert!(
+            saved.get("live").is_none() && saved.get("live_frames").is_none(),
+            "{saved}"
+        );
         let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
         let pa = engine.add_bus("PA");
         engine
@@ -3695,8 +4063,15 @@ mod tests {
             bus.device_note.as_deref(),
             Some("Live: waits for a mic on its own device sent to it")
         );
-        engine.edit_bus(&pa, |b| b.live_frames = Some(128)).expect("PA");
-        let frames = engine.config.buses.iter().find(|b| b.uuid == pa).map(live_frames_of);
+        engine
+            .edit_bus(&pa, |b| b.live_frames = Some(128))
+            .expect("PA");
+        let frames = engine
+            .config
+            .buses
+            .iter()
+            .find(|b| b.uuid == pa)
+            .map(live_frames_of);
         assert_eq!(frames, Some(128));
     }
 
@@ -3707,10 +4082,12 @@ mod tests {
     fn a_live_buses_mics_keep_a_send_turned_off() {
         let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
         let pa = engine.add_bus("PA");
-        engine.edit_bus(&pa, |b| {
-            b.device = Some("Mic".into());
-            b.live = true;
-        }).expect("bus");
+        engine
+            .edit_bus(&pa, |b| {
+                b.device = Some("Mic".into());
+                b.live = true;
+            })
+            .expect("bus");
         let a = engine.add_input("Lectern", "Mic", 0, 0);
         let b = engine.add_input("Podium", "Mic", 1, 1);
         let c = engine.add_input("Spare", "Mic", 2, 2);
@@ -3720,7 +4097,13 @@ mod tests {
                     s.sends = if sent { vec![pa.clone()] } else { Vec::new() };
                     s.sent_before = if kept { vec![pa.clone()] } else { Vec::new() };
                     // c's level set while never sent: not among the mics.
-                    s.send_settings.insert(pa.clone(), SendConfig { gain_db: -6.0, ..SendConfig::default() });
+                    s.send_settings.insert(
+                        pa.clone(),
+                        SendConfig {
+                            gain_db: -6.0,
+                            ..SendConfig::default()
+                        },
+                    );
                 })
                 .expect("mic");
         }
@@ -3739,12 +4122,272 @@ mod tests {
         );
         // A toggled off, b on: the same mics in the same order — the same feed.
         engine.edit_source(&a, |s| s.sends.clear()).expect("a");
-        engine.edit_source(&b, |s| s.sends = vec![pa.clone()]).expect("b");
-        assert_eq!(mics(&engine), [(a.clone(), true), (b.clone(), false)], "not reordered");
+        engine
+            .edit_source(&b, |s| s.sends = vec![pa.clone()])
+            .expect("b");
+        assert_eq!(
+            mics(&engine),
+            [(a.clone(), true), (b.clone(), false)],
+            "not reordered"
+        );
     }
 
     /// A live bus's mic plays at its send's level: before the fader on a
     /// monitor mix (the fader left out), after it otherwise.
+    /// A bus removing the room's echo gets its microphones cleaned of what
+    /// the room plays: sound devices' inputs, not an app's sound or a
+    /// camera's. A cleaned microphone keeps what its canceller learnt while
+    /// its settings change, and lets it go when the bus goes live or the
+    /// room goes.
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[test]
+    fn a_bus_removing_the_rooms_echo_cleans_only_its_microphones() {
+        let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
+        // Its blocks mixed here, one by one: not by the mixer's thread.
+        engine.stop.store(true, Ordering::Relaxed);
+        engine.thread.take().unwrap().join().unwrap();
+        let room = engine.add_bus("Room");
+        let call = engine.add_bus("CALL");
+        let mic = engine.add_input("Lectern", "Mic", 0, 0);
+        let camera = engine.add_input_of_deck("Camera", "Capture", (0, 1), "deck1");
+        let zoom = engine.add_app_input("Zoom", "us.zoom.xos");
+        for uuid in [&mic, &camera, &zoom] {
+            let fifo = Arc::new(Mutex::new(std::collections::VecDeque::new()));
+            engine
+                .core
+                .lock()
+                .unwrap()
+                .sources
+                .push(Source::new(uuid.clone(), Feed::Fifo(fifo)));
+            engine
+                .edit_source(uuid, |s| s.sends = vec![room.clone(), call.clone()])
+                .expect("source");
+        }
+        // A cleaning let go goes once its sends have faded (a block), and
+        // the bus's echo removal with them (one more).
+        let echo_of = |engine: &AudioEngine, uuid: &str| -> Vec<String> {
+            let mut core = engine.core.lock().unwrap();
+            core.process_block();
+            core.process_block();
+            core.source(uuid)
+                .unwrap()
+                .echo
+                .iter()
+                .map(|p| p.room.clone())
+                .collect()
+        };
+        assert!(echo_of(&engine, &mic).is_empty(), "nothing asked yet");
+        engine
+            .edit_bus(&call, |b| b.echo_room = Some(room.clone()))
+            .expect("bus");
+        assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
+        assert!(
+            echo_of(&engine, &camera).is_empty(),
+            "a camera's sound is played, not cleaned"
+        );
+        assert!(
+            echo_of(&engine, &zoom).is_empty(),
+            "the call is what is taken out"
+        );
+        {
+            let core = engine.core.lock().unwrap();
+            assert!(core.source(&mic).unwrap().mic);
+            assert!(!core.source(&camera).unwrap().mic && !core.source(&zoom).unwrap().mic);
+            assert_eq!(
+                core.bus(&call).unwrap().echo_room.as_deref(),
+                Some(room.as_str())
+            );
+            assert!(
+                core.bus(&room).unwrap().room.is_some(),
+                "the room is heard for"
+            );
+            assert!(core.bus(&call).unwrap().room.is_none());
+        }
+        // A fader moved keeps the canceller (and what it learnt).
+        for _ in 0..20 {
+            engine.core.lock().unwrap().process_block();
+        }
+        engine.edit_source(&mic, |s| s.gain_db = -3.0).expect("mic");
+        assert!(
+            engine.core.lock().unwrap().source(&mic).unwrap().echo[0].heard_blocks() >= 20,
+            "kept"
+        );
+        // Sent to the call no more, and back: the same canceller all along,
+        // knowing the room when the send comes on again.
+        let heard = |engine: &AudioEngine| {
+            engine.core.lock().unwrap().source(&mic).unwrap().echo[0].heard_blocks()
+        };
+        engine
+            .edit_source(&mic, |s| s.sends = vec![room.clone()])
+            .expect("mic");
+        assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
+        let before = heard(&engine);
+        engine
+            .edit_source(&mic, |s| s.sends = vec![room.clone(), call.clone()])
+            .expect("mic");
+        assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
+        assert!(heard(&engine) > before, "the same one");
+        // Not a microphone any more (its input made a camera's sound): let go.
+        engine
+            .config
+            .inputs
+            .iter_mut()
+            .find(|i| i.uuid == mic)
+            .unwrap()
+            .deck = Some("deck2".into());
+        engine.apply();
+        {
+            let core = engine.core.lock().unwrap();
+            let echo = &core.source(&mic).unwrap().echo;
+            assert!(
+                echo.len() == 1 && !echo[0].wanted,
+                "kept to cross back, not asked for"
+            );
+        }
+        assert!(echo_of(&engine, &mic).is_empty());
+        engine
+            .config
+            .inputs
+            .iter_mut()
+            .find(|i| i.uuid == mic)
+            .unwrap()
+            .deck = None;
+        engine.apply();
+        assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
+        // A live bus mixes its mics in its device: none cleaned there.
+        engine.edit_bus(&call, |b| b.live = true).expect("bus");
+        assert!(echo_of(&engine, &mic).is_empty());
+        assert!(engine
+            .core
+            .lock()
+            .unwrap()
+            .bus(&room)
+            .unwrap()
+            .room
+            .is_none());
+        engine.edit_bus(&call, |b| b.live = false).expect("bus");
+        assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
+        // Another room: this one fades out first, then that one comes in.
+        let stage = engine.add_bus("Stage");
+        engine
+            .edit_bus(&call, |b| b.echo_room = Some(stage.clone()))
+            .expect("bus");
+        {
+            let core = engine.core.lock().unwrap();
+            let bus = core.bus(&call).unwrap();
+            assert_eq!(
+                bus.echo_room.as_deref(),
+                Some(room.as_str()),
+                "the old room fading out"
+            );
+            assert!(!bus.echo_on);
+            assert_eq!(bus.echo_next.as_deref(), Some(stage.as_str()));
+        }
+        assert_eq!(echo_of(&engine, &mic), vec![stage.clone()]);
+        assert_eq!(
+            engine
+                .core
+                .lock()
+                .unwrap()
+                .bus(&call)
+                .unwrap()
+                .echo_room
+                .as_deref(),
+            Some(stage.as_str())
+        );
+        engine
+            .edit_bus(&call, |b| b.echo_room = Some(room.clone()))
+            .expect("bus");
+        assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
+        // The room gone: so is the echo removal.
+        engine.remove_bus(&room).expect("room");
+        assert!(echo_of(&engine, &mic).is_empty());
+        assert_eq!(
+            engine
+                .config()
+                .buses
+                .iter()
+                .find(|b| b.uuid == call)
+                .unwrap()
+                .echo_room,
+            None
+        );
+    }
+
+    /// A microphone's cleaning, new, starts from where its strip's
+    /// processing is: a leveler that has turned a quiet voice up keeps it
+    /// up on the call's bus.
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[test]
+    fn a_new_cleaning_starts_from_its_strips_settled_leveler() {
+        let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
+        engine.stop.store(true, Ordering::Relaxed);
+        engine.thread.take().unwrap().join().unwrap();
+        let room = engine.add_bus("Room");
+        let call = engine.add_bus("CALL");
+        let mic = engine.add_input("Lectern", "Mic", 0, 0);
+        let fifo = Arc::new(Mutex::new(std::collections::VecDeque::new()));
+        engine
+            .core
+            .lock()
+            .unwrap()
+            .sources
+            .push(Source::new(mic.clone(), Feed::Fifo(fifo.clone())));
+        engine
+            .edit_source(&mic, |s| {
+                s.sends = vec![room.clone(), call.clone()];
+                s.leveler = LevelerConfig {
+                    enabled: true,
+                    speed_secs: 0.5,
+                    ..LevelerConfig::default()
+                };
+            })
+            .expect("mic");
+        // A quiet voice for 3 s: the leveler turns it up.
+        for b in 0..300 {
+            #[allow(clippy::cast_precision_loss)]
+            fifo.lock().unwrap().extend((0..BLOCK_FRAMES).map(|i| {
+                let v = 0.02 * ((b * BLOCK_FRAMES + i) as f32 * 0.05).sin();
+                [v, v]
+            }));
+            engine.core.lock().unwrap().process_block();
+        }
+        let settled = engine
+            .core
+            .lock()
+            .unwrap()
+            .source(&mic)
+            .unwrap()
+            .dynamics
+            .snapshot()
+            .leveler_gain_db;
+        assert!(settled > 3.0, "the leveler rose: {settled}");
+        engine
+            .edit_bus(&call, |b| b.echo_room = Some(room.clone()))
+            .expect("bus");
+        {
+            let core = engine.core.lock().unwrap();
+            let path = &core.source(&mic).unwrap().echo[0];
+            assert!(
+                (path.chain.snapshot().leveler_gain_db - settled).abs() < 1e-3,
+                "starts where the strip is"
+            );
+        }
+        // A show loaded starts the strip afresh, and its cleaning with it.
+        engine.load(engine.config().clone());
+        let core = engine.core.lock().unwrap();
+        let source = core.source(&mic).unwrap();
+        assert_eq!(source.echo.len(), 1, "the canceller kept");
+        assert!(
+            (source.echo[0].chain.snapshot().leveler_gain_db
+                - source.dynamics.snapshot().leveler_gain_db)
+                .abs()
+                < 1e-3,
+            "afresh too"
+        );
+        assert!(source.dynamics.snapshot().leveler_gain_db.abs() < 1e-3);
+    }
+
     #[test]
     fn a_live_mics_gain_is_its_sends() {
         let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
@@ -3766,25 +4409,54 @@ mod tests {
         );
         {
             let fifo = Arc::new(Mutex::new(std::collections::VecDeque::new()));
-            engine.core.lock().unwrap().sources.push(Source::new(mic.clone(), Feed::Fifo(fifo)));
+            engine
+                .core
+                .lock()
+                .unwrap()
+                .sources
+                .push(Source::new(mic.clone(), Feed::Fifo(fifo)));
         }
-        engine.edit_bus(&wedge, |b| b.pre_fader = true).expect("bus");
+        engine
+            .edit_bus(&wedge, |b| b.pre_fader = true)
+            .expect("bus");
         engine
             .edit_source(&mic, |s| {
                 s.gain_db = -20.0;
                 s.muted = false;
                 s.sends = vec![wedge.clone()];
-                s.send_settings.insert(wedge.clone(), SendConfig { gain_db: -6.0, ..SendConfig::default() });
+                s.send_settings.insert(
+                    wedge.clone(),
+                    SendConfig {
+                        gain_db: -6.0,
+                        ..SendConfig::default()
+                    },
+                );
             })
             .expect("mic");
         let heard = || f32::from_bits(gain.load(Ordering::Relaxed));
-        assert!((heard() - db_to_gain(-6.0)).abs() < 1e-6, "before the fader: {}", heard());
-        engine.edit_bus(&wedge, |b| b.pre_fader = false).expect("bus");
-        assert!((heard() - db_to_gain(-26.0)).abs() < 1e-6, "after it: {}", heard());
+        assert!(
+            (heard() - db_to_gain(-6.0)).abs() < 1e-6,
+            "before the fader: {}",
+            heard()
+        );
         engine
-            .edit_source(&mic, |s| s.send_settings.get_mut(&wedge).unwrap().mode = SendMode::Pre)
+            .edit_bus(&wedge, |b| b.pre_fader = false)
+            .expect("bus");
+        assert!(
+            (heard() - db_to_gain(-26.0)).abs() < 1e-6,
+            "after it: {}",
+            heard()
+        );
+        engine
+            .edit_source(&mic, |s| {
+                s.send_settings.get_mut(&wedge).unwrap().mode = SendMode::Pre
+            })
             .expect("mic");
-        assert!((heard() - db_to_gain(-6.0)).abs() < 1e-6, "the send's own say: {}", heard());
+        assert!(
+            (heard() - db_to_gain(-6.0)).abs() < 1e-6,
+            "the send's own say: {}",
+            heard()
+        );
     }
 
     /// Shows saved before sends had levels load as they sounded: every send
@@ -3793,28 +4465,57 @@ mod tests {
     #[test]
     fn send_settings_load_and_go_with_their_bus() {
         let old: AudioStripConfig =
-            serde_json::from_value(serde_json::json!({ "uuid": "mic", "sends": ["m"] })).expect("strip");
+            serde_json::from_value(serde_json::json!({ "uuid": "mic", "sends": ["m"] }))
+                .expect("strip");
         assert!(old.send_settings.is_empty());
         let bus: AudioBusConfig =
-            serde_json::from_value(serde_json::json!({ "uuid": "m", "name": "Master" })).expect("bus");
+            serde_json::from_value(serde_json::json!({ "uuid": "m", "name": "Master" }))
+                .expect("bus");
         assert!(!bus.pre_fader);
-        assert_eq!(old.send_to(&bus), core::Send { bus: "m".into(), gain: 1.0, pre: false });
+        assert_eq!(
+            old.send_to(&bus),
+            core::Send {
+                bus: "m".into(),
+                gain: 1.0,
+                pre: false
+            }
+        );
         let wild: AudioStripConfig = serde_json::from_value(serde_json::json!({
             "uuid": "mic",
             "send_settings": { "m": { "gain_db": 99.0, "mode": "pre" } }
         }))
         .expect("strip");
-        assert_eq!(wild.send_settings["m"], SendConfig { gain_db: 0.0, mode: SendMode::Pre });
+        assert_eq!(
+            wild.send_settings["m"],
+            SendConfig {
+                gain_db: 0.0,
+                mode: SendMode::Pre
+            }
+        );
 
         let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
         let wedge = engine.add_bus("Wedge");
         let mic = engine.add_input("Lectern", "Mic", 0, 0);
-        engine.config.strips.iter_mut().find(|s| s.uuid == mic).unwrap().send_settings.insert(
-            wedge.clone(),
-            SendConfig { gain_db: -3.0, mode: SendMode::Post },
-        );
+        engine
+            .config
+            .strips
+            .iter_mut()
+            .find(|s| s.uuid == mic)
+            .unwrap()
+            .send_settings
+            .insert(
+                wedge.clone(),
+                SendConfig {
+                    gain_db: -3.0,
+                    mode: SendMode::Post,
+                },
+            );
         engine.remove_bus(&wedge).expect("removed");
-        assert!(engine.config.strips.iter().all(|s| s.send_settings.is_empty()));
+        assert!(engine
+            .config
+            .strips
+            .iter()
+            .all(|s| s.send_settings.is_empty()));
     }
 
     /// The mixer's own leveler gain for each live mic's strip reaches its
@@ -3861,7 +4562,9 @@ mod tests {
     fn the_same_effect_asked_for_again_keeps_its_settings() {
         let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
         let bus = engine.default_bus().expect("Master").to_string();
-        engine.set_insert(&bus, Some("aufx:lpas:appl".into())).expect("set");
+        engine
+            .set_insert(&bus, Some("aufx:lpas:appl".into()))
+            .expect("set");
         engine
             .edit_bus(&bus, |b| {
                 let insert = b.insert.as_mut().expect("insert");
@@ -3869,13 +4572,20 @@ mod tests {
                 insert.bypass = true;
             })
             .expect("bus");
-        engine.set_insert(&bus, Some("aufx:lpas:appl".into())).expect("again");
+        engine
+            .set_insert(&bus, Some("aufx:lpas:appl".into()))
+            .expect("again");
         let insert = engine.config.buses[0].insert.clone().expect("insert");
         assert_eq!(insert.settings.as_deref(), Some("c2F2ZWQ="));
         assert!(insert.bypass);
-        engine.set_insert(&bus, Some("aufx:hpas:appl".into())).expect("another");
+        engine
+            .set_insert(&bus, Some("aufx:hpas:appl".into()))
+            .expect("another");
         let insert = engine.config.buses[0].insert.clone().expect("insert");
-        assert!(insert.settings.is_none() && !insert.bypass, "another starts afresh");
+        assert!(
+            insert.settings.is_none() && !insert.bypass,
+            "another starts afresh"
+        );
         assert!(engine.set_insert("nosuchbus", None).is_err());
     }
 
@@ -3916,22 +4626,48 @@ mod tests {
             .edit_bus(&bus, |b| b.insert.as_mut().expect("insert").bypass = true)
             .expect("bus");
         assert_eq!(
-            engine.snapshot().buses[0].insert_status.as_ref().map(|s| s.state.as_str()),
+            engine.snapshot().buses[0]
+                .insert_status
+                .as_ref()
+                .map(|s| s.state.as_str()),
             Some("bypassed"),
             "the running insert bypassed"
         );
-        assert!(engine.open_insert_window(&bus).is_ok(), "its window asked for");
-        assert!(engine.open_insert_window("nosuchbus").is_err_and(|e| e.starts_with("no audio bus")));
-        assert!((playing.latency_ms - 20.0).abs() < 0.5, "the handoff's 20 ms and none of its own: {}", playing.latency_ms);
+        assert!(
+            engine.open_insert_window(&bus).is_ok(),
+            "its window asked for"
+        );
+        assert!(engine
+            .open_insert_window("nosuchbus")
+            .is_err_and(|e| e.starts_with("no audio bus")));
+        assert!(
+            (playing.latency_ms - 20.0).abs() < 0.5,
+            "the handoff's 20 ms and none of its own: {}",
+            playing.latency_ms
+        );
         set(&mut engine, Some("aufx:none:none"));
         let failed = state_becomes(&engine, "failed").expect("a status");
-        assert!(failed.why.as_deref().is_some_and(|w| w.contains("not installed on this Mac")), "{:?}", failed.why);
-        assert!(engine.open_insert_window(&bus).is_err_and(|e| e.contains("not loaded")), "failed: none");
+        assert!(
+            failed
+                .why
+                .as_deref()
+                .is_some_and(|w| w.contains("not installed on this Mac")),
+            "{:?}",
+            failed.why
+        );
+        assert!(
+            engine
+                .open_insert_window(&bus)
+                .is_err_and(|e| e.contains("not loaded")),
+            "failed: none"
+        );
         assert_eq!(failed.state, "failed");
         assert!(failed.why.is_some(), "says why");
         set(&mut engine, None);
         assert!(engine.snapshot().buses[0].insert_status.is_none());
-        assert!(engine.open_insert_window(&bus).is_err_and(|e| e.contains("has no effect")));
+        assert!(engine
+            .open_insert_window(&bus)
+            .is_err_and(|e| e.contains("has no effect")));
         // A bus removed with an effect on it: its window goes too.
         let gone = engine.add_bus("Gone");
         engine
@@ -3946,12 +4682,18 @@ mod tests {
             .expect("bus");
         au_editor::CLOSED.lock().unwrap().retain(|k| *k != gone);
         engine.remove_bus(&gone).expect("removed");
-        assert!(au_editor::CLOSED.lock().unwrap().contains(&gone), "its window closed");
+        assert!(
+            au_editor::CLOSED.lock().unwrap().contains(&gone),
+            "its window closed"
+        );
         // A show loaded with the same effect makes it afresh (what it held
         // was the old show's); one whose bus has none loses it.
         set(&mut engine, Some("aufx:lpas:appl"));
         let running = |engine: &AudioEngine| {
-            engine.core.lock().unwrap().buses[0].insert.as_ref().map(|i| Arc::clone(&i.status))
+            engine.core.lock().unwrap().buses[0]
+                .insert
+                .as_ref()
+                .map(|i| Arc::clone(&i.status))
         };
         let before = running(&engine).expect("an insert");
         engine.load(engine.config.clone());
@@ -3984,14 +4726,19 @@ mod tests {
         let end = Instant::now() + Duration::from_secs(10);
         let settings = loop {
             engine.poll_devices();
-            let settings = engine.config.buses[0].insert.as_ref().and_then(|i| i.settings.clone());
+            let settings = engine.config.buses[0]
+                .insert
+                .as_ref()
+                .and_then(|i| i.settings.clone());
             if settings.is_some() || Instant::now() > end {
                 break settings;
             }
             std::thread::sleep(Duration::from_millis(20));
         };
         let settings = settings.expect("its settings kept");
-        let bytes = base64::engine::general_purpose::STANDARD.decode(settings.as_bytes()).expect("base64");
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(settings.as_bytes())
+            .expect("base64");
         assert!(bytes.starts_with(b"bplist"), "a binary property list");
     }
 
@@ -4059,7 +4806,10 @@ mod tests {
         .expect("strip");
         assert!(wild.eq.enabled);
         assert!((wild.eq.bands[0].gain_db + 3.0).abs() < 1e-6, "kept");
-        assert!(wild.eq.bands[1].gain_db.abs() < 1e-6, "out of range: as new");
+        assert!(
+            wild.eq.bands[1].gain_db.abs() < 1e-6,
+            "out of range: as new"
+        );
     }
 
     /// A strip saved before the gate loads with it off; one saved with a gate
@@ -4107,9 +4857,17 @@ mod tests {
         assert_eq!(got.delay_ms, 12.0);
         assert_eq!(got.limiter.ceiling_db, -3.0);
         assert!(got.compressor.enabled);
-        assert_eq!((got.mics[0].low_cut.hz, got.mics[0].balance), (150.0, 0.25), "feed order");
+        assert_eq!(
+            (got.mics[0].low_cut.hz, got.mics[0].balance),
+            (150.0, 0.25),
+            "feed order"
+        );
         assert_eq!((got.mics[1].low_cut.hz, got.mics[1].balance), (80.0, -0.5));
-        assert_eq!(got.mics[2], live::LiveMicSettings::default(), "no third mic");
+        assert_eq!(
+            got.mics[2],
+            live::LiveMicSettings::default(),
+            "no third mic"
+        );
         assert!(live_settings(&config, "gone", std::iter::empty()).is_none());
     }
 
@@ -4168,7 +4926,13 @@ mod tests {
         set_source(0.01); // −40 dBFS
         assert!(engine.sounding(-60.0), "a source playing");
         set_source(0.0);
-        let bus = engine.core.lock().unwrap().buses.first().map(|b| b.uuid.clone());
+        let bus = engine
+            .core
+            .lock()
+            .unwrap()
+            .buses
+            .first()
+            .map(|b| b.uuid.clone());
         assert!(bus.is_some(), "a show starts with Master");
         engine.core.lock().unwrap().buses[0].set_meter_for_tests([0.0, 0.02]);
         assert!(engine.sounding(-60.0), "a bus heard");
@@ -4360,7 +5124,11 @@ mod tests {
         engine.edit_source("d1", |s| s.auto = true).unwrap();
         engine.set_on_air(at(0.5));
         engine.set_step_fades(HashMap::from([("d1".to_string(), 0.5)]));
-        assert!((gate(&engine) - 0.25).abs() < 1e-6, "both: {}", gate(&engine));
+        assert!(
+            (gate(&engine) - 0.25).abs() < 1e-6,
+            "both: {}",
+            gate(&engine)
+        );
     }
 
     #[test]

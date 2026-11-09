@@ -62,6 +62,9 @@ pub struct UIRunner {
     /// The channels whose picture — the channel's, or a layer's of it — the
     /// windows drew last frame (see `visible_tiles`).
     visible_tiles: Vec<usize>,
+    /// The decks whose thumbnails the windows drew last frame, by UUID (see
+    /// `previewed_decks`).
+    previewed_decks: Vec<String>,
     /// The channels the UI showed big or under the pointer last frame, by
     /// UUID (see `UISession::shown_full`): drawn at the show's rate.
     shown_full: Vec<String>,
@@ -141,6 +144,11 @@ pub struct UIRunner {
     screen_rate_kept: Option<crate::screen_rate::Kept>,
     night_shift: crate::night_shift::NightShift,
     closing_builds: Option<(crate::renderer::builds::Builds, std::time::Instant, bool)>,
+    /// Night Shift as the show last asked: outputs on screens, and keeping
+    /// it off for them wanted (see `keep_night_shift`).
+    night_shift_asked: Option<(bool, bool)>,
+    /// What was done to Night Shift, to tell the show.
+    night_shift_kept: Option<crate::night_shift::Kept>,
     /// Shows opened lately, for the Show menu.
     recent_shows: std::sync::Arc<Vec<std::path::PathBuf>>,
     /// The show folder the window is named after (see `show_changed`).
@@ -288,6 +296,7 @@ impl UIRunner {
             colour_pick_readback: None,
             textures_drawn: std::collections::HashSet::new(),
             visible_tiles: Vec::new(),
+            previewed_decks: Vec::new(),
             shown_full: Vec::new(),
             hold_notes: Vec::new(),
             long_hold_reported: None,
@@ -320,6 +329,8 @@ impl UIRunner {
             screen_rate_kept: None,
             night_shift: crate::night_shift::NightShift::default(),
             closing_builds: None,
+            night_shift_asked: None,
+            night_shift_kept: None,
             recent_shows: std::sync::Arc::default(),
             named_after: std::path::PathBuf::new(),
             // A test's runner never reads or writes this computer's Recent
@@ -701,7 +712,10 @@ fn held_parts(before: &[(String, f32)], now: &[(String, f32)]) -> String {
     let mut parts: Vec<(&str, f32)> = now
         .iter()
         .map(|(name, ms)| {
-            let had = before.iter().find(|(b, _)| b == name).map_or(0.0, |(_, ms)| *ms);
+            let had = before
+                .iter()
+                .find(|(b, _)| b == name)
+                .map_or(0.0, |(_, ms)| *ms);
             (name.as_str(), ms - had)
         })
         .filter(|(_, ms)| *ms >= 0.5)
@@ -765,6 +779,20 @@ fn visible_tiles(
     seen
 }
 
+/// The decks, by UUID, whose thumbnails were among the textures `drawn`.
+fn previewed_decks(
+    drawn: &std::collections::HashSet<egui::TextureId>,
+    deck_textures: &std::collections::HashMap<String, egui::TextureId>,
+) -> Vec<String> {
+    let mut seen: Vec<String> = deck_textures
+        .iter()
+        .filter(|(_, texture)| drawn.contains(texture))
+        .map(|(uuid, _)| uuid.clone())
+        .collect();
+    seen.sort_unstable();
+    seen
+}
+
 /// The share of its pixels a window on `monitor` is drawn at: on a scaled
 /// display mode — a 4K panel set to look like 2560×1440 is drawn at
 /// 5120×2880 and scaled down by macOS — the panel's own pixels, no more
@@ -819,7 +847,11 @@ impl UIRunner {
     /// share of them it is drawn at.
     fn resize_ui_surface(&mut self, size: winit::dpi::PhysicalSize<u32>) {
         let scale = self.ui_render_scale;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            clippy::cast_precision_loss
+        )]
         let drawn = winit::dpi::PhysicalSize::new(
             ((size.width as f32 * scale).round() as u32).max(1),
             ((size.height as f32 * scale).round() as u32).max(1),
@@ -1097,6 +1129,7 @@ impl UIRunner {
         // And the tiles shown: an off-air input is drawn for its tile only
         // while it is seen.
         varda.set_tile_channels(self.visible_tiles.clone());
+        varda.set_previewed_decks(self.previewed_decks.clone());
         varda.set_ui_selected_deck(self.layout.selected_deck);
 
         // GPU render (mixer compositing)
@@ -1161,6 +1194,7 @@ impl UIRunner {
             return;
         };
         self.keep_screen_rate();
+        self.keep_night_shift();
         let Some(window) = self.window else { return };
         self.stall_for_test();
 
@@ -1283,8 +1317,8 @@ impl UIRunner {
         self.submit_frame(&paint_jobs, pixels_per_point, &shown);
         self.part("ui submit", t_submit);
         #[allow(clippy::cast_precision_loss)]
-        let frame_ms =
-            (1000.0 / shown.target_fps.max(1) as f32).max(self.ui_frame_allowance.as_secs_f32() * 1000.0);
+        let frame_ms = (1000.0 / shown.target_fps.max(1) as f32)
+            .max(self.ui_frame_allowance.as_secs_f32() * 1000.0);
         self.ui_parts.end(std::time::Instant::now(), frame_ms);
     }
 
@@ -1348,9 +1382,17 @@ impl UIRunner {
     /// Say — at most once a second — that the control window held the show
     /// long enough to hold up the outputs, doing what, part by part (Max5:
     /// "ui hold" 20–50 ms frames, to match with the operator's clicks).
-    fn report_long_hold(&mut self, what: &str, held: std::time::Duration, before: &[(String, f32)]) {
+    fn report_long_hold(
+        &mut self,
+        what: &str,
+        held: std::time::Duration,
+        before: &[(String, f32)],
+    ) {
         if held < LONG_HOLD
-            || self.engine.as_ref().is_some_and(engine_thread::EngineThread::starting)
+            || self
+                .engine
+                .as_ref()
+                .is_some_and(engine_thread::EngineThread::starting)
             || self
                 .long_hold_reported
                 .is_some_and(|at| at.elapsed() < std::time::Duration::from_secs(1))
@@ -1376,12 +1418,26 @@ impl UIRunner {
     /// every output and recording stood still through it (a freeze after
     /// each change of the show's rate, Max5). Told to the show next time.
     fn keep_screen_rate(&mut self) {
-        let (Some(window), Some((outputs, fps, on))) = (self.window, self.screen_rate_asked.take()) else {
+        let (Some(window), Some((outputs, fps, on))) = (self.window, self.screen_rate_asked.take())
+        else {
             return;
         };
         let display = || window.current_monitor().and_then(|m| display_id(&m));
         if let Some(kept) = self.screen_rate.keep(display, || outputs, fps, on) {
             self.screen_rate_kept = Some(kept);
+        }
+    }
+
+    /// Night Shift off while an output is on a screen, or given back (see
+    /// `night_shift`), asked of macOS without the show held: every few
+    /// seconds it asked macOS's display service with the show waiting on
+    /// the control window. Told to the show next time.
+    fn keep_night_shift(&mut self) {
+        let Some((outputs, on)) = self.night_shift_asked.take() else {
+            return;
+        };
+        if let Some(kept) = self.night_shift.keep(outputs, on) {
+            self.night_shift_kept = Some(kept);
         }
     }
 
@@ -1403,7 +1459,8 @@ impl UIRunner {
             .and_then(|&ch| varda.mixer_ref().channels().get(ch))
             .map(|ch| ch.uuid().to_string());
         let drawn_px = &self.drawn_px;
-        let drawn = |texture: Option<egui::TextureId>| texture.and_then(|t| drawn_px.get(&t).copied());
+        let drawn =
+            |texture: Option<egui::TextureId>| texture.and_then(|t| drawn_px.get(&t).copied());
         let mut shared = monitor_frames::lock(&share);
         // Only a monitor drawn last frame, in a window seen, is wanted: none
         // is copied while the monitors are hidden. Main's picture is drawn
@@ -1426,10 +1483,11 @@ impl UIRunner {
                 channel: None,
                 drawn: Some(size),
             }),
-            cued.filter(|_| preview_seen).map(|uuid| monitor_frames::Want {
-                channel: Some(uuid),
-                drawn: drawn(self.monitor_picked[monitor_frames::PREVIEW]),
-            }),
+            cued.filter(|_| preview_seen)
+                .map(|uuid| monitor_frames::Want {
+                    channel: Some(uuid),
+                    drawn: drawn(self.monitor_picked[monitor_frames::PREVIEW]),
+                }),
         ];
         for at in [monitor_frames::MAIN, monitor_frames::PREVIEW] {
             self.monitor_picked[at] = None;
@@ -1491,7 +1549,8 @@ impl UIRunner {
         {
             log::info!("Shutdown requested, saving workspace and exiting...");
             // about_to_wait quits once the engine borrow has been returned.
-            self.shutdown_flag.store(true, std::sync::atomic::Ordering::Relaxed);
+            self.shutdown_flag
+                .store(true, std::sync::atomic::Ordering::Relaxed);
             true
         } else {
             false
@@ -1534,9 +1593,9 @@ impl UIRunner {
             // `keep_screen_rate`): every output window's screen asked now,
             // with those just made — and what was done last time told.
             self.screen_rate_asked = Some((
-                varda
-                    .output_screens_now()
-                    .and_then(|screens| screens.iter().map(display_id).collect::<Option<Vec<u32>>>()),
+                varda.output_screens_now().and_then(|screens| {
+                    screens.iter().map(display_id).collect::<Option<Vec<u32>>>()
+                }),
                 varda.target_fps(),
                 varda.control_screen_rate(),
             ));
@@ -1544,11 +1603,10 @@ impl UIRunner {
                 varda.note_screen_rate(&kept);
             }
             // Night Shift off while an output is on a screen (see
-            // `night_shift`).
-            if let Some(kept) = self
-                .night_shift
-                .keep(varda.outputs_on_screens(), varda.night_shift_off())
-            {
+            // `night_shift`): asked of macOS after the show is let go (see
+            // `keep_night_shift`), what was done told here the time after.
+            self.night_shift_asked = Some((varda.outputs_on_screens(), varda.night_shift_off()));
+            if let Some(kept) = self.night_shift_kept.take() {
                 varda.note_night_shift(kept);
             }
             #[cfg(any(
@@ -2229,6 +2287,9 @@ impl UIRunner {
                 varda.mixer_ref().channels(),
             );
             varda.set_tile_channels(self.visible_tiles.clone());
+            self.previewed_decks =
+                previewed_decks(&self.textures_drawn, &self.deck_preview_textures);
+            varda.set_previewed_decks(self.previewed_decks.clone());
             varda.set_ui_selected_deck(self.layout.selected_deck);
             self.selection_anchor = self.layout.anchor(&super::state::ChannelOrder::of(
                 varda.mixer_ref().channels(),
@@ -2629,7 +2690,10 @@ fn record_presented(
 /// is drawn after (`period`) and the one before (`previous`) — a hand back
 /// on a window drawn at the idle rate makes the next frame come after an
 /// idle wait, not a slow one.
-fn frame_allowance(previous: std::time::Duration, period: std::time::Duration) -> std::time::Duration {
+fn frame_allowance(
+    previous: std::time::Duration,
+    period: std::time::Duration,
+) -> std::time::Duration {
     previous.max(period)
 }
 
@@ -2646,18 +2710,31 @@ mod frame_period_tests {
     fn the_window_is_drawn_as_often_as_what_moves_needs() {
         let never = Duration::MAX;
         assert_eq!(frame_period(true, UiMotion::Still, never), Duration::ZERO);
-        assert_eq!(frame_period(false, UiMotion::Pictures, never), Duration::ZERO);
+        assert_eq!(
+            frame_period(false, UiMotion::Pictures, never),
+            Duration::ZERO
+        );
         assert_eq!(frame_period(false, UiMotion::Sound, never), SOUND_PERIOD);
         assert_eq!(frame_period(false, UiMotion::Still, never), IDLE_PERIOD);
         let blink = Duration::from_millis(40);
-        assert_eq!(frame_period(false, UiMotion::Still, blink), blink, "egui's sooner");
+        assert_eq!(
+            frame_period(false, UiMotion::Still, blink),
+            blink,
+            "egui's sooner"
+        );
         assert_eq!(
             frame_period(false, UiMotion::Sound, Duration::from_millis(100)),
             SOUND_PERIOD,
             "never later than the motion needs"
         );
-        assert_eq!(frame_period(false, UiMotion::Still, Duration::ZERO), Duration::ZERO);
-        assert!(IDLE_PERIOD <= Duration::from_millis(70), "about 15 a second");
+        assert_eq!(
+            frame_period(false, UiMotion::Still, Duration::ZERO),
+            Duration::ZERO
+        );
+        assert!(
+            IDLE_PERIOD <= Duration::from_millis(70),
+            "about 15 a second"
+        );
     }
 
     /// A frame reported shown after the rate went back to full is judged by
@@ -2667,7 +2744,12 @@ mod frame_period_tests {
         let frame = 1.0 / 60.0;
         let idle = IDLE_PERIOD.as_secs_f64();
         // Shown 16.7 ms apart, then an idle gap, then 16.7 ms again.
-        let times = [1.0, 1.0 + frame, 1.0 + frame + 0.0667, 1.0 + 2.0 * frame + 0.0667];
+        let times = [
+            1.0,
+            1.0 + frame,
+            1.0 + frame + 0.0667,
+            1.0 + 2.0 * frame + 0.0667,
+        ];
         let mut on_screen = crate::renderer::on_screen::OnScreen::default();
         let mut allowances: std::collections::VecDeque<f64> =
             [0.0, 0.0, idle, 0.0].into_iter().collect();
@@ -2684,7 +2766,10 @@ mod frame_period_tests {
     fn a_frame_after_an_idle_wait_is_judged_by_it() {
         assert_eq!(frame_allowance(IDLE_PERIOD, Duration::ZERO), IDLE_PERIOD);
         assert_eq!(frame_allowance(Duration::ZERO, IDLE_PERIOD), IDLE_PERIOD);
-        assert_eq!(frame_allowance(Duration::ZERO, Duration::ZERO), Duration::ZERO);
+        assert_eq!(
+            frame_allowance(Duration::ZERO, Duration::ZERO),
+            Duration::ZERO
+        );
     }
 }
 
@@ -2791,10 +2876,15 @@ mod tests {
     #[test]
     fn a_command_is_named_by_its_kind() {
         use crate::engine::EngineCommand;
-        assert_eq!(super::command_name(&EngineCommand::SetCrossfader(0.5)), "SetCrossfader");
+        assert_eq!(
+            super::command_name(&EngineCommand::SetCrossfader(0.5)),
+            "SetCrossfader"
+        );
         assert_eq!(super::command_name(&EngineCommand::UnloadLut), "UnloadLut");
         assert_eq!(
-            super::command_name(&EngineCommand::LoadLut { filename: "x".repeat(10_000) }),
+            super::command_name(&EngineCommand::LoadLut {
+                filename: "x".repeat(10_000)
+            }),
             "LoadLut"
         );
     }
@@ -2819,13 +2909,9 @@ mod tests {
         let Some(mut app) = headless_app_with(3) else {
             return;
         };
-        let deck = crate::deck::Deck::new_solid_color(
-            app.gpu_context(),
-            [1.0, 0.0, 0.0, 1.0],
-            64,
-            64,
-        )
-        .expect("deck");
+        let deck =
+            crate::deck::Deck::new_solid_color(app.gpu_context(), [1.0, 0.0, 0.0, 1.0], 64, 64)
+                .expect("deck");
         let uuid = deck.uuid().to_string();
         app.mixer_mut().channel_mut(2).expect("ch 2").add_deck(deck);
         let channel_textures: std::collections::HashMap<usize, egui::TextureId> = (0..3)
@@ -2835,9 +2921,16 @@ mod tests {
             [(uuid, egui::TextureId::User(10))].into_iter().collect();
         // Ch 0's tile drawn, and Ch 2's layer's.
         let drawn: std::collections::HashSet<egui::TextureId> =
-            [egui::TextureId::User(0), egui::TextureId::User(10)].into_iter().collect();
+            [egui::TextureId::User(0), egui::TextureId::User(10)]
+                .into_iter()
+                .collect();
         assert_eq!(
-            visible_tiles(&drawn, &channel_textures, &deck_textures, app.mixer_ref().channels()),
+            visible_tiles(
+                &drawn,
+                &channel_textures,
+                &deck_textures,
+                app.mixer_ref().channels()
+            ),
             vec![0, 2]
         );
     }
@@ -3283,7 +3376,11 @@ mod tests {
             .unwrap()
             .execute_command(crate::engine::EngineCommand::Shutdown);
         assert!(runner.exit_if_requested(&host));
-        assert_eq!(host.exits.get(), 0, "exit is deferred until the engine borrow is returned");
+        assert_eq!(
+            host.exits.get(),
+            0,
+            "exit is deferred until the engine borrow is returned"
+        );
         runner.shut_down();
         assert_eq!(
             crate::midi::MidiConfig::load(path).unwrap().mappings[0].device_name,

@@ -300,7 +300,14 @@ impl Text {
             return;
         }
         self.completed.retain(|(done, _)| done.frame != frame);
-        self.completed.push((spec.clone(), drawing.as_ref().err().map(|()| format!("Text could not be drawn at {}×{}. Any previous picture is retained. Try a smaller size or check the log.", frame.0, frame.1))));
+        let error = drawing.as_ref().err().map(|()| {
+            format!(
+                "Text could not be drawn at {}×{}. Any previous picture is retained. \
+                 Try a smaller size or check the log.",
+                frame.0, frame.1
+            )
+        });
+        self.completed.push((spec.clone(), error));
         let Ok(image) = drawing else {
             // Not drawn: the picture before stays on air — after a resize
             // too, scaled, until one is drawn.
@@ -950,6 +957,118 @@ mod tests {
         assert!(
             text.main_face().is_none(),
             "empty text clears the previous picture"
+        );
+    }
+
+    /// The input drawn into a fresh `w` × `h` target and read back, as
+    /// linear RGBA per pixel.
+    fn rendered_face(gpu: &GpuContext, text: &Text, w: u32, h: u32) -> Vec<[f32; 4]> {
+        assert_eq!(gpu.compositing_format, wgpu::TextureFormat::Rgba16Float);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("text test target"),
+            size: wgpu::Extent3d {
+                width: w,
+                height: h,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: gpu.compositing_format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let mut cmds = Vec::new();
+        text.render(
+            &mut cmds,
+            &target.create_view(&wgpu::TextureViewDescriptor::default()),
+        );
+        let row = (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+            * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+        let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("text test readback"),
+            size: u64::from(row * h),
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+        let mut encoder = gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+        encoder.copy_texture_to_buffer(
+            target.as_image_copy(),
+            wgpu::TexelCopyBufferInfo {
+                buffer: &buffer,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(row),
+                    rows_per_image: Some(h),
+                },
+            },
+            target.size(),
+        );
+        cmds.push(encoder.finish());
+        gpu.submit(cmds);
+        let (tx, rx) = mpsc::channel();
+        buffer.slice(..).map_async(wgpu::MapMode::Read, move |r| {
+            let _ = tx.send(r);
+        });
+        let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
+        rx.recv().expect("mapped").expect("mapped");
+        let data = buffer.slice(..).get_mapped_range().expect("mapped range");
+        let channel = |at: usize| half::f16::from_le_bytes([data[at], data[at + 1]]).to_f32();
+        (0..h as usize)
+            .flat_map(|y| (0..w as usize).map(move |x| (y, x)))
+            .map(|(y, x)| {
+                let at = y * row as usize + x * 8;
+                [
+                    channel(at),
+                    channel(at + 2),
+                    channel(at + 4),
+                    channel(at + 6),
+                ]
+            })
+            .collect()
+    }
+
+    /// A redraw at the same size reuses the GPU texture: what goes on air
+    /// must be the new drawing, not the one before.
+    #[test]
+    fn same_size_redraw_shows_the_new_pixels() {
+        let Ok(gpu) = GpuContext::new_headless() else {
+            assert!(
+                std::env::var_os("VARDA_REQUIRE_GPU").is_none(),
+                "required GPU unavailable"
+            );
+            return;
+        };
+        let (w, h) = (64, 36);
+        let mut text = Text::new(&gpu, TextSettings::default(), (w, h)).unwrap();
+        let spec = text.wanted().remove(0);
+        let count = |pixels: &[[f32; 4]], red: bool| {
+            pixels
+                .iter()
+                .filter(|p| {
+                    let (on, off) = if red { (p[0], p[1]) } else { (p[1], p[0]) };
+                    on > 0.5 && off < 0.1
+                })
+                .count()
+        };
+        let red = image::RgbaImage::from_pixel(8, 4, image::Rgba([255, 0, 0, 255]));
+        text.put(spec.clone(), Ok(Some(red)));
+        let texture = text.main_face().unwrap().texture.clone();
+        let before = rendered_face(&gpu, &text, w, h);
+        assert!(count(&before, true) > 0, "the first drawing is on air");
+        assert_eq!(count(&before, false), 0);
+
+        let green = image::RgbaImage::from_pixel(8, 4, image::Rgba([0, 255, 0, 255]));
+        text.put(spec, Ok(Some(green)));
+        assert_eq!(text.main_face().unwrap().texture, texture, "texture reused");
+        let after = rendered_face(&gpu, &text, w, h);
+        assert_eq!(count(&after, true), 0, "nothing of the old drawing is left");
+        assert_eq!(
+            count(&after, false),
+            count(&before, true),
+            "the new drawing is on air, where the old one was"
         );
     }
 

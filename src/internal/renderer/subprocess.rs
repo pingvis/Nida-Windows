@@ -26,6 +26,14 @@ fn recording_finalizers() -> &'static super::builds::Builds {
     FINALIZERS.get_or_init(super::builds::Builds::default)
 }
 
+/// Include encoder startup in the shutdown wait: a cancelled start may still
+/// produce a recording whose finalizer must run before the process exits.
+pub(crate) fn track_encoder_start() -> super::builds::Ticket {
+    recording_finalizers()
+        .reserve()
+        .expect("finalizer tracking stays open")
+}
+
 pub(crate) fn finalizing_recordings() -> usize {
     recording_finalizers().pending()
 }
@@ -119,6 +127,38 @@ const NATIVE_STUCK_MS: u64 = 3000;
 /// stopped may never give back: past this the threads are left to end on
 /// their own, and the app goes on.
 const NATIVE_STOP_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Hand `pieces` to a thread named `name` that winds them down with
+/// `wind_down` — joins, waits — so the caller waits for none of it. Handed
+/// over only once the thread runs: should none start, `let_go` lets them
+/// go without waiting either (dropped as they are, some would wait).
+fn wind_down_elsewhere<T: Send + 'static>(
+    name: String,
+    pieces: T,
+    wind_down: impl FnOnce(T) + Send + 'static,
+    let_go: impl FnOnce(T),
+) {
+    let (hand, handed) = mpsc::channel::<T>();
+    let spawned = std::thread::Builder::new().name(name).spawn(move || {
+        if let Ok(pieces) = handed.recv() {
+            wind_down(pieces);
+        }
+    });
+    match spawned {
+        Ok(_) => {
+            let _ = hand.send(pieces);
+        }
+        Err(e) => {
+            log::warn!("No thread to wind an output down ({e}): its pieces end on their own");
+            let_go(pieces);
+        }
+    }
+}
+
+/// How long a stop waits for ffmpeg, killed, to be gone: long enough for a
+/// process that ends at once — the port it listened on free again for one
+/// started after it — and no longer.
+const REAP_WAIT: std::time::Duration = std::time::Duration::from_millis(100);
 
 /// Join `threads` on a thread of its own, waiting up to `wait`: whether they
 /// all ended in time. Those that did not are left to end on their own.
@@ -216,7 +256,8 @@ impl NativeShared {
 
     /// [`Self::stuck`] at `now_ms` from `epoch`.
     fn stuck_at(&self, now_ms: u64) -> bool {
-        let holding = self.submitted.load(Ordering::Relaxed) > self.finished.load(Ordering::Relaxed);
+        let holding =
+            self.submitted.load(Ordering::Relaxed) > self.finished.load(Ordering::Relaxed);
         let since = self
             .last_out_ms
             .load(Ordering::Relaxed)
@@ -1203,7 +1244,7 @@ fn write_stream_player(dir: &str, kind: &str, manifest_filename: &str, low_laten
 /// This prevents the render thread from blocking when ffmpeg's stdin pipe is full
 /// (e.g. SRT listener waiting for a client connection).
 pub struct FfmpegSubprocess {
-    /// Taken by `stop()` so recording finalization can own the process.
+    /// The ffmpeg process; taken by `stop`, which waits for it elsewhere.
     child: Option<Child>,
     /// Channel sender for frames, with when each was drawn → writer thread
     frame_tx: Option<mpsc::SyncSender<(std::time::Instant, Vec<u8>)>>,
@@ -1476,7 +1517,6 @@ const SLOT_LATE: f64 = 1.0;
 /// still go there: one earlier is for a slot already written.
 const SLOT_EARLY: f64 = 0.5;
 
-
 /// Frames waiting for a live stream's writer at which it is behind real
 /// time and takes only the newest (see [`take_live`]); and slots a frame may
 /// fall past the next to write and still have them filled (see
@@ -1695,7 +1735,8 @@ impl Timeline {
         let Some(was) = self.follows else {
             return;
         };
-        let now = frame_drawn(made).map_or_else(|| SHOW_FPS.load(Ordering::Relaxed), |(_, fps)| fps);
+        let now =
+            frame_drawn(made).map_or_else(|| SHOW_FPS.load(Ordering::Relaxed), |(_, fps)| fps);
         if now == was {
             return;
         }
@@ -1770,7 +1811,10 @@ impl Timeline {
         }
         let repeats = if past + WHOLE >= SLOT_LATE {
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // Positive, bounded.
-            let (behind, most) = ((past + WHOLE).floor() as u64, (self.fps * MAX_GAP_SECS) as u64);
+            let (behind, most) = (
+                (past + WHOLE).floor() as u64,
+                (self.fps * MAX_GAP_SECS) as u64,
+            );
             behind.min(most)
         } else {
             0
@@ -1788,7 +1832,11 @@ impl Timeline {
     /// frame before marking each step); else written after the slots before
     /// it filled. Worked out apart, skips and slots came apart for good and
     /// every frame was left out (Codex: a 24 fps show streamed at 120).
-    fn live_on_grid(&mut self, made: std::time::Instant, fill: u64) -> Option<(u64, Option<Placed>)> {
+    fn live_on_grid(
+        &mut self,
+        made: std::time::Instant,
+        fill: u64,
+    ) -> Option<(u64, Option<Placed>)> {
         self.follow_show(made);
         let mut grid = self.grid?;
         let start = *self.start.get_or_insert(made);
@@ -2355,6 +2403,13 @@ impl AudioPipe {
         self.writer_thread
             .as_ref()
             .is_none_or(std::thread::JoinHandle::is_finished)
+    }
+
+    /// Tell the writer to stop and let it end on its own, waiting for
+    /// nothing: for when no thread is to be had to wait for it.
+    fn let_go(&mut self) {
+        self.shutting_down.store(true, Ordering::SeqCst);
+        self.writer_thread.take();
     }
 
     /// Tear down the writer thread. Idempotent. Setting `shutting_down` unblocks
@@ -3244,10 +3299,10 @@ impl FfmpegSubprocess {
                 // A lost piece is worth the time it held at the rate the
                 // engine took, whoever changed it.
                 fanout.reckon_at(native.shared.applied_kbps.clone(), native.shared.audio_kbps);
-                native
-                    .shared
-                    .strip_filler
-                    .store(rate_plan.mode == crate::streaming::RateMode::Variable, Ordering::Relaxed);
+                native.shared.strip_filler.store(
+                    rate_plan.mode == crate::streaming::RateMode::Variable,
+                    Ordering::Relaxed,
+                );
                 (writer, Some(native))
             }
             None => (
@@ -3529,7 +3584,9 @@ impl FfmpegSubprocess {
         let (Some(native), Some(plan)) = (&self.native, self.rate_plan.as_mut()) else {
             return false;
         };
-        if plan.encoder == crate::streaming::StreamEncoder::NvidiaNvenc { return false; }
+        if plan.encoder == crate::streaming::StreamEncoder::NvidiaNvenc {
+            return false;
+        }
         let held = |m: RateMode| matches!(m, RateMode::Constant | RateMode::Variable);
         if !(held(mode) && held(plan.mode)) {
             return false;
@@ -3838,25 +3895,26 @@ impl FfmpegSubprocess {
 
         // 2. Drop the sender to close the channel — no more frames queued
         drop(self.frame_tx.take());
-        let Some(mut child) = self.child.take() else {
-            return;
-        };
 
         if self.graceful_shutdown {
+            let Some(child) = self.child.take() else {
+                return;
+            };
             let finalization = recording_finalizers()
                 .reserve()
                 .expect("finalizer tracking stays open");
             // --- Recording path: finalize on a background thread ---
             // Move all owned resources out of `self` so the thread owns them.
-            let mut audio = self.audio.take();
+            let audio = self.audio.take();
             let writer_thread = self.writer_thread.take();
             let label = self.label.clone();
             let counters = self.counters.clone();
             let stderr = self.stderr_tail.clone();
 
-            std::thread::Builder::new()
-                .name(format!("ffmpeg-finalize-{label}"))
-                .spawn(move || {
+            wind_down_elsewhere(
+                format!("ffmpeg-finalize-{label}"),
+                (audio, writer_thread, child),
+                move |(mut audio, writer_thread, mut child)| {
                     const FINALIZE_TIMEOUT: std::time::Duration =
                         std::time::Duration::from_secs(30);
                     let _finalization = finalization;
@@ -3932,70 +3990,104 @@ impl FfmpegSubprocess {
                         ),
                         duration.as_secs_f32()
                     );
-                })
-                .expect("failed to spawn ffmpeg finalize thread");
+                },
+                // The writers told to stop and left to: ffmpeg, its inputs
+                // ended, finishes the file by itself.
+                |(mut audio, _writer, _child)| {
+                    if let Some(audio) = audio.as_mut() {
+                        audio.let_go();
+                    }
+                },
+            );
         } else {
-            // --- Streaming path: kill immediately (inline, fast) ---
+            // --- Streaming path: killed now, the rest on a thread ---
 
             // 3. Kill ffmpeg BEFORE joining the writer thread. The writer
             //    thread may be blocked on stdin.write_all() (e.g. SRT listener
             //    with a full pipe buffer). Killing the child breaks the pipe,
             //    which unblocks the write and lets the thread exit.
-            let _ = child.kill();
-
-            // 3b. Tear down the audio side-channel (socket + writer thread).
-            //     Done after the kill so a writer blocked on a full socket sees
-            //     a broken pipe.
-            if let Some(audio) = self.audio.as_mut() {
-                audio.stop();
-            }
-
-            // 4. Now safe to join — the writer thread will see a broken pipe
-            //    or a closed channel and exit promptly. An encoder in Nida
-            //    ends its session there, and the thread writing what it made
-            //    ends after it — waited for only so long, off this thread:
-            //    an engine that has stopped may never let it end.
-            if let Some(native) = self.native.as_mut() {
-                let threads: Vec<_> = self
-                    .writer_thread
-                    .take()
-                    .into_iter()
-                    .chain(native.output.take())
-                    .collect();
-                if !join_within(threads, NATIVE_STOP_WAIT) {
-                    log::warn!(
-                        "The stream's encoder in Nida did not end within {} s; left to end on its own",
-                        NATIVE_STOP_WAIT.as_secs()
-                    );
+            let mut child = self.child.take();
+            if let Some(process) = child.as_mut() {
+                let _ = process.kill();
+                // Gone at once, as a killed process is: reaped here, so a
+                // stream started right after it finds its port free.
+                let until = std::time::Instant::now() + REAP_WAIT;
+                while std::time::Instant::now() < until {
+                    if !matches!(process.try_wait(), Ok(None)) {
+                        child = None;
+                        break;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(1));
                 }
-            } else if let Some(handle) = self.writer_thread.take() {
-                let _ = handle.join();
             }
-
-            // 5. Reap the child process
-            let _ = child.wait();
-
-            // 6. The encoder is gone, so its destinations have seen the last
-            //    of the stream: let each finish sending and hang up.
-            if let Some(mut fanout) = self.fanout.take() {
-                fanout.stop();
-            }
-
-            let frames = self.counters.written.load(Ordering::Relaxed);
-            let padded = self.counters.padded.load(Ordering::Relaxed);
-            let left_out = self.counters.left_out.load(Ordering::Relaxed);
-            self.drain_stderr();
-            log::info!(
-                "ffmpeg finished: {} ({} frames{}, {:.1}s)",
-                self.label,
-                frames,
-                Self::timeline_summary(
-                    padded,
-                    left_out,
-                    self.counters.skipped.load(Ordering::Relaxed),
-                    self.counters.held.load(Ordering::Relaxed),
-                ),
-                duration.as_secs_f32()
+            // What waits — the writers, ffmpeg's end, the destinations —
+            // waits on a thread of its own. A stream stops on the show's
+            // thread (Stop, or started afresh after the network went), and
+            // waiting there for an encoder in Nida to end its session held
+            // the show up for as long as two seconds.
+            let audio = self.audio.take();
+            let writer_thread = self.writer_thread.take();
+            let native_output = self.native.as_mut().map(|native| native.output.take());
+            let fanout = self.fanout.take();
+            let label = self.label.clone();
+            let counters = self.counters.clone();
+            let stderr = self.stderr_tail.clone();
+            wind_down_elsewhere(
+                format!("ffmpeg-stop-{label}"),
+                (audio, writer_thread, native_output, child, fanout),
+                move |(mut audio, writer_thread, native_output, child, fanout)| {
+                    // 3b. Tear down the audio side-channel (socket + writer
+                    //     thread). Done after the kill so a writer blocked on
+                    //     a full socket sees a broken pipe.
+                    if let Some(audio) = audio.as_mut() {
+                        audio.stop();
+                    }
+                    // 4. Now safe to join — the writer thread will see a
+                    //    broken pipe or a closed channel and exit promptly.
+                    //    An encoder in Nida ends its session there, and the
+                    //    thread writing what it made ends after it — waited
+                    //    for only so long: an engine that has stopped may
+                    //    never let it end.
+                    if let Some(output) = native_output {
+                        let threads: Vec<_> = writer_thread.into_iter().chain(output).collect();
+                        if !join_within(threads, NATIVE_STOP_WAIT) {
+                            log::warn!(
+                                "The stream's encoder in Nida did not end within {} s; left to end on its own",
+                                NATIVE_STOP_WAIT.as_secs()
+                            );
+                        }
+                    } else if let Some(handle) = writer_thread {
+                        let _ = handle.join();
+                    }
+                    // 5. Reap the child process
+                    if let Some(mut child) = child {
+                        let _ = child.wait();
+                    }
+                    // 6. The encoder is gone, so its destinations have seen
+                    //    the last of the stream: let each finish sending and
+                    //    hang up.
+                    if let Some(mut fanout) = fanout {
+                        fanout.stop();
+                    }
+                    stderr.log(&label);
+                    log::info!(
+                        "ffmpeg finished: {} ({} frames{}, {:.1}s)",
+                        label,
+                        counters.written.load(Ordering::Relaxed),
+                        Self::timeline_summary(
+                            counters.padded.load(Ordering::Relaxed),
+                            counters.left_out.load(Ordering::Relaxed),
+                            counters.skipped.load(Ordering::Relaxed),
+                            counters.held.load(Ordering::Relaxed),
+                        ),
+                        duration.as_secs_f32()
+                    );
+                },
+                |(mut audio, ..)| {
+                    if let Some(audio) = audio.as_mut() {
+                        audio.let_go();
+                    }
+                },
             );
         }
     }
@@ -4174,8 +4266,14 @@ mod tests {
             let _ = never.recv();
         });
         let start = std::time::Instant::now();
-        assert!(!join_within(vec![stuck], std::time::Duration::from_millis(200)));
-        assert!(start.elapsed() < std::time::Duration::from_secs(1), "not held past the bound");
+        assert!(!join_within(
+            vec![stuck],
+            std::time::Duration::from_millis(200)
+        ));
+        assert!(
+            start.elapsed() < std::time::Duration::from_secs(1),
+            "not held past the bound"
+        );
     }
 
     /// An encoder in Nida holding frames with none ending for three seconds
@@ -4190,12 +4288,17 @@ mod tests {
         shared.going_in();
         let start = shared.busy_since_ms.load(Ordering::Relaxed);
         assert!(!at(start + 2_000), "two held, but not yet long");
-        assert!(at(start + 3_001), "two held three seconds, none ending: stuck");
+        assert!(
+            at(start + 3_001),
+            "two held three seconds, none ending: stuck"
+        );
         shared.came_out();
         shared.came_out();
         assert!(!at(start + 60_000), "all ended: idle again");
         // Drawing again after an idle minute: the three seconds start over.
-        shared.busy_since_ms.store(start + 60_000, Ordering::Relaxed);
+        shared
+            .busy_since_ms
+            .store(start + 60_000, Ordering::Relaxed);
         shared.submitted.fetch_add(1, Ordering::Relaxed);
         assert!(!at(start + 61_000));
         shared.fail();
@@ -5281,6 +5384,55 @@ mod tests {
         sub.stop();
     }
 
+    /// Stopping a stream — on the show's thread: Stop, or started afresh
+    /// after the network went — does not wait for its writers to end: a
+    /// writer that takes its time is waited for elsewhere.
+    #[test]
+    fn a_stream_stops_without_waiting_for_its_writers() {
+        if !ffmpeg_available() {
+            eprintln!("Skipping test: ffmpeg not available");
+            return;
+        }
+        let mut sub = FfmpegSubprocess::spawn_srt(
+            "srt://127.0.0.1:19877",
+            &crate::renderer::context::SrtCodec::H264,
+            PresentationRequest::default(),
+            64,
+            64,
+            30,
+            None,
+        )
+        .expect("failed to spawn SRT");
+        let (ended, ending) = mpsc::channel();
+        sub.writer_thread = Some(std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            let _ = ended.send(());
+        }));
+        #[cfg(unix)]
+        let pid = sub.child.as_ref().map(Child::id).expect("ffmpeg running");
+        let start = std::time::Instant::now();
+        sub.stop();
+        assert!(
+            start.elapsed() < std::time::Duration::from_millis(200),
+            "stop waited for the writer: {:?}",
+            start.elapsed()
+        );
+        // ffmpeg itself gone already — reaped, not a zombie — so a stream
+        // started right after finds its port free.
+        #[cfg(unix)]
+        {
+            let pid = libc::pid_t::try_from(pid).unwrap();
+            assert_eq!(unsafe { libc::kill(pid, 0) }, -1, "ffmpeg still there");
+            assert_eq!(
+                std::io::Error::last_os_error().raw_os_error(),
+                Some(libc::ESRCH)
+            );
+        }
+        ending
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("the writer ended on its own");
+    }
+
     /// Each dropped frame counts its own slot, at the pace the show runs
     /// then: three at 60 fps are 50 ms, thirty at 30 fps a second; the first
     /// offer has nothing before it, and a stall before a drop counts at most
@@ -5301,15 +5453,27 @@ mod tests {
         for _ in 0..3 {
             offer(&mut clock, sixtieth, true);
         }
-        assert!((clock.lost.as_secs_f64() - 0.05).abs() < 1e-6, "{:?}", clock.lost);
+        assert!(
+            (clock.lost.as_secs_f64() - 0.05).abs() < 1e-6,
+            "{:?}",
+            clock.lost
+        );
         offer(&mut clock, sixtieth, false);
         let thirtieth = Duration::from_nanos(33_333_333);
         for _ in 0..30 {
             offer(&mut clock, thirtieth, true);
         }
-        assert!((clock.lost.as_secs_f64() - 1.05).abs() < 1e-6, "{:?}", clock.lost);
+        assert!(
+            (clock.lost.as_secs_f64() - 1.05).abs() < 1e-6,
+            "{:?}",
+            clock.lost
+        );
         offer(&mut clock, Duration::from_secs(2), true);
-        assert!((clock.lost.as_secs_f64() - 1.3).abs() < 1e-6, "a stall: {:?}", clock.lost);
+        assert!(
+            (clock.lost.as_secs_f64() - 1.3).abs() < 1e-6,
+            "a stall: {:?}",
+            clock.lost
+        );
     }
 
     #[test]
@@ -5410,7 +5574,13 @@ mod tests {
             "Full must not look like a dead subprocess"
         );
         assert_eq!(dropped.load(Ordering::Relaxed), 1);
-        assert!(try_enqueue_frame(&tx, &dropped, "test-rec", now, &[5, 6, 7, 8]));
+        assert!(try_enqueue_frame(
+            &tx,
+            &dropped,
+            "test-rec",
+            now,
+            &[5, 6, 7, 8]
+        ));
         assert_eq!(dropped.load(Ordering::Relaxed), 2);
     }
 
@@ -5420,7 +5590,13 @@ mod tests {
         drop(rx);
         let dropped = AtomicU64::new(0);
         let now = std::time::Instant::now();
-        assert!(!try_enqueue_frame(&tx, &dropped, "test-rec", now, &[1, 2, 3, 4]));
+        assert!(!try_enqueue_frame(
+            &tx,
+            &dropped,
+            "test-rec",
+            now,
+            &[1, 2, 3, 4]
+        ));
         assert_eq!(dropped.load(Ordering::Relaxed), 0);
     }
 
@@ -5526,10 +5702,16 @@ mod tests {
     /// The show frames written by `timeline` for frames drawn at
     /// `times` (seconds from `start`), slot by slot: a repeat writes the
     /// frame before again.
-    fn written_frames(timeline: &mut Timeline, start: std::time::Instant, times: &[f64]) -> Vec<usize> {
+    fn written_frames(
+        timeline: &mut Timeline,
+        start: std::time::Instant,
+        times: &[f64],
+    ) -> Vec<usize> {
         let mut slots = Vec::new();
         for (i, secs) in times.iter().enumerate() {
-            if let Placed::After(repeats) = timeline.place(start + std::time::Duration::from_secs_f64(*secs)) {
+            if let Placed::After(repeats) =
+                timeline.place(start + std::time::Duration::from_secs_f64(*secs))
+            {
                 let before = slots.last().copied().unwrap_or(i);
                 slots.extend(std::iter::repeat_n(before, repeats as usize));
                 slots.push(i);
@@ -5555,14 +5737,19 @@ mod tests {
         let times: Vec<f64> = (0..600).map(|i| i as f64 / 60.0 + late_by(i)).collect();
         let mut timeline = Timeline::new(Some(start), 30.0).with_show(60);
         let slots = written_frames(&mut timeline, start, &times);
-        let steps: std::collections::BTreeSet<usize> = slots.windows(2).map(|w| w[1] - w[0]).collect();
+        let steps: std::collections::BTreeSet<usize> =
+            slots.windows(2).map(|w| w[1] - w[0]).collect();
         assert_eq!(steps, [2].into(), "every second frame: {:?}", &slots[..20]);
         assert_eq!(slots.len(), 300);
         // A take started between frames, too.
         let mut timeline = Timeline::new(Some(start), 30.0).with_show(60);
         let later: Vec<f64> = times.iter().map(|t| t + 0.007).collect();
         let slots = written_frames(&mut timeline, start, &later);
-        assert!(slots.windows(2).skip(1).all(|w| w[1] - w[0] == 2), "{:?}", &slots[..20]);
+        assert!(
+            slots.windows(2).skip(1).all(|w| w[1] - w[0] == 2),
+            "{:?}",
+            &slots[..20]
+        );
     }
 
     /// A 30 fps show recorded at 60 shows each frame twice, evenly.
@@ -5589,7 +5776,11 @@ mod tests {
         let mut timeline = Timeline::new(Some(start), 30.0).with_show(60);
         let slots = written_frames(&mut timeline, start, &times);
         let end = times.last().copied().unwrap_or_default() * 30.0;
-        assert!((slots.len() as f64 - end).abs() < 2.0, "{} slots for {end:.1}", slots.len());
+        assert!(
+            (slots.len() as f64 - end).abs() < 2.0,
+            "{} slots for {end:.1}",
+            slots.len()
+        );
         let odd = slots.windows(2).filter(|w| w[1] - w[0] != 2).count();
         // 600 s at 0.06 frames a second short: about 36 frames' worth, each
         // a repeat (a step of nought) or a step of one.
@@ -5615,7 +5806,10 @@ mod tests {
         let mut slots = Vec::new();
         for (i, made) in at.iter().enumerate() {
             if let Placed::After(repeats) = timeline.place(*made) {
-                slots.extend(std::iter::repeat_n(slots.last().copied().unwrap_or(i), repeats as usize));
+                slots.extend(std::iter::repeat_n(
+                    slots.last().copied().unwrap_or(i),
+                    repeats as usize,
+                ));
                 slots.push(i);
             }
         }
@@ -5675,9 +5869,17 @@ mod tests {
             .enumerate()
             .filter(|(_, step)| (step - 1.0 / 30.0).abs() > 0.006)
             .collect();
-        assert!(uneven.len() <= 4, "{} uneven slots: {uneven:?}", uneven.len());
+        assert!(
+            uneven.len() <= 4,
+            "{} uneven slots: {uneven:?}",
+            uneven.len()
+        );
         // And the take keeps its time: as many slots as seconds at 30.
-        assert!((shown.len() as f64 - 6.0 * 30.0).abs() <= 2.0, "{} slots", shown.len());
+        assert!(
+            (shown.len() as f64 - 6.0 * 30.0).abs() <= 2.0,
+            "{} slots",
+            shown.len()
+        );
     }
 
     /// Rates that only nearly divide are not taken as a whole share.
@@ -5704,7 +5906,11 @@ mod tests {
                 sent.push(i);
             }
         }
-        assert!(sent.windows(2).all(|w| w[1] - w[0] == 2), "{:?}", &sent[..20]);
+        assert!(
+            sent.windows(2).all(|w| w[1] - w[0] == 2),
+            "{:?}",
+            &sent[..20]
+        );
         assert_eq!(sent.len(), 300);
     }
 
@@ -5934,7 +6140,11 @@ mod tests {
         let frame = 1.0 / 60.0;
         let late = |i: usize| {
             let wobble = (i.wrapping_mul(2_654_435_761) % 1000) as f64 / 1000.0 * 0.004;
-            let spike = if i.is_multiple_of(37) { 0.6 * frame } else { 0.0 };
+            let spike = if i.is_multiple_of(37) {
+                0.6 * frame
+            } else {
+                0.0
+            };
             wobble + spike
         };
         let (timeline, placed) = placed(start, start, 1200, late);
@@ -5956,7 +6166,8 @@ mod tests {
     /// never both, as a real difference of rate.
     #[test]
     fn a_show_a_little_off_the_takes_rate_leaves_out_or_repeats_now_and_then() {
-        for (rate, repeats_wanted, left_out_wanted) in [(60.1, 0..=0, 3..=4), (59.94, 2..=3, 0..=0)] {
+        for (rate, repeats_wanted, left_out_wanted) in [(60.1, 0..=0, 3..=4), (59.94, 2..=3, 0..=0)]
+        {
             let start = std::time::Instant::now();
             let mut timeline = Timeline::new(Some(start), 60.0);
             let (mut repeats, mut left_out) = (0, 0);
@@ -5967,8 +6178,14 @@ mod tests {
                     Placed::LeftOut => left_out += 1,
                 }
             }
-            assert!(repeats_wanted.contains(&repeats), "{rate}: {repeats} repeated");
-            assert!(left_out_wanted.contains(&left_out), "{rate}: {left_out} left out");
+            assert!(
+                repeats_wanted.contains(&repeats),
+                "{rate}: {repeats} repeated"
+            );
+            assert!(
+                left_out_wanted.contains(&left_out),
+                "{rate}: {left_out} left out"
+            );
         }
     }
 
@@ -5983,7 +6200,10 @@ mod tests {
         let start = std::time::Instant::now();
         let (timeline, placed) = placed(start, start, 30, |_| 0.0);
         assert!(placed.iter().all(|p| *p == Placed::After(0)), "{placed:?}");
-        assert_eq!(timeline.written, 30, "no repeats for frames that were drawn");
+        assert_eq!(
+            timeline.written, 30,
+            "no repeats for frames that were drawn"
+        );
     }
 
     /// The picture starts with the sound: frames drawn half a second after
@@ -5994,7 +6214,10 @@ mod tests {
         let start = std::time::Instant::now();
         let late = start + std::time::Duration::from_millis(400);
         let (timeline, placed) = placed(start, late, 3, |_| 0.0);
-        assert_eq!(placed, [Placed::After(24), Placed::After(0), Placed::After(0)]);
+        assert_eq!(
+            placed,
+            [Placed::After(24), Placed::After(0), Placed::After(0)]
+        );
         assert_eq!(timeline.written, 27);
     }
 
@@ -6004,11 +6227,17 @@ mod tests {
         let start = std::time::Instant::now() + std::time::Duration::from_millis(100);
         let mut timeline = Timeline::new(Some(start), 60.0);
         for before in [50, 5] {
-            let early = start.checked_sub(std::time::Duration::from_millis(before)).unwrap();
+            let early = start
+                .checked_sub(std::time::Duration::from_millis(before))
+                .unwrap();
             assert_eq!(timeline.place(early), Placed::LeftOut, "{before} ms before");
         }
         assert_eq!(timeline.place(start), Placed::After(0));
-        assert_eq!(timeline.place(start), Placed::LeftOut, "drawn at the same moment again");
+        assert_eq!(
+            timeline.place(start),
+            Placed::LeftOut,
+            "drawn at the same moment again"
+        );
         assert_eq!(timeline.written, 1);
     }
 
@@ -6018,7 +6247,8 @@ mod tests {
     /// never a repeat and a frame left out together.
     #[test]
     fn a_show_off_the_takes_rate_with_late_calls_never_pairs_a_repeat_with_a_drop() {
-        for (rate, repeats_wanted, left_out_wanted) in [(60.1, 0..=0, 3..=4), (59.94, 2..=3, 0..=0)] {
+        for (rate, repeats_wanted, left_out_wanted) in [(60.1, 0..=0, 3..=4), (59.94, 2..=3, 0..=0)]
+        {
             let start = std::time::Instant::now();
             let mut timeline = Timeline::new(Some(start), 60.0);
             let (mut repeats, mut left_out) = (0, 0);
@@ -6030,8 +6260,14 @@ mod tests {
                     Placed::LeftOut => left_out += 1,
                 }
             }
-            assert!(repeats_wanted.contains(&repeats), "{rate}: {repeats} repeated");
-            assert!(left_out_wanted.contains(&left_out), "{rate}: {left_out} left out");
+            assert!(
+                repeats_wanted.contains(&repeats),
+                "{rate}: {repeats} repeated"
+            );
+            assert!(
+                left_out_wanted.contains(&left_out),
+                "{rate}: {left_out} left out"
+            );
         }
     }
 
@@ -6042,8 +6278,7 @@ mod tests {
         let start = std::time::Instant::now();
         // Ten frames, then 100 ms (six frames) with none: the next frame goes
         // to slot 16, after six repeats.
-        let (timeline, placed) =
-            placed(start, start, 11, |i| if i == 10 { 0.1 } else { 0.0 });
+        let (timeline, placed) = placed(start, start, 11, |i| if i == 10 { 0.1 } else { 0.0 });
         assert_eq!(placed[10], Placed::After(6));
         assert_eq!(timeline.written, 17);
     }
@@ -6064,7 +6299,9 @@ mod tests {
         let left_out = placed.iter().filter(|p| **p == Placed::LeftOut).count();
         assert_eq!(timeline.written, 121, "{placed:?}");
         assert_eq!(left_out, 240 - 121, "two seconds at 120 fps into 60 fps");
-        assert!(placed.iter().all(|p| matches!(p, Placed::After(0) | Placed::LeftOut)));
+        assert!(placed
+            .iter()
+            .all(|p| matches!(p, Placed::After(0) | Placed::LeftOut)));
     }
 
     /// A two-second freeze is filled before the frame after it, which keeps
@@ -6072,11 +6309,13 @@ mod tests {
     #[test]
     fn a_long_freeze_is_filled_before_the_frame_after_it() {
         let start = std::time::Instant::now();
-        let (timeline, placed) =
-            placed(start, start, 10, |i| if i >= 1 { 2.0 } else { 0.0 });
+        let (timeline, placed) = placed(start, start, 10, |i| if i >= 1 { 2.0 } else { 0.0 });
         // Frame 1 was drawn at 1/60 s + 2 s: slot 121, after 120 repeats.
         assert_eq!(placed[1], Placed::After(120));
-        assert!(placed[2..].iter().all(|p| *p == Placed::After(0)), "{placed:?}");
+        assert!(
+            placed[2..].iter().all(|p| *p == Placed::After(0)),
+            "{placed:?}"
+        );
         assert_eq!(timeline.written, 130, "{placed:?}");
     }
 
@@ -6152,7 +6391,9 @@ mod tests {
             "what came before the loss keeps its place"
         );
         assert!(
-            samples[CHUNK..CHUNK + LOST as usize].iter().all(|s| *s == 0.0),
+            samples[CHUNK..CHUNK + LOST as usize]
+                .iter()
+                .all(|s| *s == 0.0),
             "the gap should be filled with silence, where it was"
         );
         assert!(

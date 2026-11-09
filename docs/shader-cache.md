@@ -4,10 +4,10 @@ Repeated loads of an identical GLSL shader reuse its compiled SPIR-V within
 the running process. Fragment shaders (generators, filters and transitions)
 and compute shaders use the same cache with distinct stage keys.
 
-This adapts the compiler-cache portion of [Varda f0f7279](https://github.com/im-knots/varda/commit/f0f727901e983b94a49832ff443e79c2ea41f570).
-The public compiler functions, compiler settings and returned `Vec<u32>` remain
-unchanged. GPU pipeline construction still runs for each instance. Background
-effect loading is a separate change.
+This adapts the compiler-cache portion of [Varda f0f7279](https://github.com/im-knots/varda/commit/f0f727901e983b94a49832ff443e79c2ea41f570)
+(contributed to Nida by pingvis, pull request #3).
+The public compiler functions, compiler settings and returned `Vec<u32>` are
+unchanged. GPU pipeline construction still runs for each instance.
 
 ## Identity and lifetime
 
@@ -18,8 +18,8 @@ they become configurable, their values must also enter the key.
 
 Only successful compilations are cached. An edited source gets a new entry;
 invalid edits still report compiler errors with the current shader name.
-Compiler warnings are logged on a cache miss. Each caller receives an owned
-copy of the words, so modifying one result cannot change future loads.
+Compiler warnings are logged on a cache miss only. Each caller receives an
+owned copy of the words, so modifying one result cannot change future loads.
 
 The cache holds at most 512 entries, following Varda's policy. Inserting a new
 entry when full clears the previous entries. A hit does not clear the cache.

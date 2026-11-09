@@ -957,6 +957,11 @@ impl Mixer {
                                 channel.composite_texture.width(),
                                 channel.composite_texture.height(),
                             ),
+                            source_size: (
+                                channel.composite_texture.width(),
+                                channel.composite_texture.height(),
+                            ),
+                            folded: false,
                         }),
                     }]);
                 }

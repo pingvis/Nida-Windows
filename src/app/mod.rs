@@ -16,14 +16,20 @@ pub(crate) mod frame_parts;
 pub(crate) mod history;
 mod inputs;
 /// Interactive mode for HTML decks (feature `html`). See /spec/html-source.md §4.
-#[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+#[cfg(any(
+    feature = "html",
+    all(target_os = "windows", feature = "windows-browser")
+))]
 pub(crate) mod interactive;
 mod keep_awake;
 pub mod log_file;
+mod media_adds;
 mod midi_startup;
 pub(crate) mod monitors;
 mod outputs;
 pub(crate) mod render;
+mod render_hint;
+pub use render_hint::RenderHint;
 pub mod shows;
 pub use render::{DeckFile, DeckLoadResult, DeckLoadToken};
 pub(crate) mod resolve;
@@ -241,6 +247,9 @@ pub(crate) struct InputSubsystem {
     /// and when it was last looked for: taken again once it is back, the
     /// patch kept.
     pub ltc_lost: Option<(crate::audio::AudioSourceId, std::time::Instant)>,
+    /// The source being opened for LTC, if one is: taken once it is open
+    /// (see `App::tick_ltc`).
+    pub ltc_opening: Option<crate::audio::AudioSourceId>,
 }
 
 /// A live subscription to the raw PCM of the audio input carrying LTC.
@@ -620,7 +629,7 @@ pub(crate) struct SessionState {
 pub(crate) struct MessageBus {
     pub command_rx: tokio::sync::mpsc::UnboundedReceiver<CommandEnvelope>,
     pub command_tx: tokio::sync::mpsc::UnboundedSender<CommandEnvelope>,
-    pub state_tx: std::sync::Arc<std::sync::RwLock<Option<EngineState>>>,
+    pub state_tx: std::sync::Arc<crate::engine::types::PublishedState>,
 }
 
 // ── Main application struct ─────────────────────────────────────
@@ -662,6 +671,12 @@ pub struct VardaApp {
     /// Writes the show's files on a thread of their own, so the outputs never
     /// wait for the disk (see `persistence::writer`).
     show_writer: crate::persistence::writer::ShowWriter,
+    /// Clips and pictures asked for over the bus, being made on threads of
+    /// their own (see `media_adds`).
+    media_adds: media_adds::MediaAdds,
+    /// Moves on each time another show replaces the mixer: what was asked
+    /// of the one before is not put into this one.
+    show_generation: u64,
     /// A Save As on its way: the show moves once its copy has landed.
     saving_as: Option<shows::SavingAs>,
     /// Presets whose files are on their way, by the writer's number (see
@@ -721,7 +736,10 @@ pub struct VardaApp {
     pub(crate) output: OutputSubsystem,
     pub(crate) external_io: ExternalIO,
     /// Interactive HTML window state (feature `html`). See /spec/html-source.md §4.
-    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+    #[cfg(any(
+        feature = "html",
+        all(target_os = "windows", feature = "windows-browser")
+    ))]
     pub(crate) interactive: interactive::InteractiveHtmlState,
     pub(crate) frame_stats: FrameStats,
     pub(crate) session: SessionState,
@@ -765,6 +783,9 @@ pub struct VardaApp {
     /// The channels whose tiles the control window shows (see
     /// `set_tile_channels`).
     tile_channels: Vec<usize>,
+    /// The decks whose thumbnails the control window drew last frame, by
+    /// UUID (see `set_previewed_decks`).
+    previewed_decks: Vec<String>,
     /// The rate frames really come at (see `set_frame_cadence`).
     frame_cadence: Option<u32>,
     /// A screen's mode changed: the show's thread looks at its clock again
@@ -991,6 +1012,7 @@ impl VardaApp {
                 timecode: crate::timecode::TimecodeManager::new(),
                 ltc_tap: None,
                 ltc_lost: None,
+                ltc_opening: None,
             },
             output: OutputSubsystem {
                 outputs: Vec::new(),
@@ -1097,7 +1119,10 @@ impl VardaApp {
                 state_tx,
             },
             audio_textures,
-            #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+            #[cfg(any(
+                feature = "html",
+                all(target_os = "windows", feature = "windows-browser")
+            ))]
             interactive: interactive::InteractiveHtmlState::default(),
             production_buses: crate::bus::BusBank::with_legacy_default(),
             rundown: crate::rundown::Rundown::default(),
@@ -1106,6 +1131,8 @@ impl VardaApp {
             rundown_till_next: Vec::new(),
             rundown_day_was: None,
             show_writer: crate::persistence::writer::ShowWriter::default(),
+            media_adds: media_adds::MediaAdds::default(),
+            show_generation: 0,
             saving_as: None,
             presets_on_way: Vec::new(),
             render_width: DEFAULT_RENDER_WIDTH,
@@ -1126,6 +1153,7 @@ impl VardaApp {
             night_shift_off: true,
             preview_channels: Vec::new(),
             tile_channels: Vec::new(),
+            previewed_decks: Vec::new(),
             frame_cadence: None,
             clock_recheck: false,
             ui_selected_deck: None,
@@ -1152,7 +1180,7 @@ impl VardaApp {
     }
 
     /// Get a shared reference to the latest engine state (for cross-thread consumers).
-    pub fn state_reader(&self) -> std::sync::Arc<std::sync::RwLock<Option<EngineState>>> {
+    pub fn state_reader(&self) -> std::sync::Arc<crate::engine::types::PublishedState> {
         self.bus.state_tx.clone()
     }
 
@@ -1161,7 +1189,15 @@ impl VardaApp {
     /// Exhaustive match — the compiler enforces that every `EngineCommand` variant
     /// is handled. Adding a new variant requires wiring it here.
     pub fn process_commands(&mut self) {
+        self.place_made_media();
+        self.take_started_record();
+        self.take_started_stream();
         while let Ok((cmd, reply_tx)) = self.bus.command_rx.try_recv() {
+            // A clip or picture is made on a thread of its own, its undo step
+            // taken as it is put in (see `media_adds`).
+            let Some((cmd, reply_tx)) = self.add_media_for_command(cmd, reply_tx) else {
+                continue;
+            };
             // Record pre-mutation state so bus-driven (HTTP API / WebSocket /
             // CLI / MIDI-issued) edits are undoable on the same timeline the
             // windowed UI uses. In-process UI mutations do NOT flow through the
@@ -1179,6 +1215,15 @@ impl VardaApp {
             let result = match cmd {
                 crate::engine::EngineCommand::SaveWorkspace => {
                     self.save_for_command(reply_tx);
+                    continue;
+                }
+                // Answered once its encoder runs (see `EncoderStart`).
+                crate::engine::EngineCommand::StartRecording => {
+                    self.start_recording_for_command(reply_tx);
+                    continue;
+                }
+                crate::engine::EngineCommand::StartStream => {
+                    self.start_stream_for_command(reply_tx);
                     continue;
                 }
                 crate::engine::EngineCommand::SaveShowAs { folder } => {
@@ -1227,6 +1272,9 @@ impl VardaApp {
     /// Nida from quitting. On the main thread as Nida quits — not inside an
     /// async runtime, where the blocking receive would panic.
     pub fn refuse_commands(&mut self) {
+        self.refuse_media();
+        self.refuse_record_start();
+        self.refuse_stream_start();
         self.bus.command_rx.close();
         // After the close a receive hands over every command sent before
         // it, one still on its way in included, then says there are no
@@ -1247,7 +1295,12 @@ impl VardaApp {
     pub fn finish_outputs(&mut self) {
         self.cmd_stop_recording();
         self.cmd_stop_stream();
-        let outputs: Vec<_> = self.output.outputs.iter().map(|o| o.uuid().to_string()).collect();
+        let outputs: Vec<_> = self
+            .output
+            .outputs
+            .iter()
+            .map(|o| o.uuid().to_string())
+            .collect();
         for uuid in outputs {
             self.cmd_stop_output(&uuid);
         }
@@ -1338,10 +1391,22 @@ impl VardaApp {
 
     /// Publish the latest engine state for cross-thread consumers.
     pub fn publish_state(&self) {
-        let state = self.build_engine_state();
-        if let Ok(mut guard) = self.bus.state_tx.write() {
-            *guard = Some(state);
-        }
+        let state = std::sync::Arc::new(self.build_engine_state());
+        // A reader holds the lock only to take the pointer, so it is seldom
+        // held; when it is, this state goes unpublished rather than the
+        // show waiting — the next comes a few frames on. The one replaced
+        // goes outside the lock.
+        let replaced = match self.bus.state_tx.try_write() {
+            Ok(mut guard) => guard.replace(state),
+            Err(std::sync::TryLockError::Poisoned(poisoned)) => {
+                let replaced = poisoned.into_inner().replace(state);
+                // A whole state in place again: readers may read it.
+                self.bus.state_tx.clear_poison();
+                replaced
+            }
+            Err(std::sync::TryLockError::WouldBlock) => return,
+        };
+        drop(replaced);
     }
 
     // ── Public accessors (controlled access for delivery layers) ─────
@@ -1584,6 +1649,14 @@ impl VardaApp {
         self.tile_channels = channels;
     }
 
+    /// The decks whose thumbnails the control window (and its panels'
+    /// windows) drew last frame: they draw their own frames, which the
+    /// thumbnails show, rather than only onto their input from their source
+    /// (see `Channel::previewed`).
+    pub fn set_previewed_decks(&mut self, decks: Vec<String>) {
+        self.previewed_decks = decks;
+    }
+
     /// The rate frames really come at, as the show's thread knows it — a
     /// screen's refreshes, which follow a new target rate only after a
     /// moment — for the recordings and streams that count frames by it.
@@ -1709,7 +1782,11 @@ impl VardaApp {
 
     /// An output window was hidden or shown again (main thread): its surface
     /// is told, as the engine thread may not ask the window.
-    pub fn occlude_output_window_by_id(&mut self, window_id: winit::window::WindowId, hidden: bool) {
+    pub fn occlude_output_window_by_id(
+        &mut self,
+        window_id: winit::window::WindowId,
+        hidden: bool,
+    ) {
         for o in &self.output.outputs {
             if let UnifiedOutput::Window(w) = o {
                 if w.window.id() == window_id {
@@ -1805,8 +1882,11 @@ impl VardaApp {
         let from = (self.render_width, self.render_height);
         self.render_width = width;
         self.render_height = height;
+        let buses_were = self.production_buses.picture_sizes(from);
         self.production_buses
             .rescale_canvases(from, (width, height));
+        let buses_now = self.production_buses.picture_sizes((width, height));
+        self.rescale_led_parts(from, (width, height), &buses_were, &buses_now);
         self.mixer.resize(&self.context, width, height);
         // Clear sub-mix cache since textures were recreated
         self.mixer.clear_sub_mix_cache();
@@ -2685,6 +2765,35 @@ mod tests {
         assert_eq!(state.mixer.channels.len(), 2);
     }
 
+    /// A reader holding the published state — an API client slow to
+    /// serialize a big show — never holds up publishing: the engine goes on.
+    #[test]
+    fn a_reader_holding_the_state_never_holds_up_publishing() {
+        let Some(app) = headless_app() else {
+            return;
+        };
+        let reader = app.state_reader();
+        app.publish_state();
+        let (holding, held) = std::sync::mpsc::channel();
+        let holder = std::thread::spawn(move || {
+            let guard = reader.read().unwrap();
+            holding.send(()).unwrap();
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            drop(guard);
+        });
+        held.recv().unwrap();
+        let started = std::time::Instant::now();
+        app.publish_state();
+        assert!(
+            started.elapsed() < std::time::Duration::from_millis(500),
+            "publishing waited for the reader: {:?}",
+            started.elapsed()
+        );
+        holder.join().unwrap();
+        app.publish_state();
+        assert!(app.state_reader().read().unwrap().is_some());
+    }
+
     #[test]
     fn smoke_notifications() {
         let Some(mut app) = headless_app() else {
@@ -2765,8 +2874,7 @@ mod tests {
         let tx = app.command_sender();
         let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
         tx.send((cmd, Some(reply_tx))).unwrap();
-        app.process_commands();
-        reply_rx.blocking_recv().unwrap()
+        crate::testing::reply_of(app, reply_rx)
     }
 
     /// Helper: fire-and-forget command.

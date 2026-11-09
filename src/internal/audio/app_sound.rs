@@ -10,12 +10,15 @@
 //! like any input (`audio_mix::device::open_input`); being private, only this
 //! process sees it. macOS asks once whether Nida may record other apps' sound.
 //!
-//! The app is muted on the Mac's own speakers while Nida takes its sound, so a
-//! room does not hear a call twice: it is heard through Nida's buses.
-//!
 //! Windows uses endpoint-independent WASAPI process loopback on build 20348+
 //! with the standard `screen-capture` build feature. It preserves ordinary app
 //! playback and feeds PCM directly, without a private aggregate device.
+//!
+//! The app is muted on the Mac's own speakers while Nida takes its sound and
+//! sends it to a bus, so a room does not hear a call twice: it is heard
+//! through Nida's buses. Its strip sending it to no bus, the app keeps its
+//! speakers, its sound still metered: taken and sent nowhere, Safari was
+//! silent while Nida ran (Max5, 2026-11-08).
 
 /// An app making sound, or that has, which can be taken as an input.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
@@ -93,14 +96,24 @@ pub fn process_birth(pid: i32) -> Option<u64> {
         let size = i32::try_from(std::mem::size_of::<libc::proc_bsdinfo>()).ok()?;
         // SAFETY: `info` holds the size passed; read only when filled whole.
         let filled = unsafe {
-            libc::proc_pidinfo(pid, libc::PROC_PIDTBSDINFO, 0, info.as_mut_ptr().cast(), size)
+            libc::proc_pidinfo(
+                pid,
+                libc::PROC_PIDTBSDINFO,
+                0,
+                info.as_mut_ptr().cast(),
+                size,
+            )
         };
         if filled != size {
             return None;
         }
         // SAFETY: filled whole, just checked.
         let info = unsafe { info.assume_init() };
-        Some(info.pbi_start_tvsec.saturating_mul(1_000_000).saturating_add(info.pbi_start_tvusec))
+        Some(
+            info.pbi_start_tvsec
+                .saturating_mul(1_000_000)
+                .saturating_add(info.pbi_start_tvusec),
+        )
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -148,7 +161,10 @@ pub fn only_the_tap(channels: &[u32]) -> bool {
 #[cfg(target_os = "macos")]
 pub use mac::{app_name, process_named, processes, Tap};
 
-#[cfg(not(any(target_os = "macos", all(target_os = "windows", feature = "screen-capture"))))]
+#[cfg(not(any(
+    target_os = "macos",
+    all(target_os = "windows", feature = "screen-capture")
+)))]
 pub use other::{app_name, process_named, processes, Tap};
 
 #[cfg(all(target_os = "windows", feature = "screen-capture"))]
@@ -157,7 +173,11 @@ mod windows_backend;
 #[cfg(all(target_os = "windows", feature = "screen-capture"))]
 pub use windows_backend::{app_name, processes};
 #[cfg(all(target_os = "windows", feature = "screen-capture"))]
-pub fn process_named(name: &str) -> bool { processes().iter().any(|(_, app, _)| app.eq_ignore_ascii_case(name)) }
+pub fn process_named(name: &str) -> bool {
+    processes()
+        .iter()
+        .any(|(_, app, _)| app.eq_ignore_ascii_case(name))
+}
 #[cfg(all(target_os = "windows", feature = "screen-capture"))]
 pub(crate) use windows_backend::{open as open_windows, Capture as WindowsCapture};
 
@@ -180,12 +200,12 @@ mod mac {
         kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyScopeInput,
         kAudioObjectPropertyScopeOutput, kAudioObjectSystemObject, kAudioProcessPropertyBundleID,
         kAudioProcessPropertyIsRunningOutput, kAudioProcessPropertyPID,
-        kAudioStreamPropertyVirtualFormat, kAudioSubDeviceUIDKey,
-        kAudioSubTapDriftCompensationKey, kAudioSubTapUIDKey, AudioHardwareCreateAggregateDevice,
+        kAudioStreamPropertyVirtualFormat, kAudioSubDeviceUIDKey, kAudioSubTapDriftCompensationKey,
+        kAudioSubTapUIDKey, kAudioTapPropertyDescription, AudioHardwareCreateAggregateDevice,
         AudioHardwareCreateProcessTap, AudioHardwareDestroyAggregateDevice,
-        AudioHardwareDestroyProcessTap, AudioObjectGetPropertyData,
-        AudioObjectGetPropertyDataSize, AudioObjectID, AudioObjectPropertyAddress,
-        CATapDescription, CATapMuteBehavior,
+        AudioHardwareDestroyProcessTap, AudioObjectGetPropertyData, AudioObjectGetPropertyDataSize,
+        AudioObjectID, AudioObjectPropertyAddress, AudioObjectSetPropertyData, CATapDescription,
+        CATapMuteBehavior,
     };
     use objc2_core_foundation::{CFArray, CFDictionary, CFNumber, CFRetained, CFString, CFType};
     use objc2_foundation::{NSArray, NSBundle, NSNumber, NSString};
@@ -288,18 +308,22 @@ mod mac {
 
     /// The channels of each of a device's input streams.
     fn input_channels(device: AudioObjectID) -> Vec<u32> {
-        read_ids(device, kAudioDevicePropertyStreams, kAudioObjectPropertyScopeInput)
-            .into_iter()
-            .map(|stream| {
-                read(
-                    stream,
-                    kAudioStreamPropertyVirtualFormat,
-                    kAudioObjectPropertyScopeGlobal,
-                    StreamFormat::default(),
-                )
-                .map_or(0, |f| f.channels_per_frame)
-            })
-            .collect()
+        read_ids(
+            device,
+            kAudioDevicePropertyStreams,
+            kAudioObjectPropertyScopeInput,
+        )
+        .into_iter()
+        .map(|stream| {
+            read(
+                stream,
+                kAudioStreamPropertyVirtualFormat,
+                kAudioObjectPropertyScopeGlobal,
+                StreamFormat::default(),
+            )
+            .map_or(0, |f| f.channels_per_frame)
+        })
+        .collect()
     }
 
     fn streams(device: AudioObjectID, scope: u32) -> usize {
@@ -321,9 +345,13 @@ mod mac {
         )
         .filter(|&device| device != 0 && output_only(device));
         let device = default.or_else(|| {
-            read_ids(SYSTEM, kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal)
-                .into_iter()
-                .find(|&device| output_only(device))
+            read_ids(
+                SYSTEM,
+                kAudioHardwarePropertyDevices,
+                kAudioObjectPropertyScopeGlobal,
+            )
+            .into_iter()
+            .find(|&device| output_only(device))
         })?;
         read_string(device, kAudioDevicePropertyDeviceUID)
     }
@@ -364,7 +392,12 @@ mod mac {
             )
             .into_iter()
             .filter_map(|process| {
-                let pid = read(process, kAudioProcessPropertyPID, kAudioObjectPropertyScopeGlobal, -1_i32)?;
+                let pid = read(
+                    process,
+                    kAudioProcessPropertyPID,
+                    kAudioObjectPropertyScopeGlobal,
+                    -1_i32,
+                )?;
                 if pid == own {
                     return None;
                 }
@@ -462,18 +495,30 @@ mod mac {
         process: AudioObjectID,
         aggregate: AudioObjectID,
         device: String,
+        /// What the tap was made from: changed and given again to mute the
+        /// app or not (see [`Self::set_muted`]).
+        description: Retained<CATapDescription>,
+    }
+
+    /// Muted on the Mac's own speakers while tapped, or not at all.
+    fn behaviour(muted: bool) -> CATapMuteBehavior {
+        if muted {
+            CATapMuteBehavior::MutedWhenTapped
+        } else {
+            CATapMuteBehavior::Unmuted
+        }
     }
 
     impl Tap {
-        /// Tap the processes `processes` of the app `bundle_id`, muted on the
-        /// Mac's own speakers while tapped.
+        /// Tap the processes `processes` of the app `bundle_id` — `muted` on
+        /// the Mac's own speakers while tapped, or not.
         ///
         /// # Errors
         ///
         /// When there is nothing to tap, no output without inputs to clock
         /// it, Core Audio refuses the tap or its device, or the device holds
         /// more than the tap's sound.
-        pub fn create(bundle_id: &str, processes: &[AudioObjectID]) -> Result<Self> {
+        pub fn create(bundle_id: &str, processes: &[AudioObjectID], muted: bool) -> Result<Self> {
             if processes.is_empty() {
                 bail!("{bundle_id} is not running");
             }
@@ -491,11 +536,12 @@ mod mac {
                 unsafe {
                     description.setName(&NSString::from_str(&format!("Nida: {bundle_id}")));
                     description.setPrivate(true);
-                    description.setMuteBehavior(CATapMuteBehavior::MutedWhenTapped);
+                    description.setMuteBehavior(behaviour(muted));
                 }
                 let mut tap: AudioObjectID = 0;
                 // SAFETY: the description is valid; `tap` receives its object.
-                let status = unsafe { AudioHardwareCreateProcessTap(Some(&description), &raw mut tap) };
+                let status =
+                    unsafe { AudioHardwareCreateProcessTap(Some(&description), &raw mut tap) };
                 if status != 0 {
                     bail!("the tap was refused (status {status})");
                 }
@@ -508,6 +554,7 @@ mod mac {
                             process: tap,
                             aggregate,
                             device,
+                            description: description.clone(),
                         })
                     } else {
                         // SAFETY: the device made just above.
@@ -526,6 +573,39 @@ mod mac {
         /// The name of the device the tap is read through: this tap's alone.
         pub fn device(&self) -> &str {
             &self.device
+        }
+
+        /// Mute the app on the Mac's own speakers while tapped, or give them
+        /// back — the tap and its sound go on.
+        ///
+        /// # Errors
+        ///
+        /// When Core Audio refuses the changed description.
+        pub fn set_muted(&mut self, muted: bool) -> Result<()> {
+            // SAFETY: a plain setter on the description this tap was made from.
+            unsafe { self.description.setMuteBehavior(behaviour(muted)) };
+            let at = address(
+                kAudioTapPropertyDescription,
+                kAudioObjectPropertyScopeGlobal,
+            );
+            let description: *const CATapDescription = Retained::as_ptr(&self.description);
+            let size = u32::try_from(std::mem::size_of::<*const CATapDescription>())?;
+            // SAFETY: the tap this value made; the property takes a pointer to
+            // its description, which `description` is, `size` bytes of it.
+            let status = unsafe {
+                AudioObjectSetPropertyData(
+                    self.process,
+                    NonNull::from(&at),
+                    0,
+                    std::ptr::null(),
+                    size,
+                    NonNull::from(&description).cast(),
+                )
+            };
+            if status != 0 {
+                bail!("the tap's mute could not be changed (status {status})");
+            }
+            Ok(())
         }
     }
 
@@ -587,7 +667,10 @@ mod mac {
         // SAFETY: a complete aggregate description; `aggregate` receives its
         // object.
         let status = unsafe {
-            AudioHardwareCreateAggregateDevice(description.as_opaque(), NonNull::from(&mut aggregate))
+            AudioHardwareCreateAggregateDevice(
+                description.as_opaque(),
+                NonNull::from(&mut aggregate),
+            )
         };
         if status != 0 {
             bail!("its device was refused (status {status})");
@@ -607,7 +690,10 @@ mod mac {
     }
 }
 
-#[cfg(not(any(target_os = "macos", all(target_os = "windows", feature = "screen-capture"))))]
+#[cfg(not(any(
+    target_os = "macos",
+    all(target_os = "windows", feature = "screen-capture")
+)))]
 mod other {
     use anyhow::{bail, Result};
 
@@ -632,12 +718,19 @@ mod other {
         /// # Errors
         ///
         /// Always: only macOS taps an app's sound.
-        pub fn create(_bundle_id: &str, _processes: &[u32]) -> Result<Self> {
+        pub fn create(_bundle_id: &str, _processes: &[u32], _muted: bool) -> Result<Self> {
             bail!("an app's sound can be taken only on macOS")
         }
 
         pub fn device(&self) -> &'static str {
             ""
+        }
+
+        /// # Errors
+        ///
+        /// Never: there is no tap here.
+        pub fn set_muted(&mut self, _muted: bool) -> Result<()> {
+            Ok(())
         }
     }
 }
@@ -694,12 +787,18 @@ mod tests {
         let gpu = "/System/Volumes/Preboot/Cryptexes/OS/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU";
         set_web_talk_pids([(4242, Some(100))].into_iter().collect());
         assert!(is_web_talks(4242, Some(gpu), Some(100)));
-        assert!(!is_web_talks(4343, Some(gpu), Some(100)), "another app's, or Nida's, WebKit");
+        assert!(
+            !is_web_talks(4343, Some(gpu), Some(100)),
+            "another app's, or Nida's, WebKit"
+        );
         assert!(
             !is_web_talks(4242, Some(gpu), Some(200)),
             "the number reused since by another WebKit"
         );
-        assert!(!is_web_talks(4242, Some("/usr/bin/afplay"), Some(100)), "by another program");
+        assert!(
+            !is_web_talks(4242, Some("/usr/bin/afplay"), Some(100)),
+            "by another program"
+        );
         assert!(!is_web_talks(4242, None, Some(100)));
         set_web_talk_pids(std::collections::BTreeMap::new());
         assert!(!is_web_talks(4242, Some(gpu), Some(100)), "no pages open");
@@ -738,7 +837,9 @@ mod tests {
             Some("/Applications/Google Chrome.app")
         );
         assert_eq!(
-            owning_app("/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"),
+            owning_app(
+                "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
+            ),
             Some("/Applications/Google Chrome Canary.app")
         );
         assert_eq!(
@@ -749,8 +850,14 @@ mod tests {
             owning_app("/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU"),
             None
         );
-        assert_eq!(owning_app("/Applications/zoom.us.app"), Some("/Applications/zoom.us.app"));
-        assert_eq!(owning_app("/Applications/Old.APP/Contents/MacOS/Old"), Some("/Applications/Old.APP"));
+        assert_eq!(
+            owning_app("/Applications/zoom.us.app"),
+            Some("/Applications/zoom.us.app")
+        );
+        assert_eq!(
+            owning_app("/Applications/Old.APP/Contents/MacOS/Old"),
+            Some("/Applications/Old.APP")
+        );
     }
 
     /// One entry an app, making sound when any of its processes is; those

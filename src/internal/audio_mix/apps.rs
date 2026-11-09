@@ -6,11 +6,13 @@
 //! `outputs`). The render thread only says which apps its inputs want and
 //! mixes the sound handed back.
 //!
-//! What is wanted is (input UUID, app, generation). The generation moves on
-//! when the render thread drops an input's sound itself — a show loaded over
-//! it — so the input is tapped afresh even if the same show comes straight
-//! back; every event carries all three, so a late one for an old app or
-//! generation is told apart.
+//! What is wanted is (input UUID, app, generation, muted). The generation
+//! moves on when the render thread drops an input's sound itself — a show
+//! loaded over it — so the input is tapped afresh even if the same show comes
+//! straight back; every event carries the first three, so a late one for an
+//! old app or generation is told apart. Muted: whether the app is muted on
+//! the Mac's own speakers while tapped — only while its input sends its sound
+//! to a bus; changed on the tap as it runs.
 
 use std::collections::HashMap;
 use std::sync::mpsc;
@@ -24,6 +26,12 @@ use super::{LiveFeed, RETRY};
 pub(super) trait Taken {
     /// Whether its device has reported an error.
     fn failed(&self) -> bool;
+    /// Mute the app on the Mac's own speakers while tapped, or not.
+    ///
+    /// # Errors
+    ///
+    /// When the system refuses.
+    fn set_muted(&mut self, muted: bool) -> anyhow::Result<()>;
 }
 
 /// What the thread asks the system: the real thing, or a stand-in for tests.
@@ -33,17 +41,19 @@ pub(super) trait Taps: Send + 'static {
     fn processes(&mut self) -> Vec<(u32, String, bool)>;
     /// What an app calls itself.
     fn name(&mut self, bundle_id: &str) -> String;
-    /// Tap the processes `processes` of the app `bundle_id`, and start
-    /// reading its sound.
+    /// Tap the processes `processes` of the app `bundle_id` — `muted` on the
+    /// Mac's own speakers while tapped, or not — and start reading its sound.
     fn take(
         &mut self,
         bundle_id: &str,
         processes: &[u32],
+        muted: bool,
     ) -> anyhow::Result<(Box<dyn Taken>, LiveFeed)>;
 }
 
-/// An app an input wants: (input UUID, app bundle ID, generation).
-pub(super) type Want = (String, String, u64);
+/// An app an input wants: (input UUID, app bundle ID, generation, muted on
+/// the Mac's own speakers while tapped).
+pub(super) type Want = (String, String, u64, bool);
 
 /// What the thread hands back.
 pub(super) enum Event {
@@ -137,6 +147,8 @@ struct Held {
     generation: u64,
     processes: Vec<u32>,
     taken: Box<dyn Taken>,
+    /// Muted on the Mac's own speakers while tapped.
+    muted: bool,
 }
 
 /// Look every [`RETRY`] — or at once, when the wanted apps change — at the
@@ -196,7 +208,7 @@ fn run(
         let gone: Vec<String> = held
             .iter()
             .filter(|(uuid, h)| {
-                let still = wanted.iter().any(|(w, app, generation)| {
+                let still = wanted.iter().any(|(w, app, generation, _)| {
                     w == *uuid
                         && *app == h.app
                         && *generation == h.generation
@@ -218,9 +230,40 @@ fn run(
         told.retain(|uuid, (app, generation, _)| {
             wanted
                 .iter()
-                .any(|(w, a, g)| w == uuid && a == app && g == generation)
+                .any(|(w, a, g, _)| w == uuid && a == app && g == generation)
         });
-        for (uuid, app, generation) in &wanted {
+        // Held, its sound now sent somewhere or nowhere: the app muted or
+        // given its speakers back, the tap going on. Refused, it is let go
+        // and taken afresh as wanted.
+        let mut refused = Vec::new();
+        for (uuid, _, _, muted) in &wanted {
+            if let Some(h) = held.get_mut(uuid).filter(|h| h.muted != *muted) {
+                match h.taken.set_muted(*muted) {
+                    Ok(()) => {
+                        log::info!(
+                            "App sound '{}' {} on this Mac's speakers",
+                            h.app,
+                            if *muted { "muted" } else { "playing again" }
+                        );
+                        h.muted = *muted;
+                    }
+                    Err(e) => {
+                        log::warn!("App sound '{}': {e:#}; taking it afresh", h.app);
+                        refused.push(uuid.clone());
+                    }
+                }
+            }
+        }
+        for uuid in refused {
+            if let Some(h) = held.remove(&uuid) {
+                let _ = events.send(Event::Lost {
+                    uuid,
+                    app: h.app,
+                    generation: h.generation,
+                });
+            }
+        }
+        for (uuid, app, generation, muted) in &wanted {
             let tapping = of(app);
             if tapping.is_empty() && told.remove(uuid).is_some() {
                 // Refused while it ran; not running now.
@@ -233,7 +276,7 @@ fn run(
             if held.contains_key(uuid) || tapping.is_empty() {
                 continue;
             }
-            match taps.take(app, &tapping) {
+            match taps.take(app, &tapping, *muted) {
                 Ok((taken, feed)) => {
                     log::info!(
                         "App sound '{app}' taken ({} Hz, {} ch)",
@@ -249,6 +292,7 @@ fn run(
                             generation: *generation,
                             processes: tapping,
                             taken,
+                            muted: *muted,
                         },
                     );
                     let _ = events.send(Event::Taken {
@@ -288,7 +332,7 @@ pub(super) struct SystemTaps;
 #[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
 struct SystemTaken {
     input: super::device::DeviceInput,
-    _tap: crate::audio::app_sound::Tap,
+    tap: crate::audio::app_sound::Tap,
 }
 
 #[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
@@ -296,11 +340,20 @@ impl Taken for SystemTaken {
     fn failed(&self) -> bool {
         self.input.failed()
     }
+
+    fn set_muted(&mut self, muted: bool) -> anyhow::Result<()> {
+        self.tap.set_muted(muted)
+    }
 }
 
 #[cfg(all(target_os = "windows", feature = "screen-capture"))]
 impl Taken for crate::audio::app_sound::WindowsCapture {
-    fn failed(&self) -> bool { crate::audio::app_sound::WindowsCapture::failed(self) }
+    fn failed(&self) -> bool {
+        crate::audio::app_sound::WindowsCapture::failed(self)
+    }
+    fn set_muted(&mut self, _muted: bool) -> anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 impl Taps for SystemTaps {
@@ -316,21 +369,33 @@ impl Taps for SystemTaps {
         &mut self,
         bundle_id: &str,
         processes: &[u32],
+        muted: bool,
     ) -> anyhow::Result<(Box<dyn Taken>, LiveFeed)> {
         #[cfg(all(target_os = "windows", feature = "screen-capture"))]
         {
+            let _ = muted; // WASAPI loopback preserves the app's ordinary playback.
             let (capture, rx) = crate::audio::app_sound::open_windows(bundle_id, processes)?;
-            Ok((Box::new(capture), LiveFeed { rx, rate: 48_000, channels: 2 }))
+            Ok((
+                Box::new(capture),
+                LiveFeed {
+                    rx,
+                    rate: 48_000,
+                    channels: 2,
+                },
+            ))
         }
         #[cfg(not(all(target_os = "windows", feature = "screen-capture")))]
         {
-        let tap = crate::audio::app_sound::Tap::create(bundle_id, processes)?;
-        let (input, feed) = super::device::open_input(tap.device())?;
-        // Checked when the tap was made; the stream must agree.
-        if feed.channels != 2 {
-            anyhow::bail!("its device opened with {} channels, not the tap's two", feed.channels);
-        }
-        Ok((Box::new(SystemTaken { input, _tap: tap }), feed))
+            let tap = crate::audio::app_sound::Tap::create(bundle_id, processes, muted)?;
+            let (input, feed) = super::device::open_input(tap.device())?;
+            // Checked when the tap was made; the stream must agree.
+            if feed.channels != 2 {
+                anyhow::bail!(
+                    "its device opened with {} channels, not the tap's two",
+                    feed.channels
+                );
+            }
+            Ok((Box::new(SystemTaken { input, tap }), feed))
         }
     }
 }
@@ -347,20 +412,27 @@ mod tests {
     /// Each app a stand-in system tapped, with the processes.
     type Takes = Arc<Mutex<Vec<(String, Vec<u32>)>>>;
 
-    /// A stand-in system: its processes set by the test, each take counted.
+    /// A stand-in system: its processes set by the test, each take counted,
+    /// and whether the app was muted at each take and each change after.
     #[derive(Clone, Default)]
     struct Fake {
         processes: Processes,
         takes: Takes,
         fail: Arc<AtomicBool>,
         refuse: Arc<AtomicBool>,
+        mutes: Arc<Mutex<Vec<bool>>>,
     }
 
-    struct FakeTaken(Arc<AtomicBool>);
+    struct FakeTaken(Arc<AtomicBool>, Arc<Mutex<Vec<bool>>>);
 
     impl Taken for FakeTaken {
         fn failed(&self) -> bool {
             self.0.load(Ordering::Relaxed)
+        }
+
+        fn set_muted(&mut self, muted: bool) -> anyhow::Result<()> {
+            self.1.lock().unwrap().push(muted);
+            Ok(())
         }
     }
 
@@ -377,6 +449,7 @@ mod tests {
             &mut self,
             bundle_id: &str,
             processes: &[u32],
+            muted: bool,
         ) -> anyhow::Result<(Box<dyn Taken>, LiveFeed)> {
             if self.refuse.load(Ordering::Relaxed) {
                 anyhow::bail!("refused");
@@ -385,9 +458,10 @@ mod tests {
                 .lock()
                 .unwrap()
                 .push((bundle_id.to_string(), processes.to_vec()));
+            self.mutes.lock().unwrap().push(muted);
             let (_tx, rx) = crossbeam_channel::bounded(1);
             Ok((
-                Box::new(FakeTaken(self.fail.clone())),
+                Box::new(FakeTaken(self.fail.clone(), self.mutes.clone())),
                 LiveFeed {
                     rx,
                     rate: 48_000,
@@ -429,12 +503,18 @@ mod tests {
 
     fn lost_then_taken(events: &[Event]) -> bool {
         let lost = events.iter().position(|e| matches!(e, Event::Lost { .. }));
-        lost.is_some_and(|at| events[at..].iter().any(|e| matches!(e, Event::Taken { .. })))
+        lost.is_some_and(|at| {
+            events[at..]
+                .iter()
+                .any(|e| matches!(e, Event::Taken { .. }))
+        })
     }
 
     fn uuid_of(event: &Event) -> &str {
         match event {
-            Event::Taken { uuid, .. } | Event::Lost { uuid, .. } | Event::Refused { uuid, .. } => uuid,
+            Event::Taken { uuid, .. } | Event::Lost { uuid, .. } | Event::Refused { uuid, .. } => {
+                uuid
+            }
             Event::Listed(_) => "",
         }
     }
@@ -445,9 +525,12 @@ mod tests {
     fn a_wanted_app_is_tapped_while_it_runs_and_let_go_after() {
         let fake = Fake::default();
         let mut apps = Apps::spawn(Box::new(fake.clone()));
-        apps.want(vec![("in1".into(), "us.zoom.xos".into(), 0)]);
+        apps.want(vec![("in1".into(), "us.zoom.xos".into(), 0, true)]);
         std::thread::sleep(Duration::from_millis(100));
-        assert!(fake.takes.lock().unwrap().is_empty(), "not running: nothing tapped");
+        assert!(
+            fake.takes.lock().unwrap().is_empty(),
+            "not running: nothing tapped"
+        );
 
         // A helper is listed under its app (`app_sound::owning_app`); an
         // app whose ID merely extends Zoom's is another app.
@@ -469,6 +552,43 @@ mod tests {
         assert_eq!(uuid_of(&lost[0]), "in1");
     }
 
+    /// An app whose input sends it nowhere is tapped unmuted — it keeps its
+    /// speakers (Safari was silent while Nida ran, Max5) — and muted while
+    /// its input sends it to a bus: changed on the tap, never tapped afresh.
+    #[test]
+    fn an_app_is_muted_only_while_its_sound_goes_to_a_bus() {
+        let fake = Fake::default();
+        *fake.processes.lock().unwrap() = vec![(7, "com.apple.Safari".into(), true)];
+        let mut apps = Apps::spawn(Box::new(fake.clone()));
+        apps.want(vec![("in1".into(), "com.apple.Safari".into(), 0, false)]);
+        next(&apps, |e| matches!(e, Event::Taken { .. }));
+        assert_eq!(
+            fake.mutes.lock().unwrap().as_slice(),
+            [false],
+            "taken unmuted"
+        );
+
+        let settle = |want: bool| {
+            let until = Instant::now() + Duration::from_secs(5);
+            while fake.mutes.lock().unwrap().last() != Some(&want) && Instant::now() < until {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        };
+        apps.want(vec![("in1".into(), "com.apple.Safari".into(), 0, true)]);
+        settle(true);
+        apps.want(vec![("in1".into(), "com.apple.Safari".into(), 0, false)]);
+        settle(false);
+        assert_eq!(fake.mutes.lock().unwrap().as_slice(), [false, true, false]);
+        assert_eq!(fake.takes.lock().unwrap().len(), 1, "never tapped afresh");
+        assert!(
+            !apps
+                .events()
+                .iter()
+                .any(|e| matches!(e, Event::Lost { .. })),
+            "never let go"
+        );
+    }
+
     /// Restarted, an app has other processes: it is let go and tapped
     /// afresh. A failed device is tapped afresh too.
     #[test]
@@ -476,12 +596,16 @@ mod tests {
         let fake = Fake::default();
         *fake.processes.lock().unwrap() = vec![(7, "us.zoom.xos".into(), true)];
         let mut apps = Apps::spawn(Box::new(fake.clone()));
-        apps.want(vec![("in1".into(), "us.zoom.xos".into(), 0)]);
+        apps.want(vec![("in1".into(), "us.zoom.xos".into(), 0, true)]);
         assert_eq!(next(&apps, |e| matches!(e, Event::Taken { .. })).len(), 1);
 
         *fake.processes.lock().unwrap() = vec![(12, "us.zoom.xos".into(), true)];
         let events = until(&apps, lost_then_taken);
-        assert!(lost_then_taken(&events), "let go, then tapped again: {}", events.len());
+        assert!(
+            lost_then_taken(&events),
+            "let go, then tapped again: {}",
+            events.len()
+        );
         assert_eq!(fake.takes.lock().unwrap().last().unwrap().1, vec![12]);
 
         // A failed device: let go and, the app still running, tapped again.
@@ -502,8 +626,8 @@ mod tests {
         *fake.processes.lock().unwrap() = vec![(3, "us.zoom.xos".into(), true)];
         let mut apps = Apps::spawn(Box::new(fake.clone()));
         apps.want(vec![
-            ("in1".into(), "us.zoom.xos".into(), 0),
-            ("in2".into(), "us.zoom.xos".into(), 0),
+            ("in1".into(), "us.zoom.xos".into(), 0, true),
+            ("in2".into(), "us.zoom.xos".into(), 0, true),
         ]);
         let deadline = Instant::now() + Duration::from_secs(5);
         let mut told: Vec<String> = Vec::new();
@@ -520,7 +644,11 @@ mod tests {
 
         fake.processes.lock().unwrap().clear();
         let lost = until(&apps, |events| {
-            events.iter().filter(|e| matches!(e, Event::Lost { .. })).count() >= 2
+            events
+                .iter()
+                .filter(|e| matches!(e, Event::Lost { .. }))
+                .count()
+                >= 2
         });
         let mut gone: Vec<&str> = lost
             .iter()
@@ -550,9 +678,9 @@ mod tests {
             })
             .is_empty()
         };
-        apps.want(vec![("in1".into(), "us.zoom.xos".into(), 0)]);
+        apps.want(vec![("in1".into(), "us.zoom.xos".into(), 0, true)]);
         assert!(refused(&apps, "us.zoom.xos", 0));
-        apps.want(vec![("in1".into(), "com.microsoft.teams2".into(), 1)]);
+        apps.want(vec![("in1".into(), "com.microsoft.teams2".into(), 1, true)]);
         assert!(refused(&apps, "com.microsoft.teams2", 1), "told again");
     }
 
@@ -568,7 +696,7 @@ mod tests {
             (4, "com.google.Chrome".into(), false),
         ];
         let mut apps = Apps::spawn(Box::new(fake.clone()));
-        apps.want(vec![("in1".into(), "com.google.Chrome".into(), 0)]);
+        apps.want(vec![("in1".into(), "com.google.Chrome".into(), 0, true)]);
         // The list and the refusal come in one look: gather both.
         let deadline = Instant::now() + Duration::from_secs(5);
         let mut seen: Vec<Event> = Vec::new();
