@@ -151,6 +151,9 @@ jobs:
         shell: powershell
         run: ./scripts/ci/test-windows-powerpoint.ps1
       - uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - name: Set up FFmpeg and libclang
         shell: pwsh
         env:

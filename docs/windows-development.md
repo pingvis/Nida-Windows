@@ -14,6 +14,8 @@ For an experimental portable ZIP and its runtime checks, see
 - Visual Studio C++ Build Tools with the Windows SDK. Use an x64 Developer
   PowerShell so the compiler and SDK are available.
 - CMake on `PATH` (shaderc is built from source).
+- Python 3.12 for the native AEC3 build. Run `./scripts/ci/setup-windows-aec.ps1`
+  once before Cargo; see [Windows echo cancellation](windows-echo-cancellation.md).
 - libclang, with `LIBCLANG_PATH` pointing to the folder containing
   `libclang.dll`.
 - An FFmpeg development distribution compatible with `ffmpeg-next` 9, including

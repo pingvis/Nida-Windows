@@ -19,6 +19,10 @@ on:
     branches: [main]
     paths:
       - 'src/internal/renderer/**'
+      - 'src/internal/audio_mix/**'
+      - 'vendor/webrtc-aec3/**'
+      - 'build.rs'
+      - 'scripts/ci/*windows-aec*'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/windows-release.yml'
@@ -34,6 +38,8 @@ on:
       - 'scripts/ci/test-windows-cef-extraction.py'
       - '.github/actions/windows-cef/**'
       - 'assets/nida.ico'
+      - 'vendor/webrtc-aec3/**'
+      - 'build.rs'
 
 permissions:
   contents: read

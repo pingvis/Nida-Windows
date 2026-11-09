@@ -11,6 +11,13 @@ cannot clash with any other copy of abseil or WebRTC in the app. Link it with `-
 It was built for Kmynas klauso (the same author's call transcriber) and copied from its repository, tag v0.9.10
 (sha256 of the library e5acca0a19bfc97128f903672a77dc3c733652d4ebd863cc4b51dbe96d1936aa).
 
+The Windows fork builds these same source archives natively with MSVC x64;
+see [Windows build and qualification](https://github.com/pingvis/Nida-Windows/blob/main/docs/windows-echo-cancellation.md).
+Its static build uses C++20 for MSVC's designated-initializer support and
+omits `WEBRTC_ENABLE_SYMBOL_EXPORT`, since it needs no DLL exports. The
+algorithm and C wrapper are unchanged. Windows packages include these same
+notices and the generated build-input hashes.
+
 ## Licences
 
 These go with the app, in `Nida.app/Contents/Resources/licenses`:

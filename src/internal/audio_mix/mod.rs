@@ -2694,6 +2694,64 @@ impl AudioEngine {
 
     /// Copy the settings onto the mixing thread's buses and sources.
     fn apply(&mut self) {
+        let echo_wanted = self.config.echo_wanted();
+        let rooms: Vec<String> = self
+            .config
+            .buses
+            .iter()
+            .filter_map(|b| self.config.echo_room_of(b).map(str::to_string))
+            .collect();
+        // Each cleaned microphone and speaker reference needs its own EQ
+        // state. Prepare filter graphs before taking the mixing lock.
+        let (echo_eq_requests, room_eq_requests) = {
+            let Ok(mut core) = self.core.lock() else {
+                return;
+            };
+            // A path wanted again must not disappear while its EQ is being
+            // prepared: the snapshot below may reuse that path's processor.
+            for (mic, room) in &echo_wanted {
+                if let Some(path) = core
+                    .sources
+                    .iter_mut()
+                    .find(|s| s.uuid == *mic)
+                    .and_then(|s| s.echo.iter_mut().find(|p| p.room == *room))
+                {
+                    path.wanted = true;
+                }
+            }
+            let echoes: Vec<_> = echo_wanted
+                .iter()
+                .filter_map(|(mic, room)| {
+                    let strip = self.config.strips.iter().find(|s| s.uuid == *mic)?;
+                    let needs = core
+                        .source(mic)
+                        .and_then(|s| s.echo.iter().find(|p| p.room == *room))
+                        .is_none_or(|p| p.equalizer.needs_prepare(strip.equalizer));
+                    needs.then(|| ((mic.clone(), room.clone()), strip.equalizer))
+                })
+                .collect();
+            let references: Vec<_> = self
+                .config
+                .buses
+                .iter()
+                .filter(|b| rooms.contains(&b.uuid))
+                .filter(|b| {
+                    core.bus(&b.uuid)
+                        .and_then(|b| b.room.as_ref())
+                        .is_none_or(|r| r.equalizer.needs_prepare(b.equalizer))
+                })
+                .map(|b| (b.uuid.clone(), b.equalizer))
+                .collect();
+            (echoes, references)
+        };
+        let mut echo_eq: HashMap<_, _> = echo_eq_requests
+            .into_iter()
+            .map(|(key, cfg)| (key, equalizer::Processor::prepare(cfg)))
+            .collect();
+        let mut room_eq: HashMap<_, _> = room_eq_requests
+            .into_iter()
+            .map(|(key, cfg)| (key, equalizer::Processor::prepare(cfg)))
+            .collect();
         let eq_requests: Vec<_> = {
             let Ok(core) = self.core.lock() else {
                 return;
@@ -2778,7 +2836,6 @@ impl AudioEngine {
         let mut let_go: Vec<insert::Insert> = Vec::new();
         // Each microphone's echo cancellers it does not have yet, made here
         // (up to a millisecond each), before the mixer is held.
-        let echo_wanted = self.config.echo_wanted();
         let mut echo_made: HashMap<(String, String), echo::Canceller> = HashMap::new();
         if !echo_wanted.is_empty() {
             // One wanted again before the mixer let it go is kept from
@@ -2813,18 +2870,12 @@ impl AudioEngine {
                     None => {
                         if !self.echo_unavailable_logged {
                             self.echo_unavailable_logged = true;
-                            log::warn!("echo removal: no echo canceller on this Mac; microphones go as they are");
+                            log::warn!("echo removal: no echo canceller on this platform; microphones go as they are");
                         }
                     }
                 }
             }
         }
-        let rooms: Vec<String> = self
-            .config
-            .buses
-            .iter()
-            .filter_map(|b| self.config.echo_room_of(b).map(str::to_string))
-            .collect();
         let mics: Vec<String> = self.config.mics().map(|i| i.uuid.clone()).collect();
         let Ok(mut core) = self.core.lock() else {
             return;
@@ -2897,7 +2948,11 @@ impl AudioEngine {
             // A room a bus removes the echo of: what it plays without its
             // microphones is heard for (its delay and gain carried on).
             if rooms.contains(&cfg.uuid) {
-                bus.room.get_or_insert_with(RoomSound::default);
+                let room = bus.room.get_or_insert_with(RoomSound::default);
+                eq_retired.push(
+                    room.equalizer
+                        .configure(cfg.equalizer, room_eq.remove(&cfg.uuid)),
+                );
             } else {
                 bus.room = None;
             }
@@ -2932,6 +2987,10 @@ impl AudioEngine {
                 source.dynamics.configure(&strip.processing());
                 for path in &mut source.echo {
                     path.chain.configure(&strip.processing());
+                    eq_retired.push(path.equalizer.configure(
+                        strip.equalizer,
+                        echo_eq.remove(&(source.uuid.clone(), path.room.clone())),
+                    ));
                 }
                 source.sends = strip
                     .sends
@@ -4139,7 +4198,7 @@ mod tests {
     /// camera's. A cleaned microphone keeps what its canceller learnt while
     /// its settings change, and lets it go when the bus goes live or the
     /// room goes.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_bus_removing_the_rooms_echo_cleans_only_its_microphones() {
         let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));
@@ -4181,6 +4240,40 @@ mod tests {
             .edit_bus(&call, |b| b.echo_room = Some(room.clone()))
             .expect("bus");
         assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
+        let eq = equalizer::EqualizerConfig {
+            enabled: true,
+            output_db: -6.0,
+            ..Default::default()
+        };
+        engine.edit_source(&mic, |s| s.equalizer = eq).unwrap();
+        engine.edit_bus(&room, |b| b.equalizer = eq).unwrap();
+        {
+            let core = engine.core.lock().unwrap();
+            assert_eq!(
+                core.source(&mic).unwrap().echo[0]
+                    .equalizer
+                    .snapshot()
+                    .config,
+                eq
+            );
+            assert_eq!(
+                core.bus(&room)
+                    .unwrap()
+                    .room
+                    .as_ref()
+                    .unwrap()
+                    .equalizer
+                    .snapshot()
+                    .config,
+                eq
+            );
+        }
+        engine
+            .edit_source(&mic, |s| s.equalizer = Default::default())
+            .unwrap();
+        engine
+            .edit_bus(&room, |b| b.equalizer = Default::default())
+            .unwrap();
         assert!(
             echo_of(&engine, &camera).is_empty(),
             "a camera's sound is played, not cleaned"
@@ -4317,7 +4410,7 @@ mod tests {
     /// A microphone's cleaning, new, starts from where its strip's
     /// processing is: a leveler that has turned a quiet voice up keeps it
     /// up on the call's bus.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_new_cleaning_starts_from_its_strips_settled_leveler() {
         let mut engine = AudioEngine::with_opener(Box::new(|_, _, _| anyhow::bail!("no devices")));

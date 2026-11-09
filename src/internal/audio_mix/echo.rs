@@ -35,10 +35,10 @@ pub struct EchoStats {
 
 /// The filter's length in 4 ms blocks: 160 ms of a room's echo (the
 /// library's 52 ms was too short for a room's tail, Kmynas klauso).
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[cfg(nida_aec)]
 const FILTER_BLOCKS: i32 = 40;
 
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[cfg(nida_aec)]
 mod ffi {
     use std::os::raw::{c_char, c_double, c_float, c_int};
 
@@ -96,7 +96,7 @@ mod ffi {
 /// One microphone's echo canceller: mono, 48 kHz, a block of
 /// [`BLOCK_FRAMES`] (10 ms, the canceller's own frame) at a time.
 pub struct Canceller {
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     aec: std::ptr::NonNull<ffi::KkAec>,
     out: Vec<f32>,
 }
@@ -104,13 +104,13 @@ pub struct Canceller {
 // The canceller is used from one thread at a time (the mixer's, or the one
 // that made it before handing it over); the library keeps nothing tied to
 // the thread that made it.
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[cfg(nida_aec)]
 unsafe impl Send for Canceller {}
 
 impl Canceller {
     /// A canceller that has heard nothing yet, or `None` where there is none
-    /// (not Apple silicon, or the library refused).
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    /// (unsupported platform, or the library refused).
+    #[cfg(nida_aec)]
     pub fn new() -> Option<Self> {
         let rate = super::core::SAMPLE_RATE.cast_signed();
         let mut cfg = ffi::KkAecConfig::default();
@@ -144,21 +144,21 @@ impl Canceller {
     }
 
     /// No canceller here: microphones reach every bus as they are.
-    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    #[cfg(not(nida_aec))]
     pub fn new() -> Option<Self> {
         None
     }
 
     /// The library's name and version, for the log.
     pub fn version() -> &'static str {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        #[cfg(nida_aec)]
         {
             // SAFETY: a static NUL-terminated string.
             unsafe { std::ffi::CStr::from_ptr(ffi::kk_aec_version()) }
                 .to_str()
                 .unwrap_or("kk_aec")
         }
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        #[cfg(not(nida_aec))]
         {
             "none"
         }
@@ -167,19 +167,16 @@ impl Canceller {
     /// One block of what the speakers play (mono, [`BLOCK_FRAMES`] long;
     /// anything else is not taken).
     // Keep the instance API on platforms without the native canceller.
-    #[cfg_attr(
-        not(all(target_os = "macos", target_arch = "aarch64")),
-        allow(clippy::unused_self)
-    )]
+    #[cfg_attr(not(nida_aec), allow(clippy::unused_self))]
     pub fn render(&mut self, block: &[f32]) {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        #[cfg(nida_aec)]
         if block.len() == BLOCK_FRAMES {
             // SAFETY: a live canceller and BLOCK_FRAMES samples, its frame.
             unsafe {
                 ffi::kk_aec_process_render(self.aec.as_ptr(), block.as_ptr());
             }
         }
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        #[cfg(not(nida_aec))]
         let _ = block;
     }
 
@@ -189,7 +186,7 @@ impl Canceller {
         if block.len() != BLOCK_FRAMES {
             return;
         }
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        #[cfg(nida_aec)]
         {
             // SAFETY: a live canceller; both buffers are its frame long.
             let r = unsafe {
@@ -203,18 +200,15 @@ impl Canceller {
                 block.copy_from_slice(&self.out);
             }
         }
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        #[cfg(not(nida_aec))]
         let _ = &self.out;
     }
 
     /// What it says of the echo, as of its last block.
     // Keep the instance API on platforms without the native canceller.
-    #[cfg_attr(
-        not(all(target_os = "macos", target_arch = "aarch64")),
-        allow(clippy::unused_self)
-    )]
+    #[cfg_attr(not(nida_aec), allow(clippy::unused_self))]
     pub fn stats(&mut self) -> EchoStats {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        #[cfg(nida_aec)]
         {
             let mut s = ffi::KkAecStats::default();
             // SAFETY: a live canceller and a plain struct to fill.
@@ -227,14 +221,14 @@ impl Canceller {
                 removed_db: (s.has_erle != 0 && s.erle_db.is_finite()).then_some(s.erle_db as f32),
             }
         }
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        #[cfg(not(nida_aec))]
         EchoStats::default()
     }
 }
 
 impl Drop for Canceller {
     fn drop(&mut self) {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        #[cfg(nida_aec)]
         // SAFETY: made by kk_aec_create, dropped once.
         unsafe {
             ffi::kk_aec_destroy(self.aec.as_ptr());
@@ -246,7 +240,7 @@ impl Drop for Canceller {
 /// coming and going as a voice does (the canceller leaves a steady noise
 /// alone: 11 dB taken out of one, 52 dB out of this), in the blocks `on`
 /// says.
-#[cfg(all(test, target_os = "macos", target_arch = "aarch64"))]
+#[cfg(all(test, nida_aec))]
 pub(super) fn test_voice(seed: u64, blocks: usize, on: impl Fn(usize) -> bool) -> Vec<f32> {
     let mut state = seed.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
     let mut out = Vec::with_capacity(blocks * BLOCK_FRAMES);
@@ -274,7 +268,7 @@ pub(super) fn test_voice(seed: u64, blocks: usize, on: impl Fn(usize) -> bool) -
     out
 }
 
-#[cfg(all(test, target_os = "macos", target_arch = "aarch64"))]
+#[cfg(all(test, nida_aec))]
 mod tests {
     use super::*;
 

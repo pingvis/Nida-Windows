@@ -1,4 +1,4 @@
-# FFmpeg 9 shared SDK and libclang for the core Windows build.
+# FFmpeg 9, libclang and native AEC3 for the core Windows build.
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$ToolsDirectory)
 Set-StrictMode -Version Latest
@@ -49,3 +49,4 @@ if ($env:GITHUB_ENV) {
     (Join-Path $root 'bin') >> $env:GITHUB_PATH
 }
 Write-Host "FFmpeg SDK ready: $root"
+& (Join-Path $PSScriptRoot 'setup-windows-aec.ps1') -ToolsDirectory (Join-Path $ToolsDirectory 'aec')

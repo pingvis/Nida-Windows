@@ -24,9 +24,9 @@ Upstream release `v0.9.8` (`a3b217b`) is merged into the Windows fork's
   fork's) and text texture reuse, with the new redraw and stable-field tests.
 - Keep the fork's FFmpeg 9 SDK selection and executable checks in CI.
 
-Echo removal is included with upstream's platform support: its bundled AEC3
-library runs on Apple silicon. Windows has no echo canceller in this release;
-importing the new setting does not add a Windows AEC implementation.
+The initial merge retained upstream's Apple-silicon-only echo library. The
+subsequent [native Windows AEC3 port](windows-echo-cancellation.md) enables it
+on Windows x64 too; that port has its own build and qualification notes.
 
 ## Validation
 

@@ -25,6 +25,8 @@ on:
       - '.github/actions/linux-ffmpeg/**'
       - 'scripts/ci/setup-linux-ffmpeg.py'
       - 'scripts/ci/setup-windows-build.ps1'
+      - 'scripts/ci/setup-windows-aec.ps1'
+      - 'scripts/ci/build-windows-aec.py'
 
 permissions:
   contents: read
@@ -80,6 +82,9 @@ jobs:
           components: clippy
 
       - uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - name: Set up FFmpeg 9 and libclang 20
         shell: pwsh
         env:
@@ -90,6 +95,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       # Match the features shipped in the Windows portable and installer.
+      - name: Test native echo cancellation and audio mixing
+        run: cargo test --locked --no-default-features --features screen-capture,windows-browser --lib internal::audio_mix:: -- --test-threads=1
+
       - name: Run clippy (pedantic)
         run: cargo clippy --all-targets --locked --no-default-features --features screen-capture,windows-browser -- -D warnings
 

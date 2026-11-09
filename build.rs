@@ -2,9 +2,11 @@
 //! outputs put on the DeckLink API (`src/internal/decklink`), built against
 //! Blackmagic's DeckLink SDK headers in `vendor/decklink-sdk`. The API itself
 //! is loaded at run time from Desktop Video, so nothing is linked to it. On
-//! Apple silicon, WebRTC's echo canceller is linked from `vendor/webrtc-aec3`.
+//! Apple silicon uses the vendored AEC3 archive; Windows x64 builds that same
+//! source with `scripts/ci/setup-windows-aec.ps1`.
 
 fn main() {
+    println!("cargo:rustc-check-cfg=cfg(nida_aec)");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/internal/decklink/shim.cpp");
     println!("cargo:rerun-if-changed=src/internal/decklink/platform.hpp");
@@ -23,7 +25,7 @@ fn main() {
         println!("cargo:rustc-link-lib=framework=Accelerate");
     }
     // WebRTC's echo canceller, prebuilt for Apple silicon (see
-    // vendor/webrtc-aec3/README.md); elsewhere the echo removal is left out.
+    // vendor/webrtc-aec3/README.md). Windows x64 links its native build below.
     println!("cargo:rerun-if-changed=vendor/webrtc-aec3/lib/libkk_aec_all.a");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos")
         && std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("aarch64")
@@ -33,10 +35,30 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", dir.display());
         println!("cargo:rustc-link-lib=static=kk_aec_all");
         println!("cargo:rustc-link-lib=c++");
+        println!("cargo:rustc-cfg=nida_aec");
     }
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
         build_windows_decklink();
+        if std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("x86_64") {
+            build_windows_aec();
+        }
     }
+}
+
+fn build_windows_aec() {
+    println!("cargo:rerun-if-env-changed=NIDA_AEC_LIB_DIR");
+    let dir = std::env::var_os("NIDA_AEC_LIB_DIR").map_or_else(
+        || std::path::PathBuf::from("target/windows-aec"),
+        std::path::PathBuf::from,
+    );
+    let library = dir.join("nida_aec.lib");
+    assert!(library.is_file(),
+        "Windows AEC3 library missing: run scripts/ci/setup-windows-aec.ps1 in x64 Developer PowerShell (see docs/windows-echo-cancellation.md)");
+    println!("cargo:rerun-if-changed={}", library.display());
+    println!("cargo:rustc-link-search=native={}", dir.display());
+    println!("cargo:rustc-link-lib=static=nida_aec");
+    println!("cargo:rustc-link-lib=winmm");
+    println!("cargo:rustc-cfg=nida_aec");
 }
 
 fn build_windows_decklink() {

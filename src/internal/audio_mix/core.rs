@@ -313,6 +313,7 @@ pub struct EchoPath {
     weight_to: f32,
     canceller: Canceller,
     pub chain: super::dynamics::SourceChain,
+    pub(super) equalizer: super::equalizer::Equalizer,
     delay: DelayLine,
     mono: Vec<f32>,
     /// This block, cleaned, before the fader.
@@ -334,6 +335,7 @@ impl EchoPath {
             weight_to: 0.0,
             canceller,
             chain: super::dynamics::SourceChain::default(),
+            equalizer: super::equalizer::Equalizer::default(),
             delay: DelayLine::default(),
             mono: vec![0.0; BLOCK_FRAMES],
             block: Vec::new(),
@@ -350,7 +352,7 @@ impl EchoPath {
     }
 
     /// How many blocks it has cleaned (tests).
-    #[cfg(all(test, target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(all(test, nida_aec))]
     pub fn heard_blocks(&self) -> u64 {
         self.blocks
     }
@@ -364,6 +366,7 @@ impl EchoPath {
         self.canceller.capture(&mut self.mono);
         self.block.clear();
         self.block.extend(self.mono.iter().map(|&m| [m, m]));
+        self.equalizer.process(&mut self.block);
         self.chain.process(&mut self.block);
         self.delay.run(&mut self.block, delay_ms);
         self.blocks += 1;
@@ -420,6 +423,7 @@ impl EchoPath {
 /// takes a held vowel out (10 dB of one, in a test).
 #[derive(Default)]
 pub struct RoomSound {
+    pub(super) equalizer: super::equalizer::Equalizer,
     sum: Vec<Frame>,
     mono: Vec<f32>,
     gains: Vec<f32>,
@@ -973,6 +977,7 @@ impl MixCore {
             }
             bus.equalizer.process(sum);
             if let Some(room) = &mut bus.room {
+                room.equalizer.process(&mut room.sum);
                 let late = bus
                     .insert
                     .as_ref()
@@ -1255,7 +1260,7 @@ mod tests {
     /// the room's echo) and "stream", hearing `near` and the room's speakers
     /// 40 ms after the mix, with a tail. Mixed block by block; each bus's
     /// left side returned.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     fn echo_room(far: &[f32], near: &[f32], mic_gain_db: f32) -> [Vec<f32>; 3] {
         echo_room_with(far, near, mic_gain_db, |_, _| None)
     }
@@ -1264,7 +1269,7 @@ mod tests {
     /// the mix: what it returns, the mixer held up that many blocks there
     /// (the room's speakers silent meanwhile, the microphone's sound of
     /// then let go, as its feed does).
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     fn echo_room_with(
         far: &[f32],
         near: &[f32],
@@ -1333,7 +1338,7 @@ mod tests {
         out
     }
 
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     fn power_db(x: &[f32]) -> f64 {
         let p = x.iter().map(|v| f64::from(*v).powi(2)).sum::<f64>() / x.len().max(1) as f64;
         10.0 * (p + 1e-20).log10()
@@ -1341,7 +1346,7 @@ mod tests {
 
     /// A call's bus gets the microphone with the room's speakers taken out;
     /// any other bus gets it as it is.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_calls_bus_gets_the_microphone_without_the_rooms_speakers() {
         let blocks = 1500;
@@ -1364,8 +1369,80 @@ mod tests {
         );
     }
 
+    #[cfg(nida_aec)]
+    #[test]
+    fn a_cleaned_microphone_keeps_its_strip_equalizer() {
+        let blocks = 600;
+        let near = super::super::echo::test_voice(2, blocks, |_| true);
+        let far = vec![0.0; near.len()];
+        let [_, call, stream] = echo_room_with(&far, &near, 0.0, |b, core| {
+            if b == 0 {
+                let mic = &mut core.sources[1];
+                mic.sends.retain(|s| s.bus != "room");
+                let cfg = super::super::equalizer::EqualizerConfig {
+                    enabled: true,
+                    output_db: -12.0,
+                    ..Default::default()
+                };
+                drop(
+                    mic.equalizer
+                        .configure(cfg, Some(super::super::equalizer::Processor::prepare(cfg))),
+                );
+                drop(
+                    mic.echo[0]
+                        .equalizer
+                        .configure(cfg, Some(super::super::equalizer::Processor::prepare(cfg))),
+                );
+            }
+            None
+        });
+        let last = (blocks - 300) * BLOCK_FRAMES..;
+        let original = power_db(&near[last.clone()]);
+        assert!((power_db(&stream[last.clone()]) - original + 12.0).abs() < 0.5);
+        assert!(
+            (power_db(&call[last]) - original + 12.0).abs() < 1.5,
+            "echo cleaning must retain the strip's EQ trim"
+        );
+    }
+
+    #[test]
+    fn the_rooms_reference_keeps_its_bus_equalizer() {
+        let (mut far, _) = fifo_source("far", 0.5, 10);
+        far.sends = vec!["room".into()];
+        let mut core = core_with(vec![far], &["room"]);
+        let bus = &mut core.buses[0];
+        bus.room = Some(RoomSound::default());
+        let cfg = super::super::equalizer::EqualizerConfig {
+            enabled: true,
+            output_db: -12.0,
+            ..Default::default()
+        };
+        drop(
+            bus.equalizer
+                .configure(cfg, Some(super::super::equalizer::Processor::prepare(cfg))),
+        );
+        drop(
+            bus.room
+                .as_mut()
+                .unwrap()
+                .equalizer
+                .configure(cfg, Some(super::super::equalizer::Processor::prepare(cfg))),
+        );
+        for _ in 0..8 {
+            core.process_block();
+        }
+        let reference = &core.buses[0].room.as_ref().unwrap().sum;
+        assert!(
+            reference
+                .iter()
+                .zip(&core.sums[0])
+                .all(|(a, b)| (a[0] - b[0]).abs() < 1e-5),
+            "the echo reference must hear the same bus EQ as the speakers"
+        );
+    }
+
     /// Blocks `from..to` of a bus's side, as power in dB.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     fn blocks_db(x: &[f32], from: usize, to: usize) -> f64 {
         power_db(&x[from * BLOCK_FRAMES..to * BLOCK_FRAMES])
     }
@@ -1373,7 +1450,7 @@ mod tests {
     /// A cleaning added to a microphone already speaking, held back 170 ms
     /// to meet a camera: the call's bus keeps the voice as it is until the
     /// cleaning's own delay is full, then crosses over, never silent.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_cleaning_added_to_a_held_back_microphone_waits_for_its_delay() {
         use super::super::echo::Canceller;
@@ -1413,7 +1490,7 @@ mod tests {
     /// The room's bus compressing hard: what the cancellers hear of it is
     /// compressed alike, or its echo would no longer be what they listen
     /// for.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn the_rooms_compressor_is_heard_by_the_cancellers_too() {
         let blocks = 1500;
@@ -1450,7 +1527,7 @@ mod tests {
 
     /// A microphone's send to the call's bus turned off fades out cleaned;
     /// its cleaning stays, for the send coming back.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_send_turned_off_fades_out_cleaned() {
         let blocks = 1503;
@@ -1476,7 +1553,7 @@ mod tests {
 
     /// Echo removal turned off: the call's bus crosses back to the
     /// microphone as it is over a block, and the room is let go.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn echo_removal_turned_off_crosses_back_to_the_microphone() {
         let blocks = 1504;
@@ -1515,7 +1592,7 @@ mod tests {
     /// A cleaning not asked for any more while its send stays on (its input
     /// made a camera's sound): the call's bus crosses back to it as it is
     /// over a block, and the cleaning goes.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_cleaning_let_go_under_a_send_crosses_back() {
         let blocks = 1504;
@@ -1546,7 +1623,7 @@ mod tests {
 
     /// The call's bus switched to another room: it crosses back to the
     /// microphone as it is, then to cleaned of the new room, with no jump.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn changing_rooms_crosses_over_without_a_jump() {
         use super::super::echo::Canceller;
@@ -1607,7 +1684,7 @@ mod tests {
     /// The mixer held up: the cancellers keep time with the room (silence
     /// played while it was held) and what they learnt, so no echo comes
     /// through after it.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_held_up_mixer_keeps_the_cancellers_in_time() {
         let blocks = 1700;
@@ -1628,7 +1705,7 @@ mod tests {
     /// A microphone played on the room's speakers too is not an echo of
     /// itself: its voice reaches the call's bus, after its fader as the bus
     /// takes it.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    #[cfg(nida_aec)]
     #[test]
     fn a_microphone_on_the_rooms_speakers_keeps_its_own_voice_for_the_call() {
         let blocks = 1500;
@@ -2305,6 +2382,7 @@ mod tests {
         assert!(blocks >= 100);
         let mode = std::env::var("NIDA_AUDIO_PROBE_EQ").unwrap_or_else(|_| "disabled".into());
         let compress = std::env::var_os("NIDA_AUDIO_PROBE_COMPRESSOR").is_some();
+        let echo = std::env::var_os("NIDA_AUDIO_PROBE_ECHO").is_some();
         let compressor = super::super::CompressorConfig {
             enabled: true,
             threshold_db: -36.0,
@@ -2321,6 +2399,13 @@ mod tests {
             for index in 0..count {
                 let (mut source, fifo) = fifo_source(&format!("probe-{index}"), 0.0, 0);
                 source.sends = vec!["main".into(), "aux".into()];
+                if echo {
+                    source.mic = true;
+                    source.echo.push(EchoPath::new(
+                        "main",
+                        Canceller::new().expect("native AEC3"),
+                    ));
+                }
                 if compress {
                     source
                         .dynamics
@@ -2328,6 +2413,9 @@ mod tests {
                             compressor,
                             ..super::super::dynamics::SourceSettings::default()
                         });
+                    for path in &mut source.echo {
+                        path.chain = source.dynamics.clone();
+                    }
                 }
                 if mode != "disabled" {
                     let config = super::super::equalizer::fixture_config();
@@ -2335,11 +2423,35 @@ mod tests {
                         config,
                         Some(super::super::equalizer::Processor::prepare(config)),
                     ));
+                    for path in &mut source.echo {
+                        drop(path.equalizer.configure(
+                            config,
+                            Some(super::super::equalizer::Processor::prepare(config)),
+                        ));
+                    }
                 }
                 sources.push(source);
                 fifos.push(fifo);
             }
+            if echo {
+                let (mut far, fifo) = fifo_source("far", 0.0, 0);
+                far.sends = vec!["main".into()];
+                if mode != "disabled" {
+                    let config = super::super::equalizer::fixture_config();
+                    drop(far.equalizer.configure(
+                        config,
+                        Some(super::super::equalizer::Processor::prepare(config)),
+                    ));
+                }
+                sources.push(far);
+                fifos.push(fifo);
+            }
             let mut core = core_with(sources, &["main", "aux"]);
+            if echo {
+                core.buses[0].room = Some(RoomSound::default());
+                core.buses[1].echo_room = Some("main".into());
+                core.buses[1].echo_on = true;
+            }
             if compress {
                 for bus in &mut core.buses {
                     bus.dynamics
@@ -2353,6 +2465,12 @@ mod tests {
                         config,
                         Some(super::super::equalizer::Processor::prepare(config)),
                     ));
+                    if let Some(room) = &mut bus.room {
+                        drop(room.equalizer.configure(
+                            config,
+                            Some(super::super::equalizer::Processor::prepare(config)),
+                        ));
+                    }
                 }
             }
             let fixture: Vec<Frame> = (0..BLOCK_FRAMES)
@@ -2397,7 +2515,7 @@ mod tests {
                     .all(|bus| bus.dynamics.snapshot().config.enabled));
             }
             times.sort_by(f64::total_cmp);
-            println!("{{\"mode\":\"{mode}\",\"compressors\":{compress},\"sources\":{count},\"buses\":2,\"blocks\":{blocks},\"p50_us\":{:.3},\"p95_us\":{:.3},\"p99_us\":{:.3},\"max_us\":{:.3},\"service_overruns_10ms\":{}}}",
+            println!("{{\"mode\":\"{mode}\",\"compressors\":{compress},\"echo\":{echo},\"sources\":{count},\"buses\":2,\"blocks\":{blocks},\"p50_us\":{:.3},\"p95_us\":{:.3},\"p99_us\":{:.3},\"max_us\":{:.3},\"service_overruns_10ms\":{}}}",
                 times[blocks/2],times[blocks*95/100],times[blocks*99/100],times[blocks-1],times.iter().filter(|time|**time>10_000.0).count());
         }
     }

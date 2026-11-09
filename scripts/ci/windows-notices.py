@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -29,6 +30,12 @@ def main():
     tree = run("cargo", "tree", "--locked", "--target", target, "-e", "normal", "--prefix", "none", "--format", "{p}", *features)
     used = set(re.findall(r"^(\S+) v(\S+)", tree, re.MULTILINE))
     args.output.mkdir(parents=True, exist_ok=True)
+    aec = Path(__file__).resolve().parents[2] / "vendor/webrtc-aec3"
+    shutil.copytree(aec / "licenses", args.output / "webrtc-aec3", dirs_exist_ok=True)
+    shutil.copyfile(aec / "README.md", args.output / "webrtc-aec3/README.md")
+    provenance = Path(os.environ.get("NIDA_AEC_LIB_DIR", "target/windows-aec")) / "nida-aec-build.json"
+    if provenance.is_file():
+        shutil.copyfile(provenance, args.output / "webrtc-aec3/nida-aec-build.json")
     rows = ["# Rust runtime dependencies", "", "Names, versions and declared licenses follow. Original notices are in rust/.", ""]
     bare = set()
     for crate in metadata["packages"]:

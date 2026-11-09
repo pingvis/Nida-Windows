@@ -85,6 +85,10 @@ Otherwise the guest hears themselves back a moment late.
 
 ### With the room on speakers: echo removal
 
+Windows x64 builds of this fork also include the native AEC3 backend. See
+[Windows build and qualification](windows-echo-cancellation.md) for its setup
+and Windows test results; the acoustic figures below are upstream's tests.
+
 With the guest on the room's speakers rather than headphones, the room's
 microphones hear the guest too, and send them back to the call a moment late.
 The call app cannot help: its own echo cancelling needs to see its sound go to
