@@ -4,6 +4,12 @@ The **REC** button in the top bar, beside **STREAM**, works like vMix's Record:
 press it, pick where files go and how they are encoded, and start. Files are
 encoded on the Mac's media engine, so recording costs almost no CPU.
 
+In this Windows fork, **Encoder → NVIDIA NVENC** accelerates H.264 and HEVC
+recording through that same top-bar REC button. CPU remains the default and
+fallback. The window shows the encoder actually used for the current file.
+See [Windows top-bar REC](windows-topbar-recording.md) for GPU qualification,
+recovery behavior and Windows validation.
+
 | Button | Meaning |
 |---|---|
 | Plain **REC** | Not recording |
@@ -41,7 +47,7 @@ second later — `… (2).mp4` — and the window says the take is in two files.
 | **Codec** | **H.264** (plays everywhere), **HEVC** (about 60 % of the size), **ProRes 422** or **ProRes 422 HQ** (large files, light to edit and grade) |
 | **Format** | **MP4** — plays everywhere and **survives a crash**: it is written in one-second pieces, so if Nida or the Mac goes down, everything up to the last second plays. **MOV** — QuickTime. **MKV** — survives a crash too; VLC and editors that read it. ProRes is always MOV |
 | **Quality** | **Auto** picks a bit rate for the size and frame rate (12 Mbit/s for 1080p30 with H.264, about 68 Mbit/s for 4K60; 60 % of that for HEVC), or set one; **Presets** for common cases. A rate set under half of Auto's for the picture (8 Mbit/s at 4K) blurs in motion: the settings say so. ProRes has its own data rate |
-| **Encoder** | **Hardware** (the Mac's media engine) or **Software** |
+| **Encoder** | **Hardware** (the Mac's media engine), **CPU (software)**, or **NVIDIA NVENC** on Windows for H.264/HEVC |
 | **Size** | Nida's own resolution, or 720p, 1080p, 1440p, 4K |
 | **Frame rate** | Nida's own (the default), or 24, 25, 30, 50, 60 fps. A whole share of Nida's rate takes the show's frames evenly — 30 from a 60 fps show is every second frame, 30 to 60 each frame twice — counted frame by frame, not by when each was drawn (its frames fell on the edges of the file's, and the least delay took one in or left it out). A rate that does not divide Nida's (50 from 60) leaves frames out unevenly and motion stutters: the settings say so and name the rates that fit. The same holds for a stream's rate |
 | **Audio** | AAC 128–320 kbps; uncompressed PCM beside ProRes, as editors expect |

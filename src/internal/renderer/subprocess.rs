@@ -661,6 +661,82 @@ fn recording_nvenc(
     }
 }
 
+/// The dedicated REC path shares output recordings' qualified NVENC backend,
+/// but keeps its own bitrate and crash-safe container settings.
+fn topbar_record_plan(
+    options: &crate::record::RecordOptions,
+    size: (u32, u32),
+    fps: u32,
+    nv12: bool,
+    qualified: bool,
+) -> (Vec<String>, crate::record::RecordEncoding) {
+    use crate::record::RecordCodec;
+    use crate::streaming::StreamEncoder;
+    let candidate = match options.codec {
+        RecordCodec::H264 => Some("h264_nvenc"),
+        RecordCodec::Hevc => Some("hevc_nvenc"),
+        RecordCodec::ProRes | RecordCodec::ProResHq => None,
+    };
+    let video = candidate
+        .filter(|_| options.encoder == StreamEncoder::NvidiaNvenc && nv12 && qualified)
+        .map(|encoder| {
+            let mut args = nvenc_recording_args(encoder, "nv12");
+            let rate = args
+                .iter()
+                .position(|a| a == "-b:v")
+                .expect("NVENC bitrate");
+            let kbps = options.effective_kbps(size, options.fps.unwrap_or(fps));
+            args[rate + 1] = format!("{kbps}k");
+            args.extend([
+                "-maxrate".into(),
+                format!("{kbps}k"),
+                "-bufsize".into(),
+                format!("{}k", kbps * 2),
+            ]);
+            args.extend(["-g".into(), options.fps.unwrap_or(fps).max(1).to_string()]);
+            if options.codec == RecordCodec::Hevc
+                && options.format != crate::record::RecordFormat::Mkv
+            {
+                args.extend(["-tag:v".into(), "hvc1".into()]);
+            }
+            args
+        });
+    let gpu = video.is_some();
+    let args = options.output_args_with_video(size, fps, nv12, video);
+    let actual = if gpu {
+        StreamEncoder::NvidiaNvenc
+    } else if args
+        .windows(2)
+        .any(|a| a[0] == "-c:v" && a[1].ends_with("_videotoolbox"))
+    {
+        StreamEncoder::Hardware
+    } else {
+        StreamEncoder::Software
+    };
+    let note = (actual != options.encoder).then(|| {
+        if options.encoder == StreamEncoder::NvidiaNvenc {
+            if candidate.is_none() {
+                "NVIDIA supports H.264 and HEVC here; using CPU for this file"
+            } else if !nv12 {
+                "GPU video conversion is unavailable; using CPU for this file"
+            } else {
+                "NVIDIA is unavailable or still being checked; using CPU for this file"
+            }
+        } else {
+            "Hardware encoding is unavailable; using CPU for this file"
+        }
+        .to_string()
+    });
+    (
+        args,
+        crate::record::RecordEncoding {
+            requested: options.encoder,
+            actual,
+            note,
+        },
+    )
+}
+
 fn ten_bit_output_format(codec: &RecordingCodec) -> Option<&'static str> {
     match codec {
         RecordingCodec::H265 | RecordingCodec::AV1 => Some("yuv420p10le"),
@@ -3391,7 +3467,45 @@ impl FfmpegSubprocess {
         path: &std::path::Path,
         nv12: bool,
     ) -> anyhow::Result<Self> {
+        Self::spawn_record_with_encoding(options, (width, height), fps, audio, path, nv12)
+            .map(|(sub, _)| sub)
+    }
+
+    /// Start REC and report the encoder actually selected for this file.
+    ///
+    /// # Errors
+    /// Returns the same setup errors as [`Self::spawn_record_with`].
+    ///
+    /// # Panics
+    /// Panics if ffmpeg did not provide its requested stdin pipe.
+    pub(crate) fn spawn_record_with_encoding(
+        options: &crate::record::RecordOptions,
+        (width, height): (u32, u32),
+        fps: u32,
+        audio: Option<AudioInput>,
+        path: &std::path::Path,
+        nv12: bool,
+    ) -> anyhow::Result<(Self, crate::record::RecordEncoding)> {
         let nv12 = nv12 && options.takes_nv12();
+        let candidate = match options.codec {
+            crate::record::RecordCodec::H264 => "h264_nvenc",
+            _ => "hevc_nvenc",
+        };
+        if options.encoder == crate::streaming::StreamEncoder::NvidiaNvenc
+            && options.codec.has_bit_rate()
+        {
+            request_recording_encoder_probe();
+        }
+        let (output_args, encoding) = topbar_record_plan(
+            options,
+            (width, height),
+            fps,
+            nv12,
+            nvenc_recording_available(candidate, "nv12"),
+        );
+        if let Some(note) = &encoding.note {
+            log::warn!("REC: {note}");
+        }
         if let Some(folder) = path.parent() {
             std::fs::create_dir_all(folder).map_err(|e| {
                 anyhow::anyhow!("Cannot make the recording folder {}: {e}", folder.display())
@@ -3405,6 +3519,8 @@ impl FfmpegSubprocess {
             out.extend(
                 ["-ar", "48000", "-ac", "2", "-map", "0:v:0", "-map", "1:a:0"].map(str::to_string),
             );
+            // The silence source is infinite; end it when the video pipe closes.
+            out.push("-shortest".into());
             (
                 [
                     "-f",
@@ -3443,7 +3559,7 @@ impl FfmpegSubprocess {
             .args(["-r", &fps.to_string()])
             .args(["-i", "-"])
             .args(&a_in)
-            .args(options.output_args_for((width, height), fps, nv12));
+            .args(output_args);
         }
         cmd.args(&a_out)
             .arg(path)
@@ -3502,33 +3618,36 @@ impl FfmpegSubprocess {
             ),
         };
         let audio = finalize_audio(prepared, label.clone())?;
-        Ok(Self {
-            child: Some(child),
-            stderr_tail,
-            fanout: None,
-            rate_plan: None,
-            native,
-            frame_tx: Some(tx),
-            writer_thread: Some(writer_thread),
-            counters,
-            write_failed,
-            shutting_down,
-            label,
-            start_time: std::time::Instant::now(),
-            stopped: false,
-            audio,
-            graceful_shutdown: true,
-            frame_contract: Some(FrameContract {
-                format: if nv12 {
-                    ReadbackFormat::Nv12
-                } else {
-                    ReadbackFormat::Rgba8
-                },
-                width,
-                height,
-            }),
-            presentation: None,
-        })
+        Ok((
+            Self {
+                child: Some(child),
+                stderr_tail,
+                fanout: None,
+                rate_plan: None,
+                native,
+                frame_tx: Some(tx),
+                writer_thread: Some(writer_thread),
+                counters,
+                write_failed,
+                shutting_down,
+                label,
+                start_time: std::time::Instant::now(),
+                stopped: false,
+                audio,
+                graceful_shutdown: true,
+                frame_contract: Some(FrameContract {
+                    format: if nv12 {
+                        ReadbackFormat::Nv12
+                    } else {
+                        ReadbackFormat::Rgba8
+                    },
+                    width,
+                    height,
+                }),
+                presentation: None,
+            },
+            encoding,
+        ))
     }
 
     /// Kill ffmpeg abruptly, as a crash would — for tests of what survives.
@@ -4191,6 +4310,153 @@ impl Drop for FfmpegSubprocess {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn topbar_nvenc_preserves_bitrate_rate_and_crash_safe_container() {
+        use crate::record::{RecordCodec, RecordOptions};
+        use crate::streaming::StreamEncoder;
+        for (codec, name) in [
+            (RecordCodec::H264, "h264_nvenc"),
+            (RecordCodec::Hevc, "hevc_nvenc"),
+        ] {
+            let options = RecordOptions {
+                codec,
+                encoder: StreamEncoder::NvidiaNvenc,
+                video_kbps: Some(18_000),
+                fps: Some(25),
+                ..Default::default()
+            };
+            let (args, status) = super::topbar_record_plan(&options, (1920, 1080), 60, true, true);
+            assert_eq!(status.actual, StreamEncoder::NvidiaNvenc);
+            assert_eq!(status.requested, StreamEncoder::NvidiaNvenc);
+            assert!(status.note.is_none());
+            for (key, value) in [
+                ("-c:v", name),
+                ("-b:v", "18000k"),
+                ("-maxrate", "18000k"),
+                ("-bufsize", "36000k"),
+                ("-r", "25"),
+                ("-g", "25"),
+                ("-pix_fmt", "nv12"),
+                ("-bf", "0"),
+            ] {
+                assert!(
+                    args.windows(2).any(|a| a[0] == key && a[1] == value),
+                    "{args:?}"
+                );
+            }
+            assert!(args.iter().any(|a| a.contains("frag_keyframe+empty_moov")));
+            assert!(!args
+                .iter()
+                .any(|a| a == "libx264" || a == "libx265" || a == "-crf"));
+        }
+    }
+
+    #[test]
+    fn topbar_nvenc_fallback_is_explicit_and_keeps_software_options() {
+        use crate::record::{RecordCodec, RecordOptions};
+        use crate::streaming::StreamEncoder;
+        let options = RecordOptions {
+            encoder: StreamEncoder::NvidiaNvenc,
+            ..Default::default()
+        };
+        for (codec, nv12, qualified, name) in [
+            (RecordCodec::H264, true, false, "libx264"),
+            (RecordCodec::Hevc, false, true, "libx265"),
+            (RecordCodec::ProRes, true, true, "prores_ks"),
+        ] {
+            let options = RecordOptions {
+                codec,
+                ..options.clone()
+            }
+            .normalized();
+            let (args, status) =
+                super::topbar_record_plan(&options, (640, 360), 30, nv12, qualified);
+            assert_eq!(status.actual, StreamEncoder::Software);
+            assert_eq!(status.requested, StreamEncoder::NvidiaNvenc);
+            assert!(status.note.is_some());
+            assert!(args.windows(2).any(|a| a[0] == "-c:v" && a[1] == name));
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[ignore = "requires NVIDIA hardware and FFmpeg; validates the dedicated REC encoder"]
+    fn topbar_nvenc_records_h264_and_hevc_with_audio() {
+        use crate::record::{RecordCodec, RecordOptions};
+        use crate::streaming::StreamEncoder;
+        super::warm_recording_encoders();
+        let folder = tempfile::tempdir().unwrap();
+        for (codec, expected, encoder) in [
+            (RecordCodec::H264, "h264", "h264_nvenc"),
+            (RecordCodec::Hevc, "hevc", "hevc_nvenc"),
+        ] {
+            assert!(super::nvenc_recording_available(encoder, "nv12"));
+            let path = folder.path().join(format!("{expected}.mp4"));
+            let options = RecordOptions {
+                codec,
+                encoder: StreamEncoder::NvidiaNvenc,
+                video_kbps: Some(2000),
+                fps: Some(25),
+                ..Default::default()
+            };
+            let (mut sub, status) = super::FfmpegSubprocess::spawn_record_with_encoding(
+                &options,
+                (320, 180),
+                50,
+                None,
+                &path,
+                true,
+            )
+            .unwrap();
+            assert_eq!(status.actual, StreamEncoder::NvidiaNvenc);
+            assert!(sub.takes_nv12());
+            let mut frame = vec![128_u8; 320 * 180 * 3 / 2];
+            for index in 0..65_u8 {
+                frame[..320 * 180].fill(32 + index);
+                assert!(sub.feed_nv12(&frame, std::time::Instant::now()));
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            sub.stop();
+            assert!(super::wait_for_recordings(std::time::Duration::from_secs(
+                15
+            )));
+            let probe = std::process::Command::new("ffprobe")
+                .args([
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "stream=codec_name,r_frame_rate:stream_tags=encoder",
+                    "-of",
+                    "json",
+                ])
+                .arg(&path)
+                .output()
+                .unwrap();
+            assert!(
+                probe.status.success(),
+                "{}",
+                String::from_utf8_lossy(&probe.stderr)
+            );
+            let value: serde_json::Value = serde_json::from_slice(&probe.stdout).unwrap();
+            let video = &value["streams"][0];
+            assert_eq!(video["codec_name"], expected);
+            assert_eq!(video["r_frame_rate"], "25/1");
+            assert!(video["tags"]["encoder"].as_str().unwrap().contains("nvenc"));
+            assert_eq!(value["streams"][1]["codec_name"], "aac");
+            let decoded = std::process::Command::new("ffmpeg")
+                .args(["-v", "error", "-i"])
+                .arg(&path)
+                .args(["-f", "null", "-"])
+                .output()
+                .unwrap();
+            assert!(
+                decoded.status.success(),
+                "{}",
+                String::from_utf8_lossy(&decoded.stderr)
+            );
+        }
+    }
+
     /// What a live stream fills before it skips (see `Timeline::place_live`).
     const LIVE_FILL: u64 = super::LIVE_BACKLOG as u64;
 

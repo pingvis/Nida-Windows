@@ -39,7 +39,7 @@ pub enum StreamEncoder {
     Hardware,
     /// x264 on the CPU, for machines without a hardware encoder ffmpeg can use.
     Software,
-    /// Opt-in Windows H.264 NVENC; keeps the existing software default.
+    /// Opt-in Windows NVENC: H.264 streaming and H.264/HEVC recording.
     NvidiaNvenc,
 }
 
@@ -84,7 +84,8 @@ impl StreamEncoder {
     /// The encoder that will actually open here for `codec`, and whether it
     /// takes constant bit rate: hardware as asked if it works, else software.
     pub(crate) fn resolved(self, codec: VideoCodec) -> (Self, bool) {
-        // Recording does not use the streaming-only NVENC worker.
+        // NVENC paths build qualified video options separately. Generic
+        // resolution retains the software fallback.
         if self == Self::NvidiaNvenc {
             return (Self::Software, true);
         }

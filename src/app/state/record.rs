@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::engine::{CommandResult, ErrorCode};
-use crate::record::{RecordOptions, RecordSettings, RecordStatus};
+use crate::record::{RecordEncoding, RecordOptions, RecordSettings, RecordStatus};
 use crate::renderer::context::{HeadlessOutput, OutputTarget, UnifiedOutput};
 
 use super::{encoder_fps, resolve_output_audio, OutputAudio};
@@ -36,6 +36,10 @@ pub(crate) struct Recording {
     last_file: Option<PathBuf>,
     retry_at: Option<Instant>,
     problem: Option<String>,
+    encoding: Option<RecordEncoding>,
+    /// After an NVENC failure, continue this take on CPU; the next take
+    /// still uses the operator's saved encoder preference.
+    software_recovery: bool,
     dropped_seen: u64,
     /// The time this file's dropped frames covered as of the last check, and
     /// each recent rise in it.
@@ -51,7 +55,9 @@ pub(crate) struct Recording {
     disk: Option<crate::record::DiskWatch>,
     /// The encoder for the next file being started on a thread of its own
     /// — the file chosen there too (see `EncoderStart`).
-    starting: Option<super::outputs::EncoderStart<(crate::renderer::FfmpegSubprocess, PathBuf)>>,
+    starting: Option<
+        super::outputs::EncoderStart<(crate::renderer::FfmpegSubprocess, PathBuf, RecordEncoding)>,
+    >,
     /// Every file handed to an encoder this run: none is handed twice — one
     /// stopped before it started may yet make its file.
     given: std::sync::Arc<std::sync::Mutex<std::collections::HashSet<PathBuf>>>,
@@ -134,6 +140,11 @@ impl super::super::VardaApp {
             }
         });
         RecordStatus {
+            encoding: if starting {
+                None
+            } else {
+                self.recording.encoding.clone()
+            },
             recording: true,
             secs: self
                 .recording
@@ -215,6 +226,8 @@ impl super::super::VardaApp {
         self.recording.take_name.clone_from(&options.name);
         self.recording.files.clear();
         self.recording.problem = None;
+        self.recording.encoding = None;
+        self.recording.software_recovery = false;
         self.recording.retry_at = None;
         self.recording.dropped_before = 0;
         self.recording.disk = Some(crate::record::DiskWatch::start(options.folder.clone()));
@@ -315,7 +328,11 @@ impl super::super::VardaApp {
         if let Some(stale) = h.audio_pcm.take() {
             stale.release(audio_manager);
         }
-        let options = recording.settings.options.clone();
+        let mut options = recording.settings.options.clone();
+        let software_recovery = recording.software_recovery;
+        if software_recovery {
+            options.encoder = crate::streaming::StreamEncoder::Software;
+        }
         let take_name = recording.take_name.clone();
         let (stamp, part, given) = (
             recording.stamp.clone(),
@@ -346,7 +363,7 @@ impl super::super::VardaApp {
                 options.format.extension(),
                 &given,
             );
-            crate::renderer::FfmpegSubprocess::spawn_record_with(
+            crate::renderer::FfmpegSubprocess::spawn_record_with_encoding(
                 &options,
                 size,
                 fps,
@@ -354,7 +371,14 @@ impl super::super::VardaApp {
                 &file,
                 nv12,
             )
-            .map(|sub| (sub, file))
+            .map(|(sub, mut encoding)| {
+                if software_recovery {
+                    encoding.requested = crate::streaming::StreamEncoder::NvidiaNvenc;
+                    encoding.note =
+                        Some("NVIDIA encoding stopped; continuing this take on CPU".into());
+                }
+                (sub, file, encoding)
+            })
         };
         match super::outputs::EncoderStart::begin(
             "record-start".into(),
@@ -397,7 +421,7 @@ impl super::super::VardaApp {
             ..
         } = self;
         match made {
-            Ok((sub, path)) => {
+            Ok((sub, path, encoding)) => {
                 let Some(UnifiedOutput::Headless(h)) = recording.output.first_mut() else {
                     if let Some(pass) = start.passthrough.take() {
                         pass.release(audio_manager);
@@ -413,6 +437,7 @@ impl super::super::VardaApp {
                     disk.file(path.clone());
                 }
                 recording.files.push(path);
+                recording.encoding = Some(encoding);
                 recording.dropped_seen = 0;
                 recording.dropped_secs_seen = 0.0;
                 recording.drops.clear();
@@ -496,6 +521,14 @@ impl super::super::VardaApp {
                     .and_then(|s| s.last_error())
                     .unwrap_or_else(|| "it stopped".into());
                 log::warn!("Recording encoder stopped: {why}");
+                if self
+                    .recording
+                    .encoding
+                    .as_ref()
+                    .is_some_and(|e| e.actual == crate::streaming::StreamEncoder::NvidiaNvenc)
+                {
+                    self.recording.software_recovery = true;
+                }
                 self.recording.problem = Some(format!(
                     "The recording stopped ({why}) — continuing in a new file"
                 ));

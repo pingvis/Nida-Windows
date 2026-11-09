@@ -26,6 +26,8 @@ The HTTP API accepts the same choice through the existing output target routes:
 
 Use `Software` to select the CPU. Omitting `encoder` also selects software.
 The dedicated top-bar REC feature and streaming settings are separate paths.
+The top-bar REC button now has its own opt-in NVIDIA choice too; see
+[Windows top-bar REC](windows-topbar-recording.md).
 
 ## Capability checks and fallback
 

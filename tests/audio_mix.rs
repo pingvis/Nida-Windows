@@ -929,6 +929,7 @@ fn flash_clip(dir: &Path) -> Option<PathBuf> {
 /// When each flash starts in a recording, and each beep, in seconds of the
 /// file.
 fn flashes_and_beeps(file: &Path) -> (Vec<f64>, Vec<f64>) {
+    assert!(varda::testing::finish_recordings(Duration::from_secs(35)));
     let until = Instant::now() + Duration::from_secs(30);
     let pictures = loop {
         let out = std::process::Command::new("ffmpeg")

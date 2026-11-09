@@ -8,6 +8,13 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
+/// Wait until stopped recordings have finished writing before inspecting
+/// their complete picture and sound tracks. Fragmented files can be readable
+/// while their background finalizers are still draining video frames.
+pub fn finish_recordings(timeout: std::time::Duration) -> bool {
+    crate::renderer::subprocess::wait_for_recordings(timeout)
+}
+
 /// A fresh, isolated workspace root for one `VardaApp`.
 ///
 /// Every test that constructs a `VardaApp` must pass this to `--workspace`.

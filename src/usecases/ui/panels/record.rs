@@ -15,6 +15,14 @@ use crate::engine::EngineCommand;
 use crate::record::{RecordCodec, RecordFormat, RecordOptions};
 use crate::streaming::StreamEncoder;
 
+fn encoder_label(encoder: StreamEncoder) -> &'static str {
+    match encoder {
+        StreamEncoder::Software => "CPU (software)",
+        StreamEncoder::Hardware => "Hardware (Mac media engine)",
+        StreamEncoder::NvidiaNvenc => "NVIDIA NVENC",
+    }
+}
+
 fn open_id() -> egui::Id {
     egui::Id::new("record_window_open")
 }
@@ -85,7 +93,11 @@ pub(super) fn uneven_rate_warning(show: u32, file: u32) -> Option<String> {
              Use \"Same as Nida\""
         ));
     }
-    let half = if show.is_multiple_of(2) { format!(" or {}", show / 2) } else { String::new() };
+    let half = if show.is_multiple_of(2) {
+        format!(" or {}", show / 2)
+    } else {
+        String::new()
+    };
     Some(format!(
         "Leaves {} of Nida's {show} frames a second out unevenly — motion stutters. Use {show}{half}",
         show - file
@@ -97,7 +109,11 @@ pub(super) fn uneven_rate_warning(show: u32, file: u32) -> Option<String> {
 /// motion).
 fn low_bitrate_warning(options: &RecordOptions, size: (u32, u32), fps: u32) -> Option<String> {
     let set = options.video_kbps?;
-    let auto = RecordOptions { video_kbps: None, ..options.clone() }.effective_kbps(size, fps);
+    let auto = RecordOptions {
+        video_kbps: None,
+        ..options.clone()
+    }
+    .effective_kbps(size, fps);
     (u64::from(set) * 2 < u64::from(auto)).then(|| {
         format!(
             "Low for {}×{} at {fps} fps — it blurs in motion. Auto gives {auto} kbps",
@@ -369,13 +385,23 @@ fn render_header(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions) {
     if let Some(problem) = &status.problem {
         ui.colored_label(WARN_YELLOW, format!("⚠ {problem}"));
     }
+    if let Some(encoding) = &status.encoding {
+        ui.label(format!("Using: {}", encoder_label(encoding.actual)));
+        if let Some(note) = &encoding.note {
+            ui.colored_label(WARN_YELLOW, note);
+        }
+    }
     let file = status.file.as_ref().or(status.last_file.as_ref());
     if let Some(file) = file {
         ui.horizontal(|ui| {
             let name = std::path::Path::new(file)
                 .file_name()
                 .map_or_else(|| file.clone(), |n| n.to_string_lossy().into_owned());
-            let verb = if status.file.is_some() { "Writing" } else { "Last" };
+            let verb = if status.file.is_some() {
+                "Writing"
+            } else {
+                "Last"
+            };
             ui.label(egui::RichText::new(format!("{verb}: {name}")).small())
                 .on_hover_text(file);
             if ui.small_button("Show in Finder").clicked() {
@@ -582,7 +608,9 @@ fn render_options(
                             .on_hover_text("A bit rate for the picture's size and frame rate")
                             .changed()
                         {
-                            let fps = options.fps.unwrap_or(crate::app::state::encoder_fps(data.target_fps));
+                            let fps = options
+                                .fps
+                                .unwrap_or(crate::app::state::encoder_fps(data.target_fps));
                             let size = options
                                 .size
                                 .unwrap_or((data.render_width, data.render_height));
@@ -612,7 +640,9 @@ fn render_options(
                                 );
                             }
                         } else {
-                            let fps = options.fps.unwrap_or(crate::app::state::encoder_fps(data.target_fps));
+                            let fps = options
+                                .fps
+                                .unwrap_or(crate::app::state::encoder_fps(data.target_fps));
                             let size = options
                                 .size
                                 .unwrap_or((data.render_width, data.render_height));
@@ -644,10 +674,16 @@ fn render_options(
                 let size = options
                     .size
                     .unwrap_or((data.render_width, data.render_height));
-                let fps = options.fps.unwrap_or(crate::app::state::encoder_fps(data.target_fps));
+                let fps = options
+                    .fps
+                    .unwrap_or(crate::app::state::encoder_fps(data.target_fps));
                 if let Some(warning) = low_bitrate_warning(options, size, fps) {
                     ui.label("");
-                    ui.label(egui::RichText::new(format!("⚠ {warning}")).color(WARN).small());
+                    ui.label(
+                        egui::RichText::new(format!("⚠ {warning}"))
+                            .color(WARN)
+                            .small(),
+                    );
                     ui.end_row();
                 }
             }
@@ -655,14 +691,23 @@ fn render_options(
             ui.label("Encoder");
             ui.add_enabled_ui(!recording, |ui| {
                 egui::ComboBox::from_id_salt("record_encoder")
-                    .selected_text(options.encoder.label())
+                    .selected_text(encoder_label(options.encoder))
                     .width(220.0)
                     .show_ui(ui, |ui| {
-                        for enc in [StreamEncoder::Hardware, StreamEncoder::Software] {
+                        for enc in [
+                            StreamEncoder::Hardware,
+                            StreamEncoder::NvidiaNvenc,
+                            StreamEncoder::Software,
+                        ] {
+                            if enc == StreamEncoder::NvidiaNvenc && !cfg!(target_os = "windows") {
+                                continue;
+                            }
                             let chosen = options.encoder == enc;
                             let item = ui.add_enabled(
-                                enc.available(),
-                                egui::Button::selectable(chosen, enc.label()),
+                                enc.available()
+                                    && (enc != StreamEncoder::NvidiaNvenc
+                                        || options.codec.has_bit_rate()),
+                                egui::Button::selectable(chosen, encoder_label(enc)),
                             );
                             if item.clicked() && !chosen {
                                 set(
@@ -746,7 +791,11 @@ fn render_options(
                 .and_then(|file| uneven_rate_warning(data.target_fps, file))
             {
                 ui.label("");
-                ui.label(egui::RichText::new(format!("⚠ {warning}")).color(WARN).small());
+                ui.label(
+                    egui::RichText::new(format!("⚠ {warning}"))
+                        .color(WARN)
+                        .small(),
+                );
                 ui.end_row();
             }
 
@@ -900,14 +949,21 @@ mod tests {
     #[test]
     fn an_uneven_recording_rate_is_said() {
         let said = super::uneven_rate_warning(60, 50).expect("60 → 50");
-        assert!(said.contains("10 of Nida's 60") && said.contains("Use 60 or 30"), "{said}");
+        assert!(
+            said.contains("10 of Nida's 60") && said.contains("Use 60 or 30"),
+            "{said}"
+        );
         assert!(super::uneven_rate_warning(50, 30).is_some());
         let twice = super::uneven_rate_warning(30, 60).expect("a whole multiple");
         assert!(twice.contains("2 times"), "{twice}");
         let faster = super::uneven_rate_warning(25, 30).expect("faster, unevenly");
         assert!(faster.contains("stutters"), "{faster}");
         for (show, file) in [(60, 60), (60, 30), (50, 25), (0, 50)] {
-            assert_eq!(super::uneven_rate_warning(show, file), None, "{show} → {file}");
+            assert_eq!(
+                super::uneven_rate_warning(show, file),
+                None,
+                "{show} → {file}"
+            );
         }
     }
 
@@ -921,7 +977,11 @@ mod tests {
         };
         let said = super::low_bitrate_warning(&low, (3840, 2160), 50).expect("8 Mbit/s at 4K");
         assert!(said.contains("3840×2160"), "{said}");
-        assert_eq!(super::low_bitrate_warning(&low, (1280, 720), 30), None, "fine at 720p");
+        assert_eq!(
+            super::low_bitrate_warning(&low, (1280, 720), 30),
+            None,
+            "fine at 720p"
+        );
         let auto = crate::record::RecordOptions::default();
         assert_eq!(super::low_bitrate_warning(&auto, (3840, 2160), 60), None);
     }
@@ -943,7 +1003,11 @@ mod tests {
         );
         assert_eq!(record_stats_text(&status, false).0, "1.2 GB", "short");
         status.free_bytes = Some(2_000_000_000);
-        assert_eq!(record_stats_text(&status, true).1, Some(WARN), "low on space");
+        assert_eq!(
+            record_stats_text(&status, true).1,
+            Some(WARN),
+            "low on space"
+        );
         status.dropped = 12;
         assert_eq!(
             record_stats_text(&status, true),
@@ -1030,10 +1094,60 @@ mod tests {
         assert!(record_pieces(&data, 2).is_empty(), "narrowest: none");
     }
     use crate::record::RecordStatus;
+    #[cfg(target_os = "windows")]
+    use egui_kittest::kittest::NodeT;
     use egui_kittest::kittest::Queryable;
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn nvidia_can_be_selected_for_topbar_recording() {
+        let data = UIData::test_fixture();
+        let mut h = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(900.0, 1400.0))
+            .build_ui_state(
+                move |ui, sent: &mut Vec<EngineCommand>| {
+                    let mut actions = UIActions::new();
+                    render_options(ui, &data.record.options, false, &data, &mut actions);
+                    sent.extend(actions.commands);
+                },
+                Vec::new(),
+            );
+        h.run_steps(3);
+        h.query_all_by_role(egui::accesskit::Role::ComboBox)
+            .find(|node| node.accesskit_node().value().as_deref() == Some("CPU (software)"))
+            .expect("recording encoder selector")
+            .click();
+        h.run();
+        h.get_by_label("NVIDIA NVENC").click();
+        h.run();
+        assert!(h.state().iter().any(|cmd| matches!(cmd,
+            EngineCommand::SetRecordOptions { options } if options.encoder == StreamEncoder::NvidiaNvenc)));
+    }
+
+    #[test]
+    fn recording_header_shows_actual_encoder_and_fallback() {
+        let mut data = UIData::test_fixture();
+        data.record.status = recording(None);
+        data.record.status.encoding = Some(crate::record::RecordEncoding {
+            requested: StreamEncoder::NvidiaNvenc,
+            actual: StreamEncoder::Software,
+            note: Some("NVIDIA unavailable; this file uses CPU".into()),
+        });
+        let mut h = egui_kittest::Harness::builder()
+            .with_size(egui::vec2(800.0, 600.0))
+            .build_ui(move |ui| {
+                render_header(ui, &data, &mut UIActions::new());
+            });
+        h.run_steps(3);
+        assert!(h.query_by_label("Using: CPU (software)").is_some());
+        assert!(h
+            .query_by_label("NVIDIA unavailable; this file uses CPU")
+            .is_some());
+    }
 
     fn recording(problem: Option<&str>) -> RecordStatus {
         RecordStatus {
+            encoding: None,
             recording: true,
             secs: 12.0,
             file: Some("/tmp/Nida 2026-09-26 10-00-00.mp4".into()),

@@ -12,6 +12,85 @@ use varda::record::{RecordCodec, RecordFormat, RecordOptions};
 
 mod common;
 
+#[cfg(target_os = "windows")]
+#[test]
+#[ignore = "requires NVIDIA hardware; records through the top-bar REC engine"]
+fn topbar_nvenc_failure_recovers_on_cpu_and_next_take_uses_nvidia() {
+    use varda::streaming::StreamEncoder;
+    let mut app = app().expect("GPU required for native recording test");
+    let dir = tempfile::tempdir().unwrap();
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetRecordOptions {
+            options: RecordOptions {
+                name: "GPU take".into(),
+                folder: dir.path().to_path_buf(),
+                size: Some((640, 360)),
+                encoder: StreamEncoder::NvidiaNvenc,
+                fps: Some(30),
+                ..Default::default()
+            },
+        },
+    ));
+    // A headless engine qualifies in the background. A take started before
+    // qualification completes uses software rather than stalling the show.
+    let until = Instant::now() + Duration::from_secs(25);
+    loop {
+        ok(send_cmd(&mut app, EngineCommand::StartRecording));
+        if app.record_status().encoding.as_ref().unwrap().actual == StreamEncoder::NvidiaNvenc {
+            break;
+        }
+        ok(send_cmd(&mut app, EngineCommand::StopRecording));
+        assert!(Instant::now() < until, "NVENC did not qualify on this GPU");
+        run(&mut app, 0.3);
+    }
+    run(&mut app, 2.0);
+    let first = app.record_status().file.unwrap();
+    let options = RecordOptions {
+        name: "Next take".into(),
+        ..app.record_settings().options.clone()
+    };
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetRecordOptions { options },
+    ));
+    app.kill_record_encoder_for_test();
+    run(&mut app, 4.0);
+    let status = app.record_status();
+    assert!(status.recording);
+    assert_eq!(status.files.len(), 2, "{status:?}");
+    let encoding = status.encoding.unwrap();
+    assert_eq!(encoding.actual, StreamEncoder::Software);
+    assert_eq!(encoding.requested, StreamEncoder::NvidiaNvenc);
+    assert!(encoding
+        .note
+        .unwrap()
+        .contains("continuing this take on CPU"));
+    assert!(Path::new(&status.files[1])
+        .file_name()
+        .unwrap()
+        .to_string_lossy()
+        .starts_with("GPU take "));
+    assert_eq!(
+        app.record_settings().options.encoder,
+        StreamEncoder::NvidiaNvenc
+    );
+    ok(send_cmd(&mut app, EngineCommand::StopRecording));
+    assert!(probe(Path::new(&first)).0.starts_with("h264"));
+    assert!(probe(Path::new(&status.files[1])).0.starts_with("h264"));
+    ok(send_cmd(&mut app, EngineCommand::StartRecording));
+    let next = app.record_status();
+    assert_eq!(next.encoding.unwrap().actual, StreamEncoder::NvidiaNvenc);
+    assert!(Path::new(next.file.as_ref().unwrap())
+        .file_name()
+        .unwrap()
+        .to_string_lossy()
+        .starts_with("Next take "));
+    run(&mut app, 1.5);
+    ok(send_cmd(&mut app, EngineCommand::StopRecording));
+    let _ = probe(Path::new(next.file.as_ref().unwrap()));
+}
+
 fn ffmpeg_available() -> bool {
     std::process::Command::new("ffmpeg")
         .arg("-version")
@@ -112,6 +191,7 @@ fn record_with(codec: RecordCodec, format: RecordFormat) -> Option<(String, f64)
         status.file,
         "remembered for Show in Finder"
     );
+    assert!(varda::testing::finish_recordings(Duration::from_secs(35)));
     let result = probe(&file);
     drop(dir);
     Some(result)
@@ -319,6 +399,7 @@ fn the_recording_settings_are_kept_with_the_stage() {
     };
     let options = RecordOptions {
         name: "Conference".into(),
+        encoder: varda::streaming::StreamEncoder::NvidiaNvenc,
         folder: dir.path().join("takes"),
         codec: RecordCodec::Hevc,
         format: RecordFormat::Mkv,
@@ -446,10 +527,13 @@ fn a_recording_keeps_its_colours_through_the_gpu_conversion() {
     run(&mut app, 1.5);
     let file = app.record_status().file.unwrap();
     ok(send_cmd(&mut app, EngineCommand::StopRecording));
+    assert!(varda::testing::finish_recordings(Duration::from_secs(35)));
     let _ = probe(Path::new(&file));
 
+    // The source is a constant solid: inspect an actual decoded frame rather
+    // than seeking past a short clip on a slow debug test runner.
     let out = std::process::Command::new("ffmpeg")
-        .args(["-v", "error", "-ss", "1", "-i", &file, "-frames:v", "1"])
+        .args(["-v", "error", "-i", &file, "-frames:v", "1"])
         .args([
             "-vf",
             "crop=2:2:319:179",
@@ -466,6 +550,7 @@ fn a_recording_keeps_its_colours_through_the_gpu_conversion() {
         "{}",
         String::from_utf8_lossy(&out.stderr)
     );
+    assert!(out.stdout.len() >= 3, "the recording has no decoded picture");
     let srgb = |c: f32| {
         let c = if c <= 0.003_130_8 {
             c * 12.92
@@ -501,7 +586,10 @@ fn the_status_gives_the_files_own_rate() {
         fps: Some(30),
         ..RecordOptions::default()
     };
-    ok(send_cmd(&mut app, EngineCommand::SetRecordOptions { options }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetRecordOptions { options },
+    ));
     ok(send_cmd(&mut app, EngineCommand::StartRecording));
     run(&mut app, 1.0);
     let status = app.record_status();
@@ -562,6 +650,9 @@ fn starting_a_recording_never_waits_for_its_encoder() {
         run(&mut app, 0.5);
     }
     let status = app.record_status();
-    assert!(status.recording && !status.starting && status.bytes > 0, "{status:?}");
+    assert!(
+        status.recording && !status.starting && status.bytes > 0,
+        "{status:?}"
+    );
     ok(send_cmd(&mut app, EngineCommand::StopRecording));
 }

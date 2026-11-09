@@ -20335,6 +20335,29 @@
           "pro_res_hq"
         ]
       },
+      "RecordEncoding": {
+        "type": "object",
+        "description": "Requested and actual encoder for one file of a recording take.",
+        "required": [
+          "requested",
+          "actual"
+        ],
+        "properties": {
+          "actual": {
+            "$ref": "#/components/schemas/StreamEncoder"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why this file uses a different encoder than requested."
+          },
+          "requested": {
+            "$ref": "#/components/schemas/StreamEncoder"
+          }
+        }
+      },
       "RecordFormat": {
         "type": "string",
         "description": "The file a recording is written as.",
@@ -20471,6 +20494,17 @@
             "format": "int64",
             "description": "Frames the encoder could not take; each is covered by repeating the\none before.",
             "minimum": 0
+          },
+          "encoding": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RecordEncoding",
+                "description": "The encoder actually selected for the current file; absent idle or starting."
+              }
+            ]
           },
           "file": {
             "type": [

@@ -90,7 +90,7 @@ impl RecordCodec {
         matches!(self, Self::H264 | Self::Hevc)
     }
 
-    fn video_codec(self) -> Option<VideoCodec> {
+    pub(crate) fn video_codec(self) -> Option<VideoCodec> {
         match self {
             Self::H264 => Some(VideoCodec::H264),
             Self::Hevc => Some(VideoCodec::Hevc),
@@ -372,11 +372,18 @@ impl RecordOptions {
     /// input 0 is RGBA frames at `in_fps`, input 1 the sound.
     #[cfg(test)]
     pub(crate) fn output_args(&self, size: (u32, u32), in_fps: u32) -> Vec<String> {
-        self.output_args_for(size, in_fps, false)
+        self.output_args_with_video(size, in_fps, false, None)
     }
 
-    /// [`Self::output_args`], input 0 NV12 when `nv12`.
-    pub(crate) fn output_args_for(&self, size: (u32, u32), in_fps: u32, nv12: bool) -> Vec<String> {
+    /// Keep the recording's rate/container settings when a qualified Windows
+    /// encoder supplies its own video options.
+    pub(crate) fn output_args_with_video(
+        &self,
+        size: (u32, u32),
+        in_fps: u32,
+        nv12: bool,
+        video: Option<Vec<String>>,
+    ) -> Vec<String> {
         let fps = self.fps.unwrap_or(in_fps).max(1);
         let mut args: Vec<String> = vec!["-r".into(), fps.to_string()];
         let tags = [
@@ -390,12 +397,16 @@ impl RecordOptions {
             "tv",
         ];
         if let Some(codec) = self.codec.video_codec() {
-            let (encoder, constant) = self.encoder.resolved(codec);
-            // A keyframe a second: easy to cut, and what fragments close on.
-            // A recording keeps its average rather than a constant rate.
-            let _ = constant;
-            args.extend(encoder.video_args(codec, self.effective_kbps(size, fps), fps, false));
-            args.extend(["-pix_fmt", encoder.pixel_format(codec, nv12)].map(str::to_string));
+            if let Some(video) = video {
+                args.extend(video);
+            } else {
+                let (encoder, constant) = self.encoder.resolved(codec);
+                // A keyframe a second: easy to cut, and what fragments close on.
+                // A recording keeps its average rather than a constant rate.
+                let _ = constant;
+                args.extend(encoder.video_args(codec, self.effective_kbps(size, fps), fps, false));
+                args.extend(["-pix_fmt", encoder.pixel_format(codec, nv12)].map(str::to_string));
+            }
         } else {
             let profile = if self.codec == RecordCodec::ProResHq {
                 "hq"
@@ -495,9 +506,21 @@ pub struct RecordSettings {
     pub options: RecordOptions,
 }
 
+/// Requested and actual encoder for one file of a recording take.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct RecordEncoding {
+    pub requested: StreamEncoder,
+    pub actual: StreamEncoder,
+    /// Why this file uses a different encoder than requested.
+    pub note: Option<String>,
+}
+
 /// How the recording is doing.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct RecordStatus {
+    /// The encoder actually selected for the current file; absent idle or starting.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encoding: Option<RecordEncoding>,
     pub recording: bool,
     /// Seconds since Record was pressed.
     pub secs: f32,
@@ -536,6 +559,7 @@ pub struct RecordStatus {
 impl RecordStatus {
     pub fn idle(last_file: Option<String>) -> Self {
         Self {
+            encoding: None,
             recording: false,
             secs: 0.0,
             file: None,
