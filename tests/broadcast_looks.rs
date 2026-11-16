@@ -58,12 +58,17 @@ fn f16_to_f32(bits: u16) -> f32 {
 }
 
 fn read_texture(ctx: &GpuContext, tex: &wgpu::Texture) -> Vec<[f32; 4]> {
-    let unpadded = W * 8;
+    read_sized(ctx, tex, W, H)
+}
+
+/// `tex` (`Rgba16Float`, `w` × `h`) read back.
+fn read_sized(ctx: &GpuContext, tex: &wgpu::Texture, w: u32, h: u32) -> Vec<[f32; 4]> {
+    let unpadded = w * 8;
     let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let padded = unpadded.div_ceil(align) * align;
     let buffer = ctx.device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("broadcast looks readback"),
-        size: u64::from(padded * H),
+        size: u64::from(padded * h),
         usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
@@ -82,12 +87,12 @@ fn read_texture(ctx: &GpuContext, tex: &wgpu::Texture) -> Vec<[f32; 4]> {
             layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(padded),
-                rows_per_image: Some(H),
+                rows_per_image: Some(h),
             },
         },
         wgpu::Extent3d {
-            width: W,
-            height: H,
+            width: w,
+            height: h,
             depth_or_array_layers: 1,
         },
     );
@@ -103,15 +108,15 @@ fn read_texture(ctx: &GpuContext, tex: &wgpu::Texture) -> Vec<[f32; 4]> {
         })
         .ok();
     rx.recv().expect("map channel").expect("map ok");
-    let mut out = Vec::with_capacity((W * H) as usize);
+    let mut out = Vec::with_capacity((w * h) as usize);
     {
         let data = buffer.slice(..).get_mapped_range().expect("mapped");
         let channel = |px: usize, i: usize| {
             f16_to_f32(u16::from_le_bytes([data[px + i * 2], data[px + i * 2 + 1]]))
         };
-        for row in 0..H {
+        for row in 0..h {
             let base = (row * padded) as usize;
-            for col in 0..W {
+            for col in 0..w {
                 let px = base + (col as usize) * 8;
                 out.push([
                     channel(px, 0),
@@ -218,7 +223,7 @@ fn each_look_keeps_to_broadcast_brightness() {
         return;
     };
     let looks = looks();
-    assert!(looks.len() >= 10, "the broadcast looks: {}", looks.len());
+    assert!(looks.len() >= 27, "the broadcast looks: {}", looks.len());
     for path in &looks {
         let name = path
             .file_stem()
@@ -548,9 +553,11 @@ fn no_look_goes_near_black() {
     }
 }
 
-/// Calm centre calms every look alike: at 1 the middle and the lower
-/// third are at least a quarter dimmer than at 0 (or as dim as its calm
-/// plate already), whatever the look.
+/// Calm centre calms every look alike, in the middle of the picture: at 1
+/// the middle — a little under half of the picture across and down — is at
+/// least a quarter dimmer than at 0 (or as dim as its calm plate already),
+/// whatever the look; from there the look comes back softly, by degrees,
+/// and at the picture's very edge it is left as it is.
 #[test]
 fn calm_centre_calms_every_look() {
     let Some(ctx) = headless_gpu() else {
@@ -577,9 +584,11 @@ fn calm_centre_calms_every_look() {
             })
         };
         let (open, calmed) = (at(0.0), at(1.0));
+        // Calm in full inside a box from 0.28 to 0.72 across and down, its
+        // corners rounded.
         for (place, x, y) in [
             ("middle", (0.38, 0.62), (0.36, 0.58)),
-            ("lower third", (0.15, 0.85), (0.72, 0.9)),
+            ("lower part", (0.36, 0.64), (0.6, 0.7)),
         ] {
             let (before, after) = (mean(&open, x, y), mean(&calmed, x, y));
             let drop = 1.0 - after / before.max(1e-6);
@@ -594,6 +603,29 @@ fn calm_centre_calms_every_look() {
         }
         // Never black there: LED panels go patchy near it.
         assert!(mean(&calmed, (0.38, 0.62), (0.36, 0.58)) > 0.02, "{name}: calmed to black");
+        // Calm in full in both: calmed, the lower part comes out as flat as
+        // the middle — within a third of it, whatever the look had in each.
+        let (middle, lower) =
+            (mean(&calmed, (0.38, 0.62), (0.36, 0.58)), mean(&calmed, (0.36, 0.64), (0.6, 0.7)));
+        assert!(
+            (lower / middle - 1.0).abs() < 0.3,
+            "{name}: calmed, the lower part at {lower:.3} is not as flat as the middle at {middle:.3}"
+        );
+        // The calm has faded out 0.26 beyond that box, by degrees: the top
+        // and bottom 3% of the picture and its outermost 1% at the sides
+        // are the look as it was.
+        for (place, x, y) in [
+            ("top edge", (0.0, 1.0), (0.0, 0.03)),
+            ("bottom edge", (0.0, 1.0), (0.97, 1.0)),
+            ("left edge", (0.0, 0.01), (0.0, 1.0)),
+            ("right edge", (0.99, 1.0), (0.0, 1.0)),
+        ] {
+            let (before, after) = (mean(&open, x, y), mean(&calmed, x, y));
+            assert!(
+                (after - before).abs() < 0.002,
+                "{name}: the {place} calmed too, {before:.3} -> {after:.3}"
+            );
+        }
     }
 }
 
@@ -660,5 +692,113 @@ fn cost_of_each_look_at_4k() {
             .unwrap_or_default();
         let ms = time(Some(path));
         println!("{name}: {:.2} ms", (ms - base).max(0.0));
+    }
+}
+
+/// Each look drawn at 3840×2160 with its render size at Half and Quarter,
+/// against the same frame at Full: how far the picture moves and what each
+/// costs — a measurement, run by hand
+/// (`NIDA_SAVE_LOOKS=<dir> cargo test --test broadcast_looks -- --ignored
+/// --nocapture smaller_render_size`). With `NIDA_SAVE_LOOKS` it also writes a
+/// 960×540 crop from the middle of each, at the wall's own pixels.
+#[test]
+#[ignore = "a measurement"]
+fn each_look_at_a_smaller_render_size() {
+    use std::fmt::Write as _;
+    use varda::deck::DeckRenderScale;
+    const W4: u32 = 3840;
+    const H4: u32 = 2160;
+    const FRAMES: u32 = 20;
+    let Some(ctx) = headless_gpu() else {
+        return;
+    };
+    let audio = AudioData::default();
+    let audio_values = AudioValues {
+        sources: std::collections::HashMap::default(),
+    };
+    let analyzer_values = AnalyzerValues::default();
+    let frame_at = |mixer: &mut Mixer| {
+        let inputs = varda::mixer::FrameInputs {
+            audio_data: &audio,
+            audio_values: &audio_values,
+            analyzer_values: &analyzer_values,
+            beat_time: None,
+            transport: None,
+            free_run_time: Some(1.0),
+        };
+        mixer.render(&ctx, &inputs, 60, &[]).expect("render");
+        ctx.device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: None,
+            })
+            .ok();
+    };
+    let crop = |pixels: &[[f32; 4]], name: &str| {
+        let Some(dir) = std::env::var_os("NIDA_SAVE_LOOKS") else {
+            return;
+        };
+        let (cw, ch) = (960u32, 540u32);
+        let (x0, y0) = ((W4 - cw) / 2, (H4 - ch) / 2);
+        let mut img = image::RgbImage::new(cw, ch);
+        for y in 0..ch {
+            for x in 0..cw {
+                let px = pixels[((y0 + y) * W4 + x0 + x) as usize];
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let to8 = |c: f32| (srgb(c) * 255.0).round() as u8;
+                img.put_pixel(x, y, image::Rgb([to8(px[0]), to8(px[1]), to8(px[2])]));
+            }
+        }
+        img.save(Path::new(&dir).join(format!("{name}.png")))
+            .expect("save png");
+    };
+    for path in &looks() {
+        let name = path
+            .file_stem()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_string();
+        let mut full: Vec<[f32; 4]> = Vec::new();
+        let mut line = format!("{name:28}");
+        for scale in DeckRenderScale::ALL {
+            let shader = ISFShader::from_file(path).expect("shader");
+            let mut deck = Deck::new(&ctx, shader, W4, H4).expect("deck");
+            deck.set_render_scale(&ctx, scale);
+            let mut mixer = Mixer::new(&ctx, W4, H4).expect("mixer");
+            mixer.set_tonemap_mode(&ctx.queue, TonemapMode::Bypass);
+            mixer.channel_mut(0).expect("a channel").add_deck(deck);
+            for _ in 0..3 {
+                frame_at(&mut mixer);
+            }
+            let started = std::time::Instant::now();
+            for _ in 0..FRAMES {
+                frame_at(&mut mixer);
+            }
+            let ms = started.elapsed().as_secs_f64() * 1000.0 / f64::from(FRAMES);
+            let pixels = read_sized(&ctx, mixer.composite_texture(), W4, H4);
+            crop(&pixels, &format!("{name}_{scale:?}"));
+            if full.is_empty() {
+                full = pixels;
+                let _ = write!(line, "  Full {ms:5.2} ms");
+                continue;
+            }
+            let mut diffs: Vec<f32> = full
+                .iter()
+                .zip(&pixels)
+                .map(|(a, b)| (luma(*a) - luma(*b)).abs())
+                .collect();
+            let mean = diffs.iter().sum::<f32>() / diffs.len() as f32;
+            diffs.sort_unstable_by(f32::total_cmp);
+            let p999 = diffs[diffs.len() * 999 / 1000];
+            let worst = diffs[diffs.len() - 1];
+            let _ = write!(
+                line,
+                "  {scale:?} {ms:5.2} ms, mean {:.2}/255, 99.9% {:.1}/255, worst {:.1}/255",
+                mean * 255.0,
+                p999 * 255.0,
+                worst * 255.0
+            );
+        }
+        println!("{line}");
     }
 }

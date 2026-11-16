@@ -227,7 +227,7 @@ function Invoke-PowerPointCommand($request) {
     $deck = Find-Deck $app $path
     switch ($request.op) {
         'save_pdf' {
-            if ([int]$app.SlideShowWindows.Count -gt 0) { return 'showing' }
+            if (!$request.with_show -and [int]$app.SlideShowWindows.Count -gt 0) { return 'showing' }
             $out = Convert-DeckPath ([string]$request.out)
             # PDF copy, all slides (including hidden), leaving the deck unchanged.
             # ExportAsFixedFormat requires a null PrintRange for all slides.

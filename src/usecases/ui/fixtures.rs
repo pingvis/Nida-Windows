@@ -312,6 +312,7 @@ impl UIData {
                 ("test_generator_d".to_string(), 3),
             ],
             broadcast: vec![],
+            frames: vec![],
             effect_masks: std::collections::HashMap::new(),
             filters: vec![
                 ("test_effect".to_string(), 0),
@@ -503,6 +504,7 @@ impl UIData {
             gpu_device_type: "IntegratedGpu".to_string(),
             gpu_utilization: 45.0,
             gpu_utilization_measured: true,
+            late_frames: 0,
             nida_gpu: Some(38.0),
             nida_ram: Some(3 * 1024 * 1024 * 1024),
             cpu_usage: 25.0,

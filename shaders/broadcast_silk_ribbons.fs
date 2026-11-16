@@ -109,6 +109,15 @@
             "SCALE": 0.08,
             "WRAP": 4096.0
         }
+    ],
+    "PASSES": [
+        {
+            "TARGET": "look",
+            "WIDTH": "$WIDTH/2",
+            "HEIGHT": "$HEIGHT/2",
+            "FLOAT": true
+        },
+        {}
     ]
 }*/
 
@@ -136,7 +145,10 @@ layout(set = 0, binding = 0) uniform ISFUniforms {
     float PHASE_TIME_3;
 };
 
-layout(set = 0, binding = 1) uniform UserParams {
+layout(set = 0, binding = 1) uniform sampler texSampler;
+layout(set = 0, binding = 2) uniform texture2D look;
+
+layout(set = 0, binding = 3) uniform UserParams {
     float speed;
     float density;
     float calm;
@@ -207,15 +219,16 @@ void bc_colours(int preset, vec4 bg, vec4 mn, vec4 ac, out vec3 b, out vec3 m, o
     a = bc_lin(BC_PALETTES[i + 2]);
 }
 
-// Calm centre, the last step of every moving look: in the middle and the
-// lower third, where slides and names go, the picture goes toward a flat,
-// dim plate of its background — whatever the look, so text over it reads —
-// never below the floor LED panels need (the base is a little above black).
+// Calm centre, the last step of every moving look: over the middle of the
+// picture — all of it but a border, so where slides, frames and names go —
+// the picture goes toward a flat, dim plate of its background, whatever
+// the look, so text over it reads; never below the floor LED panels need
+// (the base is a little above black). Calm inside a rounded box in the
+// middle, the look coming back by degrees toward the picture's edges.
 vec3 bc_calm_all(vec3 col, vec3 base, vec2 st, float amount) {
-    vec2 c = (st - vec2(0.5, 0.48)) * vec2(1.1, 1.6);
-    float centre = exp(-dot(c, c) * 3.0);
-    float lower = smoothstep(0.6, 0.72, st.y) * (1.0 - smoothstep(0.93, 1.0, st.y));
-    float m = clamp(amount, 0.0, 1.0) * max(centre, lower * 0.85);
+    vec2 from_box = abs(st - 0.5) - vec2(0.22, 0.22) + 0.15;
+    float outside = length(max(from_box, 0.0)) + min(max(from_box.x, from_box.y), 0.0) - 0.15;
+    float m = clamp(amount, 0.0, 1.0) * (1.0 - smoothstep(0.0, 0.26, outside));
     // Mixed as the eye sees it (sRGB): dark looks calm as much as bright.
     return bc_lin(mix(bc_srgb(col), bc_srgb(base) * 0.5, m * 0.9));
 }
@@ -244,6 +257,16 @@ void main() {
         return;
     }
 
+    // Second pass, at the deck's size: the picture drawn at half the size
+    // in the first, and the grain at the wall's own pixels. The look is all
+    // soft shapes, so half the size draws it the same at a quarter of the
+    // cost (tests/broadcast_looks.rs); the grain, scaled up, would no longer
+    // break up bands.
+    if (PASSINDEX != 0) {
+        fragColor = bc_finish(texture(sampler2D(look, texSampler), uv).rgb, uv * RENDERSIZE);
+        return;
+    }
+
     vec3 bgc;
     vec3 mainc;
     vec3 accentc;
@@ -251,7 +274,6 @@ void main() {
     float aspect = RENDERSIZE.x / max(RENDERSIZE.y, 1.0);
     vec2 p = vec2((uv.x - 0.5) * aspect, uv.y);
     float t = PHASE_TIME_0;
-    vec2 frag = uv * RENDERSIZE;
     // A preset's background is lifted a little toward its Main; Custom's is
     // the Background as picked (a colour picked on a preset starts as the
     // lifted one, so nothing moves). Near black is lifted at the end, for
@@ -283,5 +305,5 @@ void main() {
     vec2 o = bc_hash22(id) - 0.5;
     float mote = (1.0 - smoothstep(0.03, 0.07, length(f - o * 0.6))) * step(h, density * 0.12);
     col += accentc * mote * 0.35;
-    fragColor = bc_finish(bc_calm_all(col, base, uv, calm), frag);
+    fragColor = vec4(bc_calm_all(col, base, uv, calm), 1.0);
 }

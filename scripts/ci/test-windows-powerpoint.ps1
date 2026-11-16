@@ -87,7 +87,7 @@ $deck | Add-Member ScriptMethod ExportAsFixedFormat {
     param($out, $kind, $intent, $frame, $order, $output, $hidden, $range, $rangeType)
     $this.Exported = @($out, $kind, $output, $hidden, $range, $rangeType)
 }
-$pdfRequest = [pscustomobject]@{ op = 'save_pdf'; path = $path; out = '\\?\C:\Talks\slides.pdf' }
+$pdfRequest = [pscustomobject]@{ op = 'save_pdf'; with_show = $false; path = $path; out = '\\?\C:\Talks\slides.pdf' }
 Assert-Equal (Invoke-PowerPointCommand $pdfRequest) 'saved' 'PDF copy exported'
 Assert-Equal $deck.Exported[0] 'C:\Talks\slides.pdf' 'PDF output path normalized'
 Assert-Equal $deck.Exported[1] 2 'PDF fixed format'
@@ -102,3 +102,8 @@ $deck.Exported = $null
 Assert-Equal (Invoke-PowerPointCommand $pdfRequest) 'showing' 'running show blocks PDF export'
 Assert-Equal $deck.Exported $null 'no export during a show'
 Write-Host 'Windows upstream PowerPoint command tests passed.'
+
+$pdfRequest.with_show = $true
+Assert-Equal (Invoke-PowerPointCommand $pdfRequest) 'saved' 'authorized export beside a show'
+Assert-Equal $deck.Exported[0] 'C:\Talks\slides.pdf' 'beside-show export destination'
+Assert-Equal $app.SlideShowWindows.Count 1 'export leaves show running'

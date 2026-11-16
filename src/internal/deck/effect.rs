@@ -50,7 +50,7 @@ impl Effect {
             .preprocessors
             .iter()
             .map(|pp| {
-                // Create a 1×1 placeholder texture (will be resized when analyzer provides data)
+                // Create a 1Ã—1 placeholder texture (will be resized when analyzer provides data)
                 let texture = context.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some(&format!("Preprocessor: {}", pp.name)),
                     size: wgpu::Extent3d {
@@ -61,7 +61,7 @@ impl Effect {
                     mip_level_count: 1,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
-                    // Data texture (packed analyzer output) — NOT part of the
+                    // Data texture (packed analyzer output) â€” NOT part of the
                     // color path. Format is the encoding; do not make this float.
                     format: wgpu::TextureFormat::Rgba8Unorm,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
@@ -82,7 +82,7 @@ impl Effect {
             &context.device,
             &spirv,
             target_format,
-            true, // has_input_image — it's a filter
+            true, // has_input_image â€” it's a filter
             num_passes,
             imported_textures.len(),
             preprocessor_textures.len(),
@@ -126,7 +126,7 @@ impl Effect {
             });
             let view_a = tex_a.create_view(&wgpu::TextureViewDescriptor::default());
 
-            // Double-buffered whether persistent or not — see the note in
+            // Double-buffered whether persistent or not â€” see the note in
             // source.rs: a single-textured pass target aliases COLOR_TARGET with
             // RESOURCE in its own pass and wgpu rejects it.
             let (tex_b, view_b) = {
@@ -164,6 +164,28 @@ impl Effect {
             );
         }
 
+        // A filter that makes its targets anew each frame has its passes
+        // drawn in their turn (see `apply_passes`): a uniform buffer for each.
+        let in_turn = num_passes > 0
+            && passes
+                .iter()
+                .all(|pass| pass.target.is_none() || !pass.persistent.unwrap_or(false));
+        let pass_uniform_buffers = if in_turn {
+            passes
+                .iter()
+                .map(|_| {
+                    context.device.create_buffer(&wgpu::BufferDescriptor {
+                        label: Some("Effect Pass Uniforms"),
+                        size: std::mem::size_of::<ISFUniforms>() as u64,
+                        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                        mapped_at_creation: false,
+                    })
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+
         // Initialize parameters from shader inputs
         let inputs = shader.metadata.inputs.as_deref().unwrap_or(&[]);
         let params = ShaderParams::from_inputs(inputs);
@@ -188,6 +210,7 @@ impl Effect {
             preprocessor_textures,
             phase_accumulators: [0.0; 4],
             phase_inputs_config,
+            pass_uniform_buffers,
             runs: 0,
             pointwise,
             mask: None,
@@ -219,6 +242,7 @@ impl Effect {
             preprocessor_textures: Vec::new(),
             phase_accumulators: [0.0; 4],
             phase_inputs_config,
+            pass_uniform_buffers: Vec::new(),
             runs: 0,
             pointwise,
             mask: None,
@@ -238,7 +262,7 @@ impl Effect {
         self.offline = Some(why);
     }
 
-    /// The effect's name: its shader's, or — kept offline — the missing
+    /// The effect's name: its shader's, or â€” kept offline â€” the missing
     /// shader file's.
     pub fn name(&self) -> String {
         match (&self.offline, &self.show_path) {
@@ -252,7 +276,7 @@ impl Effect {
 
     /// The shader's path as a save writes it: the file this effect was made
     /// from, or the show's own when this copy's shader of the same name
-    /// stood in for a file gone — written back as it was, so the Nida that
+    /// stood in for a file gone â€” written back as it was, so the Nida that
     /// has the file there still finds it.
     pub fn saved_path(&self) -> &str {
         self.show_path
@@ -360,6 +384,18 @@ impl Effect {
         self.mask.is_none() && self.shader.name() == crate::engine::value::mask::LAYER_MASK_EFFECT
     }
 
+    /// Run on a clear frame it leaves it clear: a layer's mask with no
+    /// shape, which does nothing, or a crop or Transform that only places
+    /// the picture (`is_static_framing`) â€” but a crop with its border on,
+    /// which draws the border whatever is in the frame.
+    pub(crate) fn keeps_clear(&self, modulation: &crate::modulation::ModulationEngine) -> bool {
+        if self.is_idle_layer_mask() {
+            return true;
+        }
+        let bordered = self.shader.name() == "crop" && self.switch("border_mode") != Some(false);
+        self.is_static_framing(modulation) && !bordered
+    }
+
     fn switch(&self, name: &str) -> Option<bool> {
         match self.params.values.get(name)? {
             crate::params::ParamValue::Bool(v) => Some(*v),
@@ -405,7 +441,7 @@ impl Effect {
         ))
     }
 
-    /// A transform that only moves and scales — not turned, not wrapped, not
+    /// A transform that only moves and scales â€” not turned, not wrapped, not
     /// masked or modulated: where the picture's centre goes (offset from the
     /// frame's, in frame units) and its scale. Such a move can be done by the
     /// pass that draws the picture (see `Deck::folded_placement`).
@@ -463,7 +499,7 @@ impl Effect {
     /// crop, moved and scaled by transform. `None` for anything else, or
     /// framing that is modulated, inverted, rotated or wrapped.
     ///
-    /// `fringe` is how many texels an edge may be soft by — crop
+    /// `fringe` is how many texels an edge may be soft by â€” crop
     /// anti-aliases its edges, and transform resamples them.
     pub(crate) fn opaque_after(
         &self,
@@ -508,8 +544,8 @@ impl Effect {
         if wraps || rotation.abs() > 1e-6 {
             return None;
         }
-        // The shader shows source point p at (p − ½)·scale + ½ + position —
-        // its mirror, flipped — and nothing for a point off the source's
+        // The shader shows source point p at (p âˆ’ Â½)Â·scale + Â½ + position â€”
+        // its mirror, flipped â€” and nothing for a point off the source's
         // frame, whose edge is then an edge of the picture.
         let flip = self.flips();
         let mirrored = |v: f32, axis: usize| if flip[axis] { 1.0 - v } else { v };
@@ -529,9 +565,9 @@ impl Effect {
         Some(Area::around(within.corners().map(place)))
     }
 
-    /// The parts of its input this effect reads to put out `areas` (UV) —
+    /// The parts of its input this effect reads to put out `areas` (UV) â€”
     /// the same for a pointwise filter, moved back through a transform on
-    /// a frame `aspect` wide per unit high — or `None` when it may read
+    /// a frame `aspect` wide per unit high â€” or `None` when it may read
     /// anywhere.
     pub(crate) fn input_needed(
         &self,
@@ -612,7 +648,7 @@ impl Effect {
     ///
     /// # Errors
     ///
-    /// Never fails today — recording the render passes is infallible. The
+    /// Never fails today â€” recording the render passes is infallible. The
     /// `Result` is kept so callers stay source-compatible if a fallible step
     /// (pipeline recreation, pass-buffer reallocation) is added later.
     ///
@@ -642,7 +678,7 @@ impl Effect {
 
     /// [`Self::apply_with_modulation`], putting out only the parts `within`
     /// (scissor rectangles) and leaving the rest of `output_view` as it was
-    /// — or all of it for `None`. A multi-pass effect still runs its own
+    /// â€” or all of it for `None`. A multi-pass effect still runs its own
     /// passes whole; only the last, into `output_view`, is limited.
     ///
     /// # Errors
@@ -787,7 +823,17 @@ impl Effect {
                 for _iter in 0..iterations {
                     let mut pass_uniforms = *uniforms;
                     pass_uniforms.pass_index = i32::try_from(pass_idx).unwrap_or(i32::MAX);
-                    pipeline.update_uniforms(&context.queue, &pass_uniforms);
+                    // Drawn in its turn, a pass has its uniforms in a buffer
+                    // of its own (see below).
+                    let own_uniforms = self.pass_uniform_buffers.get(pass_idx);
+                    match own_uniforms {
+                        Some(buffer) => context.queue.write_buffer(
+                            buffer,
+                            0,
+                            bytemuck::cast_slice(&[pass_uniforms]),
+                        ),
+                        None => pipeline.update_uniforms(&context.queue, &pass_uniforms),
+                    }
 
                     let pass_buffer_views: Vec<&wgpu::TextureView> = self
                         .passes
@@ -796,8 +842,9 @@ impl Effect {
                         .map(super::PassBuffer::read_view)
                         .collect();
 
-                    let bind_group = pipeline.create_bind_group(
+                    let bind_group = pipeline.create_bind_group_with_uniforms(
                         &context.device,
+                        own_uniforms.unwrap_or(&pipeline.uniform_buffer),
                         Some(input_view),
                         &pass_buffer_views,
                         &imported_views,
@@ -841,10 +888,23 @@ impl Effect {
                         render_pass.draw(0..3, 0..1);
                     }
 
-                    // Multipass intermediate passes MUST submit immediately —
-                    // update_uniforms() overwrites the same buffer each iteration,
-                    // so batching would cause all passes to see the last pass's data.
-                    context.submit(std::iter::once(encoder.finish()));
+                    if own_uniforms.is_some() {
+                        // In its turn, after what was drawn before it this
+                        // frame â€” the picture it reads. Submitted at once
+                        // (as below) it would run before that: it would read
+                        // the input as the frame before left it, which, the
+                        // deck's two textures taking turns, is the picture
+                        // of the effect after this one.
+                        cmd_buffers.push(encoder.finish());
+                    } else {
+                        // With the pipeline's one uniform buffer, a pass MUST
+                        // be submitted at once â€” update_uniforms() overwrites
+                        // that buffer each iteration, so batching would cause
+                        // all passes to see the last pass's data. A filter
+                        // with a target kept from frame to frame is left so,
+                        // reading its input as the frame before left it.
+                        context.submit(std::iter::once(encoder.finish()));
+                    }
 
                     if let Some(pb) = self.pass_buffers.get_mut(&target_name) {
                         pb.swap();
@@ -962,7 +1022,7 @@ impl PassBuffer {
         }
     }
 
-    /// Get the current write texture view — always the one not being read.
+    /// Get the current write texture view â€” always the one not being read.
     pub fn write_view(&self) -> &wgpu::TextureView {
         if self.read_idx == 0 {
             self.view_b.as_ref().unwrap_or(&self.view_a)
@@ -977,8 +1037,8 @@ impl PassBuffer {
     /// Unconditional, including for non-persistent buffers: the read and write
     /// views must never be the same texture, or the pass that targets it binds
     /// it as both a colour attachment and a sampled resource. `persistent` now
-    /// governs only whether the contents carry meaning across frames — which is
-    /// what the ISF key actually means — not the buffering strategy.
+    /// governs only whether the contents carry meaning across frames â€” which is
+    /// what the ISF key actually means â€” not the buffering strategy.
     pub fn swap(&mut self) {
         self.read_idx = 1 - self.read_idx;
     }

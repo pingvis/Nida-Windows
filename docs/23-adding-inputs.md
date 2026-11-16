@@ -345,11 +345,11 @@ from the Generators:
 
 | Mood | Looks |
 |---|---|
-| Tech | Hex field, Node network, Circuit grid |
-| Cyber | Data streaks |
-| Warm | Sunset waves, Drifting bokeh |
-| Calm | Aurora, Silk ribbons |
-| Colours | Gradient, Vignette plate (a plain colour is **Colour**) |
+| Tech | Hex field, Node network, Circuit grid, Plexus wave, Dot horizon, Dot globe, Light fibres, Rising tiles |
+| Cyber | Data streaks, Grid floor, Radar sweep, Hex tunnel |
+| Warm | Sunset waves, Drifting bokeh, Embers, Light rays, Stage curtain |
+| Calm | Aurora, Silk ribbons, Caustics, Flowing lines, Far ridges, Ink in water |
+| Colours | Gradient, Vignette plate, Colour fields, Halftone (a plain colour is **Colour**) |
 
 Each look has the same few controls, in Input Settings (Gradient and
 Vignette plate have their own: angle, style, edge darkening):
@@ -358,10 +358,15 @@ Vignette plate have their own: angle, style, edge darkening):
   makes the picture jump.
 - **Density** — how much of it there is: discs, cells, streaks, curtains.
   It costs the GPU the same however much.
-- **Calm centre** — how much the middle and the lower third go toward a flat,
-  dim plate of the background, so a slide or a name over it stays easy to
-  read; every look calms alike (at 1, a third to three quarters dimmer there),
-  never darker than LED panels take.
+- **Calm centre** — how much the middle of the picture goes toward a flat,
+  dim plate of the background, so a slide, a frame or a name over it stays
+  easy to read. It is calm in full over a little under half of the picture
+  across and down, and from there the look comes back softly, by degrees,
+  as far as the edges; every look calms alike (at 1, a third to three
+  quarters dimmer in the middle), never darker than LED panels take. For
+  the other way round — the edges darkened, the middle left — set it to 0
+  and add the **Vignette** effect to the input (Input Settings → Effects →
+  **+ Add effect**).
 - **Palette** — twelve sets of three colours (Background, Main, Accent):
   Corporate Blue, Graphite Teal and Violet Tech for tech events; Ice, Neon
   and Terminal for cyber; Gala Gold, Sunset and Rosé for warm; Nordic Aurora,

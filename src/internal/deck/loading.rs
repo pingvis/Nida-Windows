@@ -170,6 +170,7 @@ impl Effect {
             Ok(ready) => {
                 self.pipeline = ready.pipeline;
                 self.pass_buffers = ready.pass_buffers;
+                self.pass_uniform_buffers = ready.pass_uniform_buffers;
                 self.imported_textures = ready.imported_textures;
                 self.preprocessor_textures = ready.preprocessor_textures;
                 self.build = EffectBuild::Ready;
@@ -356,6 +357,38 @@ mod tests {
         assert!(
             matches!(effect.load_state(), EffectLoadState::Failed { message } if message.contains("stopped"))
         );
+    }
+
+    #[test]
+    fn async_effect_load_installs_each_pass_uniform_buffer() {
+        let gpu = match GpuContext::new_headless() {
+            Ok(gpu) => gpu,
+            Err(error) => {
+                assert!(
+                    std::env::var_os("VARDA_REQUIRE_GPU").is_none(),
+                    "headless GPU required: {error}"
+                );
+                return;
+            }
+        };
+        let shader = ISFShader::from_file(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("shaders/frame_ring.fs"),
+        )
+        .unwrap();
+        let passes = shader.metadata.passes.as_ref().unwrap().len();
+        assert!(passes > 1, "the fixture must exercise a multipass filter");
+        let loader = EffectLoader::new(&gpu).unwrap();
+        let mut effect = loader.load(shader, gpu.compositing_format).unwrap();
+        assert_eq!(effect.pass_uniform_buffers, [] as [wgpu::Buffer; 0]);
+        let until = Instant::now() + Duration::from_secs(20);
+        while matches!(effect.load_state(), EffectLoadState::Building) {
+            effect.poll_load();
+            assert!(Instant::now() < until, "effect loader did not finish");
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        assert_eq!(effect.load_state(), EffectLoadState::Ready);
+        assert_eq!(effect.pass_uniform_buffers.len(), passes);
+        assert!(effect.is_active());
     }
 
     #[test]

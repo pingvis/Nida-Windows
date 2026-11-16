@@ -179,6 +179,16 @@ pub(crate) fn build_mixer_snapshot(app: &VardaApp) -> MixerSnapshot {
                                 s.identity,
                                 crate::screen_capture::backend::TargetIdentity::Display { .. }
                             ),
+                            target_uuid: match &s.identity {
+                                crate::screen_capture::backend::TargetIdentity::Display {
+                                    uuid,
+                                    ..
+                                } => uuid.clone(),
+                                crate::screen_capture::backend::TargetIdentity::Window {
+                                    ..
+                                } => None,
+                            },
+                            kept_by_name: app.screen_capture_manager().goes_by_name(&s.identity),
                             // Normalized so the UI slider and the MIDI router
                             // speak the same units on the same path.
                             rate_norm: ((s.config.rate - MIN_CAPTURE_RATE)
@@ -317,7 +327,7 @@ pub(crate) fn build_mixer_snapshot(app: &VardaApp) -> MixerSnapshot {
                         render_cost_us: slot.render_cost_us,
                         gpu_render_cost_us: slot.gpu_render_cost_us,
                         fps: slot.deck.fps(),
-                        still: slot.deck.still_frame(mixer.modulation()).is_some(),
+                        still: slot.deck.is_still(mixer.modulation()),
                         source_asleep: !slot.source_demand.wants_frames(),
                         running_analyzers: slot
                             .deck
@@ -547,21 +557,28 @@ pub(crate) fn build_registry_snapshot(app: &VardaApp) -> RegistrySnapshot {
         .collect();
     generators.sort_by_key(|a| a.0.to_lowercase());
     let broadcast = broadcast_looks(&app.registry.generators());
+    let frames = frame_looks(&app.registry.filters());
     // A layer's own mask is made from Input Settings, not dropped from the
-    // Library: alone, it would just make the layer vanish.
+    // Library: alone, it would just make the layer vanish. Its frame is set
+    // there too: added as any effect it would run after Transform, a frame
+    // round the whole picture's place rather than the layer.
     let mut filters: Vec<(String, usize)> = app
         .registry
         .filters()
         .iter()
         .enumerate()
         .map(|(i, s)| (s.name(), i))
-        .filter(|(name, _)| name != crate::engine::value::mask::LAYER_MASK_EFFECT)
+        .filter(|(name, _)| {
+            name != crate::engine::value::mask::LAYER_MASK_EFFECT
+                && !crate::engine::value::frame::is_frame(name)
+        })
         .collect();
     filters.sort_by_key(|a| a.0.to_lowercase());
     RegistrySnapshot {
         generators,
         broadcast,
         filters,
+        frames,
         shader_count: app.registry.count(),
     }
 }
@@ -615,6 +632,30 @@ pub(crate) fn broadcast_looks(
             .then_with(|| a.title.cmp(&b.title))
     });
     looks
+}
+
+/// The frames among `filters`: the `frame_*` shaders, each with a title
+/// from its description ("HUD frame — machined gunmetal…" → "HUD frame"),
+/// by title.
+pub(crate) fn frame_looks(filters: &[&crate::isf::ISFShader]) -> Vec<crate::engine::FrameLook> {
+    let mut frames: Vec<crate::engine::FrameLook> = filters
+        .iter()
+        .filter(|shader| crate::engine::value::frame::is_frame(&shader.name()))
+        .map(|shader| {
+            let name = shader.name();
+            let title = shader
+                .metadata
+                .description
+                .as_deref()
+                .and_then(|d| d.split(" — ").next())
+                .map(str::trim)
+                .filter(|t| !t.is_empty())
+                .map_or_else(|| name.clone(), str::to_string);
+            crate::engine::FrameLook { name, title }
+        })
+        .collect();
+    frames.sort_by(|a, b| a.title.cmp(&b.title));
+    frames
 }
 
 /// Build a `MidiSnapshot` from the current `VardaApp` state.
@@ -722,6 +763,7 @@ pub(crate) fn build_screen_capture_snapshot(
                 width: t.width,
                 height: t.height,
                 is_varda: t.is_varda,
+                uuid: t.uuid.clone(),
             })
             .collect(),
         permission: mgr.permission_state().as_str().to_string(),
@@ -1111,6 +1153,50 @@ mod tests {
         );
     }
 
+    /// The shipped library holds the frames, each under a title of its own,
+    /// and keeps them out of the effects the Library offers: a frame is set
+    /// on a layer from Input Settings.
+    #[test]
+    fn the_library_holds_the_frames_apart_from_the_effects() {
+        let Some(app) = headless_app() else {
+            return;
+        };
+        let registry = build_registry_snapshot(&app);
+        assert!(registry.frames.len() >= 12, "{:?}", registry.frames);
+        for frame in &registry.frames {
+            assert!(crate::engine::value::frame::is_frame(&frame.name), "{frame:?}");
+            assert!(
+                !frame.title.is_empty() && !frame.title.starts_with("frame_"),
+                "a title to read: {frame:?}"
+            );
+            assert!(
+                !registry.filters.iter().any(|(name, _)| *name == frame.name),
+                "{}: among the effects",
+                frame.name
+            );
+        }
+        for title in [
+            "Electric",
+            "Flare",
+            "HUD frame",
+            "HUD lines",
+            "Neon arrows",
+            "Neon double",
+            "Neon ring",
+            "Silver deco",
+            "Stepped neon",
+            "Stream overlay",
+            "Two-tone neon",
+            "White neon",
+        ] {
+            assert!(
+                registry.frames.iter().any(|f| f.title == title),
+                "{title} among {:?}",
+                registry.frames
+            );
+        }
+    }
+
     /// The shipped library holds the Broadcast backgrounds, every mood among
     /// them, each found by its index among the generators.
     #[test]
@@ -1119,7 +1205,7 @@ mod tests {
             return;
         };
         let registry = build_registry_snapshot(&app);
-        assert!(registry.broadcast.len() >= 10, "{:?}", registry.broadcast);
+        assert!(registry.broadcast.len() >= 27, "{:?}", registry.broadcast);
         for mood in crate::engine::BROADCAST_MOODS {
             assert!(
                 registry.broadcast.iter().any(|l| l.mood == mood),

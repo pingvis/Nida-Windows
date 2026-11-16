@@ -1108,10 +1108,13 @@ fn ndi_body(ui: &mut egui::Ui, data: &UIData, state: &mut State) -> bool {
 
 /// A capture target as a scene names it: a display by name, a window by its
 /// app and title.
-fn capture_target(target: &crate::engine::CaptureTargetSnapshot) -> CaptureTargetConfig {
+pub(super) fn capture_target(
+    target: &crate::engine::CaptureTargetSnapshot,
+) -> CaptureTargetConfig {
     if target.kind == "display" {
         CaptureTargetConfig::Display {
             name: target.label.clone(),
+            uuid: target.uuid.clone(),
         }
     } else {
         CaptureTargetConfig::Window {
@@ -1457,6 +1460,7 @@ mod tests {
             width: 1920,
             height: 1080,
             is_varda: false,
+            uuid: None,
         }];
         data.audio_mix.input_devices = vec![
             crate::audio_mix::AudioInputDevice {
@@ -1930,7 +1934,8 @@ mod tests {
             }] => assert_eq!(
                 *target,
                 CaptureTargetConfig::Display {
-                    name: "Display 1".into()
+                    name: "Display 1".into(),
+                    uuid: None,
                 }
             ),
             other => panic!("expected the display as a new input, got {other:?}"),
