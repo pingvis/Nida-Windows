@@ -66,6 +66,11 @@ pub(crate) fn clamp_resolution_to_gpu(width: u32, height: u32, max_dim: u32) -> 
 #[derive(Debug, Clone, clap::Parser)]
 #[command(name = "varda", version, about = "Live visuals engine")]
 pub struct AppConfig {
+    /// Show startup diagnostics in a console (Windows only; `RUST_LOG` sets verbosity)
+    #[cfg(target_os = "windows")]
+    #[arg(long)]
+    pub console: bool,
+
     /// Run without main UI window (API-only control)
     #[arg(long)]
     pub headless: bool,
@@ -2187,6 +2192,8 @@ mod tests {
     #[test]
     fn app_config_defaults() {
         let config = parse_args(&[]);
+        #[cfg(target_os = "windows")]
+        assert!(!config.console);
         assert!(!config.headless);
         assert_eq!(config.api_port, 8080);
         assert_eq!(config.target_fps, 60);
@@ -2216,6 +2223,14 @@ mod tests {
                 std::path::PathBuf::from("/media/usb/shaders"),
             ]
         );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn app_config_console() {
+        let config = parse_args(&["--console", "--headless"]);
+        assert!(config.console);
+        assert!(config.headless);
     }
 
     /// An app bundle, opened from the Finder, passes no flags: it sets these

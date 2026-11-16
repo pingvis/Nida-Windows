@@ -1,5 +1,27 @@
 # Windows application logs
 
+Windows launches open only the Nida window by default. To see diagnostics from
+startup, launch `varda.exe --console` (or add `--console` to a shortcut's Target).
+This reuses the launching terminal if available, otherwise it opens a console.
+`RUST_LOG` still controls verbosity; for example, set `$env:RUST_LOG = 'debug'`
+in PowerShell before launching `./varda.exe --console`.
+
+Launching from an existing terminal still prints there without `--console`,
+including `--help`, `--version` and argument errors. Redirected stdout/stderr
+remain available to scripts and startup benchmarks. When invoking the GUI
+executable from a shell, use `Start-Process -Wait` (PowerShell) or `start /wait`
+(cmd) when the caller must wait for it to exit.
+
+The optional console belongs to the application: closing it can exit Nida.
+Close Nida through its application window when finished. There is no in-app
+console control; the flag applies only to that launch.
+
+Native launch regression check (with the runtime DLLs on `PATH`):
+`python scripts/ci/test-windows-console.py target/debug/varda.exe`. This checks
+the GUI executable subsystem, console-free launch, explicit console creation,
+existing-terminal reuse, redirected output and CLI help/version/errors, using
+temporary workspaces without contacting an existing application's API.
+
 Windows builds now write application diagnostics to
 `%LOCALAPPDATA%\Nida\logs\nida.log`, for portable and installed launches alike.
 The folder is created automatically. Set `VARDA_LOG_FILE` to use an explicit

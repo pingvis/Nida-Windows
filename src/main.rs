@@ -1,4 +1,9 @@
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 use clap::Parser;
+
+#[cfg(target_os = "windows")]
+mod windows_console;
 
 /// Send everything the app prints — its log and ffmpeg's messages — to the
 /// file `VARDA_LOG_FILE` names, or, for an app bundle on a Mac opened from
@@ -77,6 +82,17 @@ fn output_goes_nowhere() -> bool {
 }
 
 fn main() {
+    // Attach before clap prints help/errors, and before the logger takes stderr.
+    // A double-click has no parent console and must not create one by default.
+    #[cfg(target_os = "windows")]
+    let _ = windows_console::init(false);
+    let config = varda::app::AppConfig::parse();
+    #[cfg(target_os = "windows")]
+    let console_error = if config.console {
+        windows_console::init(true).err()
+    } else {
+        None
+    };
     // Opened from the Finder, the app would not find FFmpeg (see tool_path).
     varda::app::tool_path::find_tools_anywhere();
     #[cfg(unix)]
@@ -119,6 +135,10 @@ fn main() {
         });
     }
     logger.init();
+    #[cfg(target_os = "windows")]
+    if let Some(error) = console_error {
+        log::warn!("Could not open diagnostic console: {error}");
+    }
 
     // The report goes through the log's writer too — Rust's own writes to
     // stderr, the log file, in place, and a held-up write would hold the
@@ -140,7 +160,7 @@ fn main() {
         varda::app::log_file::drain(wait);
     }));
 
-    let ran = run();
+    let ran = run(config);
     // Said here rather than by returning it: printed after `main`, it would
     // come after the log's last lines were waited for, and be lost.
     if let Err(e) = &ran {
@@ -169,8 +189,7 @@ fn colours_on_stderr() -> bool {
     std::io::IsTerminal::is_terminal(&std::io::stderr())
 }
 
-fn run() -> anyhow::Result<()> {
-    let config = varda::app::AppConfig::parse();
+fn run(config: varda::app::AppConfig) -> anyhow::Result<()> {
     if config.bench_encoders {
         #[cfg(target_os = "macos")]
         println!("{}", varda::streaming::vt_bench::run());

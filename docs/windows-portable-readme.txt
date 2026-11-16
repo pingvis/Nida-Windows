@@ -4,6 +4,8 @@ Nida for Windows x64 - EXPERIMENTAL CORE BUILD
    shaders and other files together. Do not run directly from inside the ZIP.
 2. Double-click varda.exe. No Rust, Visual Studio, FFmpeg installation or PATH
    edits are required. Windows and a compatible GPU driver are still required.
+   To show startup diagnostics, launch varda.exe --console or add --console
+   to a shortcut's Target. Normal launches do not open a console window.
 3. The binary is unsigned. Check the download's SHA256 and source revision
    before choosing whether to run a Windows security prompt's blocked program.
 
