@@ -70,7 +70,7 @@ impl StreamEncoder {
                 static HAS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
                 *HAS.get_or_init(|| {
                     cfg!(target_os = "macos")
-                        && std::process::Command::new("ffmpeg")
+                        && crate::process::background_command("ffmpeg")
                             .args(["-hide_banner", "-encoders"])
                             .output()
                             .is_ok_and(|o| {
@@ -447,7 +447,7 @@ pub(crate) fn hardware_support(codec: VideoCodec) -> HardwareSupport {
     };
     *cell.get_or_init(|| {
         let opens = |constant_rate: bool| {
-            let mut cmd = std::process::Command::new("ffmpeg");
+            let mut cmd = crate::process::background_command("ffmpeg");
             cmd.args(["-hide_banner", "-loglevel", "error", "-f", "lavfi"])
                 .args(["-i", "testsrc2=size=320x180:rate=25", "-frames:v", "5"])
                 .args(StreamEncoder::Hardware.video_args(codec, 1000, 50, constant_rate))

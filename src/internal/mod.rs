@@ -28,6 +28,7 @@ pub mod param_router;
 pub mod params;
 pub mod persistence;
 pub mod presentation;
+pub(crate) mod process;
 pub mod record;
 pub mod recording;
 pub mod registry;

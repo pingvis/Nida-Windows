@@ -6,7 +6,9 @@
 
 use std::io::Write;
 use std::net::TcpListener;
-use std::process::{Child, Command, Stdio};
+#[cfg(test)]
+use std::process::Command;
+use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -542,12 +544,7 @@ fn recording_probe_index(encoder: &str, pixel_format: &str) -> Option<usize> {
 }
 
 fn probe_nvenc_recording(encoder: &str, pixel_format: &str) -> bool {
-    let mut command = Command::new("ffmpeg");
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt as _;
-        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-    }
+    let mut command = crate::process::background_command("ffmpeg");
     command
         .args([
             "-hide_banner",
@@ -888,7 +885,7 @@ fn recording_video_args(
 }
 
 fn probe_encoder_help(encoder: &str) -> Option<String> {
-    let output = Command::new("ffmpeg")
+    let output = crate::process::background_command("ffmpeg")
         .args(["-hide_banner", "-h", &format!("encoder={encoder}")])
         .output()
         .ok()?;
@@ -958,7 +955,7 @@ pub(crate) fn find_streaming_capabilities() {
 }
 
 fn probe_enhanced_flv(encoder: &str, profile: &str) -> bool {
-    Command::new("ffmpeg")
+    crate::process::background_command("ffmpeg")
         .args([
             "-v",
             "error",
@@ -2744,7 +2741,7 @@ impl FfmpegSubprocess {
             Some(p) => (&p.in_args, &p.out_args),
             None => (&empty, &empty),
         };
-        let mut cmd = Command::new("ffmpeg");
+        let mut cmd = crate::process::background_command("ffmpeg");
         cmd.args(["-hide_banner", "-nostats", "-y"])
             .args(["-f", "rawvideo"])
             .args(["-pix_fmt", plan.input_pixel_format])
@@ -2886,7 +2883,7 @@ impl FfmpegSubprocess {
             StreamingCapabilities::for_request(request),
         );
 
-        let mut cmd = Command::new("ffmpeg");
+        let mut cmd = crate::process::background_command("ffmpeg");
         cmd.args(["-hide_banner", "-nostats", "-y"])
             .args(["-f", "rawvideo"])
             .args(["-pix_fmt", plan.input_pixel_format])
@@ -2996,7 +2993,7 @@ impl FfmpegSubprocess {
             StreamingCapabilities::for_request(request),
         );
 
-        let mut cmd = Command::new("ffmpeg");
+        let mut cmd = crate::process::background_command("ffmpeg");
         cmd.args(["-hide_banner", "-nostats", "-y"])
             .args(["-f", "rawvideo"])
             .args(["-pix_fmt", plan.input_pixel_format])
@@ -3110,7 +3107,7 @@ impl FfmpegSubprocess {
         let (maxrate, bufsize) = compute_rtmp_bitrate(width, height, fps);
         let gop = fps * 2;
 
-        let mut cmd = Command::new("ffmpeg");
+        let mut cmd = crate::process::background_command("ffmpeg");
         cmd.args(["-hide_banner", "-nostats", "-y"])
             .args(["-f", "rawvideo"])
             .args(["-pix_fmt", plan.input_pixel_format])
@@ -3285,7 +3282,7 @@ impl FfmpegSubprocess {
         } else {
             plan.input_pixel_format
         };
-        let mut cmd = Command::new("ffmpeg");
+        let mut cmd = crate::process::background_command("ffmpeg");
         cmd.args(["-hide_banner", "-nostats", "-y"]);
         if native.is_some() {
             // Nida's encoded frames, each with its time (see `streaming::flv`):
@@ -3540,7 +3537,7 @@ impl FfmpegSubprocess {
             let kbps = options.effective_kbps((width, height), out_fps);
             native::open_for_record(codec, (width, height), out_fps, kbps).map(|o| (o, codec))
         });
-        let mut cmd = Command::new("ffmpeg");
+        let mut cmd = crate::process::background_command("ffmpeg");
         cmd.args(["-hide_banner", "-nostats", "-y"]);
         if native.is_some() {
             cmd.args(["-f", "flv", "-probesize", "32", "-analyzeduration", "0"])
@@ -3776,7 +3773,7 @@ impl FfmpegSubprocess {
             StreamingCapabilities::for_request(request),
         );
 
-        let mut cmd = Command::new("ffmpeg");
+        let mut cmd = crate::process::background_command("ffmpeg");
         cmd.args(["-hide_banner", "-nostats", "-y"])
             .args(["-f", "rawvideo"])
             .args(["-pix_fmt", plan.input_pixel_format])

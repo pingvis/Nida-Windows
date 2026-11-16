@@ -22,6 +22,17 @@ the GUI executable subsystem, console-free launch, explicit console creation,
 existing-terminal reuse, redirected output and CLI help/version/errors, using
 temporary workspaces without contacting an existing application's API.
 
+Background FFmpeg probes, recording encoders and stream senders use
+`CREATE_NO_WINDOW` on Windows, so they do not open their own console when
+Nida runs without one. Their existing stdin/stdout/stderr pipes and diagnostic
+handling are preserved, including when Nida is launched with `--console`.
+Browser and PowerPoint helpers already suppress their console windows.
+The native hidden-window/pipe regression passes, as do 11 recording and 14
+streaming integration tests (one and five platform/hardware tests ignored,
+respectively). Media integration checks run outside the filesystem/process
+sandbox so loopback servers and encoder-crash recovery can control their own
+FFmpeg children. Production library/application Clippy passes.
+
 Windows builds now write application diagnostics to
 `%LOCALAPPDATA%\Nida\logs\nida.log`, for portable and installed launches alike.
 The folder is created automatically. Set `VARDA_LOG_FILE` to use an explicit

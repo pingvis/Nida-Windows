@@ -900,7 +900,7 @@ fn drain(rx: &crossbeam_channel::Receiver<Queued>, queued: &AtomicUsize, state: 
 /// The sender's command: MPEG-TS in on stdin, FLV out to the server, and
 /// progress reports on stdout.
 fn sender_command(target: &RelayTarget, probe_us: u64) -> Command {
-    let mut cmd = Command::new("ffmpeg");
+    let mut cmd = crate::process::background_command("ffmpeg");
     cmd.args(["-hide_banner", "-nostats", "-loglevel", "warning"])
         .args(["-progress", "pipe:1", "-stats_period", "0.5"])
         .args(["-analyzeduration", &probe_us.to_string()])

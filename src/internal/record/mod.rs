@@ -477,7 +477,7 @@ pub(crate) fn prores_hardware() -> bool {
     static HAS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *HAS.get_or_init(|| {
         cfg!(target_os = "macos")
-            && std::process::Command::new("ffmpeg")
+            && crate::process::background_command("ffmpeg")
                 .args(["-hide_banner", "-loglevel", "error", "-f", "lavfi"])
                 .args(["-i", "testsrc2=size=320x180:rate=25", "-frames:v", "3"])
                 .args([
