@@ -2631,8 +2631,7 @@ impl HeadlessOutput {
             }
             OutputTarget::NdiSend { ref sender_name } => {
                 let (width, height) = (frame.width(), frame.height());
-                match ndi_manager.send_frame(sender_name, frame.into_bytes(), width, height, fps)
-                {
+                match ndi_manager.send_frame(sender_name, frame.into_bytes(), width, height, fps) {
                     Ok(()) => DeliveryResult::Ok,
                     Err(error) => DeliveryResult::Failed(error),
                 }
