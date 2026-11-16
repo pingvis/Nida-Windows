@@ -1119,10 +1119,32 @@ fn without_login(url: &str) -> String {
     }
 }
 
+/// FFmpeg's Windows CRT socket errors may be printed numerically because
+/// strerror does not describe these POSIX extension codes. Values are from
+/// the Windows SDK's ucrt/errno.h; Unix assigns different numbers.
+#[cfg(target_os = "windows")]
+fn windows_socket_error(line: &str) -> Option<&'static str> {
+    let (_, number) = line.split_once("error number ")?;
+    let number: i32 = number.split_whitespace().next()?.parse().ok()?;
+    match number {
+        -107 => Some("connection refused"),
+        -138 => Some("timeout"),
+        -106 | -108 => Some("connection reset"),
+        _ => None,
+    }
+}
+
 /// Turn ffmpeg's last words into what an operator can act on.
 pub(crate) fn explain(line: &str) -> String {
     let lower = line.to_ascii_lowercase();
-    let has = |w: &[&str]| w.iter().any(|w| lower.contains(w));
+    #[cfg(target_os = "windows")]
+    let socket_error = windows_socket_error(&lower);
+    #[cfg(not(target_os = "windows"))]
+    let socket_error: Option<&str> = None;
+    let has = |w: &[&str]| {
+        w.iter()
+            .any(|w| lower.contains(w) || socket_error == Some(*w))
+    };
     if has(&[
         "authentication",
         "authmod",
@@ -1531,6 +1553,29 @@ mod tests {
         assert!(explain("Connection refused").contains("URL and port"));
         assert!(explain("Failed to resolve hostname x: nodename nor servname").contains("Unknown"));
     }
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn numeric_windows_socket_errors_become_specific_advice() {
+        for (number, advice) in [
+            (-107, "URL and port"),
+            (-138, "did not answer"),
+            (-106, "closed the connection"),
+            (-108, "closed the connection"),
+        ] {
+            let line = format!("Error opening output files: Error number {number} occurred");
+            assert!(
+                explain(&line).contains(advice),
+                "{line}: {}",
+                explain(&line)
+            );
+        }
+        assert!(explain("Authentication failed: Error number -138 occurred").contains("login"));
+        for number in [-1380, -110, 138] {
+            let line = format!("Error number {number} occurred");
+            assert_eq!(explain(&line), "The sender stopped");
+        }
+    }
+
     #[test]
     fn nvenc_is_explicit_and_old_preferences_keep_their_encoder() {
         let options: StreamOptions = serde_json::from_str("{}").unwrap();

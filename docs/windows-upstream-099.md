@@ -4,6 +4,11 @@ Upstream release `v0.9.9` (`6f1b4d7`) is merged into the Windows fork's
 `main`, preserving its history and Windows fixes. The tag includes the
 background/frame additions and the Calm centre fade follow-up.
 
+The RTMP reconnect failures below record the original merge qualification.
+They are resolved by the subsequent [Windows RTMP recovery follow-up](windows-rtmp-recovery.md):
+the supported streaming suite now passes 14 tests, with five platform/hardware
+workloads explicitly ignored.
+
 ## Integration decisions
 
 - Include upstream's frame filters and backgrounds, independent slide pictures,

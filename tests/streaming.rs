@@ -9,7 +9,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::atomic::{AtomicU16, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -31,6 +31,48 @@ fn free_port() -> u16 {
         .local_addr()
         .unwrap()
         .port()
+}
+
+/// Accept TCP connections but refuse their RTMP session immediately. This
+/// makes repeated failures deterministic without relying on how quickly an
+/// OS reports a closed port (the Windows FFmpeg build waits five seconds).
+struct RejectingServer {
+    port: u16,
+    stop: Arc<AtomicBool>,
+    thread: Option<std::thread::JoinHandle<()>>,
+}
+
+impl RejectingServer {
+    fn start() -> Self {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        listener.set_nonblocking(true).unwrap();
+        let stop = Arc::new(AtomicBool::new(false));
+        let stopped = stop.clone();
+        let thread = std::thread::spawn(move || {
+            while !stopped.load(Ordering::SeqCst) {
+                match listener.accept() {
+                    Ok((stream, _)) => drop(stream),
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(error) => panic!("rejecting server: {error}"),
+                }
+            }
+        });
+        Self {
+            port,
+            stop,
+            thread: Some(thread),
+        }
+    }
+}
+
+impl Drop for RejectingServer {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::SeqCst);
+        self.thread.take().unwrap().join().unwrap();
+    }
 }
 
 /// A test RTMP server and what it wrote. A test that fails says, as it
@@ -696,7 +738,10 @@ fn a_destination_that_is_down_reconnects_on_its_own_when_it_comes_back() {
     )
     .unwrap();
     let mut refused = None;
-    feed(&mut enc, 8.0, |enc| {
+    // The sender probes the stream before connecting; a Windows closed-port
+    // attempt then uses FFmpeg's five-second TCP timeout rather than refusing
+    // immediately. Still bound the actual recovery, including that attempt.
+    feed(&mut enc, 15.0, |enc| {
         let s = &enc.fanout().unwrap().status()[0];
         if s.state == DestinationState::Reconnecting {
             refused = s.message.clone();
@@ -704,7 +749,10 @@ fn a_destination_that_is_down_reconnects_on_its_own_when_it_comes_back() {
         refused.is_some()
     });
     let refused = refused.expect("nobody listening reads as reconnecting");
-    assert!(refused.contains("refused"), "{refused}");
+    assert!(
+        refused.contains("refused") || refused.contains("did not answer"),
+        "an actionable connection failure: {refused}"
+    );
 
     let mut server = rtmp_server(port, "late", &out);
     let mut live = false;
@@ -1669,13 +1717,16 @@ fn a_change_of_network_cuts_the_wait_between_attempts_short() {
     let Some(mut app) = app_in(&ws) else {
         return;
     };
-    // Nothing listens there.
-    let port = free_port();
+    let server = RejectingServer::start();
+    let port = server.port;
     let mut options = app.stream_settings().options.clone();
     options.width = 320;
     options.height = 180;
     options.video_kbps = 800;
-    ok(send_cmd(&mut app, EngineCommand::SetStreamOptions { options }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetStreamOptions { options },
+    ));
     ok(send_cmd(
         &mut app,
         EngineCommand::SetStreamDestination {
@@ -1689,18 +1740,34 @@ fn a_change_of_network_cuts_the_wait_between_attempts_short() {
         },
     ));
     ok(send_cmd(&mut app, EngineCommand::StartStream));
-    let tries = |app: &VardaApp| app.stream_status().destinations[0].reconnects;
-    // Each attempt reads three seconds of the stream before it dials; after
-    // the third the wait is four seconds.
-    assert!(run(&mut app, 30.0, |app| tries(app) >= 3), "{:?}", app.stream_status().destinations[0]);
-    let before = tries(&app);
+    let status = |app: &VardaApp| app.stream_status().destinations[0].clone();
+    // Three completed failures enter the four-second backoff. Wait for that
+    // state specifically, so the change happens during the pause under test.
+    assert!(
+        run(&mut app, 30.0, |app| {
+            let now = status(app);
+            now.reconnects >= 3 && now.state == DestinationState::Reconnecting
+        }),
+        "{:?}",
+        status(&app)
+    );
+    let before = status(&app);
     varda::streaming::network::change_for_test(port);
     let changed = Instant::now();
-    assert!(run(&mut app, 15.0, |app| tries(app) > before), "tried again");
     assert!(
-        changed.elapsed() < Duration::from_millis(5500),
-        "at once — the attempt's own three seconds — not after the four seconds' wait too: {:?}",
+        run(&mut app, 2.0, |app| status(app).generation
+            != before.generation),
+        "the network change did not start another attempt: {:?}",
+        status(&app)
+    );
+    assert!(
+        changed.elapsed() < Duration::from_secs(1),
+        "waited {:?} of the four-second backoff",
         changed.elapsed()
+    );
+    assert!(
+        status(&app).network > before.network,
+        "the new attempt uses the new network epoch"
     );
     ok(send_cmd(&mut app, EngineCommand::StopStream));
 }
