@@ -54,6 +54,10 @@ access violation `0xc0000005`; the isolated sync test and full serial rerun
 passed. The original native termination is retained as an unresolved harness/
 runtime observation, not attributed to a proved cause or hidden as a pass.
 
+Follow-up on 16 November: both retained crash dumps identify the Windows GS
+Wavetable Synth on the MIDI discovery worker. See the
+[MIDI crash investigation and fix](windows-midi-crash.md).
+
 The remaining integration checks passed: 3 API documentation, 51 command,
 24 lower-third, 10 recording, 3 text-input and 88 UI tests. Together with
 the audio rerun, this is **193 passing integration tests**, one ignored.

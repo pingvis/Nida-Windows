@@ -7,6 +7,7 @@
 
 pub mod auto_map;
 pub mod controller_profile;
+mod output_policy;
 
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
@@ -368,7 +369,8 @@ impl MidiDeviceManager {
         self.devices.clear();
         self.next_device_id = 0;
 
-        // Snapshot output port names (throwaway MidiOutput, collect names, drop)
+        // Snapshot control output names (throwaway MidiOutput, collect, drop).
+        // Never open Windows' built-in synthesizer just to discover controllers.
         let output_port_names: Vec<String> = {
             let midi_out = MidiOutput::new("Nida scan")
                 .map_err(|e| anyhow::anyhow!("Failed to create MidiOutput for scan: {e}"))?;
@@ -376,6 +378,7 @@ impl MidiDeviceManager {
             ports
                 .iter()
                 .map(|p| midi_out.port_name(p).unwrap_or_default())
+                .filter(|name| output_policy::is_controller_output(name))
                 .collect()
         };
 

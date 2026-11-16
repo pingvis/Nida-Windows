@@ -14,6 +14,12 @@ without waiting. A slow driver no longer delays engine construction or the
 first usable control window. This applies to both GUI and headless startup;
 manual rescanning of an initialized manager remains synchronous.
 
+On Windows, controller discovery excludes the built-in Microsoft GS Wavetable
+Synth sound generator. Opening/resetting that non-controller output caused
+native driver crashes during short-lived test apps. Unit and `test-fixtures`
+builds never start automatic native MIDI discovery; tests inject detached
+devices instead. See [the crash investigation](windows-midi-crash.md).
+
 When discovery completes, the engine applies the current show's controller
 profiles, restores named manual mappings, synchronizes controller feedback
 and auto-mapping, and then drains MIDI messages. Profiles are applied to the

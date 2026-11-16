@@ -86,6 +86,10 @@ audio rerun pass (14 passes, one NVIDIA hardware test ignored). The initial
 termination remains an unresolved observation, not a proved merge defect or
 a hidden pass.
 
+Follow-up on 16 November: analysis of both retained audio-process dumps traced
+the native failures to Windows GS Wavetable Synth opening/resetting on the MIDI
+discovery worker. See the [MIDI crash fix and validation](windows-midi-crash.md).
+
 The broad streaming run passes 12 tests, fails four, and ignores three NVIDIA
 hardware workloads. Two failed tests require the macOS native live-bitrate
 encoder; they are now explicitly ignored outside macOS, alongside the separate

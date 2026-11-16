@@ -9,8 +9,9 @@ use crate::midi::{MidiConfig, MidiDeviceManager};
 pub(super) type Discovery = Receiver<anyhow::Result<MidiDeviceManager>>;
 
 pub(super) fn discover() -> Option<Discovery> {
-    // Unit tests inject detached devices; never open the developer's ports.
-    if cfg!(test) {
+    // Unit and integration test builds inject detached devices; never open the
+    // developer's ports. cfg(test) alone does not cover a library linked by tests.
+    if cfg!(any(test, feature = "test-fixtures")) {
         return None;
     }
     spawn_discovery(MidiDeviceManager::new)
