@@ -7,6 +7,11 @@ use crate::isf::ISFShader;
 
 impl VardaApp {
     pub(super) fn load_effect(&mut self, shader: ISFShader) -> anyhow::Result<Effect> {
+        // A layer mask must be installed atomically: bypass while compiling
+        // would briefly expose pixels the operator has explicitly hidden.
+        if shader.name() == crate::engine::value::mask::LAYER_MASK_EFFECT {
+            return Effect::new(&self.context, shader);
+        }
         if self.effect_loader.is_none() {
             self.effect_loader = Some(crate::deck::loading::EffectLoader::new(&self.context)?);
         }
@@ -153,6 +158,16 @@ mod tests {
         ];
         names.sort();
         assert_eq!(names, ["crop", "transform"]);
+        // Masks stay atomic even while both background workers are blocked.
+        let mask_shader = app
+            .registry
+            .filters()
+            .iter()
+            .find(|shader| shader.name() == crate::engine::value::mask::LAYER_MASK_EFFECT)
+            .map(|shader| (*shader).clone())
+            .unwrap();
+        let mask = app.load_effect(mask_shader).unwrap();
+        assert_eq!(mask.load_state(), EffectLoadState::Ready);
         let effects = &mut app.mixer.channels_mut()[0].decks[0].deck.effects;
         assert_eq!(
             effects
