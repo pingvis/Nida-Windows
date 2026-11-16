@@ -98,6 +98,7 @@ impl CefEngine {
 
 fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     use std::os::windows::process::CommandExt;
+    let startup = std::time::Instant::now();
     let helper = helper_path().ok_or_else(|| std::io::Error::other("missing browser host"))?;
     #[cfg(test)]
     let profile =
@@ -106,9 +107,10 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     let profile = dirs::data_local_dir()
         .ok_or_else(|| std::io::Error::other("missing user data directory"))?
         .join("Nida/BrowserCEF");
-    // A native debug test can run alongside the operator's instance without
-    // sharing Chromium's profile lock or touching their cookies. Release
-    // builds always retain the normal persistent profile above.
+    // Explicit diagnostic profiles also work in release builds, without
+    // sharing an operator's profile lock or touching their cookies.
+    let profile = std::env::var_os("NIDA_BROWSER_PROFILE").map_or(profile, PathBuf::from);
+    // Retain the existing development override.
     #[cfg(all(debug_assertions, not(test)))]
     let profile = std::env::var_os("NIDA_BROWSER_DEBUG_PROFILE").map_or(profile, PathBuf::from);
     std::fs::create_dir_all(&profile)?;
@@ -132,6 +134,10 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
             "could not grant CEF sandbox read access",
         ));
     }
+    log::debug!(
+        "[SOURCE LOAD] CEF runtime permissions: {:.1} ms",
+        startup.elapsed().as_secs_f64() * 1000.0
+    );
     let mut child = Command::new(&helper)
         .arg(format!("--cache-path={}", profile.display()))
         .current_dir(helper.parent().unwrap())
@@ -140,6 +146,10 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()?;
+    log::debug!(
+        "[SOURCE LOAD] CEF helper spawned: {:.1} ms since startup",
+        startup.elapsed().as_secs_f64() * 1000.0
+    );
     let job = super::cef_job::attach(&mut child)
         .map_err(|error| std::io::Error::other(format!("attach CEF process job: {error}")))?;
     let mut stdin = child.stdin.take().unwrap();
@@ -150,11 +160,19 @@ fn run(commands: Receiver<Value>, outgoing: &Frames) -> std::io::Result<()> {
     let reader = thread::Builder::new()
         .name("html-cef-frames".into())
         .spawn(move || {
+            let mut first_frame = true;
             // Opt-in throughput diagnostics, with no URLs or page contents.
             let mut measured =
                 std::env::var_os("NIDA_BROWSER_PERF").map(|_| (std::time::Instant::now(), 0u64));
             while let Ok(frame) = read_message(&mut stdout) {
                 if frame.error.is_none() {
+                    if first_frame {
+                        log::debug!(
+                            "[SOURCE LOAD] CEF first decoded frame: {:.1} ms since startup",
+                            startup.elapsed().as_secs_f64() * 1000.0
+                        );
+                        first_frame = false;
+                    }
                     if let Some((since, count)) = measured.as_mut() {
                         *count += 1;
                         let elapsed = since.elapsed().as_secs_f64();

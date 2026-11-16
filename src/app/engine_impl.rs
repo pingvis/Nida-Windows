@@ -239,18 +239,47 @@ impl VardaApp {
     /// duplicate keeps exactly the chain it was saved with. Best effort — a
     /// shader library without one of these leaves it out rather than failing
     /// the deck.
-    pub(crate) fn add_default_effects(&self, deck: &mut Deck) {
-        let filters = self.registry.filters();
-        for name in DEFAULT_DECK_EFFECTS {
-            let Some(shader) = filters.iter().find(|s| s.name() == name) else {
+    pub(crate) fn add_default_effects(&mut self, deck: &mut Deck) {
+        let started = std::time::Instant::now();
+        let defaults = {
+            let filters = self.registry.filters();
+            DEFAULT_DECK_EFFECTS.map(|name| {
+                (
+                    name,
+                    filters
+                        .iter()
+                        .find(|shader| shader.name() == name)
+                        .map(|shader| (*shader).clone()),
+                )
+            })
+        };
+        for (name, shader) in defaults {
+            let Some(shader) = shader else {
                 log::warn!("Default effect '{name}' is not in the shader library");
                 continue;
             };
-            match Effect::new(&self.context, (*shader).clone()) {
+            let effect_started = std::time::Instant::now();
+            // Identity defaults expose their controls at once. Their compiler
+            // and driver work belongs on the existing bounded effect workers,
+            // just as when an operator adds an effect manually.
+            // A saturated worker queue must not silently lose either default.
+            let effect = self.load_effect(shader.clone()).or_else(|error| {
+                log::warn!("Default effect queue unavailable ({error}); building {name} directly");
+                Effect::new(&self.context, shader)
+            });
+            match effect {
                 Ok(effect) => deck.add_effect(effect),
                 Err(e) => log::warn!("Default effect '{name}' could not be built: {e}"),
             }
+            log::debug!(
+                "[SOURCE LOAD] Default effect {name} admitted: {:.1} ms",
+                effect_started.elapsed().as_secs_f64() * 1000.0
+            );
         }
+        log::debug!(
+            "[SOURCE LOAD] Default effects total: {:.1} ms",
+            started.elapsed().as_secs_f64() * 1000.0
+        );
     }
 
     /// Acquire the depth sensor a shader's `PREPROCESSORS` block requires.

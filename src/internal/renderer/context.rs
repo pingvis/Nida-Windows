@@ -374,6 +374,13 @@ impl GpuContext {
 
         log::info!("Using GPU: {}", adapter.get_info().name);
         log::info!("Backend: {:?}", adapter.get_info().backend);
+        let info = adapter.get_info();
+        log::info!(
+            "Adapter type: {:?}; driver: {}; {}",
+            info.device_type,
+            info.driver,
+            info.driver_info
+        );
 
         let (required_features, timestamp_supported) = Self::select_optional_features(&adapter);
 
@@ -553,6 +560,13 @@ impl GpuContext {
 
         log::info!("Using GPU: {}", adapter.get_info().name);
         log::info!("Backend: {:?}", adapter.get_info().backend);
+        let info = adapter.get_info();
+        log::info!(
+            "Adapter type: {:?}; driver: {}; {}",
+            info.device_type,
+            info.driver,
+            info.driver_info
+        );
 
         let (required_features, timestamp_supported) = Self::select_optional_features(&adapter);
 

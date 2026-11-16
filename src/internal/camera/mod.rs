@@ -1436,6 +1436,7 @@ impl CameraManager {
     /// already capturing keeps the formats read before: reading them opens
     /// the device, which would reconfigure it mid-picture.
     pub fn scan_devices(&mut self) {
+        let started = Instant::now();
         if !self.initialized {
             return;
         }
@@ -1446,6 +1447,10 @@ impl CameraManager {
             return;
         };
         self.list(found);
+        log::debug!(
+            "[SOURCE LOAD] Camera scan and format discovery: {:.1} ms",
+            started.elapsed().as_secs_f64() * 1000.0
+        );
     }
 
     /// The devices a scan found, each numbered — with the number it had
@@ -2232,14 +2237,22 @@ impl CameraManager {
 
     #[cfg(not(target_os = "macos"))]
     fn open_nokhwa(dev_info: &CameraDeviceInfo, mode: Option<CameraMode>) -> Result<Camera> {
+        let started = Instant::now();
         let wanted = choose(&dev_info.rates, mode);
         // Opened with the first format the backend takes, then set to the
         // rate wanted: a rate it lists cut down, it refuses to open with.
         let mut refused = Vec::new();
         let mut opened = None;
         for format in open_order(&dev_info.formats, wanted.as_ref()) {
+            let attempt = Instant::now();
             let request = RequestedFormat::new::<RgbAFormat>(RequestedFormatType::Exact(format));
-            match Camera::new(dev_info.index.clone(), request) {
+            let camera = Camera::new(dev_info.index.clone(), request);
+            log::debug!(
+                "[SOURCE LOAD] Camera format {format}: {:.1} ms (opened={})",
+                attempt.elapsed().as_secs_f64() * 1000.0,
+                camera.is_ok()
+            );
+            match camera {
                 Ok(camera) => {
                     opened = Some(camera);
                     break;
@@ -2279,6 +2292,10 @@ impl CameraManager {
         camera
             .open_stream()
             .map_err(|e| anyhow::anyhow!("Failed to start camera stream: {e}"))?;
+        log::debug!(
+            "[SOURCE LOAD] Camera stream opened: {:.1} ms",
+            started.elapsed().as_secs_f64() * 1000.0
+        );
         Ok(camera)
     }
 
@@ -2297,6 +2314,8 @@ impl CameraManager {
         log::info!("Camera '{name}' capture thread started ({w}x{h})");
 
         let mut again = false;
+        let stream_started = Instant::now();
+        let mut first_picture = true;
         while !stop.load(Ordering::Relaxed) {
             if sink.restart.load(Ordering::Relaxed) {
                 again = true;
@@ -2360,6 +2379,13 @@ impl CameraManager {
             };
 
             if ok {
+                if first_picture {
+                    log::debug!(
+                        "[SOURCE LOAD] Camera first converted picture: {:.1} ms after stream opened",
+                        stream_started.elapsed().as_secs_f64() * 1000.0
+                    );
+                    first_picture = false;
+                }
                 backoff_us = 500;
                 sink.put(
                     Frame {

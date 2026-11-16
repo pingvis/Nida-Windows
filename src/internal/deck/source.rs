@@ -20,12 +20,17 @@ use std::time::Instant;
 /// the `ALPHA_BLENDING` pipeline flattens the source over an opaque black clear (the
 /// default, so an HTML source with alpha<1 stays opaque). See /spec/html-source.md §2.
 fn external_blit_pipelines(context: &GpuContext) -> Result<(BlitPipeline, BlitPipeline)> {
+    let started = Instant::now();
     let replace = BlitPipeline::new(&context.device, context.compositing_format)?;
     let over_black = BlitPipeline::with_blend(
         &context.device,
         context.compositing_format,
         wgpu::BlendState::ALPHA_BLENDING,
     )?;
+    log::debug!(
+        "[SOURCE LOAD] External blit pipelines: {:.1} ms",
+        started.elapsed().as_secs_f64() * 1000.0
+    );
     Ok((replace, over_black))
 }
 
@@ -1249,6 +1254,7 @@ impl Deck {
         width: u32,
         height: u32,
     ) -> Self {
+        let started = Instant::now();
         let texture = context.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Deck Texture"),
             size: wgpu::Extent3d {
@@ -1284,6 +1290,10 @@ impl Deck {
             view_formats: &[],
         });
         let texture_b_view = texture_b.create_view(&wgpu::TextureViewDescriptor::default());
+        log::debug!(
+            "[SOURCE LOAD] Deck textures {width}x{height}: {:.1} ms",
+            started.elapsed().as_secs_f64() * 1000.0
+        );
 
         let now = Instant::now();
         let generator_params = ShaderParams::from_inputs(&[]);
