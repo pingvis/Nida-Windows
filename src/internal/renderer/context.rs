@@ -276,6 +276,8 @@ pub fn set_occluded(surface: &wgpu::Surface<'_>, occluded: Option<bool>) {
 pub struct GpuContext {
     /// Construction lifetimes shared with deck/effect workers.
     pub builds: super::builds::Builds,
+    /// Immutable source/compositor blits, shared only with this context's clones.
+    pub(super) blit_cache: super::blit::BlitCache,
     pub instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
@@ -448,6 +450,7 @@ impl GpuContext {
 
         let gpu = GpuContext {
             builds: super::builds::Builds::default(),
+            blit_cache: super::blit::BlitCache::default(),
             instance,
             adapter,
             device,
@@ -588,6 +591,7 @@ impl GpuContext {
 
         Ok(GpuContext {
             builds: super::builds::Builds::default(),
+            blit_cache: super::blit::BlitCache::default(),
             instance,
             adapter,
             device,

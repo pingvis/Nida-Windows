@@ -4612,6 +4612,31 @@ mod tests {
         // Capped as a show's own is (the desk's mock opened it with none).
         let show = Some((1920, 1080));
         app.screen_capture_manager.cap_to(capture, show);
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            app.poll_effect_loading();
+            if app
+                .mixer
+                .channels()
+                .iter()
+                .flat_map(|c| &c.decks)
+                .all(|slot| {
+                    slot.deck.effects.iter().all(|effect| {
+                        matches!(
+                            effect.load_state(),
+                            crate::engine::types::EffectLoadState::Ready
+                        )
+                    })
+                })
+            {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "capture framing did not become ready"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
         let drawn = |app: &VardaApp| app.screen_capture_manager.drawn(capture).expect("running");
         let sized = |fitted, fills| Drawn {
             fitted,

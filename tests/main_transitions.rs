@@ -12,6 +12,37 @@ use varda::params::ParamValue::Float;
 mod common;
 
 fn send_cmd(app: &mut VardaApp, cmd: EngineCommand) -> CommandResult {
+    // Transition pixel assertions inspect authored framing after its resources
+    // are ready. Waiting does not draw a frame of a newly added tap.
+    if matches!(&cmd, EngineCommand::TakeToMain { .. }) {
+        let until = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        loop {
+            app.process_inputs();
+            let state = app.build_engine_state();
+            let mut building = false;
+            for effect in state.mixer.channels.iter().flat_map(|c| {
+                c.effects
+                    .iter()
+                    .chain(c.decks.iter().flat_map(|d| &d.effects))
+            }) {
+                match &effect.load_state {
+                    varda::engine::EffectLoadState::Ready => {}
+                    varda::engine::EffectLoadState::Building => building = true,
+                    varda::engine::EffectLoadState::Failed { message } => {
+                        panic!("effect failed: {message}")
+                    }
+                }
+            }
+            if !building {
+                break;
+            }
+            assert!(
+                std::time::Instant::now() < until,
+                "transition framing did not become ready"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
     let tx = app.command_sender();
     let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
     tx.send((cmd, Some(reply_tx))).unwrap();

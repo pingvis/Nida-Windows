@@ -513,7 +513,13 @@ pub enum DeckSource {
         opaque: bool,
     },
     /// Solid color fill
-    SolidColor { color: [f64; 4] },
+    SolidColor {
+        color: [f64; 4],
+        /// Render requests, including those that retain the previous picture.
+        /// Effects keep the solid's existing FRAMEINDEX timing while
+        /// `Deck::rendered_frames` counts only redraws.
+        frame_index: u32,
+    },
     /// External live source (camera, NDI, Syphon, SRT, HLS, DASH, RTMP)
     ExternalSource {
         kind: ExternalSourceKind,
@@ -1062,8 +1068,8 @@ pub struct Deck {
 }
 
 /// Everything a deck's picture depends on while it stands still — a still
-/// image, a lower third on air or off, a text shown or hidden: its size,
-/// what it is of, and each framing effect's settings. Equal between frames
+/// image or colour, a lower third on air or off, a text shown or hidden:
+/// its size, what it is of, and each framing effect's settings. Equal between frames
 /// means the texture is already right.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct StillFrame {
@@ -1090,6 +1096,8 @@ impl StillFrame {
 enum StillSource {
     /// An image, as it is fitted.
     Image(ScalingMode),
+    /// A solid colour, including alpha, as the clear pass receives it.
+    SolidColor([u64; 4]),
     /// A lower third's or a text's drawing.
     Drawing(Stand),
     /// A clip's frame: which one, as it is fitted, and the parts of it
@@ -1503,7 +1511,7 @@ impl Deck {
     /// Get the solid color value (if source is a solid color)
     pub fn solid_color(&self) -> Option<[f32; 4]> {
         match &self.source {
-            DeckSource::SolidColor { color } => Some([
+            DeckSource::SolidColor { color, .. } => Some([
                 color[0] as f32,
                 color[1] as f32,
                 color[2] as f32,
@@ -1515,7 +1523,7 @@ impl Deck {
 
     /// Set the solid color value (only applies to `SolidColor` sources)
     pub fn set_solid_color(&mut self, new_color: [f32; 4]) {
-        if let DeckSource::SolidColor { color } = &mut self.source {
+        if let DeckSource::SolidColor { color, .. } = &mut self.source {
             // Still called after its colour: the name follows it.
             let old = colour_name(color.map(|c| c as f32));
             if self.source_name == old {
@@ -1957,9 +1965,9 @@ impl Deck {
         self.resize(context, width, height);
     }
 
-    /// Frames this deck has actually rendered — a still image, and a lower
-    /// third or a text standing still, skip the ones where nothing they
-    /// depend on changed (see [`Deck::still_frame`]).
+    /// Frames this deck has actually rendered — a still image or colour,
+    /// and a lower third or a text standing still, skip the ones where
+    /// nothing they depend on changed (see [`Deck::still_frame`]).
     pub fn rendered_frames(&self) -> u32 {
         self.frame_count
     }
@@ -1983,10 +1991,10 @@ impl Deck {
         self.keep_still_sources = keep;
     }
 
-    /// Standing still for as long as it is left alone — a still image, a
-    /// lower third or a text not moving — not a clip between two of its
-    /// frames, kept only till the next (see [`Deck::still_frame`]): for the
-    /// UI, which gives such a deck no rate.
+    /// Standing still for as long as it is left alone — a still image or
+    /// colour, a lower third or a text not moving — not a clip between two
+    /// of its frames, kept only till the next (see [`Deck::still_frame`]):
+    /// for the UI, which gives such a deck no rate.
     pub(crate) fn is_still(&self, modulation: &crate::modulation::ModulationEngine) -> bool {
         self.still_frame(modulation)
             .is_some_and(|still| !still.in_parts())
@@ -2087,6 +2095,9 @@ impl Deck {
     ) -> Option<StillFrame> {
         let source = match &self.source {
             DeckSource::Image { scaling_mode, .. } => StillSource::Image(*scaling_mode),
+            DeckSource::SolidColor { color, .. } => {
+                StillSource::SolidColor(color.map(f64::to_bits))
+            }
             DeckSource::LowerThird(lower) if self.keep_still_text => {
                 StillSource::Drawing(lower.still()?)
             }
@@ -2183,7 +2194,7 @@ impl Deck {
                         self.master_size,
                     )
             }
-            DeckSource::SolidColor { color } => color[3] >= 1.0,
+            DeckSource::SolidColor { color, .. } => color[3] >= 1.0,
             DeckSource::ExternalSource { .. } => !self.transparent,
             _ => false,
         };
@@ -2236,7 +2247,7 @@ impl Deck {
                     y1: hi((1.0 - offset[1]) / scale[1]),
                 }
             }
-            DeckSource::SolidColor { color } if color[3] >= 1.0 => EVERYWHERE,
+            DeckSource::SolidColor { color, .. } if color[3] >= 1.0 => EVERYWHERE,
             // Drawn over black unless flagged transparent: opaque everywhere.
             DeckSource::ExternalSource { kind, .. }
                 if !self.transparent && !matches!(kind, ExternalSourceKind::DepthSensor(_)) =>

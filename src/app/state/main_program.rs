@@ -150,6 +150,33 @@ mod tests {
     use crate::mixer::{MainSource, MainTransition};
 
     fn run(app: &mut crate::app::VardaApp, cmd: EngineCommand) -> CommandResult {
+        if matches!(&cmd, EngineCommand::TakeToMain { .. }) {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+            loop {
+                app.poll_effect_loading();
+                if app
+                    .mixer
+                    .channels()
+                    .iter()
+                    .flat_map(|c| &c.decks)
+                    .all(|slot| {
+                        slot.deck.effects.iter().all(|effect| {
+                            matches!(
+                                effect.load_state(),
+                                crate::engine::types::EffectLoadState::Ready
+                            )
+                        })
+                    })
+                {
+                    break;
+                }
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "take framing did not become ready"
+                );
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+        }
         app.execute_command(cmd)
     }
 
@@ -196,6 +223,31 @@ mod tests {
                 CommandResult::OkWithId { uuid } => layers.push(uuid),
                 other => panic!("no layer: {other:?}"),
             }
+        }
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+        loop {
+            app.poll_effect_loading();
+            if app
+                .mixer
+                .channels()
+                .iter()
+                .flat_map(|c| &c.decks)
+                .all(|slot| {
+                    slot.deck.effects.iter().all(|effect| {
+                        matches!(
+                            effect.load_state(),
+                            crate::engine::types::EffectLoadState::Ready
+                        )
+                    })
+                })
+            {
+                break;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "image framing did not become ready"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
         }
         let take = |app: &mut crate::app::VardaApp| {
             run(
@@ -490,6 +542,33 @@ mod tests {
                 value: crate::params::ParamValue::Float(0.5),
             },
         );
+        // These assertions inspect completed framing, without drawing a frame
+        // of the newly added tap. Default resources load independently.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+        loop {
+            app.poll_effect_loading();
+            if app
+                .mixer
+                .channels()
+                .iter()
+                .flat_map(|c| &c.decks)
+                .all(|slot| {
+                    slot.deck.effects.iter().all(|effect| {
+                        matches!(
+                            effect.load_state(),
+                            crate::engine::types::EffectLoadState::Ready
+                        )
+                    })
+                })
+            {
+                break;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "framing did not become ready"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
         Some((app, channels))
     }
 

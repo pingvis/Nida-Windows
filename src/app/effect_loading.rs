@@ -191,6 +191,13 @@ mod tests {
             pixel[2] > 0 && pixel[0] == 0,
             "the source must draw while both compilers are blocked: {pixel:?}"
         );
+        let pending_frames = app.mixer.channels()[0].decks[0].deck.rendered_frames();
+        app.render_mixer_frame();
+        assert_eq!(
+            app.mixer.channels()[0].decks[0].deck.rendered_frames(),
+            pending_frames,
+            "the unchanged source can retain its picture while defaults build"
+        );
         release.send(()).unwrap();
         release.send(()).unwrap();
         let deadline = Instant::now() + Duration::from_secs(15);
@@ -220,6 +227,23 @@ mod tests {
             );
             std::thread::sleep(Duration::from_millis(5));
         }
+        app.render_mixer_frame();
+        assert_eq!(
+            app.mixer.channels()[0].decks[0].deck.rendered_frames(),
+            pending_frames + 1,
+            "resource readiness must invalidate the retained pending picture"
+        );
+        let corner = channel_pixel(&app);
+        assert_eq!(
+            corner[2], 0,
+            "the early scale edit applies after completion: {corner:?}"
+        );
+        app.render_mixer_frame();
+        assert_eq!(
+            app.mixer.channels()[0].decks[0].deck.rendered_frames(),
+            pending_frames + 1,
+            "the completed static framing can retain its new picture"
+        );
     }
 
     #[test]
