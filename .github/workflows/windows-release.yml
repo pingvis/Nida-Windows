@@ -19,6 +19,9 @@ on:
     branches: [main]
     paths:
       - 'src/internal/renderer/**'
+      - 'src/internal/camera/**'
+      - 'src/internal/decklink/**'
+      - 'vendor/decklink-sdk/**'
       - 'src/internal/audio_mix/**'
       - 'vendor/webrtc-aec3/**'
       - 'build.rs'

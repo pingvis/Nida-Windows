@@ -254,7 +254,7 @@ impl Capture {
     }
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod sdk {
     use super::{Colorspace, Connection, InputDevice, InputMode, Picture, Pixels, Taker};
     use std::ffi::{c_char, c_void, CStr};
@@ -529,7 +529,7 @@ mod sdk {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod sdk {
     use super::{InputDevice, Taker};
 
@@ -551,7 +551,7 @@ mod sdk {
             _code: u32,
             _taker: Box<dyn Taker>,
         ) -> Result<Self, String> {
-            Err("Blackmagic inputs are taken on a Mac".into())
+            Err("Blackmagic inputs require macOS or Windows".into())
         }
 
         #[allow(clippy::unused_self)]

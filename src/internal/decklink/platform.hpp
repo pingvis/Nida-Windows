@@ -32,6 +32,11 @@ inline bool dl_thread_ready() {
     return apartment.ready();
 }
 
+template<class Work> void dl_run_in_mta(Work work) {
+    std::thread worker([work] { if (dl_thread_ready()) work(); });
+    worker.join();
+}
+
 inline void copy_dlstring(DlString text, char* buf, int32_t len) {
     if (len <= 0) return;
     buf[0] = 0;
@@ -116,4 +121,5 @@ inline bool dl_is_unknown(REFIID iid) {
     return dl_same_iid(iid, CFUUIDGetUUIDBytes(IUnknownUUID));
 }
 template<class Start> void dl_start_discovery(Start start) { start(); }
+template<class Work> void dl_run_in_mta(Work work) { work(); }
 #endif

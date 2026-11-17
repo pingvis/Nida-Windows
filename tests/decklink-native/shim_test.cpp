@@ -266,6 +266,8 @@ void audio_failures_can_restart() {
     }
 }
 
+#include "capture_test.hpp"
+
 int main(int argc, char**) {
     if (argc > 1) {
         char version[64];
@@ -408,4 +410,5 @@ int main(int argc, char**) {
     g_notifications.DeckLinkDeviceRemoved(&av_device);
     av_device.released();
     audio_failures_can_restart();
+    capture_lifecycle();
 }

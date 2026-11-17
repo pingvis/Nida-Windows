@@ -35,14 +35,14 @@ def prepare(destination: Path) -> None:
     shutil.copyfile(root / "build.rs", destination / "build.rs")
     shutil.copyfile(root / "clippy.toml", destination / "clippy.toml")
     ndi = (root / "src/internal/ndi/mod.rs").read_text(encoding="utf-8")
-    start = ndi.index("pub(crate) fn rgba_to_uyvy(")
-    opening = ndi.index("{", start)
-    depth = 1
-    end = opening + 1
-    while depth:
-        depth += (ndi[end] == "{") - (ndi[end] == "}")
-        end += 1
-    (destination / "src/ndi_conversion.rs").write_text(ndi[start:end] + "\n", encoding="utf-8")
+    # The production converter now delegates to row/matrix helpers. Keep that
+    # complete implementation instead of a wrapper with missing dependencies.
+    conversion = "\n".join(block(ndi, signature) for signature in (
+        "pub(crate) fn rgba_to_uyvy(",
+        "fn colour_coefficients(",
+        "fn rgba_rows_to_uyvy(",
+    ))
+    (destination / "src/ndi_conversion.rs").write_text(conversion, encoding="utf-8")
     audio = (root / "src/internal/audio/mod.rs").read_text(encoding="utf-8")
     chunk_start = audio.index("pub struct PcmChunk {")
     chunk_end = audio.index("\n}", chunk_start) + 2

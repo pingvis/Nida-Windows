@@ -160,8 +160,6 @@ std::vector<nida_dl_mode> modes_of(IDeckLinkOutput* output) {
     return modes;
 }
 
-// Upstream native capture currently uses the macOS SDK ABI.
-#ifdef __APPLE__
 std::vector<nida_dl_in_mode> input_modes_of(IDeckLinkInput* input) {
     std::vector<nida_dl_in_mode> modes;
     IDeckLinkDisplayModeIterator* iterator = nullptr;
@@ -170,7 +168,7 @@ std::vector<nida_dl_in_mode> input_modes_of(IDeckLinkInput* input) {
     }
     IDeckLinkDisplayMode* mode = nullptr;
     while (iterator->Next(&mode) == S_OK) {
-        bool supported = false;
+        DlSupported supported = false;
         BMDDisplayMode code = mode->GetDisplayMode();
         if (input->DoesSupportVideoMode(bmdVideoConnectionUnspecified, code, bmdFormat8BitYUV,
                                         bmdNoVideoInputConversion, bmdSupportedVideoModeDefault, nullptr,
@@ -187,10 +185,10 @@ std::vector<nida_dl_in_mode> input_modes_of(IDeckLinkInput* input) {
             in.time_scale = scale;
             const BMDFieldDominance field = mode->GetFieldDominance();
             in.progressive = (field == bmdProgressiveFrame || field == bmdProgressiveSegmentedFrame) ? 1 : 0;
-            CFStringRef name = nullptr;
+            DlString name = nullptr;
             if (mode->GetName(&name) == S_OK && name != nullptr) {
-                copy_cfstring(name, in.name, sizeof(in.name));
-                CFRelease(name);
+                copy_dlstring(name, in.name, sizeof(in.name));
+                free_dlstring(name);
             }
             modes.push_back(in);
         }
@@ -199,8 +197,6 @@ std::vector<nida_dl_in_mode> input_modes_of(IDeckLinkInput* input) {
     iterator->Release();
     return modes;
 }
-
-#endif
 
 // What discovery tells: a device arrived, or went. On the API's own thread.
 class Notifications final : public IDeckLinkDeviceNotificationCallback {
@@ -218,7 +214,6 @@ public:
             known.modes = modes_of(output);
             output->Release();
         }
-#ifdef __APPLE__
         IDeckLinkInput* input = nullptr;
         if (device->QueryInterface(IID_IDeckLinkInput, reinterpret_cast<void**>(&input)) == S_OK &&
             input != nullptr) {
@@ -230,7 +225,7 @@ public:
         if (device->QueryInterface(IID_IDeckLinkProfileAttributes, reinterpret_cast<void**>(&attributes)) ==
                 S_OK &&
             attributes != nullptr) {
-            bool detects = false;
+            DlSupported detects = false;
             if (attributes->GetFlag(BMDDeckLinkSupportsInputFormatDetection, &detects) == S_OK) {
                 known.detects = detects;
             }
@@ -244,8 +239,6 @@ public:
             }
             attributes->Release();
         }
-#endif
-
         std::lock_guard<std::mutex> lock(g_known_lock);
         known.id = g_next_id++;
         g_known.push_back(std::move(known));
@@ -322,7 +315,6 @@ IDeckLink* output_device(uint64_t id) {
 
 // The known device of arrival `id`, if it can take pictures in, with a
 // reference of the caller's own; null when it has gone.
-#ifdef __APPLE__
 IDeckLink* input_device(uint64_t id) {
     discover();
     std::lock_guard<std::mutex> lock(g_known_lock);
@@ -397,7 +389,7 @@ public:
         time_scale_ = scale;
     }
 
-    HRESULT VideoInputFormatChanged(BMDVideoInputFormatChangedEvents events, IDeckLinkDisplayMode* mode,
+    HRESULT NIDA_COM VideoInputFormatChanged(BMDVideoInputFormatChangedEvents events, IDeckLinkDisplayMode* mode,
                                     BMDDetectedVideoInputFormatFlags flags) override {
         if (mode == nullptr) {
             return S_OK;
@@ -412,7 +404,7 @@ public:
         // YUV, as 8-bit YUV.
         BMDPixelFormat format = bmdFormat8BitYUV;
         if ((flags & bmdDetectedVideoInputRGB444) != 0) {
-            bool supported = false;
+            DlSupported supported = false;
             if (input_->DoesSupportVideoMode(bmdVideoConnectionUnspecified, mode->GetDisplayMode(),
                                              bmdFormat8BitBGRA, bmdNoVideoInputConversion,
                                              bmdSupportedVideoModeDefault, nullptr, &supported) == S_OK &&
@@ -442,7 +434,7 @@ public:
         return S_OK;
     }
 
-    HRESULT VideoInputFrameArrived(IDeckLinkVideoInputFrame* frame, IDeckLinkAudioInputPacket* packet) override {
+    HRESULT NIDA_COM VideoInputFrameArrived(IDeckLinkVideoInputFrame* frame, IDeckLinkAudioInputPacket* packet) override {
         std::lock_guard<std::mutex> guard(lock_);
         if (closed_) {
             return S_OK;
@@ -467,10 +459,9 @@ public:
         return S_OK;
     }
 
-    HRESULT QueryInterface(REFIID iid, LPVOID* ppv) override {
-        CFUUIDBytes unknown = CFUUIDGetUUIDBytes(IUnknownUUID);
-        if (std::memcmp(&iid, &unknown, sizeof(REFIID)) == 0 ||
-            std::memcmp(&iid, &IID_IDeckLinkInputCallback, sizeof(REFIID)) == 0) {
+    HRESULT NIDA_COM QueryInterface(REFIID iid, LPVOID* ppv) override {
+        if (ppv == nullptr) return E_POINTER;
+        if (dl_is_unknown(iid) || dl_same_iid(iid, IID_IDeckLinkInputCallback)) {
             AddRef();
             *ppv = this;
             return S_OK;
@@ -479,9 +470,9 @@ public:
         return E_NOINTERFACE;
     }
 
-    ULONG AddRef() override { return ++refs_; }
+    ULONG NIDA_COM AddRef() override { return ++refs_; }
 
-    ULONG Release() override {
+    ULONG NIDA_COM Release() override {
         const ULONG left = --refs_;
         if (left == 0) {
             delete this;
@@ -490,7 +481,7 @@ public:
     }
 
 private:
-    ~Capture() override {
+    ~Capture() {
         if (config_ != nullptr) {
             config_->Release();
         }
@@ -524,8 +515,6 @@ void stop_capture(Capture* capture) {
     input->DisableVideoInput();
     input->SetCallback(nullptr);
 }
-
-#endif
 
 struct Output {
     IDeckLink* device;
@@ -825,7 +814,6 @@ void nida_dl_converter_free(void* converter) {
 }
 
 #endif  // __APPLE__
-#ifdef __APPLE__
 // Every device that can take pictures in, up to `max`, into `infos`; how
 // many there are.
 int32_t nida_dl_inputs(nida_dl_input_info* infos, int32_t max) {
@@ -883,6 +871,9 @@ void* nida_dl_capture_open(uint64_t id, uint32_t mode, void* ctx, nida_dl_video_
         }
         return nullptr;
     };
+    if (!dl_thread_ready()) {
+        return fail("the capture thread could not initialize Windows COM (MTA required)");
+    }
     IDeckLink* device = input_device(id);
     if (device == nullptr) {
         return fail("the Blackmagic device is not connected (any more)");
@@ -902,7 +893,7 @@ void* nida_dl_capture_open(uint64_t id, uint32_t mode, void* ctx, nida_dl_video_
         return fail("the device takes no video in");
     }
     IDeckLinkDisplayMode* display = nullptr;
-    if (input->GetDisplayMode(mode, &display) != S_OK || display == nullptr) {
+    if (input->GetDisplayMode(static_cast<BMDDisplayMode>(mode), &display) != S_OK || display == nullptr) {
         input->Release();
         device->Release();
         return fail("the device has no such video format");
@@ -912,7 +903,7 @@ void* nida_dl_capture_open(uint64_t id, uint32_t mode, void* ctx, nida_dl_video_
     display->Release();
     const BMDVideoInputFlags flags = detects ? bmdVideoInputEnableFormatDetection : bmdVideoInputFlagDefault;
     if (input->SetCallback(capture) != S_OK ||
-        input->EnableVideoInput(mode, bmdFormat8BitYUV, flags) != S_OK) {
+        input->EnableVideoInput(static_cast<BMDDisplayMode>(mode), bmdFormat8BitYUV, flags) != S_OK) {
         input->SetCallback(nullptr);
         capture->close();
         capture->Release();
@@ -1008,18 +999,21 @@ void nida_dl_capture_close(void* handle) {
 // captures never closed: Blackmagic's library, its own locks gone with the
 // process, then took a frame in and aborted (seen on the Studio).
 void nida_dl_shutdown(void) {
-    {
-        std::lock_guard<std::mutex> open(g_open_lock);
-        g_shut_down = true;
-        for (Capture* capture : g_open) {
-            stop_capture(capture);
+    // Shutdown can be requested by the UI thread, which may be an STA on
+    // Windows. Stop devices and notifications from a thread in the shared MTA.
+    dl_run_in_mta([] {
+        {
+            std::lock_guard<std::mutex> open(g_open_lock);
+            g_shut_down = true;
+            for (Capture* capture : g_open) {
+                stop_capture(capture);
+            }
         }
-    }
-    if (g_discovery != nullptr) {
-        g_discovery->UninstallDeviceNotifications();
-    }
+        if (g_discovery != nullptr) {
+            g_discovery->UninstallDeviceNotifications();
+        }
+    });
 }
-#endif  // __APPLE__
 
 void nida_dl_close(void* handle) {
     auto* out = static_cast<Output*>(handle);

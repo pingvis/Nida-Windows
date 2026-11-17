@@ -98,6 +98,9 @@ jobs:
       - name: Test native echo cancellation and audio mixing
         run: cargo test --locked --no-default-features --features screen-capture,windows-browser --lib internal::audio_mix:: -- --test-threads=1
 
+      - name: Test camera integration and native DeckLink frame conversion
+        run: cargo test --locked --no-default-features --features screen-capture,windows-browser --lib internal::camera:: -- --test-threads=1
+
       - name: Run clippy (pedantic)
         run: cargo clippy --all-targets --locked --no-default-features --features screen-capture,windows-browser -- -D warnings
 

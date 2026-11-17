@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 
 FILTERS = {'decklink': ['src/internal/decklink/**',
+              'src/internal/camera/**',
               'src/internal/ndi/mod.rs',
               'src/internal/audio/mod.rs',
               'src/engine/value/render.rs',

@@ -18,7 +18,7 @@
 
 #![allow(unsafe_code)]
 
-use std::borrow::Cow;
+use super::{matrix_label, tight};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 
@@ -651,23 +651,6 @@ unsafe fn read_locked(
     ok.then_some((w, h))
 }
 
-/// A plane's rows without the padding at the end of each: the plane itself
-/// when it has none. yuvutils-rs refuses a padded chroma plane, or a padded
-/// 4:2:2 picture, outright; `None` for rows longer than their stride.
-pub(super) fn tight(plane: &[u8], stride: usize, row: usize, rows: usize) -> Option<Cow<'_, [u8]>> {
-    if row > stride || plane.len() < stride * rows {
-        return None;
-    }
-    if row == stride {
-        return Some(Cow::Borrowed(&plane[..row * rows]));
-    }
-    let mut packed = Vec::with_capacity(row * rows);
-    for line in plane.chunks_exact(stride).take(rows) {
-        packed.extend_from_slice(&line[..row]);
-    }
-    Some(Cow::Owned(packed))
-}
-
 /// When a frame was captured, host seconds: its sample time, which on a Mac
 /// is on the host clock — or, when it is not (in the future, or more than a
 /// second ago), when it came; and whether it was its sample time.
@@ -786,16 +769,6 @@ unsafe fn seen_signal(
         ..SignalSeen::default()
     };
     Some((seen, sampled))
-}
-
-/// A colour matrix as the operator knows it: `BT.709`.
-pub(super) fn matrix_label(matrix: YuvStandardMatrix) -> String {
-    match matrix {
-        YuvStandardMatrix::Bt601 => "BT.601".into(),
-        YuvStandardMatrix::Bt709 => "BT.709".into(),
-        YuvStandardMatrix::Bt2020 => "BT.2020".into(),
-        other => format!("{other:?}"),
-    }
 }
 
 /// The colour matrix a frame is tagged with — or, untagged, the one its

@@ -10,7 +10,7 @@
 
 #[cfg(target_os = "macos")]
 mod avf;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod blackmagic;
 
 use anyhow::{Context, Result};
@@ -110,7 +110,7 @@ impl Rate {
     }
 
     /// As a person reads it: "1920×1080 60p".
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     pub(crate) fn label(&self) -> String {
         self.mode().label()
     }
@@ -191,6 +191,40 @@ pub(crate) fn choose(rates: &[Rate], mode: Option<CameraMode>) -> Option<Rate> {
         crate::engine::value::camera::default_mode(&CameraDeviceInfo::modes_of(rates))
             .and_then(|m| target(rates, m))
     })
+}
+
+/// A plane's rows without the padding at the end of each: the plane itself
+/// when it has none. yuvutils-rs refuses a padded chroma plane, or a padded
+/// 4:2:2 picture, outright; `None` for rows longer than their stride.
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn tight(
+    plane: &[u8],
+    stride: usize,
+    row: usize,
+    rows: usize,
+) -> Option<std::borrow::Cow<'_, [u8]>> {
+    if row > stride || plane.len() < stride * rows {
+        return None;
+    }
+    if row == stride {
+        return Some(std::borrow::Cow::Borrowed(&plane[..row * rows]));
+    }
+    let mut packed = Vec::with_capacity(row * rows);
+    for line in plane.chunks_exact(stride).take(rows) {
+        packed.extend_from_slice(&line[..row]);
+    }
+    Some(std::borrow::Cow::Owned(packed))
+}
+
+/// A colour matrix as the operator knows it: `BT.709`.
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn matrix_label(matrix: YuvStandardMatrix) -> String {
+    match matrix {
+        YuvStandardMatrix::Bt601 => "BT.601".into(),
+        YuvStandardMatrix::Bt709 => "BT.709".into(),
+        YuvStandardMatrix::Bt2020 => "BT.2020".into(),
+        other => format!("{other:?}"),
+    }
 }
 
 /// The rates to list from one of a device's ranges of rates: its fastest,
@@ -918,13 +952,13 @@ fn steady_limit(fps: f64, open_cost: Option<Duration>) -> Duration {
 /// Whether a camera has stalled: `since_open` since it was opened,
 /// `since_frame` since its last picture, given `limit` (see
 /// [`Arrivals::stall_limit`]).
-#[cfg(any(target_os = "macos", test))]
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn stalled(since_open: Duration, since_frame: Option<Duration>, limit: Duration) -> bool {
     since_frame.map_or(since_open, |since| since.min(since_open)) > limit
 }
 
 /// How often a camera gone quiet or unplugged is tried again.
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 const RETRY_EVERY: Duration = Duration::from_secs(2);
 
 /// The formats to try opening a camera with, in turn: the one nearest the
@@ -1526,6 +1560,9 @@ impl CameraManager {
     /// The devices plugged in, as nokhwa lists them. Without camera access
     /// the formats are not read: opening a device fails then anyway.
     #[cfg(not(target_os = "macos"))]
+    // Windows still returns native inputs if WDM enumeration fails; Linux
+    // retains the common Option contract used by scan_devices.
+    #[cfg_attr(target_os = "windows", allow(clippy::unnecessary_wraps))]
     fn find_devices(&self) -> Option<Vec<Found>> {
         let allowed = nokhwa::nokhwa_check();
         if !allowed {
@@ -1533,7 +1570,12 @@ impl CameraManager {
         }
         let cameras = nokhwa::query(nokhwa::utils::ApiBackend::Auto)
             .map_err(|e| log::warn!("Camera enumeration failed: {e}"))
-            .ok()?;
+            .ok();
+        // A WDM/Media Foundation failure must not hide native DeckLink inputs.
+        #[cfg(target_os = "windows")]
+        let cameras = cameras.unwrap_or_default();
+        #[cfg(not(target_os = "windows"))]
+        let cameras = cameras?;
         Some(
             cameras
                 .iter()
@@ -1563,6 +1605,18 @@ impl CameraManager {
                         formats,
                         rates,
                         follows_signal: false,
+                    }
+                })
+                // Native DeckLink discovery is independent of Windows camera
+                // enumeration and its WDM compatibility entries.
+                .chain({
+                    #[cfg(target_os = "windows")]
+                    {
+                        blackmagic::found()
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        Vec::new()
                     }
                 })
                 .collect(),
@@ -1755,9 +1809,9 @@ impl CameraManager {
                 rates: d.rates.clone(),
                 follows_signal: d.follows_signal,
             });
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
         let found = kept.chain(blackmagic::found()).collect();
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         let found = kept.collect();
         self.list(found);
     }
@@ -2195,6 +2249,11 @@ impl CameraManager {
         stop: &AtomicBool,
         opened: &mpsc::Sender<Result<CameraMode>>,
     ) {
+        #[cfg(target_os = "windows")]
+        if crate::decklink::input::is_blackmagic(&device.unique_id) {
+            blackmagic::run(device, mode, sink, stop, opened);
+            return;
+        }
         let mut first = true;
         let mut mode = mode;
         while !stop.load(Ordering::Relaxed) {

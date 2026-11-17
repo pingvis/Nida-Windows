@@ -1,4 +1,46 @@
-# Windows DeckLink video and embedded audio output
+# Windows DeckLink capture and output
+
+## Native video and embedded audio capture
+
+Windows now uses the existing native DeckLink input backend as well as the
+output backend. Install Blackmagic Desktop Video and restart Nida. In
+**Cameras and capture cards**, choose the card/port ending in **(Blackmagic)**.
+The separate **Blackmagic WDM Capture** entries still use the generic Windows
+camera backend; they are not the native DeckLink inputs. No legacy-device
+checkbox is needed for native capture.
+
+Input-capable devices are discovered through the SDK, independently of Windows
+camera enumeration. Each input keeps its persistent device ID across reconnects,
+with a new arrival identity so an old handle cannot open a replacement device.
+Devices supporting input format detection follow the incoming signal; others
+use the selected supported mode. Capture uses 8-bit UYVY or BGRA, including
+padded rows, and the existing camera conversion and signal-loss handling. The
+existing capture worker also retries disconnected or stalled devices and looks
+for a signal on the device's supported connections. Embedded audio uses the
+existing live-source routing into the mixer, at 48 kHz stereo, 32-bit PCM.
+
+The capture worker initializes COM as an MTA before opening its device and
+keeps that apartment through close. Windows callbacks use the SDK's COM calling
+convention and reference counting. Close stops streams, unregisters callbacks,
+and prevents retained callbacks from accessing the released Rust context.
+Application shutdown runs capture cleanup in the MTA even when called by an
+STA UI thread. Discovery and output continue to use their existing MTA paths.
+
+The behavioral SDK tests cover capture enumeration/modes, persistent and arrival
+IDs, COM initialization failure, failed starts, video-only capture when audio
+is unavailable, padded frames, stereo sample order, no-signal frames, automatic
+format changes, connector selection, disconnect/reconnect, retained callbacks,
+and shutdown. Windows tests also compile the production shim against the actual
+MIDL-generated SDK interfaces and check MTA execution from an STA caller.
+
+Hardware qualification remains required: confirm each physical card input
+appears, test the actual SDI/HDMI modes (including fractional rates), embedded
+audio and lip sync, signal loss, reconnect, and simultaneous input/output where
+the card's configured profile supports it. Close other apps using the same
+input before testing. Passing tests without a card does not establish physical
+capture performance or synchronization.
+
+## Output backend history
 
 This change adds a Windows COM backend to Nida's existing Blackmagic output.
 It is prepared separately against upstream Nida main at `c74d97e`, without
@@ -27,7 +69,7 @@ full levels use the same 1–254 clamps as the macOS implementation. HD uses
 BT.709 and SD uses BT.601. NDI continues to use video levels. The existing two
 full-range regressions now exercise the portable implementation too.
 
-Video remains at the existing 8-bit YUV precision. DeckLink capture,
+Video remains at the existing 8-bit YUV precision.
 HDR/10-bit output, external genlock configuration and automatic profile switching
 are separate features. A device configured for input-only use must be configured
 for output in Desktop Video first.

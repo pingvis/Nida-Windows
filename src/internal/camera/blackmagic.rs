@@ -1,6 +1,6 @@
 //! A Blackmagic input as a camera — an UltraStudio Recorder, a DeckLink card
 //! — taken through Blackmagic's own DeckLink API (`crate::decklink::input`)
-//! rather than as macOS lists it: the format coming in is followed as the
+//! rather than through the OS camera backend: the format coming in is followed as the
 //! device tells it, its sound comes with its pictures (into the mixer as a
 //! live source's, see `VardaApp::live_sounds`), a device with nothing
 //! plugged in shows black, not its last picture, and one with no signal on
@@ -227,7 +227,7 @@ fn read(picture: &Picture<'_>, out: &mut Vec<u8>, colour: CameraColour) -> Optio
     match picture.pixels? {
         Pixels::Uyvy => {
             let row = width.div_ceil(2) * 4;
-            let pixels = super::avf::tight(picture.data, picture.row_bytes, row, height)?;
+            let pixels = super::tight(picture.data, picture.row_bytes, row, height)?;
             let packed = YuvPackedImage {
                 yuy: &pixels,
                 yuy_stride: u32::try_from(row).ok()?,
@@ -371,7 +371,7 @@ fn seen_signal(picture: &Picture<'_>, colour: CameraColour) -> Option<(SignalSee
         width: picture.width,
         height: picture.height,
         format: if yuv { "2vuy" } else { "BGRA" }.into(),
-        matrix: super::avf::matrix_label(matrix_of(picture, colour)),
+        matrix: super::matrix_label(matrix_of(picture, colour)),
         full_range: yuv.then(|| super::picture_range(colour, YuvRange::Limited) == YuvRange::Full),
         ..SignalSeen::default()
     };

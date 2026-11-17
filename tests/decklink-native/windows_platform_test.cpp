@@ -33,6 +33,17 @@ int main() {
             called = true;
         });
         assert(called);
+        called = false;
+        dl_run_in_mta([&called] {
+            APTTYPE worker_apartment;
+            APTTYPEQUALIFIER worker_qualifier;
+            assert(CoGetApartmentType(&worker_apartment, &worker_qualifier) == S_OK);
+            assert(worker_apartment == APTTYPE_MTA);
+            called = true;
+        });
+        assert(called);
+        assert(CoGetApartmentType(&apartment, &qualifier) == S_OK);
+        assert(apartment == APTTYPE_STA || apartment == APTTYPE_MAINSTA);
         CoUninitialize();
     });
     sta.join();
