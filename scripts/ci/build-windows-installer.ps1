@@ -21,6 +21,7 @@ New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 $work = Join-Path $OutputDirectory ('Installer staging ' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
+$buildFailed = $false
 try {
     # Extract and validate once, then compile every installer from this payload.
     # Installed and upgraded copies are still smoke-tested independently.
@@ -58,8 +59,17 @@ try {
         & (Join-Path $PSScriptRoot 'test-windows-installer.ps1') -Installer $first.FullName -UpgradeInstaller $next.FullName | Out-Host
     }
     $installer
+} catch {
+    $buildFailed = $true
+    throw
 } finally {
     # $work is an explicit temporary child created above, never the supplied output directory.
     if ([IO.Path]::GetDirectoryName($work) -ne $OutputDirectory) { throw 'Unsafe installer staging directory.' }
-    Remove-Item -LiteralPath $work -Recurse -Force
+    try {
+        Remove-Item -LiteralPath $work -Recurse -Force
+    } catch {
+        # A secondary cleanup failure must not hide the failing build/test.
+        if (!$buildFailed) { throw }
+        Write-Warning "Installer staging cleanup also failed at '${work}': $_"
+    }
 }

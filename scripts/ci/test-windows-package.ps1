@@ -37,8 +37,13 @@ try {
     # dependencies on the checkout and broken quoting.
     Push-Location $temporary
     try {
-        & (Join-Path $package 'varda.exe') --version
-        if ($LASTEXITCODE -ne 0) { throw 'Packaged application cannot start.' }
+        # Nida uses the Windows GUI subsystem. PowerShell can return before
+        # a GUI executable exits and leave LASTEXITCODE unset or stale.
+        # Wait explicitly so its DLLs are released before staging is deleted.
+        $versionProcess = Start-Process -FilePath (Join-Path $package 'varda.exe') -ArgumentList '--version' -WindowStyle Hidden -Wait -PassThru
+        try {
+            if ($versionProcess.ExitCode -ne 0) { throw "Packaged application cannot start (exit $($versionProcess.ExitCode))." }
+        } finally { $versionProcess.Dispose() }
         if ('windows-browser' -in $metadata.features) {
             $browser = Join-Path $package 'browser'
             foreach ($required in @('nida-browser-host.exe', 'nida-browser-host.dll', 'libcef.dll', 'icudtl.dat', 'resources.pak', 'locales', 'CEF-LICENSE.txt', 'Chromium-credits.html', 'nida-cef-inputs.json')) {
