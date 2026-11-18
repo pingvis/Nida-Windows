@@ -402,7 +402,14 @@ impl ApplicationHandler for UIRunner {
             let quiet = since.is_none_or(|since| since >= UI_FALLBACK);
             let period = self.ui_period();
             let rested = since.is_none_or(|since| since >= period);
-            if (self.ui_due && rested) || quiet {
+            let interacting = self
+                .last_input
+                .is_some_and(|at| at.elapsed() < super::HANDS_ON);
+            let interaction_wait = super::responsiveness::interaction_wait(interacting, since);
+            if (self.ui_due && rested)
+                || quiet
+                || interaction_wait == Some(std::time::Duration::ZERO)
+            {
                 self.ui_due = false;
                 self.ui_frame_allowance = super::frame_allowance(self.ui_frame_period, period);
                 self.ui_frame_period = period;
@@ -411,7 +418,8 @@ impl ApplicationHandler for UIRunner {
                 }
             }
             event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
-                std::time::Instant::now() + UI_FALLBACK,
+                std::time::Instant::now()
+                    + interaction_wait.unwrap_or(UI_FALLBACK).min(UI_FALLBACK),
             ));
         }
     }
@@ -596,6 +604,11 @@ impl UIRunner {
 
     /// Runs once, after the stopped worker has returned the app.
     fn finish_shutdown(&mut self) {
+        // The stopped engine is ours again. Accepted edits must reach the
+        // final save even if Quit arrived while a frame held the engine.
+        if self.varda.is_some() && self.egui_renderer.is_some() {
+            self.drain_ui_actions();
+        }
         if let Some(varda) = self.varda.as_mut() {
             let builds = varda.gpu_context().builds.clone();
             builds.close();
