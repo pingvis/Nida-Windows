@@ -1,9 +1,10 @@
 # Windows GPU-resident playback qualification — ASUS G14 / RTX 2060 Max-Q
 
-Qualification in progress on 19 November 2026. Initial hardware tests found an
-SDR P010 colour mismatch; the production fix has passed release revalidation.
-All 30 serial performance measurements pass. The two-hour soak remains in
-progress; this report does not yet claim a completed two-hour stability pass.
+The requested correctness, performance and two-hour stability tests completed
+on 19 November 2026. Initial hardware tests found an SDR P010 colour mismatch;
+the production fix passed release revalidation, all 30 serial measurements and
+an uninterrupted two-hour playlist soak. Pacing and hardware-coverage limits
+remain documented below; this is not a guarantee of uniform 60-fps delivery.
 The user confirmed that no GPU-heavy work was running
 and authorized the initial tests and, subject to their results, a two-hour soak.
 The experimental preference, beta label and production thresholds are unchanged.
@@ -16,6 +17,8 @@ The experimental preference, beta label and production thresholds are unchanged.
   Revalidation adds the local SDR P010 fix in `src/internal/video/gpu_video.wgsl`.
   Exact measured binary/shader hashes are recorded below; the measured build is
   the base revision plus this patch, not an unmodified-main qualification.
+  The measured production fix was published as `b38c1e4257ded683915bfdad06fc37a64cc6abc1`;
+  the final soak evidence update changes documentation only.
 - ASUS ROG Zephyrus G14 `GA401IV_GA401IV`.
 - AMD Ryzen 9 4900HS, 8 cores / 16 logical processors; 16 GiB installed RAM
   (15.42 GiB reported usable by Windows).
@@ -209,29 +212,51 @@ picture download/upload counters.
 The picture and playlist harnesses explicitly assert no GPU validation faults.
 The real-time benchmark asserts path, transfer, pool and device-poll success but
 does not export a validation-fault count; none is invented here. At the
-18:01:53 Europe/Vilnius event-log snapshot, no warning/error/critical events from
-registered `Display`, `nvlddmkm` or `amdkmdag` providers matched the benchmark/soak
-time window. `amdwddmg` is not registered on this PC, so that provider is an
-explicit observability limit.
+final event-log query, no warning/error/critical events from registered `Display`,
+`nvlddmkm` or `amdkmdag` providers matched the complete benchmark/soak window,
+16:17:55–18:49:17 Europe/Vilnius. `amdwddmg` is not registered on this PC, so that
+provider is an explicit observability limit.
 
-## Two-hour soak — pending
+## Two-hour soak — passed
 
 The uninterrupted release run started at **16:49:14 Europe/Vilnius on 19 November
-2026**, with H.264, HDR10 and SDR HEVC Main10, using the fixed embedded production
-shader. The committed partial snapshot covers 71 completed minutes: 242,566 GPU
-pictures, 283 seeks, 35 reloads and peak sampled RSS of 399,982,592 bytes (381 MiB).
-No residency/transfer/pool/validation/progress assertion has failed in that
-snapshot. The requested 7,200-second run is **not complete in this report**;
-its expected end is approximately 18:49. A final completion record and remaining
-memory samples must be collected before reporting a two-hour pass.
+2026** and finished at **18:49:16**, with H.264, HDR10 and SDR HEVC Main10, using
+the fixed embedded production shader. The harness completed 7,200.0026 measured
+seconds and exited successfully. It delivered **409,886 GPU pictures**, performed
+**479 seeks and 59 reloads**, and showed all three clips. Pause/resume, paused
+preload preservation and changing transitions remained under test throughout.
+
+No residency, unexpected-fallback, picture-transfer, pool, GPU-validation,
+progress-watchdog or bounded-RSS assertion failed. Production picture downloads
+and uploads remained zero; each observed player stayed within its three-slot
+limit. The test process and qualification telemetry helpers exited afterward.
+Global performance preference, recent-show, window-choice and layout hashes
+remain unchanged after the completed soak.
+
+The 120 one-minute RSS samples range from 317.01 to 400.54 MiB and end at
+352.89 MiB. The final half-hour ranges from 352.27 to 400.54 MiB. The separate
+five-second process sampler records a higher transient RSS peak of 420.25 MiB
+and private-memory peak of 746.72 MiB. Private memory starts at 626.04 MiB and
+ends at 651.80 MiB; its final-half-hour range is 612.66–746.72 MiB. The median
+five-second CPU interval is 14.35% of one core, with a 29.35% maximum. These are
+playlist-workload samples, not the single-clip benchmark measurements above.
+The bounded-RSS assertion passed; this does not establish zero memory leakage.
+
+The exact release test SHA-256 remains
+`88D0FBB18253C21E4A0D3A68B96A8782C8B0CE271BC7B43A6968B5D301DDB3D8`.
+`two-hour-soak-status.json` contains the final exit/result/provenance and process
+summary; `two-hour-soak-minute-samples.json` and `two-hour-soak.log` retain all
+120 minute records and the completion message. The local original `.run.json`
+captures base revision `1e4cf205...` because the measured fix was uncommitted when
+the run started; the binary and shader hashes identify the exact tested code.
 
 ## Reproduction and evidence
 
 The [committed evidence and reproduction guide](qualification/rtx2060-maxq-20261119/README.md)
 contains portable software-fixture generators, all 20 fixture SHA-256 hashes and
 metadata, all 30 raw performance records, correctness outcomes, baseline/fixed
-failure logs, native adapter probes, event-log coverage and the partial soak
-snapshot. Videos and binaries remain local and are not committed.
+failure logs, native adapter probes, event-log coverage and the completed soak
+result and samples. Videos and binaries remain local and are not committed.
 
 On this PC, start in the repository root with its local x64 MSVC/FFmpeg environment:
 
@@ -278,10 +303,14 @@ The GPU-resident medians compare as follows:
 
 This machine has higher CPU/service cost but higher delivered fresh-frame rate
 in these measurements. Both reports show pacing variability; neither establishes
-uniform 60-fps delivery across every run. The reference report has a completed
-two-hour soak; this report currently has only a passing three-minute test and
-an in-progress two-hour run. Its concurrent 4K stress matrix was not repeated
-here, so no multi-stream 4K throughput qualification is claimed.
+uniform 60-fps delivery across every run. Both two-hour soaks pass, with 479 seeks
+and 59 reloads each. This run delivers 409,886 GPU pictures versus the reference's
+365,631, but substitutes supported SDR HEVC Main10 for unsupported AV1 and uses
+different local fixtures. That count difference is not an isolated GPU-throughput
+comparison. The reference's one-minute RSS range is 347–415 MiB; this run's is
+317–401 MiB, with the finer five-second peak disclosed above. The reference's
+concurrent 4K stress matrix was not repeated here, so no multi-stream 4K throughput
+qualification is claimed.
 
 This qualification exposed an SDR P010 conversion mismatch not reported in the
 reference fixture matrix. The evidence does not establish a hardware-specific

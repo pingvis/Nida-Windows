@@ -1,24 +1,50 @@
 {
-  "status": "in_progress",
-  "not_a_completed_soak_pass": true,
+  "status": "passed",
+  "completed_two_hour_soak": true,
   "run": {
-    "seconds": 7200,
-    "started": "2026-11-19T16:49:14.9086572+02:00",
-    "clips": "target/gpu-qualification-local/fixtures-verified/h264-playlist.mp4;target/gpu-qualification-local/fixtures-verified/hdr10-1080p60.mp4;target/gpu-qualification-local/fixtures-verified/hevc10-1080p60.mp4",
-    "pid": 9932,
     "binary_sha256": "88D0FBB18253C21E4A0D3A68B96A8782C8B0CE271BC7B43A6968B5D301DDB3D8",
+    "finished": "2026-11-19T18:49:16.9059713+02:00",
+    "seconds": 7200,
+    "revision": "1e4cf2055e8881ab3d8e0cd2002bedf984fe3256",
+    "pid": 9932,
+    "started": "2026-11-19T16:49:14.9086572+02:00",
+    "exit": 0,
+    "wall_s": 7201.838586,
     "shader": "embedded",
-    "revision": "1e4cf2055e8881ab3d8e0cd2002bedf984fe3256"
+    "clips": "target/gpu-qualification-local/fixtures-verified/h264-playlist.mp4;target/gpu-qualification-local/fixtures-verified/hdr10-1080p60.mp4;target/gpu-qualification-local/fixtures-verified/hevc10-1080p60.mp4"
   },
-  "latest_completed_minute": {
-    "elapsed_s": 4259.9934515,
-    "frames": 242566,
-    "peak_rss_bytes": 399982592,
-    "reloads": 35,
-    "rss_bytes": 388915200,
-    "seeks": 283
+  "result": {
+    "frames": 409886,
+    "peak_rss_bytes": 419991552,
+    "reloads": 59,
+    "seeks": 479,
+    "shown_items": 3,
+    "wall_s": 7200.0026186
   },
-  "recorded_minutes": 71,
-  "min_rss_bytes_so_far": 332410880,
-  "max_rss_bytes_so_far": 399982592
+  "minute_samples": 120,
+  "rss_bytes_min": 332410880,
+  "rss_bytes_max": 419991552,
+  "rss_bytes_final": 370036736,
+  "final_half_hour_rss_min": 369385472,
+  "final_half_hour_rss_max": 419991552,
+  "process_samples": 1437,
+  "sampled_process_rss_peak_bytes": 440664064,
+  "sampled_process_private_peak_bytes": 782995456,
+  "interval_cpu_core_percent_median": 14.346052821537677,
+  "interval_cpu_core_percent_max": 29.347345409473743,
+  "production_invariants": {
+    "no_fallback": true,
+    "picture_download_bytes": 0,
+    "picture_upload_bytes": 0,
+    "peak_slots_at_most": 3,
+    "no_validation_faults": true,
+    "paused_preload_preserved": true,
+    "progress_watchdog_passed": true,
+    "bounded_rss_assertion_passed": true
+  },
+  "note": "Invariants are asserted by the production playlist harness throughout, not fabricated per-frame telemetry. Bounded RSS is not proof of zero leakage.",
+  "sampled_process_private_initial_bytes": 656449536,
+  "sampled_process_private_final_bytes": 683466752,
+  "final_half_hour_private_min_bytes": 642416640,
+  "final_half_hour_private_max_bytes": 782995456
 }

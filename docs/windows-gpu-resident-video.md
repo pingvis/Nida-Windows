@@ -31,6 +31,12 @@ Premiere export: 365,631 GPU frames, 479 seeks and 59 playlist reloads. See the
 [qualification results](windows-gpu-resident-qualification.md). Keep the feature
 experimental and off by default until wider hardware validation.
 
+An additional [RTX 2060 Max-Q hybrid qualification](windows-gpu-resident-qualification-rtx2060-maxq.md)
+found and fixed an SDR P010 colour-compatibility mismatch, then passed 17 supported
+picture/seek/pool groups, 30 serial release measurements and an uninterrupted
+two-hour playlist soak. That laptop's renderer uses NVIDIA; its integrated AMD
+adapter is not GPU-resident-qualified, and AV1 hardware decoding is unsupported.
+
 ## Ownership and synchronization
 
 Each player has at most three owned plane slots. The decode worker waits on the

@@ -23,12 +23,16 @@ measurements and messages are unchanged. Original logs remain local.
 - `benchmark-summary.json`: five-run medians/ranges, delivery counters, sampled
   RSS, and global NVIDIA telemetry. CPU percentages use one core as 100%.
 - `short-stability.json`: completed 180-second production playlist run.
-- `two-hour-soak-status.json`: **partial snapshot only**, until a completed
-  7,200-second result replaces it. It must not be counted as a two-hour pass.
+- `two-hour-soak-status.json`: completed 7,200-second pass, exact binary/source
+  provenance, exit code, invariants and process-memory/CPU summary.
+- `two-hour-soak-minute-samples.json` and `two-hour-soak.log`: all 120 one-minute
+  records and the final completion message (409,886 pictures, 479 seeks, 59 reloads).
 - `baseline-pictures-hevc10-1080p60.log` and fixed picture logs: reproduction of
   the colour failure and the passing embedded production shader.
 - Native adapter probe sources/logs, a fresh soak GPU-process snapshot, driver
-  event-log snapshot, build/runtime provenance, and settings hash verification.
+  event-log snapshot, build/runtime provenance, and settings hash verification
+  before and after the complete soak. `settings-after-soak.json` confirms that
+  all four recorded settings files retain their original hashes.
 
 The continuous Windows GPU counter collector returned empty per-process sample
 arrays during the timed runs. No per-run decoder LUID or GPU-process-memory
