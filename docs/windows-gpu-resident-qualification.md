@@ -1,0 +1,131 @@
+# Windows GPU-resident playback qualification
+
+Qualification started on 19 November 2026 after the user's render and game had
+stopped. Results apply to this machine; they do not establish AMD, Intel or hybrid
+adapter compatibility. The preference remains experimental and off by default.
+
+## Machine and method
+
+- NVIDIA GeForce RTX 3060 Ti, 8 GiB VRAM; driver 621.24.
+- AMD Ryzen 9 5950X, 32 logical processors.
+- Windows, native DX12 renderer, FFmpeg 9 D3D12VA.
+- Release profile with the repository's existing optimizations; no profile overrides.
+- Hardware tests run serially and explicitly require the expected decode path.
+  A software fallback fails a GPU-resident test.
+- GPU picture readback is confined to correctness tests. Production delivery
+  counters separately assert zero uncompressed picture downloads and uploads.
+
+Local logs, manifests, fixture hashes and binaries live under the ignored
+`target/gpu-qualification/` directory. Reproduction commands are documented in
+[the implementation notes](windows-gpu-resident-video.md).
+
+## Correctness and regressions
+
+Fourteen CPU-only tests pass, including production WGSL validation, slot lifetime
+and allocation failure handling, seek-generation races, colour metadata and HDR
+tone mapping. The ignored CPU 4K timing check is not a correctness test.
+
+The final release binary passed 177 video regression tests and all fifteen
+picture fixture groups. The latter cover five seek positions each, the unchanged
+mean error limit of 0.5 byte per RGBA channel, three-slot backpressure/reuse and
+ping-pong fallback. Coverage includes H.264, HEVC and AV1; NV12 and P010; limited,
+full and untagged range/matrix metadata; BT.601; HDR10 and HLG; 1080p60, 4K30 and
+4K60; a verified 90-degree rotation; and both wide and narrow sample-aspect ratios.
+The software reference is decoded independently, then losslessly repacked to the
+same YUV packing before the existing CPU colour converter runs.
+
+Interlaced material successfully reopens through the established software field
+processing and delivers its first picture. Paused first-picture preservation
+also has a regression test. These checks and the final picture matrix use the
+embedded production shader, with no test shader override.
+
+A three-minute development-build run through the actual playlist, deck, render
+and submission code delivered 9,055 GPU frames, performed 11 seeks and one source
+reload, and showed all three clips. RSS samples were approximately 507–516 MiB.
+There were no validation faults, unexpected fallbacks or production picture
+transfers through RAM. This is preliminary stability evidence, not a performance
+measurement.
+
+## Single-clip performance
+
+The offscreen playback benchmark compares software decode, D3D11VA decode with
+CPU conversion and picture transfers, and D3D12VA GPU-resident playback. Each path
+runs five times for 60 seconds, rotating execution order. The continuous H.264
+fixtures contain 120 seconds, avoiding loop flushes during measurement.
+
+CPU percentages below use one core as 100%, not the whole 32-thread machine.
+Fresh-frame rate counts newly delivered pictures; the renderer continues ticking
+at 60 Hz and reuses its previous picture when none is ready. Tick-service p95
+includes submission and GPU completion in this offscreen harness. It is not a
+whole-app UI latency measurement.
+
+Medians of five 60-second measurements per cell:
+
+| 1080p60 path | CPU, % of one core | Fresh pictures/s | Tick-service p95, ms |
+| --- | ---: | ---: | ---: |
+| Software | 35.21 | 52.27 | 2.648 |
+| Existing hardware + RAM transfer | 50.23 | 48.97 | 2.954 |
+| GPU-resident | 1.95 | 52.45 | 0.781 |
+
+| 4K60 path | CPU, % of one core | Fresh pictures/s | Tick-service p95, ms |
+| --- | ---: | ---: | ---: |
+| Software | 150.78 | 38.57 | 8.275 |
+| Existing hardware + RAM transfer | 107.24 | 27.07 | 8.258 |
+| GPU-resident | 3.15 | 53.33 | 1.601 |
+
+Compared with the existing hardware path, GPU residency reduced median CPU use
+by 96.1% at 1080p60 and 97.1% at 4K60. Median tick-service p95 fell by 73.6% and
+80.6%, respectively. Every GPU-resident run delivered more fresh pictures than
+every existing-hardware run at the same resolution. All required-path assertions
+passed; production frame downloads and uploads remained zero, with at most two
+of the three slots occupied and no pool-backpressure events.
+
+GPU-resident fresh-frame rates ranged from 49.80 to 59.07/s; the existing hardware
+path ranged from 47.73 to 49.75/s at 1080p60. At 4K60 those ranges were 52.72–53.53/s
+and 26.48–27.12/s. Thus CPU savings do not imply perfectly uniform 60-fps delivery.
+Frame pacing remains a separate area for investigation. GPU-resident peak sampled
+RSS was 242 MiB at 1080p60 and 305 MiB at 4K60, compared with 262 and 442 MiB for
+the existing hardware path.
+
+## Concurrent 4K60 clips
+
+These are single 60-second stress measurements, not five-run medians:
+
+| Path | Clips | CPU, % of one core | Fresh pictures/s per clip | Tick-service p95, ms |
+| --- | ---: | ---: | --- | ---: |
+| Software | 2 | 600.89 | 41.29, 41.24 | 25.879 |
+| Existing hardware + RAM transfer | 2 | 213.56 | 23.65, 23.62 | 15.697 |
+| GPU-resident | 2 | 4.24 | 48.00, 51.78 | 2.777 |
+| GPU-resident | 3 | 10.39 | 47.32, 47.82, 51.60 | 3.140 |
+| Existing hardware + RAM transfer | 4 | 406.30 | 7.62, 7.42, 7.47, 7.47 | 14.448 |
+| GPU-resident, repeat 1 | 4 | 6.64 | 8.00, 8.02, 8.05, 8.02 | 2.119 |
+| GPU-resident, repeat 2 | 4 | 5.05 | 7.95, 8.00, 7.97, 7.98 | 2.093 |
+
+Four concurrent 4K60 streams expose a sharp throughput cliff on both hardware
+paths. This workload is **not performance-qualified**. During the three-stream
+GPU run, NVIDIA telemetry reached 100% decoder utilization with about 1.6 GiB
+VRAM in use. This supports decoder/driver contention as an explanation, but does
+not establish its exact cause. Low CPU use does not remove hardware decode limits.
+No GPU-resident stress run fell back, transferred uncompressed pictures through
+RAM or exhausted the three-slot pool.
+
+## Remaining qualification
+
+The two-hour release soak was stopped at the user's request to free the GPU for
+a Premiere export. Its last completed sample was 23 minutes: 69,660 GPU frames,
+91 seeks and 11 source reloads, with no assertion failures. Sampled RSS ranged
+from approximately 345 to 403 MiB and ended at 381 MiB. This interrupted run does
+not satisfy the two-hour qualification requirement; restart it after the export.
+The release app executable also built successfully.
+
+Wider vendor and hybrid-device tests remain necessary
+before removing the Windows beta label or changing the default.
+
+Production-library Clippy passes with warnings denied. Full test-target Clippy
+has unrelated existing lint failures, including assertion-style warnings in the
+audio and other test modules. The all-target check stops on the existing
+`assert_is_empty` lint in `tests/persistence_integration.rs:2287`. The repository-wide
+format check also reports existing formatting differences across unrelated files;
+the new GPU source modules are clean. These were not bulk-rewritten for this
+change. `git diff --check` passes. Saved performance preferences retain their
+pre-qualification hash.

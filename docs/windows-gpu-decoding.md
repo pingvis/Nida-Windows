@@ -1,5 +1,9 @@
 # Windows hardware decoding — local prototype
 
+The GPU-resident file/playlist follow-up is implemented but awaits hardware
+qualification. See [GPU-resident playback](windows-gpu-resident-video.md) for its
+ownership contract, CPU-only checks and explicitly gated GPU qualification.
+
 Windows GPU decoding remains experimental and off by default. The Setup toggle
 opts in without changing macOS automatic hardware selection.
 

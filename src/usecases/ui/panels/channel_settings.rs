@@ -3016,6 +3016,8 @@ mod tests {
             frame_rate: 25.0,
             transport_sync: crate::video::DeckTransportSync::default(),
             hardware_decode: true,
+            gpu_resident: false,
+            delivery: crate::video::delivery::DeliveryDiagnostics::default(),
             auto: crate::engine::value::video::AutoPlayback::default(),
             sound_only: false,
         }

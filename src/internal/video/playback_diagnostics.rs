@@ -11,10 +11,46 @@ struct Audit {
 struct AuditedPlayer {
     player: VideoPlayer,
     require_hardware: bool,
+    require_resident: bool,
     audit: Arc<Audit>,
 }
 
 impl FramePlayer for AuditedPlayer {
+    fn next_decoded_frame(&mut self, pool: &Mutex<Vec<Vec<u8>>>) -> Result<Option<DecodedFrame>> {
+        let result = self.player.next_decoded_frame(pool);
+        let frame = match result {
+            Ok(frame) => frame,
+            Err(error) => {
+                self.audit.failed.store(true, Ordering::Relaxed);
+                return Err(error);
+            }
+        };
+        if frame.is_some() {
+            #[cfg(target_os = "windows")]
+            let resident = matches!(
+                frame.as_ref().map(|f| &f.color_data),
+                Some(DecodedPixels::Gpu(_))
+            );
+            #[cfg(not(target_os = "windows"))]
+            let resident = false;
+            let hardware = self.player.hardware_decode();
+            if hardware != self.require_hardware || resident != self.require_resident {
+                self.audit.failed.store(true, Ordering::Relaxed);
+                anyhow::bail!("benchmark decoder/delivery path changed");
+            }
+            self.audit.produced.fetch_add(1, Ordering::Relaxed);
+            if hardware {
+                self.audit.hardware.fetch_add(1, Ordering::Relaxed);
+            }
+        }
+        Ok(frame)
+    }
+    fn delivery_counters(&self) -> Option<Arc<delivery::DeliveryCounters>> {
+        self.player.delivery_counters()
+    }
+    fn gpu_resident(&self) -> bool {
+        self.player.gpu_resident()
+    }
     fn playback(&mut self) -> &mut PlaybackState {
         &mut self.player.playback
     }
@@ -64,7 +100,8 @@ impl FramePlayer for AuditedPlayer {
 #[ignore = "real-time multi-clip playback and offscreen rendering benchmark"]
 fn realtime_measurement() {
     let path = std::env::var_os("VARDA_VIDEO_BENCH_CLIP").expect("VARDA_VIDEO_BENCH_CLIP");
-    let hardware = std::env::var_os("VARDA_REQUIRE_HW_DECODE").is_some();
+    let resident = std::env::var_os("VARDA_REQUIRE_GPU_RESIDENT").is_some();
+    let hardware = resident || std::env::var_os("VARDA_REQUIRE_HW_DECODE").is_some();
     let count: usize = std::env::var("VARDA_VIDEO_BENCH_CLIPS")
         .unwrap_or_else(|_| "1".into())
         .parse()
@@ -86,6 +123,14 @@ fn realtime_measurement() {
     let mut rate = 0.0;
     for _ in 0..count {
         let mut player = VideoPlayer::open(&path, hardware).unwrap();
+        if resident {
+            #[cfg(target_os = "windows")]
+            player
+                .try_enable_gpu(&gpu)
+                .expect("GPU-resident playback required");
+            #[cfg(not(target_os = "windows"))]
+            panic!("GPU-resident benchmark currently requires Windows");
+        }
         player.set_playing(false);
         player.seek_and_reset(0.0).unwrap();
         player.next_frame().unwrap().expect("initial decoded frame");
@@ -107,6 +152,7 @@ fn realtime_measurement() {
             AuditedPlayer {
                 player,
                 require_hardware: hardware,
+                require_resident: resident,
                 audit: Arc::clone(&audit),
             },
             "video-benchmark",
@@ -121,7 +167,9 @@ fn realtime_measurement() {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::RENDER_ATTACHMENT,
             view_formats: &[],
         });
         groups.push(pipeline.create_bind_group(
@@ -173,6 +221,9 @@ fn realtime_measurement() {
     let started = Instant::now();
     while started.elapsed().as_secs_f64() < seconds {
         let tick = Instant::now();
+        let mut encoder = gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         for (index, handle) in handles.iter().enumerate() {
             if let Some(frame) = handle.take_frame() {
                 assert_eq!(
@@ -180,28 +231,31 @@ fn realtime_measurement() {
                     hardware,
                     "mid-playback fallback"
                 );
-                gpu.queue.write_texture(
-                    wgpu::TexelCopyTextureInfo {
-                        texture: &textures[index],
-                        mip_level: 0,
-                        origin: wgpu::Origin3d::ZERO,
-                        aspect: wgpu::TextureAspect::All,
-                    },
-                    &frame.color_data,
-                    wgpu::TexelCopyBufferLayout {
-                        offset: 0,
-                        bytes_per_row: Some(extent.width * 4),
-                        rows_per_image: Some(extent.height),
-                    },
-                    extent,
-                );
+                match frame.color_data {
+                    #[cfg(target_os = "windows")]
+                    DecodedPixels::Gpu(native) => native.encode(&mut encoder, &textures[index]),
+                    DecodedPixels::Cpu(ref pixels) => {
+                        gpu.queue.write_texture(
+                            wgpu::TexelCopyTextureInfo {
+                                texture: &textures[index],
+                                mip_level: 0,
+                                origin: wgpu::Origin3d::ZERO,
+                                aspect: wgpu::TextureAspect::All,
+                            },
+                            pixels,
+                            wgpu::TexelCopyBufferLayout {
+                                offset: 0,
+                                bytes_per_row: Some(extent.width * 4),
+                                rows_per_image: Some(extent.height),
+                            },
+                            extent,
+                        );
+                        handle.recycle(frame);
+                    }
+                }
                 delivered[index] += 1;
-                handle.recycle(frame);
             }
         }
-        let mut encoder = gpu
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("concurrent playback blits"),
@@ -223,7 +277,7 @@ fn realtime_measurement() {
                 pipeline.render(&mut pass, group);
             }
         }
-        gpu.queue.submit([encoder.finish()]);
+        gpu.submit([encoder.finish()]);
         gpu.device
             .poll(wgpu::PollType::wait_indefinitely())
             .unwrap();
@@ -253,6 +307,18 @@ fn realtime_measurement() {
         .iter()
         .map(|audit| audit.hardware.load(Ordering::Relaxed))
         .collect();
+    let delivery: Vec<_> = handles
+        .iter()
+        .map(|h| h.playback_snapshot().delivery)
+        .collect();
+    if resident {
+        for counters in &delivery {
+            assert!(counters.gpu_frames > 0, "GPU-resident frames required");
+            assert_eq!(counters.downloaded_bytes, 0, "unexpected frame download");
+            assert_eq!(counters.uploaded_bytes, 0, "unexpected frame upload");
+            assert!(counters.peak_slots <= 3);
+        }
+    }
     drop(handles);
     assert!(
         audits
@@ -273,6 +339,7 @@ fn realtime_measurement() {
         "VIDEO_PLAYBACK {}",
         serde_json::json!({
             "clip": path.to_string_lossy(), "hardware_required": hardware, "clips": count,
+            "gpu_resident_required": resident, "delivery_per_clip": delivery,
             "renderer_adapter": format!("{:?}", gpu.adapter.get_info()),
             "wall_s": elapsed, "source_fps": rate, "render_ticks": ticks,
             "delivered_per_clip": delivered, "empty_output_ticks_per_clip": missing,

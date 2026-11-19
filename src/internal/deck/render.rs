@@ -182,12 +182,18 @@ impl Deck {
                 ref texture,
                 ref mut staging,
                 ..
-            } if staging.ready() => {
-                if let Some(frame) = handle.take_frame() {
+            } => {
+                if let Some(frame) = handle.take_ready_frame(staging.ready()) {
                     let width = handle.width;
                     let height = handle.height;
-                    staging.upload(&frame.color_data, texture, width, height, encoder);
-                    handle.recycle(frame);
+                    match frame.color_data {
+                        #[cfg(target_os = "windows")]
+                        crate::video::DecodedPixels::Gpu(gpu) => gpu.encode(encoder, texture),
+                        crate::video::DecodedPixels::Cpu(ref bytes) => {
+                            staging.upload(bytes, texture, width, height, encoder);
+                            handle.recycle(frame);
+                        }
+                    }
                     self.frames_uploaded += 1;
                 }
             }
@@ -207,7 +213,13 @@ impl Deck {
                     // Whole 4×4 blocks, as the texture was made.
                     let width = handle.width.div_ceil(4) * 4;
                     let height = handle.height.div_ceil(4) * 4;
-                    staging.upload(&frame.color_data, texture, width, height, encoder);
+                    staging.upload(
+                        frame.color_data.cpu_bytes(),
+                        texture,
+                        width,
+                        height,
+                        encoder,
+                    );
 
                     if let (Some(alpha_data), Some(_alpha_fmt), Some(alpha_tex)) = (
                         frame.alpha_data.as_ref(),
@@ -1250,7 +1262,9 @@ impl Deck {
             ..
         } = &self.source
         else {
-            return Err("not a live input — a picture, clip or generator moves only when drawn alike in both");
+            return Err(
+                "not a live input — a picture, clip or generator moves only when drawn alike in both",
+            );
         };
         if self.analyzers.has_active_instances() {
             return Err("analysed for modulation");
@@ -1341,7 +1355,8 @@ impl Deck {
             return Err("not a live input");
         };
         let drawn = self.drawn_effects(modulation);
-        let others = "effects other than its crop and Transform, or a crop or Transform modulated, \
+        let others =
+            "effects other than its crop and Transform, or a crop or Transform modulated, \
                       masked, inverted, turned or wrapped";
         let (crop, pos, scale, flip) = if drawn.is_empty() {
             (None, [0.0; 2], [1.0; 2], [false; 2])

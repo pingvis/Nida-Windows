@@ -1071,7 +1071,11 @@ pub struct ParamSnapshot {
 }
 
 #[derive(Clone, Serialize)]
+// Independent playback, decode, residency and source flags mirrored from the player.
+#[allow(clippy::struct_excessive_bools)]
 pub struct VideoPlaybackSnapshot {
+    pub gpu_resident: bool,
+    pub delivery: crate::video::delivery::DeliveryDiagnostics,
     pub playing: bool,
     pub position: f64,
     pub duration: f64,

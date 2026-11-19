@@ -135,6 +135,8 @@ fn snapshot_full_ui_broadcast_layout() {
         frame_rate: 25.0,
         transport_sync: varda::video::DeckTransportSync::default(),
         hardware_decode: true,
+        gpu_resident: false,
+        delivery: varda::video::delivery::DeliveryDiagnostics::default(),
         auto: varda::engine::value::video::AutoPlayback::default(),
         sound_only: false,
     });
@@ -263,6 +265,8 @@ fn playlist_window_snapshot(video: bool) {
             frame_rate: 25.0,
             transport_sync: varda::video::DeckTransportSync::default(),
             hardware_decode: true,
+            gpu_resident: false,
+            delivery: varda::video::delivery::DeliveryDiagnostics::default(),
             auto: varda::engine::value::video::AutoPlayback::default(),
             sound_only: false,
         });
@@ -743,6 +747,8 @@ fn snapshot_bottom_bar_video_playback() {
         frame_rate: 30.0,
         transport_sync: varda::video::DeckTransportSync::default(),
         hardware_decode: true,
+        gpu_resident: false,
+        delivery: varda::video::delivery::DeliveryDiagnostics::default(),
         auto: varda::engine::value::video::AutoPlayback::default(),
         sound_only: false,
     });

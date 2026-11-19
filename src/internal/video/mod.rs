@@ -6,6 +6,14 @@
 //! - **ffmpeg path**: hardware decoding where supported, with CPU fallback for other codecs.
 
 pub mod chase;
+pub mod delivery;
+mod frame_mailbox;
+#[cfg(any(target_os = "windows", test))]
+mod gpu_colour;
+#[cfg(any(target_os = "windows", test))]
+mod gpu_pool;
+#[cfg(target_os = "windows")]
+pub(crate) mod gpu_windows;
 pub mod hap;
 pub mod hdr;
 pub(crate) mod hwdecode;
@@ -342,7 +350,14 @@ impl PlaybackState {
                     0.0
                 };
                 let out = self.effective_out();
-                (floor, if out.is_finite() { out.max(floor) } else { floor })
+                (
+                    floor,
+                    if out.is_finite() {
+                        out.max(floor)
+                    } else {
+                        floor
+                    },
+                )
             };
         self.position = (self.position + step.delta).clamp(floor, ceiling);
 
@@ -566,12 +581,58 @@ pub enum VideoCommand {
     Stop,
 }
 
-/// A decoded frame ready for GPU upload — owned data copied from the player.
+/// A CPU upload or a GPU-resident picture, never both.
+pub enum DecodedPixels {
+    Cpu(Vec<u8>),
+    #[cfg(target_os = "windows")]
+    Gpu(gpu_windows::GpuFrame),
+}
+
+impl DecodedPixels {
+    pub fn cpu_bytes(&self) -> &[u8] {
+        match self {
+            Self::Cpu(bytes) => bytes,
+            #[cfg(target_os = "windows")]
+            Self::Gpu(_) => &[],
+        }
+    }
+    fn recycle(self, pool: &Mutex<Vec<Vec<u8>>>) {
+        match self {
+            Self::Cpu(bytes) => pool_return(pool, bytes),
+            #[cfg(target_os = "windows")]
+            Self::Gpu(_) => {}
+        }
+    }
+}
+
+/// An owned decoded picture ready for composition.
 pub struct DecodedFrame {
-    pub color_data: Vec<u8>,
+    pub color_data: DecodedPixels,
     pub alpha_data: Option<Vec<u8>>,
     pub color_format: Option<HapTextureFormat>,
     pub alpha_format: Option<HapTextureFormat>,
+}
+
+type FrameMailbox = frame_mailbox::Mailbox<DecodedFrame>;
+
+fn publish_decoded(
+    mailbox: &FrameMailbox,
+    frame: DecodedFrame,
+    generation: u64,
+    pool: &Mutex<Vec<Vec<u8>>>,
+) -> bool {
+    match mailbox.publish(frame, generation) {
+        Ok(old) => {
+            if let Some(old) = old {
+                old.color_data.recycle(pool);
+                if let Some(alpha) = old.alpha_data {
+                    pool_return(pool, alpha);
+                }
+            }
+            true
+        }
+        Err(_) => false,
+    }
 }
 
 /// Read-only snapshot of playback state for the main thread.
@@ -580,6 +641,8 @@ pub struct DecodedFrame {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone)]
 pub struct PlaybackSnapshot {
+    pub delivery: delivery::DeliveryDiagnostics,
+    pub gpu_resident: bool,
     pub playing: bool,
     pub position: f64,
     pub duration: f64,
@@ -621,6 +684,8 @@ impl PlaybackSnapshot {
     /// A clip not playing, at its start, of no length yet.
     pub fn stopped() -> Self {
         Self {
+            delivery: crate::video::delivery::DeliveryDiagnostics::default(),
+            gpu_resident: false,
             playing: false,
             position: 0.0,
             duration: 0.0,
@@ -655,6 +720,8 @@ impl PlaybackSnapshot {
     /// flag defaults to false here and is set by the ffmpeg decode thread.
     pub fn from_state(ps: &PlaybackState) -> Self {
         Self {
+            delivery: crate::video::delivery::DeliveryDiagnostics::default(),
+            gpu_resident: false,
             playing: ps.playing,
             position: ps.position,
             duration: ps.duration,
@@ -703,6 +770,34 @@ pub struct DecodeInboxes {
 /// What a decode thread drives: a playhead that hands out RGBA frames — a
 /// video file, or a sound file's stand-in picture.
 pub trait FramePlayer: Send {
+    fn retry_picture(&mut self) {
+        self.playback().show_frame = true;
+    }
+    fn delivery_counters(&self) -> Option<Arc<delivery::DeliveryCounters>> {
+        None
+    }
+    fn gpu_resident(&self) -> bool {
+        false
+    }
+    /// Default CPU transport; native players can supply an owned GPU payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if decoding or native frame preparation fails.
+    fn next_decoded_frame(&mut self, pool: &Mutex<Vec<Vec<u8>>>) -> Result<Option<DecodedFrame>> {
+        let Some(data) = self.next_frame()? else {
+            return Ok(None);
+        };
+        let mut bytes = pool_take(pool);
+        bytes.clear();
+        bytes.extend_from_slice(data);
+        Ok(Some(DecodedFrame {
+            color_data: DecodedPixels::Cpu(bytes),
+            alpha_data: None,
+            color_format: None,
+            alpha_format: None,
+        }))
+    }
     fn playback(&mut self) -> &mut PlaybackState;
     fn playback_state(&self) -> &PlaybackState;
     /// The next frame due, if one is.
@@ -731,6 +826,51 @@ pub trait FramePlayer: Send {
 }
 
 impl FramePlayer for VideoPlayer {
+    fn retry_picture(&mut self) {
+        self.playback.show_frame = true;
+        self.retained_seek_frame = true;
+        #[cfg(target_os = "windows")]
+        {
+            self.gpu_retry = self.gpu.is_some();
+        }
+    }
+    fn delivery_counters(&self) -> Option<Arc<delivery::DeliveryCounters>> {
+        Some(self.delivery.clone())
+    }
+    fn gpu_resident(&self) -> bool {
+        #[cfg(target_os = "windows")]
+        {
+            self.gpu.is_some() && self.delivery.gpu_frames.load(Ordering::Relaxed) > 0
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            false
+        }
+    }
+    #[cfg(target_os = "windows")]
+    fn next_decoded_frame(&mut self, pool: &Mutex<Vec<Vec<u8>>>) -> Result<Option<DecodedFrame>> {
+        let Some(data) = VideoPlayer::next_frame(self)? else {
+            return Ok(None);
+        };
+        let mut bytes = pool_take(pool);
+        bytes.clear();
+        bytes.extend_from_slice(data);
+        let pixels = if let Some(frame) = self.gpu_pending.take() {
+            pool_return(pool, bytes);
+            DecodedPixels::Gpu(frame)
+        } else if self.gpu.is_some() {
+            pool_return(pool, bytes);
+            return Ok(None); // all three GPU slots are in flight
+        } else {
+            DecodedPixels::Cpu(bytes)
+        };
+        Ok(Some(DecodedFrame {
+            color_data: pixels,
+            alpha_data: None,
+            color_format: None,
+            alpha_format: None,
+        }))
+    }
     fn playback(&mut self) -> &mut PlaybackState {
         &mut self.playback
     }
@@ -759,8 +899,9 @@ impl FramePlayer for VideoPlayer {
 
 /// Main-thread handle to a background video decode thread.
 pub struct VideoDecodeHandle {
+    delivery: Option<Arc<delivery::DeliveryCounters>>,
     cmd_tx: mpsc::Sender<VideoCommand>,
-    frame_data: Arc<Mutex<Option<DecodedFrame>>>,
+    frame_data: Arc<FrameMailbox>,
     snapshot: Arc<Mutex<PlaybackSnapshot>>,
     stop_flag: Arc<AtomicBool>,
     /// Bounded pool of reusable frame buffers returned by the renderer via
@@ -808,13 +949,14 @@ impl VideoDecodeHandle {
     }
 
     fn spawn_player<P: FramePlayer + 'static>(player: P, name: &str) -> Self {
+        let delivery = player.delivery_counters();
         let width = player.width();
         let height = player.height();
         let fps = player.frame_rate();
         let initial_snapshot = PlaybackSnapshot::from_state(player.playback_state());
 
         let (cmd_tx, cmd_rx) = mpsc::channel();
-        let frame_data: Arc<Mutex<Option<DecodedFrame>>> = Arc::new(Mutex::new(None));
+        let frame_data = Arc::new(FrameMailbox::default());
         let snapshot: Arc<Mutex<PlaybackSnapshot>> = Arc::new(Mutex::new(initial_snapshot));
         let stop_flag = Arc::new(AtomicBool::new(false));
 
@@ -837,6 +979,7 @@ impl VideoDecodeHandle {
             .expect("failed to spawn video decode thread");
 
         Self {
+            delivery,
             cmd_tx,
             frame_data,
             snapshot,
@@ -866,7 +1009,7 @@ impl VideoDecodeHandle {
         let initial_snapshot = PlaybackSnapshot::from_state(&player.playback);
 
         let (cmd_tx, cmd_rx) = mpsc::channel();
-        let frame_data: Arc<Mutex<Option<DecodedFrame>>> = Arc::new(Mutex::new(None));
+        let frame_data = Arc::new(FrameMailbox::default());
         let snapshot: Arc<Mutex<PlaybackSnapshot>> = Arc::new(Mutex::new(initial_snapshot));
         let stop_flag = Arc::new(AtomicBool::new(false));
 
@@ -889,6 +1032,7 @@ impl VideoDecodeHandle {
             .expect("failed to spawn hap decode thread");
 
         Self {
+            delivery: None,
             cmd_tx,
             frame_data,
             snapshot,
@@ -964,10 +1108,34 @@ impl VideoDecodeHandle {
         self.frame_data.lock().ok()?.take()
     }
 
+    /// Native frames do not use upload staging. Keep a paused CPU picture in
+    /// the mailbox until its upload buffer is ready, while allowing GPU frames
+    /// to reach the compositor without mapping any CPU upload buffer first.
+    pub fn take_ready_frame(&self, cpu_upload_ready: bool) -> Option<DecodedFrame> {
+        let mut slot = self.frame_data.lock().ok()?;
+        let ready = slot.as_ref().is_some_and(|frame| match &frame.color_data {
+            DecodedPixels::Cpu(_) => cpu_upload_ready,
+            #[cfg(target_os = "windows")]
+            DecodedPixels::Gpu(_) => true,
+        });
+        if ready {
+            slot.take()
+        } else {
+            None
+        }
+    }
+
     /// Return a consumed frame's buffers to the pool for reuse by the decode
     /// thread. Call after the frame's data has been uploaded to the GPU.
     pub fn recycle(&self, frame: DecodedFrame) {
-        pool_return(&self.frame_pool, frame.color_data);
+        if frame.color_format.is_none() {
+            if let Some(counters) = &self.delivery {
+                counters
+                    .uploaded_bytes
+                    .fetch_add(frame.color_data.cpu_bytes().len() as u64, Ordering::Relaxed);
+            }
+        }
+        frame.color_data.recycle(&self.frame_pool);
         if let Some(alpha) = frame.alpha_data {
             pool_return(&self.frame_pool, alpha);
         }
@@ -975,6 +1143,9 @@ impl VideoDecodeHandle {
 
     /// Send a command to the decode thread.
     pub fn send(&self, cmd: VideoCommand) {
+        if matches!(cmd, VideoCommand::Seek(_)) {
+            self.frame_data.invalidate();
+        }
         let _ = self.cmd_tx.send(cmd);
     }
 
@@ -1192,7 +1363,7 @@ fn wait_for_next_frame(
 fn video_decode_thread<P: FramePlayer>(
     mut player: P,
     cmd_rx: &mpsc::Receiver<VideoCommand>,
-    frame_data: &Mutex<Option<DecodedFrame>>,
+    frame_data: &FrameMailbox,
     snapshot: &Mutex<PlaybackSnapshot>,
     stop_flag: &AtomicBool,
     frame_pool: &Mutex<Vec<Vec<u8>>>,
@@ -1205,6 +1376,7 @@ fn video_decode_thread<P: FramePlayer>(
     let mut was_suspended = false;
 
     while !stop_flag.load(Ordering::Acquire) {
+        let generation = frame_data.generation.load(Ordering::Acquire);
         // Drain all pending commands
         let mut had_seek = None;
         while let Ok(cmd) = cmd_rx.try_recv() {
@@ -1238,28 +1410,11 @@ fn video_decode_thread<P: FramePlayer>(
         player.playback().set_modulation(inboxes.modulation.take());
 
         // Decode next frame
-        match player.next_frame() {
-            Ok(Some(data)) => {
-                let mut buf = pool_take(frame_pool);
-                buf.clear();
-                buf.extend_from_slice(data);
-                let frame = DecodedFrame {
-                    color_data: buf,
-                    alpha_data: None,
-                    color_format: None,
-                    alpha_format: None,
-                };
-                if let Ok(mut slot) = frame_data.lock() {
-                    // Recycle a frame the renderer never consumed (happens when
-                    // it falls behind — exactly the #42 scenario) instead of
-                    // dropping its buffer.
-                    if let Some(old) = slot.take() {
-                        pool_return(frame_pool, old.color_data);
-                        if let Some(alpha) = old.alpha_data {
-                            pool_return(frame_pool, alpha);
-                        }
-                    }
-                    *slot = Some(frame);
+        match player.next_decoded_frame(frame_pool) {
+            Ok(Some(frame)) => {
+                if !publish_decoded(frame_data, frame, generation, frame_pool) {
+                    // A paused decoder must retry its sole picture too.
+                    player.retry_picture();
                 }
             }
             Ok(None) => {}
@@ -1273,6 +1428,10 @@ fn video_decode_thread<P: FramePlayer>(
             let mut snap = PlaybackSnapshot::from_state(player.playback());
             snap.pingpong_cache_truncated = player.pingpong_cache_truncated();
             snap.hardware_decode = player.hardware_decode();
+            snap.gpu_resident = player.gpu_resident();
+            if let Some(counters) = player.delivery_counters() {
+                snap.delivery = counters.snapshot();
+            }
             *ss = snap;
         }
 
@@ -1304,7 +1463,7 @@ fn video_decode_thread<P: FramePlayer>(
 fn hap_decode_thread(
     mut player: hap::HapPlayer,
     cmd_rx: &mpsc::Receiver<VideoCommand>,
-    frame_data: &Mutex<Option<DecodedFrame>>,
+    frame_data: &FrameMailbox,
     snapshot: &Mutex<PlaybackSnapshot>,
     stop_flag: &AtomicBool,
     frame_pool: &Mutex<Vec<Vec<u8>>>,
@@ -1317,6 +1476,7 @@ fn hap_decode_thread(
     let mut was_suspended = false;
 
     while !stop_flag.load(Ordering::Acquire) {
+        let generation = frame_data.generation.load(Ordering::Acquire);
         // Drain all pending commands
         let mut had_seek = None;
         while let Ok(cmd) = cmd_rx.try_recv() {
@@ -1363,19 +1523,13 @@ fn hap_decode_thread(
                     a
                 });
                 let frame = DecodedFrame {
-                    color_data: color,
+                    color_data: DecodedPixels::Cpu(color),
                     alpha_data: alpha,
                     color_format: Some(result.color_format),
                     alpha_format: result.alpha_format,
                 };
-                if let Ok(mut slot) = frame_data.lock() {
-                    if let Some(old) = slot.take() {
-                        pool_return(frame_pool, old.color_data);
-                        if let Some(alpha) = old.alpha_data {
-                            pool_return(frame_pool, alpha);
-                        }
-                    }
-                    *slot = Some(frame);
+                if !publish_decoded(frame_data, frame, generation, frame_pool) {
+                    player.playback.show_frame = true;
                 }
             }
             Ok(None) => {}
@@ -1615,6 +1769,13 @@ pub(crate) fn clip_start(ictx: &ffmpeg::format::context::Input) -> f64 {
 // Independent flags (cache state, decode path), not one state machine.
 #[allow(clippy::struct_excessive_bools)]
 pub struct VideoPlayer {
+    delivery: Arc<delivery::DeliveryCounters>,
+    #[cfg(target_os = "windows")]
+    gpu: Option<gpu_windows::GpuDecoder>,
+    #[cfg(target_os = "windows")]
+    gpu_pending: Option<gpu_windows::GpuFrame>,
+    #[cfg(target_os = "windows")]
+    gpu_retry: bool,
     ictx: ffmpeg::format::context::Input,
     decoder: ffmpeg::decoder::Video,
     /// YUV → RGBA, made for the format decoded frames arrive in (the
@@ -1701,6 +1862,41 @@ pub struct VideoPlayer {
 unsafe impl Send for VideoPlayer {}
 
 impl VideoPlayer {
+    /// Upgrade file playback to the renderer's D3D12 device. Other consumers
+    /// (streams, diagnostics and CPU benchmarks) keep their existing path.
+    #[cfg(target_os = "windows")]
+    pub(crate) fn enable_gpu(&mut self, context: &crate::renderer::GpuContext) {
+        if !hwdecode::wanted() {
+            return;
+        }
+        match self.try_enable_gpu(context) {
+            Ok(()) => {
+                log::info!("Video: trying GPU-resident D3D12VA playback");
+            }
+            Err(e) => {
+                self.delivery.fallback(e.to_string());
+                log::info!("GPU-resident video unavailable ({e}); retaining existing decode path");
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    fn try_enable_gpu(&mut self, context: &crate::renderer::GpuContext) -> Result<()> {
+        let gpu = gpu_windows::GpuDecoder::new(context, self.delivery.clone())?;
+        let parameters = self
+            .ictx
+            .stream(self.video_stream_index)
+            .context("Missing video stream")?
+            .parameters();
+        self.decoder = gpu.open(parameters)?;
+        self.hardware = true;
+        self.gpu = Some(gpu);
+        // Native playback never needs the eagerly allocated CPU RGBA picture.
+        // The existing converter grows it again if this clip falls back.
+        self.frame_data = Vec::new();
+        Ok(())
+    }
+
     /// Create a new video player from a file path.
     ///
     /// # Errors
@@ -1757,6 +1953,13 @@ impl VideoPlayer {
             "Loaded video: {width}x{height} @ {fps:.2} fps, duration: {duration:.2}s (ping-pong cache: {max_cached_frames} frames)"
         );
         Ok(Self {
+            delivery: Arc::new(delivery::DeliveryCounters::default()),
+            #[cfg(target_os = "windows")]
+            gpu: None,
+            #[cfg(target_os = "windows")]
+            gpu_pending: None,
+            #[cfg(target_os = "windows")]
+            gpu_retry: false,
             ictx,
             decoder,
             scaler: None,
@@ -1805,6 +2008,19 @@ impl VideoPlayer {
     /// Returns an error if seeking, packet demuxing, decoding, or colour-space
     /// conversion fails.
     pub fn next_frame(&mut self) -> Result<Option<&[u8]>> {
+        #[cfg(target_os = "windows")]
+        if self.gpu.is_some() && self.playback.loop_mode == LoopMode::PingPong {
+            self.fall_back_to_software("Ping-pong uses the RAM frame cache")?;
+            self.playback.show_frame = true;
+        }
+        #[cfg(target_os = "windows")]
+        if self.gpu.is_some() && self.gpu_retry && !self.playback.suspended {
+            self.gpu_retry = false;
+            if !self.convert_current()? {
+                return self.next_frame();
+            }
+            return Ok(Some(&[]));
+        }
         // Suspension freezes position as well as decode: a clip nobody can see
         // must not drift on wall-clock time, or the same show position shows a
         // different frame depending on when the app was launched. Pause is not a
@@ -1939,9 +2155,11 @@ impl VideoPlayer {
                     self.cache_overflowed = true;
                     if !self.cache_overflow_warned {
                         self.cache_overflow_warned = true;
-                        log::warn!("Ping-pong frame cache full ({} frames, {} MB) — reverse will cover partial clip",
+                        log::warn!(
+                            "Ping-pong frame cache full ({} frames, {} MB) — reverse will cover partial clip",
                             self.frame_cache.len(),
-                            self.frame_cache.len() * self.frame_byte_size / (1024 * 1024));
+                            self.frame_cache.len() * self.frame_byte_size / (1024 * 1024)
+                        );
                     }
                 }
             }
@@ -1951,11 +2169,22 @@ impl VideoPlayer {
             if !converted && !self.convert_current()? {
                 return self.next_frame();
             }
+            #[cfg(target_os = "windows")]
+            if self.gpu.is_some() {
+                return Ok(Some(&[]));
+            }
             return Ok(Some(&self.frame_data));
         }
         if self.lookahead_at.is_some() {
             // The next frame is not due yet.
             if std::mem::take(&mut self.retained_seek_frame) {
+                #[cfg(target_os = "windows")]
+                if self.gpu.is_some() {
+                    if !self.convert_current()? {
+                        return self.next_frame();
+                    }
+                    return Ok(Some(&[]));
+                }
                 return Ok(Some(&self.frame_data));
             }
             return Ok(None);
@@ -2045,6 +2274,33 @@ impl VideoPlayer {
 
     /// Convert the frame being shown to RGBA in `frame_data`.
     fn convert_current(&mut self) -> Result<bool> {
+        #[cfg(target_os = "windows")]
+        if let Some(gpu) = self.gpu.as_mut() {
+            let timestamp = self
+                .decoded
+                .timestamp()
+                .map_or(self.playback.position, |pts| {
+                    pts as f64 * self.time_base - self.start
+                });
+            match gpu.copy(
+                &self.decoded,
+                (self.width, self.height),
+                self.quarter_turns,
+                timestamp,
+            ) {
+                Ok(frame) => {
+                    self.on_engine = true;
+                    self.gpu_retry = frame.is_none();
+                    self.gpu_pending = frame;
+                    return Ok(true);
+                }
+                Err(e) => {
+                    self.fall_back_to_software(&e.to_string())?;
+                    self.playback.show_frame = true;
+                    return Ok(false);
+                }
+            }
+        }
         if let Err(e) = self.convert_decoded() {
             if !self.hardware {
                 return Err(e);
@@ -2093,6 +2349,16 @@ impl VideoPlayer {
         self.on_engine = hwdecode::on_engine(&self.decoded);
         if self.on_engine {
             hwdecode::to_memory(&self.decoded, &mut self.engine_frame)?;
+            let downloaded = &self.engine_frame.frame;
+            let pixels = u64::from(downloaded.width()) * u64::from(downloaded.height());
+            let bytes = if downloaded.format() == Pixel::P010LE {
+                pixels * 3
+            } else {
+                pixels * 3 / 2
+            };
+            self.delivery
+                .downloaded_bytes
+                .fetch_add(bytes, Ordering::Relaxed);
         }
         let source = if self.on_engine {
             &self.engine_frame.frame
@@ -2142,6 +2408,16 @@ impl VideoPlayer {
     /// The media engine failed on this clip: reopen it in software where the
     /// playhead is, and stay there.
     fn fall_back_to_software(&mut self, why: &str) -> Result<()> {
+        // GPU-resident playback releases its unused CPU picture. Restore the
+        // destination before the CPU converter or reverse cache writes to it.
+        self.frame_data.resize(self.frame_byte_size, 0);
+        self.delivery.fallback(why);
+        #[cfg(target_os = "windows")]
+        {
+            self.gpu = None;
+            self.gpu_pending = None;
+            self.gpu_retry = false;
+        }
         log::warn!("Hardware decoding failed ({why}); decoding this clip in software");
         self.hardware = false;
         self.on_engine = false;
@@ -2167,6 +2443,11 @@ impl VideoPlayer {
     /// The file seeks to the keyframe at or before it; the frames from there
     /// to it are decoded, not shown (see `next_frame`).
     fn seek(&mut self, time_secs: f64) -> Result<()> {
+        #[cfg(target_os = "windows")]
+        {
+            self.gpu_pending = None;
+            self.gpu_retry = false;
+        }
         // Counted when asked for, done or not: one that fails leaves the
         // clip playing on from where it was.
         self.playback.seeks = self.playback.seeks.wrapping_add(1);
@@ -2305,6 +2586,60 @@ impl VideoPlayer {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_paused_first_picture_survives_loop_setup_and_waits_for_cpu_upload_readiness() {
+        struct ParkedPicture {
+            state: PlaybackState,
+            ready: bool,
+            rgba: [u8; 4],
+        }
+        impl FramePlayer for ParkedPicture {
+            fn playback(&mut self) -> &mut PlaybackState {
+                &mut self.state
+            }
+            fn playback_state(&self) -> &PlaybackState {
+                &self.state
+            }
+            fn next_frame(&mut self) -> Result<Option<&[u8]>> {
+                Ok(std::mem::take(&mut self.ready).then_some(self.rgba.as_slice()))
+            }
+            fn seek_and_reset(&mut self, _: f64) -> Result<()> {
+                self.ready = true;
+                Ok(())
+            }
+            fn width(&self) -> u32 {
+                1
+            }
+            fn height(&self) -> u32 {
+                1
+            }
+        }
+        let mut state = PlaybackState::new(10.0, 30.0);
+        state.playing = false;
+        let handle = VideoDecodeHandle::spawn_player(
+            ParkedPicture {
+                state,
+                ready: true,
+                rgba: [42, 63, 84, 255],
+            },
+            "paused-picture-test",
+        );
+        let until = std::time::Instant::now() + std::time::Duration::from_secs(1);
+        while handle.frame_data.lock().unwrap().is_none() {
+            assert!(
+                std::time::Instant::now() < until,
+                "first picture not produced"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        handle.send(VideoCommand::SetLoopMode(LoopMode::HoldLast));
+        assert!(handle.take_ready_frame(false).is_none());
+        let frame = handle
+            .take_ready_frame(true)
+            .expect("paused picture was lost");
+        assert_eq!(frame.color_data.cpu_bytes(), &[42, 63, 84, 255]);
+    }
+
     /// A player whose every frame takes a second: a decoder stuck reading
     /// its file.
     struct SlowPlayer {
@@ -2576,7 +2911,7 @@ mod tests {
             .collect()
     }
 
-    fn repack_reference(source: &Video, packing: Pixel) -> Video {
+    pub(super) fn repack_reference(source: &Video, packing: Pixel) -> Video {
         let bytes = match (source.format(), packing) {
             (Pixel::YUV420P | Pixel::YUVJ420P, Pixel::NV12) => 1,
             (Pixel::YUV420P10LE, Pixel::P010LE) => 2,
@@ -3598,15 +3933,25 @@ mod tests {
         let (duration, rate) = (60.0, 25.0);
         let frame = 1.0 / rate;
         let at_end = put_in((0.0, 20.0), 60.0, duration, rate);
-        assert!((at_end.0 - (60.0 - frame)).abs() < 1e-9 && at_end.1 == 0.0, "{at_end:?}");
+        assert!(
+            (at_end.0 - (60.0 - frame)).abs() < 1e-9 && at_end.1 == 0.0,
+            "{at_end:?}"
+        );
         assert_eq!(put_out((10.0, 0.0), 10.01, duration, rate), (0.0, 10.01));
         assert_eq!(put_out((10.0, 0.0), 10.03, duration, rate), (10.0, 10.03));
         assert_eq!(put_in((0.0, 10.03), 10.02, duration, rate), (10.02, 0.0));
         assert_eq!(put_out((0.0, 0.0), 100.0, duration, rate), (0.0, 60.0));
         assert_eq!(put_out((0.0, 0.0), 0.001, duration, rate), (0.0, frame));
-        assert_eq!(put_out((5.0, 20.0), 0.0, duration, rate), (5.0, 0.0), "none");
+        assert_eq!(
+            put_out((5.0, 20.0), 0.0, duration, rate),
+            (5.0, 0.0),
+            "none"
+        );
         assert_eq!(put_in((5.0, 20.0), f64::NAN, duration, rate), (5.0, 20.0));
-        assert_eq!(put_out((5.0, 20.0), f64::INFINITY, duration, rate), (5.0, 20.0));
+        assert_eq!(
+            put_out((5.0, 20.0), f64::INFINITY, duration, rate),
+            (5.0, 20.0)
+        );
         assert_eq!(put_in((5.0, 20.0), -3.0, duration, rate), (0.0, 20.0));
         // A clip of no known length keeps any In.
         assert_eq!(put_in((0.0, 0.0), 500.0, 0.0, rate), (500.0, 0.0));
