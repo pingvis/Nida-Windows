@@ -132,6 +132,31 @@ Its log and run metadata are
 `target/gpu-qualification/playlist-two-hour-release-20261119T0109Z.log` and the
 adjacent `.run.json`. The release app executable also built successfully.
 
+## SDR P010 fix recheck on RTX 3060 Ti
+
+After the G14 qualification found and fixed the SDR P010 conversion mismatch,
+the shader from revision `b38c1e4257ded683915bfdad06fc37a64cc6abc1` was rechecked
+on this RTX 3060 Ti. All 18 fixture groups passed five independent software-reference
+seek comparisons each (90 total), including the original 15 groups and the new
+full-range, wide-SAR and narrow-SAR P010 fixtures. The existing error threshold,
+three-slot backpressure/reuse and ping-pong fallback assertions were unchanged.
+Interlaced software fallback and all 14 CPU checks also passed.
+
+The requested short playlist soak passed in 180 seconds: 9,106 GPU pictures,
+11 seeks, one source reload and all six clips shown. The playlist mixed H.264,
+SDR HEVC Main10, HDR10 and the three P010 regressions. No GPU validation faults,
+unexpected fallbacks, production picture transfers, pool-bound violations or
+progress stalls occurred. Sampled RSS peaked at 365 MiB and ended at 333 MiB.
+
+This focused recheck used the existing optimized test binary recorded above with
+the explicit test-only `NIDA_TEST_GPU_VIDEO_SHADER` override pointing to the exact
+updated source. Shader SHA-256:
+`D651DB90D51608CE57B498F2BBF827F8D0982925F28379DFE1601438A8AF3B4A`.
+It verifies the fixed shader on this adapter; it is not a new embedded-shader
+production build or another two-hour soak. The earlier two-hour result applies
+to the pre-fix embedded shader. Logs, fixture hashes, runner and manifest are
+under `target/gpu-qualification/p010-recheck-3060ti/`.
+
 ## Remaining qualification
 
 Wider vendor and hybrid-device tests remain necessary
