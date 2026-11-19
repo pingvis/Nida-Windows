@@ -109,14 +109,30 @@ not establish its exact cause. Low CPU use does not remove hardware decode limit
 No GPU-resident stress run fell back, transferred uncompressed pictures through
 RAM or exhausted the three-slot pool.
 
-## Remaining qualification
+## Two-hour release soak
 
-The two-hour release soak was stopped at the user's request to free the GPU for
-a Premiere export. Its last completed sample was 23 minutes: 69,660 GPU frames,
-91 seeks and 11 source reloads, with no assertion failures. Sampled RSS ranged
-from approximately 345 to 403 MiB and ended at 381 MiB. This interrupted run does
-not satisfy the two-hour qualification requirement; restart it after the export.
-The release app executable also built successfully.
+The initial run was stopped after 23 minutes to free the GPU for a Premiere
+export. Its log remains separate. After that export, a fresh uninterrupted run
+passed from 03:09:48 to 05:09:50 Europe/Vilnius on 19 November 2026.
+
+The release playlist test ran for 7,200 seconds through H.264, HDR10 and AV1
+1080p60 clips using the embedded production shader. It delivered 365,631 GPU
+frames, performed 479 seeks and 59 source reloads, and showed all three clips.
+Pause/resume, preloaded paused pictures and changing transition types remained
+under test throughout. There were no GPU validation faults, unexpected fallbacks,
+picture downloads or uploads, pool-limit violations or progress-watchdog failures.
+
+The 120 one-minute RSS samples ranged from 347 to 415 MiB and ended at 414 MiB.
+The final half-hour ranged from 383 to 415 MiB. This stayed within the bounded
+memory assertion; it does not establish zero memory leakage.
+
+The run used revision `0ce0cf03eee4eec1d60f5ef4924cf3a4116f5b3b` and test binary
+SHA-256 `54F9ED028A095087B2A1FEB8D7E768C70CB30B317B992FA4708E30DF1EA884FF`.
+Its log and run metadata are
+`target/gpu-qualification/playlist-two-hour-release-20261119T0109Z.log` and the
+adjacent `.run.json`. The release app executable also built successfully.
+
+## Remaining qualification
 
 Wider vendor and hybrid-device tests remain necessary
 before removing the Windows beta label or changing the default.

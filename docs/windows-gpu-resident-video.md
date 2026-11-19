@@ -23,11 +23,11 @@ failure also reopens in software. If D3D12VA cannot be selected at startup, the
 existing D3D11VA/CPU path remains available. Renderer device loss still belongs
 to the renderer's recovery path; software decoding cannot repair a lost device.
 
-**Hardware qualification is in progress on an NVIDIA RTX 3060 Ti.** Fifteen
+**Hardware qualification completed on an NVIDIA RTX 3060 Ti.** Fifteen
 picture/seek fixture groups, interlaced fallback and 177 video regression tests
 have passed in release. Thirty single-clip performance measurements and concurrent
-4K stress checks are complete; the two-hour soak was interrupted after 23 minutes
-to free the GPU for a Premiere export and remains pending. See the
+4K stress checks are complete. A fresh two-hour release soak passed after the
+Premiere export: 365,631 GPU frames, 479 seeks and 59 playlist reloads. See the
 [qualification results](windows-gpu-resident-qualification.md). Keep the feature
 experimental and off by default until wider hardware validation.
 
