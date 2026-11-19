@@ -1,0 +1,404 @@
+[
+  {
+    "resolution": "1080p60",
+    "method": "software",
+    "successful_runs": 5,
+    "cpu_core_percent_median": 56.869497876080494,
+    "fresh_fps_median": 59.99405268956679,
+    "fresh_fps_min": 59.959197749267034,
+    "fresh_fps_max": 59.99428544432095,
+    "tick_service_p95_ms_median": 8.125300000000001,
+    "sampled_peak_rss_bytes_max": 328318976,
+    "late_render_ticks_max": 25,
+    "delivery_ranges": {
+      "gpu_frames": [
+        0,
+        0
+      ],
+      "gpu_copies": [
+        0,
+        0
+      ],
+      "downloaded_bytes": [
+        0,
+        0
+      ],
+      "uploaded_bytes": [
+        29851545600,
+        29868134400
+      ],
+      "dropped_frames": [
+        0,
+        0
+      ],
+      "backpressure_events": [
+        0,
+        0
+      ],
+      "peak_slots": [
+        0,
+        0
+      ],
+      "copy_wait_ns": [
+        0,
+        0
+      ]
+    },
+    "fallback_reasons": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "decode_engines": {},
+    "gpu_process_memory_peak_bytes": {},
+    "nvidia_global_telemetry": {
+      "samples": 61,
+      "pstates": [
+        "P5",
+        "P8"
+      ],
+      "memory_mib_max": 182.0,
+      "decoder_percent_max": 0.0,
+      "gpu_percent_max": 38.0,
+      "temperature_c_max": 53.0,
+      "power_w_max": 14.79
+    }
+  },
+  {
+    "resolution": "1080p60",
+    "method": "hardware-ram",
+    "successful_runs": 5,
+    "cpu_core_percent_median": 61.972866406636044,
+    "fresh_fps_median": 58.026653981904566,
+    "fresh_fps_min": 43.06138547481408,
+    "fresh_fps_max": 58.09400837762263,
+    "tick_service_p95_ms_median": 8.3154,
+    "sampled_peak_rss_bytes_max": 255148032,
+    "late_render_ticks_max": 1,
+    "delivery_ranges": {
+      "gpu_frames": [
+        0,
+        0
+      ],
+      "gpu_copies": [
+        0,
+        0
+      ],
+      "downloaded_bytes": [
+        8382528000,
+        11390284800
+      ],
+      "uploaded_bytes": [
+        21441024000,
+        28922572800
+      ],
+      "dropped_frames": [
+        0,
+        0
+      ],
+      "backpressure_events": [
+        0,
+        0
+      ],
+      "peak_slots": [
+        0,
+        0
+      ],
+      "copy_wait_ns": [
+        0,
+        0
+      ]
+    },
+    "fallback_reasons": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "decode_engines": {},
+    "gpu_process_memory_peak_bytes": {},
+    "nvidia_global_telemetry": {
+      "samples": 65,
+      "pstates": [
+        "P5",
+        "P8"
+      ],
+      "memory_mib_max": 182.0,
+      "decoder_percent_max": 0.0,
+      "gpu_percent_max": 37.0,
+      "temperature_c_max": 54.0,
+      "power_w_max": 14.21
+    }
+  },
+  {
+    "resolution": "1080p60",
+    "method": "gpu-resident",
+    "successful_runs": 5,
+    "cpu_core_percent_median": 8.46245470486951,
+    "fresh_fps_median": 59.910522243505376,
+    "fresh_fps_min": 54.928429506241784,
+    "fresh_fps_max": 59.99412687494957,
+    "tick_service_p95_ms_median": 3.6425,
+    "sampled_peak_rss_bytes_max": 235143168,
+    "late_render_ticks_max": 1,
+    "delivery_ranges": {
+      "gpu_frames": [
+        3296,
+        3600
+      ],
+      "gpu_copies": [
+        6744,
+        7324
+      ],
+      "downloaded_bytes": [
+        0,
+        0
+      ],
+      "uploaded_bytes": [
+        0,
+        0
+      ],
+      "dropped_frames": [
+        61,
+        75
+      ],
+      "backpressure_events": [
+        0,
+        0
+      ],
+      "peak_slots": [
+        2,
+        2
+      ],
+      "copy_wait_ns": [
+        9507838700,
+        9975822000
+      ]
+    },
+    "fallback_reasons": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "decode_engines": {},
+    "gpu_process_memory_peak_bytes": {},
+    "nvidia_global_telemetry": {
+      "samples": 60,
+      "pstates": [
+        "P5",
+        "P8"
+      ],
+      "memory_mib_max": 223.0,
+      "decoder_percent_max": 9.0,
+      "gpu_percent_max": 25.0,
+      "temperature_c_max": 54.0,
+      "power_w_max": 15.32
+    }
+  },
+  {
+    "resolution": "4k60",
+    "method": "software",
+    "successful_runs": 5,
+    "cpu_core_percent_median": 229.05099911917534,
+    "fresh_fps_median": 58.025189594682374,
+    "fresh_fps_min": 57.943730220496185,
+    "fresh_fps_max": 58.108279704962584,
+    "tick_service_p95_ms_median": 17.075400000000002,
+    "sampled_peak_rss_bytes_max": 773136384,
+    "late_render_ticks_max": 3402,
+    "delivery_ranges": {
+      "gpu_frames": [
+        0,
+        0
+      ],
+      "gpu_copies": [
+        0,
+        0
+      ],
+      "downloaded_bytes": [
+        0,
+        0
+      ],
+      "uploaded_bytes": [
+        115424870400,
+        115723468800
+      ],
+      "dropped_frames": [
+        0,
+        0
+      ],
+      "backpressure_events": [
+        0,
+        0
+      ],
+      "peak_slots": [
+        0,
+        0
+      ],
+      "copy_wait_ns": [
+        0,
+        0
+      ]
+    },
+    "fallback_reasons": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "decode_engines": {},
+    "gpu_process_memory_peak_bytes": {},
+    "nvidia_global_telemetry": {
+      "samples": 64,
+      "pstates": [
+        "P5",
+        "P8"
+      ],
+      "memory_mib_max": 182.0,
+      "decoder_percent_max": 0.0,
+      "gpu_percent_max": 65.0,
+      "temperature_c_max": 61.0,
+      "power_w_max": 27.32
+    }
+  },
+  {
+    "resolution": "4k60",
+    "method": "hardware-ram",
+    "successful_runs": 5,
+    "cpu_core_percent_median": 100.01409456159996,
+    "fresh_fps_median": 28.27977847091361,
+    "fresh_fps_min": 22.013944752467747,
+    "fresh_fps_max": 29.17968402478358,
+    "tick_service_p95_ms_median": 17.2353,
+    "sampled_peak_rss_bytes_max": 537989120,
+    "late_render_ticks_max": 1035,
+    "delivery_ranges": {
+      "gpu_frames": [
+        0,
+        0
+      ],
+      "gpu_copies": [
+        0,
+        0
+      ],
+      "downloaded_bytes": [
+        16721510400,
+        22158489600
+      ],
+      "uploaded_bytes": [
+        43827609600,
+        58127155200
+      ],
+      "dropped_frames": [
+        0,
+        0
+      ],
+      "backpressure_events": [
+        0,
+        0
+      ],
+      "peak_slots": [
+        0,
+        0
+      ],
+      "copy_wait_ns": [
+        0,
+        0
+      ]
+    },
+    "fallback_reasons": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "decode_engines": {},
+    "gpu_process_memory_peak_bytes": {},
+    "nvidia_global_telemetry": {
+      "samples": 62,
+      "pstates": [
+        "P5",
+        "P8"
+      ],
+      "memory_mib_max": 182.0,
+      "decoder_percent_max": 0.0,
+      "gpu_percent_max": 42.0,
+      "temperature_c_max": 58.0,
+      "power_w_max": 17.21
+    }
+  },
+  {
+    "resolution": "4k60",
+    "method": "gpu-resident",
+    "successful_runs": 5,
+    "cpu_core_percent_median": 12.863693670468274,
+    "fresh_fps_median": 59.97755879393525,
+    "fresh_fps_min": 59.37730346920386,
+    "fresh_fps_max": 59.99425794957165,
+    "tick_service_p95_ms_median": 4.7998,
+    "sampled_peak_rss_bytes_max": 291831808,
+    "late_render_ticks_max": 1,
+    "delivery_ranges": {
+      "gpu_frames": [
+        3563,
+        3600
+      ],
+      "gpu_copies": [
+        7320,
+        7324
+      ],
+      "downloaded_bytes": [
+        0,
+        0
+      ],
+      "uploaded_bytes": [
+        0,
+        0
+      ],
+      "dropped_frames": [
+        59,
+        98
+      ],
+      "backpressure_events": [
+        0,
+        0
+      ],
+      "peak_slots": [
+        2,
+        2
+      ],
+      "copy_wait_ns": [
+        9980508600,
+        10627260800
+      ]
+    },
+    "fallback_reasons": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "decode_engines": {},
+    "gpu_process_memory_peak_bytes": {},
+    "nvidia_global_telemetry": {
+      "samples": 62,
+      "pstates": [
+        "P5",
+        "P8"
+      ],
+      "memory_mib_max": 321.0,
+      "decoder_percent_max": 24.0,
+      "gpu_percent_max": 32.0,
+      "temperature_c_max": 56.0,
+      "power_w_max": 20.43
+    }
+  }
+]

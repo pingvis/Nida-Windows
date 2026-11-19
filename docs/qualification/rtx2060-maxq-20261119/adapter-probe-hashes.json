@@ -1,0 +1,10 @@
+[
+  {
+    "Path": "target/gpu-qualification-local/adapter-probe.cpp",
+    "Hash": "31A78C00B2F7920964C600D9B23CDA0A0E9564C9D1031EAFF1778591EA134561"
+  },
+  {
+    "Path": "target/gpu-qualification-local/adapter-probe.exe",
+    "Hash": "A5813D6C82A180BB4BBCCDC568C604999871CABD0AFAF442FE157D855340EE4D"
+  }
+]

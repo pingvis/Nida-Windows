@@ -1,0 +1,17 @@
+{
+  "revision": "1e4cf2055e8881ab3d8e0cd2002bedf984fe3256",
+  "remote": "https://github.com/pingvis/Nida-Windows.git",
+  "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+  "ffmpeg": "ffmpeg version n9.0.2-36-g6882969ce9-20261027 Copyright (c) 2000-2026 the FFmpeg developers",
+  "sdk": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0",
+  "libclang": ".windows-tools/validation/libclang/runtimes/win-x64/native",
+  "msvc": "14.44.35207",
+  "windows_sdk": "10.0.26100.0\\",
+  "cmake": "cmake version 3.31.6-msvc6",
+  "release_overrides": [],
+  "release_profile": "opt-level=3; lto=thin; codegen-units=1; strip=symbols; panic=unwind",
+  "features": "screen-capture,windows-browser; no default features",
+  "backend": "dx12",
+  "settings_hash": "BC3770258E071FF6D990732F6E7180271CA0CA5CB935CB22A5EE033CD9D522F7"
+}

@@ -1,0 +1,1458 @@
+{
+  "provenance": {
+    "shader_sha256": "D651DB90D51608CE57B498F2BBF827F8D0982925F28379DFE1601438A8AF3B4A",
+    "base_revision": "1e4cf2055e8881ab3d8e0cd2002bedf984fe3256",
+    "built": "2026-11-19T15:51:32.2703048+02:00",
+    "app_sha256": "0D431A0A8FA6835CE15878432569777E46F010680CD2399016DFCCD22163168C",
+    "test_sha256": "88D0FBB18253C21E4A0D3A68B96A8782C8B0CE271BC7B43A6968B5D301DDB3D8",
+    "test_binary": "target/gq/release/deps/varda-25d87f05d9d642bc.exe",
+    "shader_override": null
+  },
+  "units": {
+    "cpu_core_percent": "one core = 100%",
+    "fresh_fps": "new pictures delivered / measured wall seconds",
+    "tick_service_ms": "offscreen submit plus completion; not UI latency"
+  },
+  "runs": [
+    {
+      "resolution": "1080p60",
+      "method": "software",
+      "repeat": 1,
+      "log": "bench-1080p60-software-1.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 56.84291895056509,
+      "cpu_ms": 34109,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 29868134400
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 328060928,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.8276,
+      "tick_service_p95_ms": 8.093,
+      "wall_s": 60.0057151,
+      "fresh_fps": 59.99428544432095
+    },
+    {
+      "resolution": "1080p60",
+      "method": "software",
+      "repeat": 2,
+      "log": "bench-1080p60-software-2.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 56.42773955746477,
+      "cpu_ms": 33860,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 29868134400
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 328318976,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.827799999999999,
+      "tick_service_p95_ms": 8.0816,
+      "wall_s": 60.0059479,
+      "fresh_fps": 59.99405268956679
+    },
+    {
+      "resolution": "1080p60",
+      "method": "software",
+      "repeat": 3,
+      "log": "bench-1080p60-software-3.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 59.26557811627485,
+      "cpu_ms": 35563,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 29868134400
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 328163328,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.939399999999999,
+      "tick_service_p95_ms": 8.4493,
+      "wall_s": 60.006164,
+      "fresh_fps": 59.99383663318322
+    },
+    {
+      "resolution": "1080p60",
+      "method": "software",
+      "repeat": 4,
+      "log": "bench-1080p60-software-4.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 56.869497876080494,
+      "cpu_ms": 34125,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 29868134400
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 328073216,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.806699999999999,
+      "tick_service_p95_ms": 8.125300000000001,
+      "wall_s": 60.005805,
+      "fresh_fps": 59.99419556157942
+    },
+    {
+      "resolution": "1080p60",
+      "method": "software",
+      "repeat": 5,
+      "log": "bench-1080p60-software-5.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 63.690399632552435,
+      "cpu_ms": 38219,
+      "delivered_per_clip": [
+        3598
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 29851545600
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        2
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 25,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 328179712,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 8.0392,
+      "tick_service_p95_ms": 8.4869,
+      "wall_s": 60.007474,
+      "fresh_fps": 59.959197749267034
+    },
+    {
+      "resolution": "1080p60",
+      "method": "hardware-ram",
+      "repeat": 1,
+      "log": "bench-1080p60-hardware-ram-1.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 61.972866406636044,
+      "cpu_ms": 37188,
+      "delivered_per_clip": [
+        3482
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 11387174400,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 28889395200
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        118
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        3600
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3600
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 253734912,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.973600000000001,
+      "tick_service_p95_ms": 8.3922,
+      "wall_s": 60.0069065,
+      "fresh_fps": 58.026653981904566
+    },
+    {
+      "resolution": "1080p60",
+      "method": "hardware-ram",
+      "repeat": 2,
+      "log": "bench-1080p60-hardware-ram-2.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 45.38610036403102,
+      "cpu_ms": 27235,
+      "delivered_per_clip": [
+        2584
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 8382528000,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 21441024000
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        1016
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        2647
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        2647
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 253755392,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.9655000000000005,
+      "tick_service_p95_ms": 8.3154,
+      "wall_s": 60.0073586,
+      "fresh_fps": 43.06138547481408
+    },
+    {
+      "resolution": "1080p60",
+      "method": "hardware-ram",
+      "repeat": 3,
+      "log": "bench-1080p60-hardware-ram-3.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 64.29170250144301,
+      "cpu_ms": 38579,
+      "delivered_per_clip": [
+        3486
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 11390284800,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 28922572800
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        114
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 253726720,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.9317,
+      "tick_service_p95_ms": 8.272699999999999,
+      "wall_s": 60.0061882,
+      "fresh_fps": 58.09400837762263
+    },
+    {
+      "resolution": "1080p60",
+      "method": "hardware-ram",
+      "repeat": 4,
+      "log": "bench-1080p60-hardware-ram-4.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 62.90958640241569,
+      "cpu_ms": 37750,
+      "delivered_per_clip": [
+        3482
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 11387174400,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 28889395200
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        118
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        3600
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 1,
+      "produced_per_clip": [
+        3600
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 253812736,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 7.9737,
+      "tick_service_p95_ms": 8.3019,
+      "wall_s": 60.0067528,
+      "fresh_fps": 58.02680261012224
+    },
+    {
+      "resolution": "1080p60",
+      "method": "hardware-ram",
+      "repeat": 5,
+      "log": "bench-1080p60-hardware-ram-5.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 61.3204545747273,
+      "cpu_ms": 36797,
+      "delivered_per_clip": [
+        3478
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 11390284800,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 28856217600
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        122
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 255148032,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 8.0097,
+      "tick_service_p95_ms": 8.4348,
+      "wall_s": 60.0077091,
+      "fresh_fps": 57.95921977631371
+    },
+    {
+      "resolution": "1080p60",
+      "method": "gpu-resident",
+      "repeat": 1,
+      "log": "bench-1080p60-gpu-resident-1.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 6.354432697430215,
+      "cpu_ms": 3813,
+      "delivered_per_clip": [
+        3296
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 9507838700,
+          "downloaded_bytes": 0,
+          "dropped_frames": 75,
+          "fallback_reason": null,
+          "gpu_copies": 6744,
+          "gpu_frames": 3296,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        304
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3326
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3326
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 226193408,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 3.2426999999999997,
+      "tick_service_p95_ms": 3.7096999999999998,
+      "wall_s": 60.0053566,
+      "fresh_fps": 54.928429506241784
+    },
+    {
+      "resolution": "1080p60",
+      "method": "gpu-resident",
+      "repeat": 2,
+      "log": "bench-1080p60-gpu-resident-2.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 8.46245470486951,
+      "cpu_ms": 5078,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 9966544700,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 7324,
+          "gpu_frames": 3600,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 234459136,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 3.3062,
+      "tick_service_p95_ms": 3.6425,
+      "wall_s": 60.0062296,
+      "fresh_fps": 59.99377104673146
+    },
+    {
+      "resolution": "1080p60",
+      "method": "gpu-resident",
+      "repeat": 3,
+      "log": "bench-1080p60-gpu-resident-3.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 5.8060711960048055,
+      "cpu_ms": 3484,
+      "delivered_per_clip": [
+        3595
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 9975822000,
+          "downloaded_bytes": 0,
+          "dropped_frames": 66,
+          "fallback_reason": null,
+          "gpu_copies": 7324,
+          "gpu_frames": 3595,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        5
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 235143168,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 3.2432,
+      "tick_service_p95_ms": 3.6324,
+      "wall_s": 60.0061536,
+      "fresh_fps": 59.910522243505376
+    },
+    {
+      "resolution": "1080p60",
+      "method": "gpu-resident",
+      "repeat": 4,
+      "log": "bench-1080p60-gpu-resident-4.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 8.540830562058794,
+      "cpu_ms": 5125,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 9862844300,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 7324,
+          "gpu_frames": 3600,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 1,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 234991616,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 3.2732,
+      "tick_service_p95_ms": 3.6466,
+      "wall_s": 60.0058737,
+      "fresh_fps": 59.99412687494957
+    },
+    {
+      "resolution": "1080p60",
+      "method": "gpu-resident",
+      "repeat": 5,
+      "log": "bench-1080p60-gpu-resident-5.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 11.432112936223868,
+      "cpu_ms": 6860,
+      "delivered_per_clip": [
+        3569
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 9577328700,
+          "downloaded_bytes": 0,
+          "dropped_frames": 68,
+          "fallback_reason": null,
+          "gpu_copies": 7276,
+          "gpu_frames": 3569,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        31
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3578
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 1,
+      "produced_per_clip": [
+        3578
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 225988608,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 3.247,
+      "tick_service_p95_ms": 3.6351999999999998,
+      "wall_s": 60.0064051,
+      "fresh_fps": 59.476984066155964
+    },
+    {
+      "resolution": "4k60",
+      "method": "software",
+      "repeat": 1,
+      "log": "bench-4k60-software-1.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 229.05099911917534,
+      "cpu_ms": 137485,
+      "delivered_per_clip": [
+        3478
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 115424870400
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        122
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 3239,
+      "produced_per_clip": [
+        3599
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 772616192,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 16.695800000000002,
+      "tick_service_p95_ms": 17.1548,
+      "wall_s": 60.0237504,
+      "fresh_fps": 57.943730220496185
+    },
+    {
+      "resolution": "4k60",
+      "method": "software",
+      "repeat": 2,
+      "log": "bench-4k60-software-2.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 227.260849716677,
+      "cpu_ms": 136375,
+      "delivered_per_clip": [
+        3484
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 115623936000
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        116
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 3202,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 773083136,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 16.6119,
+      "tick_service_p95_ms": 17.0658,
+      "wall_s": 60.0081361,
+      "fresh_fps": 58.058793797463075
+    },
+    {
+      "resolution": "4k60",
+      "method": "software",
+      "repeat": 3,
+      "log": "bench-4k60-software-3.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 233.04062646980935,
+      "cpu_ms": 139844,
+      "delivered_per_clip": [
+        3482
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 115557580800
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        118
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 2802,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 773136384,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 16.5797,
+      "tick_service_p95_ms": 17.075400000000002,
+      "wall_s": 60.0084209,
+      "fresh_fps": 58.025189594682374
+    },
+    {
+      "resolution": "4k60",
+      "method": "software",
+      "repeat": 4,
+      "log": "bench-4k60-software-4.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 229.15902487323203,
+      "cpu_ms": 137515,
+      "delivered_per_clip": [
+        3480
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 115491225600
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        120
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 3402,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 772816896,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 16.6708,
+      "tick_service_p95_ms": 17.1723,
+      "wall_s": 60.0085465,
+      "fresh_fps": 57.99173955996418
+    },
+    {
+      "resolution": "4k60",
+      "method": "software",
+      "repeat": 5,
+      "log": "bench-4k60-software-5.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 220.3331985750057,
+      "cpu_ms": 132219,
+      "delivered_per_clip": [
+        3487
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 0,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 115723468800
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        113
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        0
+      ],
+      "hardware_required": false,
+      "late_render_ticks": 2637,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 773025792,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 16.543599999999998,
+      "tick_service_p95_ms": 17.0676,
+      "wall_s": 60.00866,
+      "fresh_fps": 58.108279704962584
+    },
+    {
+      "resolution": "4k60",
+      "method": "hardware-ram",
+      "repeat": 1,
+      "log": "bench-4k60-hardware-ram-1.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 100.45612238937629,
+      "cpu_ms": 60281,
+      "delivered_per_clip": [
+        1701
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 21523968000,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 56435097600
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        1899
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        1701
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 980,
+      "produced_per_clip": [
+        1701
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 537989120,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 2.392,
+      "tick_service_p95_ms": 17.421499999999998,
+      "wall_s": 60.0072933,
+      "fresh_fps": 28.346554334587857
+    },
+    {
+      "resolution": "4k60",
+      "method": "hardware-ram",
+      "repeat": 2,
+      "log": "bench-4k60-hardware-ram-2.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 107.90317193630706,
+      "cpu_ms": 64750,
+      "delivered_per_clip": [
+        1751
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 22158489600,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 58127155200
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        1849
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        1752
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 1035,
+      "produced_per_clip": [
+        1752
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 537882624,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 2.4575,
+      "tick_service_p95_ms": 17.4781,
+      "wall_s": 60.0075038,
+      "fresh_fps": 29.17968402478358
+    },
+    {
+      "resolution": "4k60",
+      "method": "hardware-ram",
+      "repeat": 3,
+      "log": "bench-4k60-hardware-ram-3.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 100.01409456159996,
+      "cpu_ms": 60016,
+      "delivered_per_clip": [
+        1697
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 21474201600,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 56335564800
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        1903
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        1698
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 891,
+      "produced_per_clip": [
+        1698
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 537862144,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 2.3899,
+      "tick_service_p95_ms": 17.2353,
+      "wall_s": 60.0075422,
+      "fresh_fps": 28.27977847091361
+    },
+    {
+      "resolution": "4k60",
+      "method": "hardware-ram",
+      "repeat": 4,
+      "log": "bench-4k60-hardware-ram-4.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 84.67858047782681,
+      "cpu_ms": 50813,
+      "delivered_per_clip": [
+        1392
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 17642188800,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 46216396800
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        2208
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        1393
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 562,
+      "produced_per_clip": [
+        1393
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 463134720,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 2.4995,
+      "tick_service_p95_ms": 16.800900000000002,
+      "wall_s": 60.0069105,
+      "fresh_fps": 23.19732824771907
+    },
+    {
+      "resolution": "4k60",
+      "method": "hardware-ram",
+      "repeat": 5,
+      "log": "bench-4k60-hardware-ram-5.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 80.61503235432454,
+      "cpu_ms": 48375,
+      "delivered_per_clip": [
+        1321
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 0,
+          "downloaded_bytes": 16721510400,
+          "dropped_frames": 0,
+          "fallback_reason": null,
+          "gpu_copies": 0,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 0,
+          "uploaded_bytes": 43827609600
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        2279
+      ],
+      "gpu_resident_required": false,
+      "hardware_frames_per_clip": [
+        1321
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 528,
+      "produced_per_clip": [
+        1321
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 463204352,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 2.4570999999999996,
+      "tick_service_p95_ms": 16.906299999999998,
+      "wall_s": 60.0074187,
+      "fresh_fps": 22.013944752467747
+    },
+    {
+      "resolution": "4k60",
+      "method": "gpu-resident",
+      "repeat": 1,
+      "log": "bench-4k60-gpu-resident-1.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 9.504110035136309,
+      "cpu_ms": 5703,
+      "delivered_per_clip": [
+        3599
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 10627260800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 7322,
+          "gpu_frames": 3599,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        1
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 291823616,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 4.384200000000001,
+      "tick_service_p95_ms": 4.6839,
+      "wall_s": 60.0056184,
+      "fresh_fps": 59.97771701991159
+    },
+    {
+      "resolution": "4k60",
+      "method": "gpu-resident",
+      "repeat": 2,
+      "log": "bench-4k60-gpu-resident-2.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 10.2856763788877,
+      "cpu_ms": 6172,
+      "delivered_per_clip": [
+        3599
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 10608334600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 7322,
+          "gpu_frames": 3599,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        1
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 291201024,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 4.4014,
+      "tick_service_p95_ms": 4.8237000000000005,
+      "wall_s": 60.0057767,
+      "fresh_fps": 59.97755879393525
+    },
+    {
+      "resolution": "4k60",
+      "method": "gpu-resident",
+      "repeat": 3,
+      "log": "bench-4k60-gpu-resident-3.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 12.863693670468274,
+      "cpu_ms": 7719,
+      "delivered_per_clip": [
+        3563
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 10142681400,
+          "downloaded_bytes": 0,
+          "dropped_frames": 98,
+          "fallback_reason": null,
+          "gpu_copies": 7324,
+          "gpu_frames": 3563,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        37
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 291790848,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 4.4429,
+      "tick_service_p95_ms": 4.7998,
+      "wall_s": 60.0060931,
+      "fresh_fps": 59.37730346920386
+    },
+    {
+      "resolution": "4k60",
+      "method": "gpu-resident",
+      "repeat": 4,
+      "log": "bench-4k60-gpu-resident-4.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 14.451950137185705,
+      "cpu_ms": 8672,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 10064863000,
+          "downloaded_bytes": 0,
+          "dropped_frames": 59,
+          "fallback_reason": null,
+          "gpu_copies": 7320,
+          "gpu_frames": 3600,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 1,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 291614720,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 4.597,
+      "tick_service_p95_ms": 4.9063,
+      "wall_s": 60.0057426,
+      "fresh_fps": 59.99425794957165
+    },
+    {
+      "resolution": "4k60",
+      "method": "gpu-resident",
+      "repeat": 5,
+      "log": "bench-4k60-gpu-resident-5.log",
+      "status": "passed",
+      "clip": "target/gpu-qualification-local/fixtures-verified/h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 13.045460309466984,
+      "cpu_ms": 7828,
+      "delivered_per_clip": [
+        3583
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 9980508600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 76,
+          "fallback_reason": null,
+          "gpu_copies": 7320,
+          "gpu_frames": 3583,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "empty_output_ticks_per_clip": [
+        17
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3601
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "produced_per_clip": [
+        3601
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 2060 with Max-Q Design\", vendor: 4318, device: 7954, device_type: DiscreteGpu, device_pci_bus_id: \"0000:01:00.0\", driver: \"32.0.16.1742\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 291831808,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 4.4425,
+      "tick_service_p95_ms": 4.7538,
+      "wall_s": 60.0055484,
+      "fresh_fps": 59.7111449780534
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "checks": [
+    {
+      "status": "no_matching_events",
+      "provider": "Display",
+      "events": []
+    },
+    {
+      "status": "no_matching_events",
+      "provider": "nvlddmkm",
+      "events": []
+    },
+    {
+      "status": "no_matching_events",
+      "provider": "amdkmdag",
+      "events": []
+    },
+    {
+      "status": "unavailable",
+      "provider": "amdwddmg",
+      "reason": "There is not an event provider on the localhost computer that matches \"amdwddmg\"."
+    }
+  ],
+  "checked": "2026-11-19T18:01:53.4643901+02:00",
+  "since": "2026-11-19T16:17:55.0000000"
+}

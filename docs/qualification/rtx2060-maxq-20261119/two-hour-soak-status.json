@@ -1,0 +1,24 @@
+{
+  "status": "in_progress",
+  "not_a_completed_soak_pass": true,
+  "run": {
+    "seconds": 7200,
+    "started": "2026-11-19T16:49:14.9086572+02:00",
+    "clips": "target/gpu-qualification-local/fixtures-verified/h264-playlist.mp4;target/gpu-qualification-local/fixtures-verified/hdr10-1080p60.mp4;target/gpu-qualification-local/fixtures-verified/hevc10-1080p60.mp4",
+    "pid": 9932,
+    "binary_sha256": "88D0FBB18253C21E4A0D3A68B96A8782C8B0CE271BC7B43A6968B5D301DDB3D8",
+    "shader": "embedded",
+    "revision": "1e4cf2055e8881ab3d8e0cd2002bedf984fe3256"
+  },
+  "latest_completed_minute": {
+    "elapsed_s": 4259.9934515,
+    "frames": 242566,
+    "peak_rss_bytes": 399982592,
+    "reloads": 35,
+    "rss_bytes": 388915200,
+    "seeks": 283
+  },
+  "recorded_minutes": 71,
+  "min_rss_bytes_so_far": 332410880,
+  "max_rss_bytes_so_far": 399982592
+}

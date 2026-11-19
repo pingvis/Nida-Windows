@@ -1,0 +1,19 @@
+
+running 1 test
+[av1 @ 0000018297c17640] D3D12 video decode is not supported on this device.
+[av1 @ 0000018297c17640] Failed setup for format d3d12: hwaccel initialisation returned error.
+[av1 @ 0000018297c17640] Your platform doesn't support hardware accelerated AV1 decoding.
+[av1 @ 0000018297c17640] Failed to get pixel format.
+[av1 @ 0000018297c17640] Get current frame error
+
+thread 'internal::video::gpu_windows::tests::gpu_resident_picture_seek_pool_and_fallback' (6552) panicked at src\internal\video\gpu_windows\tests.rs:55:14:
+GPU payload required after seek
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test internal::video::gpu_windows::tests::gpu_resident_picture_seek_pool_and_fallback ... FAILED
+
+failures:
+
+failures:
+    internal::video::gpu_windows::tests::gpu_resident_picture_seek_pool_and_fallback
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4610 filtered out; finished in 0.74s

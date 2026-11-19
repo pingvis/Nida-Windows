@@ -1,0 +1,272 @@
+[
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-software-1.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:18:59.3953619+02:00",
+    "round": 1,
+    "method": "software",
+    "started": "2026-11-19T16:17:57.0948568+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-hardware-ram-1.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:20:01.6987252+02:00",
+    "round": 1,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:18:59.3988213+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-gpu-resident-1.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:21:04.0939480+02:00",
+    "round": 1,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:20:01.7008306+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-hardware-ram-2.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:22:06.4152517+02:00",
+    "round": 2,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:21:04.1018345+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-gpu-resident-2.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:23:08.8159683+02:00",
+    "round": 2,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:22:06.4167263+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-software-2.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:24:11.0351706+02:00",
+    "round": 2,
+    "method": "software",
+    "started": "2026-11-19T16:23:08.8169872+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-gpu-resident-3.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:25:13.4364858+02:00",
+    "round": 3,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:24:11.0363352+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-software-3.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:26:15.6314064+02:00",
+    "round": 3,
+    "method": "software",
+    "started": "2026-11-19T16:25:13.4390077+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-hardware-ram-3.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:27:17.8875886+02:00",
+    "round": 3,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:26:15.6393905+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-software-4.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:28:20.1129894+02:00",
+    "round": 4,
+    "method": "software",
+    "started": "2026-11-19T16:27:17.8887608+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-hardware-ram-4.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:29:22.3751541+02:00",
+    "round": 4,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:28:20.1140105+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-gpu-resident-4.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:30:24.7931335+02:00",
+    "round": 4,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:29:22.3763218+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-hardware-ram-5.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:31:27.0784036+02:00",
+    "round": 5,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:30:24.7940587+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-gpu-resident-5.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:32:29.4887056+02:00",
+    "round": 5,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:31:27.0864948+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-1080p60-software-5.log",
+    "resolution": "1080p60",
+    "finished": "2026-11-19T16:33:31.6977383+02:00",
+    "round": 5,
+    "method": "software",
+    "started": "2026-11-19T16:32:29.4973652+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-software-1.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:34:34.5236855+02:00",
+    "round": 1,
+    "method": "software",
+    "started": "2026-11-19T16:33:31.7051915+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-hardware-ram-1.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:35:37.2116571+02:00",
+    "round": 1,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:34:34.5317924+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-gpu-resident-1.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:36:39.9803275+02:00",
+    "round": 1,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:35:37.2201281+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-hardware-ram-2.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:37:42.6670791+02:00",
+    "round": 2,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:36:39.9877689+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-gpu-resident-2.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:38:45.4503076+02:00",
+    "round": 2,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:37:42.6750065+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-software-2.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:39:48.0845188+02:00",
+    "round": 2,
+    "method": "software",
+    "started": "2026-11-19T16:38:45.4586246+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-gpu-resident-3.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:40:50.8651045+02:00",
+    "round": 3,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:39:48.0922309+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-software-3.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:41:53.4978298+02:00",
+    "round": 3,
+    "method": "software",
+    "started": "2026-11-19T16:40:50.8731692+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-hardware-ram-3.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:42:56.1819759+02:00",
+    "round": 3,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:41:53.5062836+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-software-4.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:43:58.8173763+02:00",
+    "round": 4,
+    "method": "software",
+    "started": "2026-11-19T16:42:56.1896137+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-hardware-ram-4.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:45:01.6298115+02:00",
+    "round": 4,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:43:58.8252821+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-gpu-resident-4.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:46:04.4124406+02:00",
+    "round": 4,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:45:01.6376280+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-hardware-ram-5.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:47:07.1333777+02:00",
+    "round": 5,
+    "method": "hardware-ram",
+    "started": "2026-11-19T16:46:04.4216038+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-gpu-resident-5.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:48:09.9082930+02:00",
+    "round": 5,
+    "method": "gpu-resident",
+    "started": "2026-11-19T16:47:07.1416832+02:00",
+    "status": "passed"
+  },
+  {
+    "output": "target/gpu-qualification-local/bench-4k60-software-5.log",
+    "resolution": "4k60",
+    "finished": "2026-11-19T16:49:12.5383138+02:00",
+    "round": 5,
+    "method": "software",
+    "started": "2026-11-19T16:48:09.9164080+02:00",
+    "status": "passed"
+  }
+]

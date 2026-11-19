@@ -1,0 +1,38 @@
+[
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/avcodec-63.dll",
+    "Hash": "9ED05CA08B07611695B442F6DDA8D88B0C73E35502F949E664DD0547D8603B58"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/avdevice-63.dll",
+    "Hash": "053EDF52BF7861B19C1910351C659ECB260F4C54327F24F53660281D6C3FB77B"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/avfilter-12.dll",
+    "Hash": "B38E75F03CB56A1798F88EFE8351A440C4920D69E08EA0CEF3A5F7A2BFF3475E"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/avformat-63.dll",
+    "Hash": "5AA86B4CF7C1AFE5A808689EC76FB0E7AF597ECDB8BD4AF9306D58102892A713"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/avutil-61.dll",
+    "Hash": "F6B51375FA1040ECDB45A234D06A47F085ADCACFD3E7C690768FA82AC104012C"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/swresample-7.dll",
+    "Hash": "9F8E291F294E25D64F1FE28C5A1E3A01336A63421D16E90377FD4E433765D2EF"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/swscale-10.dll",
+    "Hash": "E5A62588E1C0D7C1F381502D1D80E3FF1069EF9733CACB92DAD51511B1F5E732"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/ffmpeg.exe",
+    "Hash": "063F57E81A49C8F527DFA6ECE797BADEA30607CF2D3B7776C53A7B5DE538F975"
+  },
+  {
+    "Path": ".windows-tools/validation/ffmpeg-sdk/ffmpeg-n9.0-latest-win64-gpl-shared-9.0/bin/ffprobe.exe",
+    "Hash": "51F64BF38B8DF9CE2060803BAE37D9586DD77920133A2747883B07677876B79C"
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "run": {
+    "clips": "target/gpu-qualification-local/fixtures-verified/h264-playlist.mp4;target/gpu-qualification-local/fixtures-verified/hdr10-1080p60.mp4;target/gpu-qualification-local/fixtures-verified/hevc10-1080p60.mp4",
+    "finished": "2026-11-19T15:55:36.6862874+02:00",
+    "binary_sha256": "88D0FBB18253C21E4A0D3A68B96A8782C8B0CE271BC7B43A6968B5D301DDB3D8",
+    "started": "2026-11-19T15:52:35.7346963+02:00",
+    "exit": 0,
+    "revision": "1e4cf2055e8881ab3d8e0cd2002bedf984fe3256",
+    "shader": "embedded",
+    "wall_s": 180.7827111,
+    "seconds": 180,
+    "pid": 14036
+  },
+  "result": {
+    "frames": 10154,
+    "peak_rss_bytes": 368967680,
+    "reloads": 1,
+    "seeks": 11,
+    "shown_items": 3,
+    "wall_s": 180.0097799
+  }
+}

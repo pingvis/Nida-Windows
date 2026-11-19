@@ -1,0 +1,5 @@
+
+running 1 test
+test internal::video::gpu_windows::qualification::interlaced_uses_cpu_conversion_without_losing_the_picture ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4610 filtered out; finished in 0.81s

@@ -1,0 +1,126 @@
+{
+  "timestamp": "2026-11-19T15:58:18.0733118Z",
+  "samples": [
+    {
+      "value": 8.118641621280226,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_0_engtype_3d"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_10_engtype_copy"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_11_engtype_copy"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_12_engtype_copy"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_13_engtype_security_1"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_1_engtype_legacyoverlay"
+    },
+    {
+      "value": 17.4401670345432,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_2_engtype_videodecode"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_3_engtype_copy"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_4_engtype_copy"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_5_engtype_copy"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_6_engtype_security"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_7_engtype_videoencode"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_8_engtype_vr"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "utilization percentage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0_eng_9_engtype_copy"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "dedicated usage",
+      "instance": "pid_9932_luid_0x00000000_0x0000e217_phys_0"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "dedicated usage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f7fa_phys_0"
+    },
+    {
+      "value": 288976896.0,
+      "status": 0,
+      "counter": "dedicated usage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "shared usage",
+      "instance": "pid_9932_luid_0x00000000_0x0000e217_phys_0"
+    },
+    {
+      "value": 0.0,
+      "status": 0,
+      "counter": "shared usage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f7fa_phys_0"
+    },
+    {
+      "value": 198455296.0,
+      "status": 0,
+      "counter": "shared usage",
+      "instance": "pid_9932_luid_0x00000000_0x0000f857_phys_0"
+    }
+  ],
+  "pid": 9932
+}

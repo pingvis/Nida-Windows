@@ -1,0 +1,10 @@
+[
+  {
+    "Path": "target/gpu-qualification-local/d3d11-adapter-probe.cpp",
+    "Hash": "2530B5909151084A7156CA8BB93B8D9B18EAEBF72F95DB372C6E387A3183D0FA"
+  },
+  {
+    "Path": "target/gpu-qualification-local/d3d11-adapter-probe.exe",
+    "Hash": "5E671E1858AE382AB36B8500983892E5CB5238F1D0A93174B5C3EE0F258058E3"
+  }
+]

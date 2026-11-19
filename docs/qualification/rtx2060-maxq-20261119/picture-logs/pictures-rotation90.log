@@ -1,0 +1,12 @@
+
+running 1 test
+GPU_PICTURE at=0 packed_mean=0.007501567322530864
+[hevc @ 00000264c1200f80] Could not get surface index. Using 0 instead.
+[hevc @ 00000264c1200f80] Could not get surface index. Using 0 instead.
+GPU_PICTURE at=2 packed_mean=0.007609230324074074
+GPU_PICTURE at=0.4 packed_mean=0.009560908564814815
+GPU_PICTURE at=3 packed_mean=0.011124493634259259
+GPU_PICTURE at=0 packed_mean=0.007501567322530864
+test internal::video::gpu_windows::tests::gpu_resident_picture_seek_pool_and_fallback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4610 filtered out; finished in 1.65s

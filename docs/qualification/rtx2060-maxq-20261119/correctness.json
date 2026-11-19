@@ -1,0 +1,198 @@
+{
+  "production_shader_override": null,
+  "provenance": {
+    "shader_sha256": "D651DB90D51608CE57B498F2BBF827F8D0982925F28379DFE1601438A8AF3B4A",
+    "base_revision": "1e4cf2055e8881ab3d8e0cd2002bedf984fe3256",
+    "built": "2026-11-19T15:51:32.2703048+02:00",
+    "app_sha256": "0D431A0A8FA6835CE15878432569777E46F010680CD2399016DFCCD22163168C",
+    "test_sha256": "88D0FBB18253C21E4A0D3A68B96A8782C8B0CE271BC7B43A6968B5D301DDB3D8",
+    "test_binary": "target/gq/release/deps/varda-25d87f05d9d642bc.exe",
+    "shader_override": null
+  },
+  "cpu_tests": 14,
+  "video_regressions": 177,
+  "ordinary_group_ignored": 6,
+  "interlaced_fallback_exit": 0,
+  "groups": [
+    {
+      "fixture": "av1-1080p60.mp4",
+      "exit": 101,
+      "result": "unsupported AV1; not GPU-resident success",
+      "seek_comparisons_completed": 0,
+      "packed_reference_mean_min": null,
+      "packed_reference_mean_max": null,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "bt601.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.0061725983796296294,
+      "packed_reference_mean_max": 0.007105758101851852,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "full-1080p60.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.006037808641975308,
+      "packed_reference_mean_max": 0.007046440972222222,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "h264-1080p60.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.006961805555555555,
+      "packed_reference_mean_max": 0.007463831018518519,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "h264-4k30.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.0059255943769290125,
+      "packed_reference_mean_max": 0.006786295572916667,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "h264-4k60.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.006048629195601852,
+      "packed_reference_mean_max": 0.0061896279417438275,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "hdr10-1080p60.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.06807665412808642,
+      "packed_reference_mean_max": 0.11208803530092593,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "hevc-1080p60.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.007501567322530864,
+      "packed_reference_mean_max": 0.011124493634259259,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "hevc10-1080p60.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.008073037229938271,
+      "packed_reference_mean_max": 0.013288122106481481,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "hlg-1080p60.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.048636308834876546,
+      "packed_reference_mean_max": 0.06897352430555556,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "narrow-sar.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.011371206275720165,
+      "packed_reference_mean_max": 0.012621527777777778,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "padded.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.0010942617638580695,
+      "packed_reference_mean_max": 0.0011779334921000347,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "rotation90.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.007501567322530864,
+      "packed_reference_mean_max": 0.011124493634259259,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "untagged.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.005302613811728395,
+      "packed_reference_mean_max": 0.006131365740740741,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "wide-sar.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.001032443576388889,
+      "packed_reference_mean_max": 0.001243580005787037,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "p010-full.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.005428361304012345,
+      "packed_reference_mean_max": 0.006892602237654321,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "p010-narrow.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.007282021604938272,
+      "packed_reference_mean_max": 0.01721064814814815,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    },
+    {
+      "fixture": "p010-wide.mp4",
+      "exit": 0,
+      "result": "pass",
+      "seek_comparisons_completed": 5,
+      "packed_reference_mean_min": 0.0003880931712962963,
+      "packed_reference_mean_max": 0.0005436197916666666,
+      "independent_software_mean_limit": 0.5,
+      "note": "packed_mean is diagnostic; independent software mean is separately asserted by the test"
+    }
+  ]
+}

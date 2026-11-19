@@ -118,8 +118,12 @@ fn to_linear(v: vec3<f32>) -> vec3<f32> {
     let cbcr = (chroma_codes - p.levels.z) / p.levels.w;
     let yuv = vec3(y, cbcr);
     var rgb = clamp(vec3(dot(p.red.xyz, yuv), dot(p.green.xyz, yuv), dot(p.blue.xyz, yuv)), vec3(0.0), vec3(1.0));
-    if p.packing.y == 0u && p.packing.z == 0u {
-        rgb = nv12_sdr_compat(floor(luma_code + 0.5), chroma_codes);
+    if p.packing.z == 0u {
+        // swscale's SDR RGBA path uses 8-bit lookup indices for P010 too.
+        // Normalize its 10-bit codes before matching the integer conversion;
+        // HDR retains the full-precision path below.
+        let divisor = select(1.0, 4.0, p.packing.y != 0u);
+        rgb = nv12_sdr_compat(floor(luma_code / divisor + 0.5), chroma_codes / divisor);
     }
     if p.packing.z != 0u {
         rgb = round(rgb * 65535.0) / 65535.0;

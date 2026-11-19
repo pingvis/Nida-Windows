@@ -1,0 +1,41 @@
+
+running 1 test
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [version]:	SVT-AV1 Encoder Lib v4.2.0-210-gf2c3fb786
+Svt[info]: SVT [build]  :	GCC 16.2.0	 64 bit
+Svt[info]: LIB Build date: Oct 27 2026 16:25:32
+Svt[info]: -------------------------------------------
+Svt[warn]: Preset M12 is mapped to M11.
+Svt[warn]: Screen-content detection and tools are disabled for RA mode coding at M9 and above; forcing NSC path
+Svt[warn]: Non-RTC M10+ are meant for automation tooling usage. Visual artifacts may occur otherwise.
+Svt[info]: Level of Parallelism: 5
+Svt[info]: Number of PPCS 76
+Svt[info]: [asm level on system : up to avx2]
+Svt[info]: [asm level selected : up to avx2]
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [config]: main profile	tier Main	level (auto)
+Svt[info]: SVT [config]: width / height / fps numerator / fps denominator 		: 640 / 360 / 25 / 1
+Svt[info]: SVT [config]: bit-depth / color format 					: 8 / YUV420
+Svt[info]: SVT [config]: preset / tune / pred struct 					: 11 / PSNR / random access
+Svt[info]: SVT [config]: gop size / mini-gop size / key-frame type 			: 161 / 16 / key frame
+Svt[info]: SVT [config]: BRC mode / rate factor 					: CRF / 35.00
+Svt[info]: SVT [config]: AQ mode / Variance Boost 					: 2 / 0
+Svt[info]: SVT [config]: sharpness / luminance-based QP bias 				: 0 / 0
+Svt[info]: SVT [config]: QP scale compress strength 					: 0
+Svt[info]: -------------------------------------------
+[av1 @ 0000018e410341c0] Failed setup for format d3d11: hwaccel initialisation returned error.
+[av1 @ 0000018e410341c0] Your platform doesn't support hardware accelerated AV1 decoding.
+[av1 @ 0000018e410341c0] Failed to get pixel format.
+[av1 @ 0000018e410341c0] Get current frame error
+
+thread 'internal::video::tests::hardware_download_reuses_storage_without_changing_samples_or_properties' (9156) panicked at src\internal\video\mod.rs:3429:21:
+av1.mp4: no hardware frames
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test internal::video::tests::hardware_download_reuses_storage_without_changing_samples_or_properties ... FAILED
+
+failures:
+
+failures:
+    internal::video::tests::hardware_download_reuses_storage_without_changing_samples_or_properties
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4610 filtered out; finished in 1.00s

@@ -1,0 +1,10 @@
+
+running 1 test
+GPU_PICTURE at=0 packed_mean=0.005302613811728395
+GPU_PICTURE at=2 packed_mean=0.005859495563271605
+GPU_PICTURE at=0.4 packed_mean=0.005934365354938272
+GPU_PICTURE at=3 packed_mean=0.006131365740740741
+GPU_PICTURE at=0 packed_mean=0.005302613811728395
+test internal::video::gpu_windows::tests::gpu_resident_picture_seek_pool_and_fallback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4610 filtered out; finished in 2.22s
