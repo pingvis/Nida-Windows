@@ -2284,7 +2284,7 @@ fn a_deleted_channel_leaves_no_bus_pointing_at_it() {
         let bus = buses.get(&stream).unwrap();
         assert_eq!(bus.preview(), &BusInputRef::Black, "Preview let go");
         assert_eq!(bus.program(), &BusInputRef::Black, "Program let go");
-        assert!(buses.get(&tv).unwrap().hidden_layers().is_empty());
+        assert_eq!(buses.get(&tv).unwrap().hidden_layers(), [] as [String; 0]);
         app.save_workspace(&UILayoutState::default())
             .expect("save workspace");
         (stream, tv, gone)

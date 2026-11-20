@@ -742,7 +742,7 @@ mod tests {
                 "files it shows are not beside it: img/bg.jpg, img/gone.png".to_string(),
             ]
         );
-        assert!(check_html("<html><body><h1>Hi</h1></body></html>", dir.path()).is_empty());
+        assert_eq!((check_html("<html><body><h1>Hi</h1></body></html>", dir.path())).len(), 0);
     }
 
     #[test]
@@ -790,7 +790,7 @@ mod tests {
         std::fs::write(dir.path().join("gone.png"), b"x").unwrap();
         assert_eq!(checker.warnings(&path, stamp_of(&page), 16.0 / 9.0), missing);
         checker.check_again(Some(std::slice::from_ref(&path)));
-        assert!(settled(&checker, &path, stamp_of(&page)).is_empty());
+        assert_eq!((settled(&checker, &path, stamp_of(&page))).len(), 0);
         // The page changed: looked over again by itself.
         std::fs::write(&page, r#"<script src="https://cdn.example.com/deck.js"></script>"#).unwrap();
         assert_eq!(
@@ -816,11 +816,11 @@ mod tests {
         record(&checker.found, ask(0), vec!["linked videos or sounds not there".into()]);
         assert!(!lock(&checker.found).done.contains_key("/talks/deck.pptx"));
         record(&checker.found, ask(1), Vec::new());
-        assert!(lock(&checker.found).done["/talks/deck.pptx"].warnings.is_empty());
+        assert_eq!((lock(&checker.found).done["/talks/deck.pptx"].warnings).len(), 0);
         // Every file asked again: the same.
         checker.check_again(None);
         record(&checker.found, ask(1), vec!["stale".into()]);
-        assert!(lock(&checker.found).done["/talks/deck.pptx"].warnings.is_empty());
+        assert_eq!((lock(&checker.found).done["/talks/deck.pptx"].warnings).len(), 0);
     }
 
     /// A part bigger than allowed — as it really is, whatever the zip claims

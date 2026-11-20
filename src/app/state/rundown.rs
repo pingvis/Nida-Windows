@@ -1871,7 +1871,7 @@ mod tests {
         // Just past its end: from + 2.0 - from can come out a hair short of 2.
         app.run_sound_fades(from + 2.01);
         assert!(!list_playing(&app, &music), "paused at the fade's end");
-        assert!(app.sounds_stopping().is_empty());
+        assert_eq!((app.sounds_stopping()).len(), 0);
     }
 
     /// A second Stop while it fades stops it at once; a Stop set to cut, or
@@ -1902,7 +1902,7 @@ mod tests {
         assert!(list_playing(&app, &music), "fading");
         stop(&mut app, None);
         assert!(!list_playing(&app, &music), "a second Stop: at once");
-        assert!(app.sounds_stopping().is_empty());
+        assert_eq!((app.sounds_stopping()).len(), 0);
 
         app.rundown_fades.clear();
         play(&mut app);

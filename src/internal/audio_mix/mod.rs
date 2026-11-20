@@ -3295,7 +3295,7 @@ mod tests {
         engine.connect_inputs(&mut capture);
         assert_eq!(engine.devices_of_deck("deck-a"), [0]);
         assert_eq!(engine.devices_of_deck("deck-b"), [1]);
-        assert!(engine.devices_of_deck("deck-c").is_empty());
+        assert_eq!((engine.devices_of_deck("deck-c")).len(), 0);
     }
 
     /// Asked to list the devices while a listing is being made: listed
@@ -4280,10 +4280,10 @@ mod tests {
             );
         }
         engine
-            .edit_source(&mic, |s| s.equalizer = Default::default())
+            .edit_source(&mic, |s| s.equalizer = EqualizerConfig::default())
             .unwrap();
         engine
-            .edit_bus(&room, |b| b.equalizer = Default::default())
+            .edit_bus(&room, |b| b.equalizer = EqualizerConfig::default())
             .unwrap();
         assert!(
             echo_of(&engine, &camera).is_empty(),
@@ -4348,7 +4348,7 @@ mod tests {
                 "kept to cross back, not asked for"
             );
         }
-        assert!(echo_of(&engine, &mic).is_empty());
+        assert_eq!((echo_of(&engine, &mic)).len(), 0);
         engine
             .config
             .inputs
@@ -4360,7 +4360,7 @@ mod tests {
         assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
         // A live bus mixes its mics in its device: none cleaned there.
         engine.edit_bus(&call, |b| b.live = true).expect("bus");
-        assert!(echo_of(&engine, &mic).is_empty());
+        assert_eq!((echo_of(&engine, &mic)).len(), 0);
         assert!(engine
             .core
             .lock()
@@ -4405,7 +4405,7 @@ mod tests {
         assert_eq!(echo_of(&engine, &mic), vec![room.clone()]);
         // The room gone: so is the echo removal.
         engine.remove_bus(&room).expect("room");
-        assert!(echo_of(&engine, &mic).is_empty());
+        assert_eq!((echo_of(&engine, &mic)).len(), 0);
         assert_eq!(
             engine
                 .config()
@@ -4553,7 +4553,7 @@ mod tests {
         );
         engine
             .edit_source(&mic, |s| {
-                s.send_settings.get_mut(&wedge).unwrap().mode = SendMode::Pre
+                s.send_settings.get_mut(&wedge).unwrap().mode = SendMode::Pre;
             })
             .expect("mic");
         assert!(
@@ -5498,7 +5498,7 @@ mod tests {
         assert!(engine.snapshot().sources[0].equalizer.ready);
         engine
             .edit_source("d1", |strip| {
-                strip.equalizer.bands[0].gain_db = f32::INFINITY
+                strip.equalizer.bands[0].gain_db = f32::INFINITY;
             })
             .unwrap();
         assert_eq!(strip(&engine).equalizer, EqualizerConfig::default());

@@ -373,7 +373,7 @@ fn realtime_measurement() {
             }
         }
         encoder.on_submitted_work_done(move || {
-            pacing_trace::emit("render_complete", f64::from(ticks), 0.0)
+            pacing_trace::emit("render_complete", f64::from(ticks), 0.0);
         });
         gpu.submit([encoder.finish()]);
         gpu.device
@@ -389,7 +389,7 @@ fn realtime_measurement() {
         if Instant::now() > deadline {
             late += 1;
         }
-        if !historical_sampling && ticks % 30 == 0 {
+        if !historical_sampling && ticks.is_multiple_of(30) {
             let sampled_at = Instant::now();
             refresh(&mut system);
             peak_rss = peak_rss.max(system.process(pid).unwrap().memory());
@@ -399,7 +399,7 @@ fn realtime_measurement() {
             pacing_trace::emit("render_wait", wait.as_secs_f64(), f64::from(ticks));
             std::thread::sleep(wait);
         }
-        if historical_sampling && ticks % 30 == 0 {
+        if historical_sampling && ticks.is_multiple_of(30) {
             let sampled_at = Instant::now();
             refresh(&mut system);
             peak_rss = peak_rss.max(system.process(pid).unwrap().memory());

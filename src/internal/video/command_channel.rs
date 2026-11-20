@@ -95,10 +95,6 @@ pub(crate) struct NativeWait {
 #[cfg(windows)]
 impl NativeWait {
     pub(crate) fn new() -> Option<Self> {
-        #[cfg(test)]
-        if std::env::var("NIDA_VIDEO_BENCH_LEGACY_WAIT").is_ok_and(|value| value == "1") {
-            return None;
-        }
         use std::os::windows::io::{FromRawHandle, OwnedHandle};
         use windows_sys::Win32::System::Threading::{
             CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, CreateEventW, CreateWaitableTimerExW,
@@ -111,6 +107,10 @@ impl NativeWait {
                 // SAFETY: successful creation transfers this unique handle to us.
                 Some(unsafe { OwnedHandle::from_raw_handle(raw) })
             }
+        }
+        #[cfg(test)]
+        if std::env::var("NIDA_VIDEO_BENCH_LEGACY_WAIT").is_ok_and(|value| value == "1") {
+            return None;
         }
         // Auto-reset event: no drain/reset race with a concurrent command sender.
         // SAFETY: unnamed, non-inherited handles, no caller-owned pointers.

@@ -507,7 +507,7 @@ fn a_step_sets_each_thing_once() {
         [OverlaySet { channel: "title".into(), on: false }]
     );
     rundown.set_overlay(a, "title", None);
-    assert!(rundown.step(a).unwrap().overlays.is_empty());
+    assert_eq!((rundown.step(a).unwrap().overlays).len(), 0);
 
     rundown.set_play(a, "sting", Some(PlayAction::Start));
     rundown.set_play(a, "sting", Some(PlayAction::Pause));
@@ -559,7 +559,7 @@ fn steps_let_go_of_what_is_deleted() {
     assert_eq!(rundown.step(&ids[1]).unwrap().main, None);
 
     assert!(rundown.forget_bus("middle"));
-    assert!(rundown.step(a).unwrap().screens.is_empty());
+    assert_eq!((rundown.step(a).unwrap().screens).len(), 0);
     assert!(!rundown.forget_bus("middle"));
 }
 
@@ -897,7 +897,7 @@ fn undo_moves_a_hold_to_where_the_steps_holds_are() {
     rundown.restore_steps(&before);
     assert!(!rundown.step(&b).unwrap().at_always);
     assert_eq!(rundown.at_held(), Some(b.as_str()), "the next step's hold now");
-    assert!(rundown.held_always().is_empty());
+    assert_eq!((rundown.held_always()).len(), 0);
     assert!(rundown.set_next(&b));
     assert!(!rundown.is_held(&b), "let go as the next step's is");
 

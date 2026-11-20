@@ -1,0 +1,330 @@
+{
+  "qualified_commit": "c19e528",
+  "note": "Later test lint cleanup preserves tested conditions and colour thresholds; frozen release binaries/source snapshots remain the measurement provenance. Only production item placement/import ordering changes; native wait runtime and moved layout function were verified unchanged.",
+  "validation": [
+    "strict cargo clippy --offline --tests --keep-going --no-default-features --features screen-capture,windows-browser -j 1 -- -D warnings",
+    "CPU qualification harness: 28 passed, 0 failed, 1 existing timing probe ignored"
+  ],
+  "files": [
+    {
+      "path": "src/app/engine_impl.rs",
+      "sha256": "FAFD63676E5CD85204B19A1AAC64AA26F0383966659D1DD33B2C2336EE67BD9C"
+    },
+    {
+      "path": "src/app/mod.rs",
+      "sha256": "044366E4A4120E3CDE4E5694DBFAC6F51BDD785708CDFA100D3B7A8CD715329D"
+    },
+    {
+      "path": "src/app/snapshot.rs",
+      "sha256": "E7C07785CC84556760441429E4BC57D5F1499F5BB732A86B6B826B26E1139354"
+    },
+    {
+      "path": "src/app/state/buses.rs",
+      "sha256": "75D3574FBA608A129B23BCDB3491DFF9EE78322545E98149E2D4AA2B622CC93B"
+    },
+    {
+      "path": "src/app/state/rundown.rs",
+      "sha256": "A92EFD14634C32E9A877F009FC05EA95B07D1796394E6418B360F9620E8C1C55"
+    },
+    {
+      "path": "src/app/workspace.rs",
+      "sha256": "DC35270134095D28D2B5AD46D1E416C9B9E20D8F0C8B9589E87F6B3DE18BFD1B"
+    },
+    {
+      "path": "src/internal/analyzer/capture.rs",
+      "sha256": "B4F32E76999C1A3AB352D1BB5898DE46EC75072BB67E27A2BEE3DFD099489969"
+    },
+    {
+      "path": "src/internal/arrangement/mod.rs",
+      "sha256": "43FEAEAEDF72C9D82D518A4BA358AB419B1A4AA70BF15090B7A226D6EA32297B"
+    },
+    {
+      "path": "src/internal/audio/app_sound/windows.rs",
+      "sha256": "2C8A651250A5763729E6183084AE6A4135396A45E2E3097D6914B16945159731"
+    },
+    {
+      "path": "src/internal/audio/mod.rs",
+      "sha256": "0EB7516F01FBCE0DF9665C6541B401673C85F3A064C322D501987E8B20230642"
+    },
+    {
+      "path": "src/internal/audio_mix/equalizer.rs",
+      "sha256": "C9827011511C1B5F6F2DC60FCA9E89006FDEE199DB0F330B49BF016247857A50"
+    },
+    {
+      "path": "src/internal/audio_mix/mod.rs",
+      "sha256": "6B3F36108896D52790647427C9E02D8BB52E7287D3A297959D4040356F063208"
+    },
+    {
+      "path": "src/internal/audio_mix/reader.rs",
+      "sha256": "BE5BC6624E2CFE35E766E9A38C9DCC47E80E18647530EC5E6656C3FE4E512FDD"
+    },
+    {
+      "path": "src/internal/bus/tests.rs",
+      "sha256": "1C504DFFAE40BCC7B904A0EC1F91B92CBA7952B1BB481DC31E509B760F7E523A"
+    },
+    {
+      "path": "src/internal/bus/together.rs",
+      "sha256": "C1FC5DE594F10162DA07E11F762C6A5ADBF85E7E6F50E2B8BA9994CEDB972C56"
+    },
+    {
+      "path": "src/internal/camera/mod.rs",
+      "sha256": "5DB723F2A919A29C2A6B7FA64BDA6795AD1371BC96F5496ED7204E6676AA850A"
+    },
+    {
+      "path": "src/internal/clicker/mod.rs",
+      "sha256": "D8B88F084467E37EFE0C085EA5F26DBA0016A6394D7BDCA365939FDBFE3368CB"
+    },
+    {
+      "path": "src/internal/deck/presenter.rs",
+      "sha256": "B901129939F3ECE1F6951E818F8B9EF181E1306858A9A4C8B27824A04C668323"
+    },
+    {
+      "path": "src/internal/deck/render.rs",
+      "sha256": "80A0469988B7C98C3F28E86E20C69DF7B3A4E1F1EAB2782902C72069D207CED0"
+    },
+    {
+      "path": "src/internal/decklink/mod.rs",
+      "sha256": "0DC88FA78660715EA6A59260C1F3E2CF9790BEDE82B51DBDAEBDE4234B1B2B59"
+    },
+    {
+      "path": "src/internal/depth/mod.rs",
+      "sha256": "53DE91C535CF3EE2CAC648E6AADA8A61B0E47C6A250C2DADF2DAD71E7AA117AB"
+    },
+    {
+      "path": "src/internal/html/cef_input.rs",
+      "sha256": "3B9C0C0ED9C50DD8FB08E73816856FA59D9EAF7D44B39D26D374AFDE6264FA97"
+    },
+    {
+      "path": "src/internal/isf/compiler.rs",
+      "sha256": "052215BAEAEB5B751F9D5940626698CA4114DF42DA7761A66CF9DD342F16FD64"
+    },
+    {
+      "path": "src/internal/keymap/mod.rs",
+      "sha256": "9E4392F69D3BAD6474327917F69A1AB1B6D3841BB846018B8377327E2DA29796"
+    },
+    {
+      "path": "src/internal/macros/mod.rs",
+      "sha256": "AA416F6A639725A218964F429050115DB5A30294F8A23FEDDC484FADD2F63F39"
+    },
+    {
+      "path": "src/internal/midi/controller_profile.rs",
+      "sha256": "437B38D7CFF2A68622388C0ED8C26D4FDBB32400462C0BC6F85671A449ED6932"
+    },
+    {
+      "path": "src/internal/midi/mod.rs",
+      "sha256": "885A7117E88642EB285FC83C5DA9CF3796F753D6B403078E00C2981DD4808D43"
+    },
+    {
+      "path": "src/internal/mixer/kept_tests.rs",
+      "sha256": "1399C4CFEE60B855260F13FCA17323437441931D50A8D7DF852E158A75CE1C55"
+    },
+    {
+      "path": "src/internal/mixer/program.rs",
+      "sha256": "C918310B5F814AD7414604CA0CBDF6EE8C15E238ECA49FF2FEDA0C1F2A6AB011"
+    },
+    {
+      "path": "src/internal/modulation/mod.rs",
+      "sha256": "F33910E2A76D736EE0DFB29A740EE34D1AD31BDD16F9BF07786F788FAE43A543"
+    },
+    {
+      "path": "src/internal/ndi/mod.rs",
+      "sha256": "DE6B52FF2A32731790C8BCDD7CFBE491C428DF5A08CC4AD2F3F0BDB0B98D8B72"
+    },
+    {
+      "path": "src/internal/ndi/receive.rs",
+      "sha256": "F0A1D7CEA30581E2BFE07C66E5447514393A2EE961976A804BB2F2486277B662"
+    },
+    {
+      "path": "src/internal/ndi/sdk.rs",
+      "sha256": "B96561B6A52D4E288DC81F92AB4894994337ACE38A272CF294FA062154ADD320"
+    },
+    {
+      "path": "src/internal/osc/mod.rs",
+      "sha256": "617302A89B61494BA6605E27515C386C0B68A37B3120D78187FACB117AC6D3D1"
+    },
+    {
+      "path": "src/internal/persistence/mod.rs",
+      "sha256": "088001483D5C39F9F4131FBD5B0AD31577EE8F9AE556E32B6FC58FC1F691F34C"
+    },
+    {
+      "path": "src/internal/persistence/writer.rs",
+      "sha256": "927653C71CAABEF2EBD19A6BF515C55AA309F7BFF5B882903F2CB58472BE3A64"
+    },
+    {
+      "path": "src/internal/presentation/check.rs",
+      "sha256": "A9212CD5E093FD27290926887DF93118CB507FFB9BC8E8661A249B3532936B6F"
+    },
+    {
+      "path": "src/internal/presentation/manager.rs",
+      "sha256": "A176A4CE7A5BD8CE527D50E2ABFB01210BE020B5DB0EE95BB8FA1C4C8C6D6F26"
+    },
+    {
+      "path": "src/internal/presentation/windows.rs",
+      "sha256": "9B064271F5361D3A71EE67B950099E63B7CDA9AD34A6A55E12656D359CA76B60"
+    },
+    {
+      "path": "src/internal/registry/mod.rs",
+      "sha256": "9E796FB9AD9356B696DEAE08937F5C583A8AA57082318FE47C8D5E80CAA938C0"
+    },
+    {
+      "path": "src/internal/renderer/blit.rs",
+      "sha256": "E6EDB0EEBE439333C9856A449AF5FE499D96EF6099E87C32AC49B50A18FF37D6"
+    },
+    {
+      "path": "src/internal/renderer/region.rs",
+      "sha256": "5505849D4F6091EA085C3E5C6B9F1137092646ED7A2606FA109BAA86CC28D3CE"
+    },
+    {
+      "path": "src/internal/rundown/tests.rs",
+      "sha256": "FF6B0A0BA9050C016996FD30214E21BD99B8A371DACBE6E120EBC3EAC9873D45"
+    },
+    {
+      "path": "src/internal/scene/mod.rs",
+      "sha256": "11F342F227D1BF3842AC79AAD1285177B0598142ABA46FE6CBBD607F6B856D8F"
+    },
+    {
+      "path": "src/internal/scene/reidentify.rs",
+      "sha256": "932C166815BC685ED7F8496AE3C9C9883B521F387E32F9E787105D73087B19C0"
+    },
+    {
+      "path": "src/internal/screen_capture/mod.rs",
+      "sha256": "750478C76449F29A8C3910510E3BE732F2BD7D11CF6DA3314ABB1845EB38C86D"
+    },
+    {
+      "path": "src/internal/screen_capture/platform.rs",
+      "sha256": "D7546DF7D56E6F55107601FCF6EDB41396A69FF35EC7DB4CBC9152BD0E35870A"
+    },
+    {
+      "path": "src/internal/screen_capture/platform/windows.rs",
+      "sha256": "2660271BCB517C92B21F2AA92FEFD0B830FCCA2F6F018007A3B32DF8C39EF69D"
+    },
+    {
+      "path": "src/internal/streaming/flv.rs",
+      "sha256": "36A90EF167D8F6D920E247011046534573A30CCC09E625C985AB4C561972FBDF"
+    },
+    {
+      "path": "src/internal/streaming/mod.rs",
+      "sha256": "BDFB52767F2DEA743583568A376C2B471C6EC7FFCABC68187550C908112716FB"
+    },
+    {
+      "path": "src/internal/surface/detect.rs",
+      "sha256": "01A18CB56E512E0C74E6BFF38B1DB056785BBFC5BDED4F6B5664AD256F9BD13B"
+    },
+    {
+      "path": "src/internal/surface/tests.rs",
+      "sha256": "C0BFEE7E0794968FA97983B4C8AA985DAC510C237BB969A060554A8F87567B3B"
+    },
+    {
+      "path": "src/internal/timebase/mod.rs",
+      "sha256": "A6A65A2B7505729B1AAC34954395430BE1DACAAB46B1806B19FD24FE4D9EB94F"
+    },
+    {
+      "path": "src/internal/timecode/mod.rs",
+      "sha256": "C1D4A0820E22C5796B4D3C0EC305DF81620BC2C1A6D938782DDE50297710A748"
+    },
+    {
+      "path": "src/internal/video/command_channel.rs",
+      "sha256": "400870C14CF4DA9503F50F9476FE555EB25400FEC55E28C07D527C8EB01A0D37"
+    },
+    {
+      "path": "src/internal/video/diagnostics.rs",
+      "sha256": "833D1AE9FCFDEDF57C80189CE10755A5EF4B1E090A9357706E7957417785E1F3"
+    },
+    {
+      "path": "src/internal/video/gpu_windows/tests.rs",
+      "sha256": "332AE0CAD5C23CCD99194C78A7391DBCFA641CB3406D2E0BD5ED9111C53738A3"
+    },
+    {
+      "path": "src/internal/video/mod.rs",
+      "sha256": "AF7C1830EAC813869DBD941958A41C17ADA0C7E785540583CC5953B294C56D1B"
+    },
+    {
+      "path": "src/internal/video/playback_diagnostics.rs",
+      "sha256": "2A87137325EF82CCBEA6AE3124CAED57CA62524D3E789E8DFC3ACF9CA3F8E5AD"
+    },
+    {
+      "path": "src/usecases/api/ws.rs",
+      "sha256": "A48129E408F94A38CE2BC75A4D489ED01BB67EF7150069E3889682F5FC897AC0"
+    },
+    {
+      "path": "src/usecases/ui/panels/arrangement/mod.rs",
+      "sha256": "00EEF1AF2CF9A2290D02F4AE6C81E34C6065722DB7AC12E0130348A75CEEF680"
+    },
+    {
+      "path": "src/usecases/ui/panels/arrangement/selection.rs",
+      "sha256": "6D4B71F33E93420D1C4165E7656E05DE1989B9F20766560FF2C772693DD125B7"
+    },
+    {
+      "path": "src/usecases/ui/panels/deck_detail.rs",
+      "sha256": "6013FCB294DEB6EFC933BE0AE1DBCFBE248B44F6491900B078A99CD91B621059"
+    },
+    {
+      "path": "src/usecases/ui/panels/file_drop.rs",
+      "sha256": "ADD28873D3BFE35EE6FC3547CBB8D6A13A3BB1C53FFA97D96E52E411739FF3CC"
+    },
+    {
+      "path": "src/usecases/ui/panels/main_desk.rs",
+      "sha256": "304F153FE59D58A7F007E46239D7369F996040BDE6F3192F82941303EF0EEDBF"
+    },
+    {
+      "path": "src/usecases/ui/panels/stage/geometry.rs",
+      "sha256": "637D51E8C64E404AF3E78C711A4EF0F36C62813CE02BE8DA17DD5F077880BFE6"
+    },
+    {
+      "path": "src/usecases/ui/panels/stream.rs",
+      "sha256": "3B5274788D790498864BC25516BE0617AA79705A4295A25F8B31EE8EA2563A45"
+    },
+    {
+      "path": "src/usecases/ui/panels/tonemap.rs",
+      "sha256": "736B82D50EACA681C29750354670BC3CB223051D2A234F6A3D8F684F0D8431B9"
+    },
+    {
+      "path": "src/usecases/ui/preview_picker.rs",
+      "sha256": "10E021BCFF2750A826F77F555891FC83479E7AE20A62EBF3B1982992F1B2E275"
+    },
+    {
+      "path": "src/usecases/ui/runner/responsiveness.rs",
+      "sha256": "F1EB1504D0808EACCE3415E6AFD735B6C8BCB55B396EF5193667C395843D5AFB"
+    },
+    {
+      "path": "src/usecases/ui/screen_layout.rs",
+      "sha256": "B6ADD99465FFC8B3A03D699EA8395DCDF0C0A1A4CD51B6F5485D1D85B4281E98"
+    },
+    {
+      "path": "src/usecases/ui/state.rs",
+      "sha256": "4BE584745F09049813C0607C2C8E2F4ACEA3ADD9A03E872CED7E35EF5C5355FB"
+    },
+    {
+      "path": "tests/add_input.rs",
+      "sha256": "2A793DA826ABD4A0C8D704C7401CB9D6475E67FE9081D9E1C838817FD2194959"
+    },
+    {
+      "path": "tests/audio_mix.rs",
+      "sha256": "5685C435D3B4F34CB1B43DF47EC62D8CDDADC98AD7A4132239B978D67A22EE2F"
+    },
+    {
+      "path": "tests/command_roundtrip.rs",
+      "sha256": "6118A0E7FB2E2E88D9B3EE3E15E3ACE1183D55ECAD2F0230555A24E9EF11144D"
+    },
+    {
+      "path": "tests/engine_integration.rs",
+      "sha256": "9359E8DB3F1D099477CB6280647EEDB92E8DBD086DFD2A9525AEB1F7C02A5515"
+    },
+    {
+      "path": "tests/main_program.rs",
+      "sha256": "7F6A64DB0307CD211BB88020A424316C430E3FE479DA6EA7A0D53162D36693C6"
+    },
+    {
+      "path": "tests/persistence_integration.rs",
+      "sha256": "A37CB54081F32E33F999A18749C543F51E8D9A4047909EB2CB609AC576F317FA"
+    },
+    {
+      "path": "tests/rundown.rs",
+      "sha256": "28EDE6B101FA05FE8233EE91C882A9C224023DA8F654F6B85862ADC498020960"
+    },
+    {
+      "path": "tests/slides.rs",
+      "sha256": "E90DF60F491F5584B99195C2F5F62E6186798D29C3758B92CC95E4D44C0D027B"
+    }
+  ]
+}

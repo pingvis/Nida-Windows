@@ -373,7 +373,7 @@ mod tests {
             candidates,
             vec![std::path::Path::new("installed runtime").join("Processing.NDI.Lib.x64.dll")]
         );
-        assert!(windows_runtime_candidates(|_| None).is_empty());
+        assert_eq!((windows_runtime_candidates(|_| None)).len(), 0);
     }
 
     #[test]

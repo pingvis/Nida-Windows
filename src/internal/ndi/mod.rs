@@ -1565,7 +1565,7 @@ mod tests {
         manager.keep_senders(|name| name == "Kept");
         assert_eq!(manager.sender_names(), ["Kept"]);
         manager.keep_senders(|_| false);
-        assert!(manager.sender_names().is_empty());
+        assert_eq!((manager.sender_names()).len(), 0);
         assert_eq!(
             kept_frames.try_recv().err(),
             Some(std::sync::mpsc::TryRecvError::Disconnected)
@@ -1687,7 +1687,7 @@ mod tests {
             vec![0.1, -0.1, 0.2, -0.2, 0.3, -0.3]
         );
         assert_eq!(interleave(&[&left]), vec![0.1, 0.2, 0.3]);
-        assert!(interleave(&[]).is_empty());
+        assert_eq!((interleave(&[])).len(), 0);
     }
 
     /// One NDI audio frame over `planes`, as the SDK hands it out.
@@ -1745,7 +1745,7 @@ mod tests {
     fn ndi_manager_sources_empty() {
         let mgr = NdiManager::new();
         assert!(mgr.sources().is_empty());
-        assert!(mgr.discovered_sources().is_empty());
+        assert_eq!((mgr.discovered_sources()).len(), 0);
     }
 
     #[test]

@@ -216,12 +216,12 @@ mod tests {
 
     #[test]
     fn helper_transport_keeps_unicode_paths_as_data() {
-        let script = r#"
+        let script = r"
 while ($null -ne ($line = [Console]::ReadLine())) {
     $request = $line | ConvertFrom-Json
     @{ reply = $request.path } | ConvertTo-Json -Compress | ForEach-Object { [Console]::WriteLine($_) }
 }
-"#;
+";
         let mut bridge = Bridge::start(script).unwrap();
         let path = "C:/Talks/Čiurlionis ' $() ` deck.pptx";
         let reply = bridge

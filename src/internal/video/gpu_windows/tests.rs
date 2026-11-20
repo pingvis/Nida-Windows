@@ -213,7 +213,7 @@ fn gpu_resident_picture_seek_pool_and_fallback() {
     // Pressure retains the current decoder picture. A playing worker must use
     // bounded periodic retries even when its eligibility deadline is in the past.
     native.set_playing(true);
-    native.playback.last_advance = std::time::Instant::now() - std::time::Duration::from_secs(1);
+    native.playback.last_advance = std::time::Instant::now().checked_sub(std::time::Duration::from_secs(1)).unwrap();
     assert!(native.next_picture_deadline().is_some());
     let position = native.playback.position;
     let timestamp = native.decoded.timestamp().unwrap() as f64 * native.time_base - native.start;

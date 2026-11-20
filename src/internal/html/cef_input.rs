@@ -63,10 +63,12 @@ mod tests {
 
     #[test]
     fn unicode_and_key_up_survive_the_transport() {
-        let mut key = keyboard_types::KeyboardEvent::default();
-        key.key = Key::Character("ą".into());
-        key.code = keyboard_types::Code::KeyA;
-        key.state = KeyState::Up;
+        let key = keyboard_types::KeyboardEvent {
+            key: Key::Character("ą".into()),
+            code: keyboard_types::Code::KeyA,
+            state: KeyState::Up,
+            ..Default::default()
+        };
         let event = command(2, 0, HtmlInputEvent::Key(key));
         assert_eq!(event["text"], "ą");
         assert_eq!(event["code"], "KeyA");

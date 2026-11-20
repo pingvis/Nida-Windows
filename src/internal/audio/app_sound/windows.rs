@@ -708,7 +708,7 @@ mod tests {
     fn amplitude(samples: &[f32], hz: f64) -> f64 {
         let mut sin = 0.0;
         let mut cos = 0.0;
-        for (frame, channels) in samples.chunks_exact(2).enumerate() {
+        for (frame, channels) in samples.as_chunks::<2>().0.iter().enumerate() {
             let phase = std::f64::consts::TAU * hz * frame as f64 / f64::from(RATE);
             sin += f64::from(channels[0]) * phase.sin();
             cos += f64::from(channels[0]) * phase.cos();
@@ -720,6 +720,7 @@ mod tests {
     #[ignore = "Real audio test: run three quiet tone fixtures and set NIDA_APP_AUDIO_FIXTURE"]
     fn native_process_audio_is_isolated_mixes_instances_and_stops_promptly() {
         #[derive(serde::Deserialize)]
+        #[expect(clippy::struct_field_names, reason = "PID suffixes match the external audio-fixture JSON schema")]
         struct Fixture {
             first_pid: u32,
             second_pid: u32,

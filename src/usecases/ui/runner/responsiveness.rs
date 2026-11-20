@@ -53,6 +53,40 @@ impl UIRunner {
     }
 }
 
+/// The engine snapshot can be old while the panel arrangement and selection
+/// are current. These fields belong to the UI, so refreshing them needs no
+/// engine access and does not pretend an engine mutation has completed.
+pub(super) fn update_layout(data: &mut UIData, layout: &UILayoutState) {
+    data.selected_deck = layout.selected_deck;
+    data.selected_channel = layout.selected_channel;
+    data.selected_master = layout.selected_master;
+    data.selected_sequence = layout.selected_sequence;
+    data.selected_sequence_step = layout.selected_sequence_step;
+    data.selected_macro.clone_from(&layout.selected_macro);
+    data.stage_editor_open = layout.stage_editor_open;
+    data.stage_editor_grid_size = layout.stage_editor_grid_size;
+    data.stage_editor_snap = layout.stage_editor_snap;
+    data.arrangement_mode_open = layout.arrangement_mode_open;
+    data.arrangement_pixels_per_second = layout.arrangement_pixels_per_second;
+    data.arrangement_scroll = layout.arrangement_scroll;
+    data.arrangement_scroll_y = layout.arrangement_scroll_y;
+    data.arrangement_snap = layout.arrangement_snap;
+    data.arrangement_focus = layout.arrangement_focus.or_else(|| {
+        data.transport
+            .loop_region
+            .map(|region| crate::usecases::ui::state::FocusRange::new(region.start, region.end))
+    });
+    data.library_panel_open = layout.library_panel_open;
+    data.right_panel_open = layout.right_panel_open;
+    data.screen.clone_from(&layout.screen);
+    data.collapsed_channels
+        .clone_from(&layout.collapsed_channels);
+    data.dome_preview_open = layout.dome_preview_open;
+    data.dome_mode_active = layout.dome_mode_active;
+    data.dome_preset = layout.dome_preset;
+    data.dome_geometry = layout.dome_geometry;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -189,38 +223,4 @@ mod tests {
             "UI admission waited {waited:?}"
         );
     }
-}
-
-/// The engine snapshot can be old while the panel arrangement and selection
-/// are current. These fields belong to the UI, so refreshing them needs no
-/// engine access and does not pretend an engine mutation has completed.
-pub(super) fn update_layout(data: &mut UIData, layout: &UILayoutState) {
-    data.selected_deck = layout.selected_deck;
-    data.selected_channel = layout.selected_channel;
-    data.selected_master = layout.selected_master;
-    data.selected_sequence = layout.selected_sequence;
-    data.selected_sequence_step = layout.selected_sequence_step;
-    data.selected_macro.clone_from(&layout.selected_macro);
-    data.stage_editor_open = layout.stage_editor_open;
-    data.stage_editor_grid_size = layout.stage_editor_grid_size;
-    data.stage_editor_snap = layout.stage_editor_snap;
-    data.arrangement_mode_open = layout.arrangement_mode_open;
-    data.arrangement_pixels_per_second = layout.arrangement_pixels_per_second;
-    data.arrangement_scroll = layout.arrangement_scroll;
-    data.arrangement_scroll_y = layout.arrangement_scroll_y;
-    data.arrangement_snap = layout.arrangement_snap;
-    data.arrangement_focus = layout.arrangement_focus.or_else(|| {
-        data.transport
-            .loop_region
-            .map(|region| crate::usecases::ui::state::FocusRange::new(region.start, region.end))
-    });
-    data.library_panel_open = layout.library_panel_open;
-    data.right_panel_open = layout.right_panel_open;
-    data.screen.clone_from(&layout.screen);
-    data.collapsed_channels
-        .clone_from(&layout.collapsed_channels);
-    data.dome_preview_open = layout.dome_preview_open;
-    data.dome_mode_active = layout.dome_mode_active;
-    data.dome_preset = layout.dome_preset;
-    data.dome_geometry = layout.dome_geometry;
 }

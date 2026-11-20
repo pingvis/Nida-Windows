@@ -918,7 +918,7 @@ mod tests {
                 fifo.drain(..n);
             }
         }
-        assert!(!steps.is_empty());
+        assert_ne!((steps).len(), 0);
         assert!(steps.iter().all(|s| *s == 1.0), "never off 1: {:?}", steps.iter().find(|s| **s != 1.0));
     }
 

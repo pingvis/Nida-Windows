@@ -3380,7 +3380,7 @@ mod tests {
             let h = egui_kittest::Harness::builder()
                 .with_size(egui::vec2(600.0, 300.0))
                 .build_ui(|ui| {
-                    render_border(ui, &deck, &crop, params.clone(), &data, &mut actions)
+                    render_border(ui, &deck, &crop, params.clone(), &data, &mut actions);
                 });
             h.get_by_label_contains("Circle");
             assert_eq!(
@@ -4118,7 +4118,7 @@ mod tests {
         assert_eq!(marked(&the_4k, &targets), ["Display 2"]);
         let the_box = capture_of_display_1(Some("capture"));
         assert_eq!(marked(&the_box, &targets), ["Display 1"]);
-        assert!(marked(&capture_of_display_1(None), &targets).is_empty());
+        assert_eq!((marked(&capture_of_display_1(None), &targets)).len(), 0);
 
         let mut window = capture_of_display_1(None);
         window.is_display = false;
@@ -4150,6 +4150,6 @@ mod tests {
             listed("display", "Display 1", None, 1920),
             listed("display", "Display 2", Some("4k"), 3840),
         ];
-        assert!(marked(&capture_of_display_1(None), &mixed).is_empty());
+        assert_eq!((marked(&capture_of_display_1(None), &mixed)).len(), 0);
     }
 }

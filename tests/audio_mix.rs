@@ -694,7 +694,7 @@ fn audio_buses_route_and_save_with_the_stage() {
     assert!(bus.config.pre_fader, "a monitor mix, as saved");
     let insert = bus.config.insert.as_ref().expect("its insert, as saved");
     assert_eq!(insert.component, "aufx:lpas:appl");
-    assert!(!insert.name.is_empty());
+    assert_ne!(insert.name, "");
     let strip = state
         .audio_mix
         .sources

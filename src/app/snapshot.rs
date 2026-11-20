@@ -1489,7 +1489,7 @@ mod tests {
                     "/*{{\"CATEGORIES\":[\"Test\"],\"INPUTS\":[{inputs}]}}*/\nvoid main() {{}}"
                 ),
             )
-            .unwrap()
+            .unwrap();
         };
         write("");
         app.registry = crate::registry::ShaderRegistry::new();
@@ -1502,7 +1502,7 @@ mod tests {
         app.registry.scan().unwrap();
         let after = build_registry_snapshot(&app);
         assert_eq!(before.shader_count, after.shader_count);
-        assert!(after.generators.is_empty());
+        assert_eq!((after.generators).len(), 0);
         assert_eq!(after.filters.len(), 1);
     }
 

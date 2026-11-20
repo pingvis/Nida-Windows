@@ -1114,7 +1114,7 @@ mod tests {
         let mut no_library = Builtin::Classic.dock();
         remove_pane(&mut no_library, Pane::Library);
         screen.arrange(no_library.clone(), &library);
-        assert!(screen.windows.is_empty());
+        assert_eq!((screen.windows).len(), 0);
         assert!(has_pane(&screen.dock, Pane::Library), "in the dock, not lost");
         assert!(screen.arranged_as(&no_library, &library));
     }
@@ -1176,7 +1176,7 @@ mod tests {
         let mut before: serde_json::Value = serde_json::from_str(&text).unwrap();
         before.as_object_mut().unwrap().remove("windows");
         let before: ScreenLayout = serde_json::from_value(before).unwrap();
-        assert!(before.windows.is_empty());
+        assert_eq!((before.windows).len(), 0);
         assert!(
             !serde_json::to_string(&ScreenLayout::default())
                 .unwrap()
@@ -1583,7 +1583,7 @@ mod tests {
             .unwrap(),
         )
         .unwrap();
-        assert!(old.windows.is_empty());
+        assert_eq!((old.windows).len(), 0);
         let text = serde_json::to_string(&old).unwrap();
         assert!(!text.contains("windows"), "none written when none: {text}");
     }

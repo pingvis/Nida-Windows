@@ -3401,7 +3401,7 @@ mod tests {
         let chunk = rx.try_recv().expect("a whole chunk");
         assert_eq!(chunk.samples, [[0.1_f32; 4], [0.2; 4]].concat());
         assert_eq!(live_rx.len(), 4);
-        assert!(gathered.samples.is_empty());
+        assert_eq!((gathered.samples).len(), 0);
         gathered.tee(&subs, [0.3_f32; 12].into_iter());
         assert_eq!(rx.try_recv().expect("whole").samples.len(), 12);
         assert_eq!(live_rx.len(), 10, "fed once, not again with the chunk");

@@ -603,7 +603,7 @@ mod tests {
         let data = UIData::test_fixture();
         let (actions, label) = drop_at(&data, &["/show/Talk.PPTX"], None);
         assert!(label.contains("PowerPoint"));
-        assert!(actions.session.files_as_inputs.is_empty());
+        assert_eq!((actions.session.files_as_inputs).len(), 0);
         assert!(actions.commands.iter().any(|command| matches!(
             command,
             EngineCommand::AddInput {

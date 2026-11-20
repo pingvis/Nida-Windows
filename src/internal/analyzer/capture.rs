@@ -285,7 +285,7 @@ mod tests {
                 .unwrap();
         };
         assert_eq!((frame.width(), frame.height()), (4, 2));
-        for pixel in frame.bytes().chunks_exact(4) {
+        for pixel in frame.bytes().as_chunks::<4>().0 {
             for (actual, expected) in pixel.iter().zip([137_u8, 188, 225, 128]) {
                 assert!(
                     actual.abs_diff(expected) <= 1,

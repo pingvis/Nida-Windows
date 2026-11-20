@@ -1807,7 +1807,7 @@ mod tests {
                 .0
         };
         let next = Words::of(Some(&show())).next;
-        assert!(!next.is_empty());
+        assert_ne!((next).len(), 0);
         let all = svg(PresenterLayout {
             clock: true,
             ..PresenterLayout::default()

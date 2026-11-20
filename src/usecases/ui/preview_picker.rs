@@ -307,8 +307,8 @@ mod tests {
         );
         let mut bytes = vec![];
         value.write_bytes(&mut bytes);
-        for (actual, expected) in bytes.chunks_exact(4).zip([0.12, 0.34, 0.56, 0.37]) {
-            let actual = f32::from_le_bytes(actual.try_into().unwrap());
+        for (actual, expected) in bytes.as_chunks::<4>().0.iter().zip([0.12, 0.34, 0.56, 0.37]) {
+            let actual = f32::from_le_bytes(*actual);
             assert!(
                 (actual - expected).abs() < 1e-6,
                 "shader receives {expected}, got {actual}"

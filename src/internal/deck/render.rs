@@ -2668,7 +2668,7 @@ mod tests {
             64,
         );
         offline.effects.push(invert());
-        assert!(offline.drawn_effects(&no_modulation()).is_empty());
+        assert_eq!((offline.drawn_effects(&no_modulation())).len(), 0);
     }
 
     // ── Offensive: zero-size texture guard on resize ─────────────────

@@ -664,7 +664,7 @@ mod tests {
                 ffi::NDIlib_FourCC_video_type_e::UYVY,
                 &mut bytes,
                 4,
-                height as i32,
+                i32::try_from(height).unwrap(),
                 12,
             );
             let mut expected = vec![0; 4 * height * 4];
@@ -711,7 +711,7 @@ mod tests {
             let actual = read_rgba(&gpu, &target.texture, 3, 1);
             let mut expected = bytes[..12].to_vec();
             if fourcc == ffi::NDIlib_FourCC_video_type_e::BGRX {
-                for p in expected.chunks_exact_mut(4) {
+                for p in expected.as_chunks_mut::<4>().0 {
                     p[3] = 255;
                 }
             }

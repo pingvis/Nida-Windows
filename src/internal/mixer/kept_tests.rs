@@ -692,7 +692,7 @@ fn a_pair_of_time_stamps_given_back_is_handed_out_again() {
         timing.release_last();
     }
     assert_eq!(timing.query_count(), 0, "none left, and no fewer than none");
-    assert!(timing.allocations.is_empty());
+    assert_eq!((timing.allocations).len(), 0);
 }
 
 /// A live source `w` × `h`, as a camera or a capture brings one: its

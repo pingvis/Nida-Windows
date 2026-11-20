@@ -734,7 +734,7 @@ fn a_powerpoint_talk_ended_by_hand_is_off_and_powerpoint_left_alone_until_one_is
     let asked = ppt.log().len();
     frames_for(&mut app, 2.5);
     assert!(left_alone_since(&ppt, asked), "{:?}", ppt.log());
-    assert!(ppt.decks().is_empty());
+    assert_eq!(ppt.decks(), [] as [(std::string::String, bool, u32); 0]);
     let now = slides(&app).unwrap().2;
     assert!(
         now.talks.iter().all(|t| t.presentation.is_none()),

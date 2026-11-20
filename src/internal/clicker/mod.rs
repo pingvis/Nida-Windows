@@ -1551,7 +1551,7 @@ mod tests {
         });
         let bindings = crate::keymap::KeymapStore::defaults();
         frame(&bindings, WindowKeys::default());
-        assert!(remaps().is_empty());
+        assert_eq!((remaps()).len(), 0);
         with_state(|s| s.status.access = Access::Granted);
         frame(&bindings, WindowKeys::default());
         assert_eq!(remaps().len(), 1);

@@ -2311,7 +2311,7 @@ mod tests {
             w.take(save_job("/Talks/talk.pptx", &out(n)), &mut saves, now);
         }
         assert_eq!(saves.len(), 2, "kept, not made yet");
-        assert!(saved(&drain(&rx)).is_empty());
+        assert_eq!((saved(&drain(&rx))).len(), 0);
 
         // Another job: done first, the saves still waiting.
         w.take(Job::Window { deck: "d0".into() }, &mut saves, now);
@@ -2323,7 +2323,7 @@ mod tests {
         w.tick(now);
         assert!(ppt.showing());
         assert_eq!(saves.len(), 2, "kept");
-        assert!(saved(&drain(&rx)).is_empty());
+        assert_eq!((saved(&drain(&rx))).len(), 0);
         assert_eq!(ppt.pdfs_saved(), 0);
 
         // Each at its turn, as the worker's loop hands them on. The folder
@@ -2401,7 +2401,7 @@ mod tests {
             let wait = w.save_wait(true, then);
             assert!(wait > Duration::ZERO && wait <= POLL, "{wait:?}");
         }
-        assert!(saved(&drain(&rx)).is_empty());
+        assert_eq!((saved(&drain(&rx))).len(), 0);
         assert_eq!(ppt.pdfs_saved(), 2);
         let third = ended + SAVES_APART;
         assert_eq!(w.save_wait(true, third), Duration::ZERO, "held no more");
@@ -2415,7 +2415,7 @@ mod tests {
         assert!(ended >= third);
         w.save_next(&mut saves, ended + Duration::from_millis(2900));
         assert_eq!(saves.len(), 1, "held");
-        assert!(saved(&drain(&rx)).is_empty());
+        assert_eq!((saved(&drain(&rx))).len(), 0);
         w.save_next(&mut saves, ended + SAVES_APART);
         assert_pdf_result(saved(&drain(&rx)), 1);
         assert!(saves.is_empty());
@@ -2697,7 +2697,7 @@ mod tests {
             &events,
             &Status::NoWindow(SCREEN_RECORDING_OFF.into())
         ));
-        assert!(ppt.captured().is_empty());
+        assert_eq!((ppt.captured()).len(), 0);
 
         ppt.refuse_screen(false);
         w.tick(now + Duration::from_millis(300));
@@ -2723,7 +2723,7 @@ mod tests {
             },
             now,
         );
-        assert!(ppt.steps().is_empty());
+        assert_eq!((ppt.steps()).len(), 0);
         for _ in 0..3 {
             w.tick(now);
         }
@@ -2890,7 +2890,7 @@ mod tests {
         let (mut w, _rx) = worker(&ppt, 1.0);
         w.handle(open_job("d1", None), now);
         assert!(ppt.showing());
-        assert!(ppt.opened_files().is_empty());
+        assert_eq!((ppt.opened_files()).len(), 0);
         w.handle(Job::Close { deck: "d1".into() }, now);
         assert!(!ppt.showing() && ppt.open() && !ppt.closed());
     }

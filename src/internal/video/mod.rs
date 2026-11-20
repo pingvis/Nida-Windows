@@ -2872,7 +2872,7 @@ mod tests {
     fn play_excludes_paused_work_and_repeated_play_keeps_elapsed_time() {
         let mut state = PlaybackState::new(10.0, 60.0);
         state.set_playing(false);
-        state.last_advance = std::time::Instant::now() - std::time::Duration::from_secs(1);
+        state.last_advance = std::time::Instant::now().checked_sub(std::time::Duration::from_secs(1)).unwrap();
         let before_play = std::time::Instant::now();
         apply_command(&mut state, &VideoCommand::Play);
         assert!(state.last_advance >= before_play);
@@ -2881,7 +2881,7 @@ mod tests {
         assert_eq!(state.last_advance, epoch);
         assert_eq!(state.position, 0.0);
         apply_command(&mut state, &VideoCommand::Pause);
-        state.last_advance = before_play - std::time::Duration::from_secs(1);
+        state.last_advance = before_play.checked_sub(std::time::Duration::from_secs(1)).unwrap();
         apply_command(&mut state, &VideoCommand::Play);
         assert!(state.last_advance >= before_play);
     }
@@ -2902,7 +2902,7 @@ mod tests {
             .expect("prepared first picture");
         player.set_playing(true);
         player.playback.last_advance =
-            std::time::Instant::now() - std::time::Duration::from_secs(1);
+            std::time::Instant::now().checked_sub(std::time::Duration::from_secs(1)).unwrap();
         let deadline = player.next_picture_deadline().expect("prepared lookahead");
         assert!(deadline < std::time::Instant::now());
         player.gpu_retry = true;
@@ -3165,8 +3165,8 @@ mod tests {
         }
         let packed = repack_reference(&source, Pixel::NV12);
         assert_eq!(&packed.data(0)[..64], &[0; 64]);
-        for pair in packed.data(1)[..64].chunks_exact(2) {
-            assert_eq!(pair, [128, 255]);
+        for pair in packed.data(1)[..64].as_chunks::<2>().0 {
+            assert_eq!(*pair, [128, 255]);
         }
     }
 
@@ -3953,7 +3953,7 @@ mod tests {
 
         // Empty pool yields a fresh buffer.
         let buf = pool_take(&pool);
-        assert!(buf.is_empty());
+        assert_eq!((buf).len(), 0);
 
         // A returned buffer is handed back out (reuse, not realloc).
         let mut b = Vec::with_capacity(4096);

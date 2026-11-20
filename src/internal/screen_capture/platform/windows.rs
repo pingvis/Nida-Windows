@@ -818,13 +818,12 @@ mod tests {
         use windows::Win32::UI::HiDpi::{SetThreadDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, DPI_AWARENESS_CONTEXT};
         struct Dpi(DPI_AWARENESS_CONTEXT);
         impl Drop for Dpi { fn drop(&mut self) { unsafe { SetThreadDpiAwarenessContext(self.0); } } }
-        let _dpi = Dpi(unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) });
         struct Fixture(HWND);
         impl Drop for Fixture { fn drop(&mut self) { unsafe { let _ = DestroyWindow(self.0); } } }
         fn paint(fixture: HWND) {
             unsafe {
                 let dc = GetDC(Some(fixture));
-                let brush = CreateSolidBrush(COLORREF(247 | (11 << 8) | (169 << 16)));
+                let brush = CreateSolidBrush(COLORREF(0xf7 | (0x0b << 8) | (0xa9 << 16)));
                 let rect = RECT { left: 0, top: 0, right: 96, bottom: 96 };
                 assert_ne!(FillRect(dc, &raw const rect, brush), 0);
                 let _ = GdiFlush();
@@ -850,13 +849,14 @@ mod tests {
                     last = Some((frame.width, frame.height, frame.data.first_chunk::<4>().copied()));
                     // HDR desktops can tone-map GDI colours during WGC readback.
                     // Check the fixture hue, rather than assuming exact SDR bytes.
-                    let pink = frame.data.chunks_exact(4).all(|p| p[2] > 90 && p[1] < 35 && p[0] > 60 && u16::from(p[2]) > u16::from(p[0]) + 20);
+                    let pink = frame.data.as_chunks::<4>().0.iter().all(|p| p[2] > 90 && p[1] < 35 && p[0] > 60 && u16::from(p[2]) > u16::from(p[0]) + 20);
                     if pink == included { return; }
                 }
                 std::thread::sleep(Duration::from_millis(16));
             }
             panic!("WGC did not report fixture included={included}; frames={frames}, last={last:?}");
         }
+        let _dpi = Dpi(unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) });
         ensure_supported().unwrap();
         let (target, monitor) = enumerate_monitors().into_iter().find_map(|target| {
             let mut info = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
@@ -907,7 +907,7 @@ mod tests {
                 let elapsed = started.elapsed().as_secs_f64() * 1000.0;
                 assert_eq!((frame.width, frame.height), (out_w, out_h));
                 assert_eq!(frame.data.len(), out_w as usize * out_h as usize * 4);
-                assert!(frame.data.chunks_exact(4).all(|p| p == [20, 50, 180, 117]));
+                assert!(frame.data.as_chunks::<4>().0.iter().all(|p| *p == [20, 50, 180, 117]));
                 if iteration >= 3 { times.push(elapsed); }
                 std::hint::black_box(frame);
             }
