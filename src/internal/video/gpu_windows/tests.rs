@@ -1,7 +1,7 @@
 //! Explicit hardware qualification; never runs in the ordinary test suite.
 use crate::{
     renderer::GpuContext,
-    video::{LoopMode, VideoPlayer},
+    video::{DecodedPixels, FramePlayer, LoopMode, VideoPlayer},
 };
 
 #[test]
@@ -169,15 +169,42 @@ fn gpu_resident_picture_seek_pool_and_fallback() {
                 .unwrap(),
         );
     }
-    assert!(converter
-        .copy(&native.decoded, (width, height), native.quarter_turns, 0.0)
-        .unwrap()
-        .is_none());
+    assert!(
+        converter
+            .copy(&native.decoded, (width, height), native.quarter_turns, 0.0)
+            .unwrap()
+            .is_none()
+    );
+    // Pressure retains the current decoder picture. A playing worker must use
+    // bounded periodic retries even when its eligibility deadline is in the past.
+    native.set_playing(true);
+    native.playback.last_advance = std::time::Instant::now() - std::time::Duration::from_secs(1);
+    assert!(native.next_picture_deadline().is_some());
+    let position = native.playback.position;
+    let timestamp = native.decoded.timestamp().unwrap() as f64 * native.time_base - native.start;
+    assert!(native.convert_current().unwrap());
+    assert!(native.gpu_retry);
+    assert_eq!(native.next_picture_deadline(), None);
+    let pool = std::sync::Mutex::new(Vec::new());
+    for _ in 0..3 {
+        assert!(native.next_decoded_frame(&pool).unwrap().is_none());
+        assert!(native.gpu_retry);
+        assert_eq!(native.next_picture_deadline(), None);
+        assert_eq!(native.playback.position, position);
+    }
     drop(held.pop());
-    assert!(converter
-        .copy(&native.decoded, (width, height), native.quarter_turns, 0.0)
+    let recovered = native
+        .next_decoded_frame(&pool)
         .unwrap()
-        .is_some());
+        .expect("retained picture retries");
+    let DecodedPixels::Gpu(frame) = recovered.color_data else {
+        panic!("pool pressure must not introduce a CPU transfer");
+    };
+    assert_eq!(frame.timestamp, timestamp);
+    assert!(!native.gpu_retry);
+    assert_eq!(native.playback.position, position);
+    drop(frame);
+    native.set_playing(false);
     drop(held);
     let counters = native.delivery.snapshot();
     assert!(counters.gpu_frames >= 5);
@@ -189,10 +216,12 @@ fn gpu_resident_picture_seek_pool_and_fallback() {
     native.playback.show_frame = true;
     assert_ne!(native.next_frame().unwrap().unwrap(), [] as [u8; 0]);
     assert!(native.gpu.is_none());
-    assert!(native
-        .delivery
-        .snapshot()
-        .fallback_reason
-        .unwrap()
-        .contains("Ping-pong"));
+    assert!(
+        native
+            .delivery
+            .snapshot()
+            .fallback_reason
+            .unwrap()
+            .contains("Ping-pong")
+    );
 }

@@ -1,0 +1,10 @@
+
+running 1 test
+GPU_PLAYLIST_SOAK {"elapsed_s":59.991018,"frames":3103,"peak_rss_bytes":358338560,"reloads":0,"rss_bytes":358338560,"seeks":3}
+GPU_PLAYLIST_SOAK {"elapsed_s":119.9910001,"frames":6054,"peak_rss_bytes":380772352,"reloads":0,"rss_bytes":380772352,"seeks":7}
+GPU_PLAYLIST_SOAK {"elapsed_s":179.9910675,"frames":9167,"peak_rss_bytes":380772352,"reloads":1,"rss_bytes":351584256,"seeks":11}
+GPU_PLAYLIST_SOAK_COMPLETE {"frames":9167,"peak_rss_bytes":380772352,"reloads":1,"seeks":11,"shown_items":6,"wall_s":180.0003172}
+test internal::video::gpu_windows::qualification::playlist_playback_seek_pause_reload_and_soak ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4610 filtered out; finished in 180.35s
+

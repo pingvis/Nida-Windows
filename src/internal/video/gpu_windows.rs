@@ -73,6 +73,7 @@ pub struct GpuFrame {
 
 impl Drop for GpuFrame {
     fn drop(&mut self) {
+        super::pacing_trace::emit("payload_drop", self.timestamp, f64::from(self.encoded));
         if !self.encoded {
             self.counters.dropped_frames.fetch_add(1, Ordering::Relaxed);
         }
@@ -82,6 +83,7 @@ impl Drop for GpuFrame {
 impl GpuFrame {
     /// Consume the frame and release it only after this encoder completes.
     pub fn encode(mut self, encoder: &mut wgpu::CommandEncoder, target: &wgpu::Texture) {
+        super::pacing_trace::emit("encode", self.timestamp, 0.0);
         self.encoded = true;
         self.counters.gpu_frames.fetch_add(1, Ordering::Relaxed);
         log::trace!("Encoding GPU video picture at {:.6}s", self.timestamp);
@@ -196,6 +198,7 @@ impl GpuFrame {
             }),
         );
         encoder.on_submitted_work_done(move || {
+            super::pacing_trace::emit("gpu_complete", self.timestamp, 0.0);
             drop(textures);
             drop(self);
         });
@@ -376,6 +379,7 @@ impl GpuDecoder {
         turns: u8,
         timestamp: f64,
     ) -> Result<Option<GpuFrame>> {
+        super::pacing_trace::emit("copy_begin", timestamp, 0.0);
         ensure!(
             frame.format() == ffmpeg::format::Pixel::D3D12,
             "Decoder did not produce a D3D12 frame"
@@ -453,6 +457,7 @@ impl GpuDecoder {
             })
         })?
         else {
+            super::pacing_trace::emit("pool_full", timestamp, 0.0);
             self.counters
                 .backpressure_events
                 .fetch_add(1, Ordering::Relaxed);
@@ -534,6 +539,17 @@ impl GpuDecoder {
         // Configure must not overlap a native submission either. This queue is
         // private to the worker, so no other writer can interleave its commands.
         let mut submitted = false;
+        let trace_fences = super::pacing_trace::enabled();
+        let mut decode_ready = false;
+        if trace_fences {
+            decode_ready = unsafe { ready.GetCompletedValue() } >= native.sync_ctx.fence_value;
+            super::pacing_trace::emit(
+                "decoder_fence_at_submit",
+                timestamp,
+                f64::from(decode_ready),
+            );
+        }
+        super::pacing_trace::emit("native_submit", timestamp, serial as f64);
         let status = self.gate.native_submit(|| unsafe {
             self.queue.Wait(ready, native.sync_ctx.fence_value)?;
             self.queue.ExecuteCommandLists(&[Some(copy.list.cast()?)]);
@@ -547,7 +563,15 @@ impl GpuDecoder {
             return Err(error.into());
         }
         let started = Instant::now();
+        let mut polls = 0_u32;
         loop {
+            if trace_fences
+                && !decode_ready
+                && unsafe { ready.GetCompletedValue() } >= native.sync_ctx.fence_value
+            {
+                decode_ready = true;
+                super::pacing_trace::emit("decoder_fence_observed", timestamp, 0.0);
+            }
             let completed = unsafe { self.fence.GetCompletedValue() };
             if completed >= serial && completed != u64::MAX {
                 break;
@@ -558,8 +582,12 @@ impl GpuDecoder {
                 copy.retire();
                 bail!("GPU video copy timed out or the device was removed");
             }
+            let sleep_started = Instant::now();
             std::thread::sleep(Duration::from_millis(1));
+            super::pacing_trace::emit("copy_sleep", timestamp, sleep_started.elapsed().as_secs_f64());
+            polls += 1;
         }
+        super::pacing_trace::emit("copy_complete", timestamp, f64::from(polls));
         self.counters.gpu_copies.fetch_add(2, Ordering::Relaxed);
         self.counters.copy_wait_ns.fetch_add(
             started.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64,

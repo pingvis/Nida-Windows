@@ -1,0 +1,37 @@
+warning: trailing semicolon in macro used in expression position
+  --> vendor\wgpu-hal\build.rs:2:5
+   |
+ 2 | /     cfg_aliases::cfg_aliases! {
+ 3 | |         native: { not(target_arch = "wasm32") },
+ 4 | |         send_sync: { any(
+ 5 | |             not(target_arch = "wasm32"),
+...  |
+34 | |         supports_ptr_atomics: { target_has_atomic = "ptr" }
+35 | |     }
+   | |_____^
+   |
+   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+   = note: for more information, see issue #79813 <https://github.com/rust-lang/rust/issues/79813>
+   = note: `#[warn(semicolon_in_expressions_from_non_local_macros)]` (part of `#[warn(future_incompatible)]`) on by default
+   = note: this warning originates in the macro `$crate::cfg_aliases` which comes from the expansion of the macro `cfg_aliases::cfg_aliases` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: trailing semicolon in macro used in expression position
+  --> vendor\wgpu-hal\build.rs:2:5
+   |
+ 2 | /     cfg_aliases::cfg_aliases! {
+ 3 | |         native: { not(target_arch = "wasm32") },
+ 4 | |         send_sync: { any(
+ 5 | |             not(target_arch = "wasm32"),
+...  |
+34 | |         supports_ptr_atomics: { target_has_atomic = "ptr" }
+35 | |     }
+   | |_____^
+   |
+   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+   = note: for more information, see issue #79813 <https://github.com/rust-lang/rust/issues/79813>
+   = note: this warning originates in the macro `$crate::cfg_aliases` which comes from the expansion of the macro `cfg_aliases::cfg_aliases` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: `wgpu-hal` (build script) generated 161 warnings (159 duplicates)
+   Compiling varda v0.9.9 (E:\Custom Apps\Nida-Windows)
+    Finished `release` profile [optimized] target(s) in 30m 25s
+  Executable unittests src\lib.rs (target\release\deps\varda-25d87f05d9d642bc.exe)

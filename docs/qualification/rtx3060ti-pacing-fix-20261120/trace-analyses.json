@@ -1,0 +1,6321 @@
+{
+  "app-headless-1080p60.analysis.json": {
+    "wall_s": 60.0,
+    "events": {
+      "encode": 3601,
+      "submit_begin": 9000,
+      "gpu_complete": 3600,
+      "payload_drop": 3600,
+      "submit_end": 9000,
+      "worker_timeout": 3600,
+      "worker_wake": 3600,
+      "decode_begin": 3600,
+      "playhead": 3600,
+      "select": 3600,
+      "decoded_pts": 3600,
+      "copy_begin": 3600,
+      "decoder_fence_at_submit": 3600,
+      "native_submit": 3600,
+      "copy_sleep": 3600,
+      "copy_complete": 3600,
+      "publish_begin": 3600,
+      "publish": 3600,
+      "worker_wait": 3600,
+      "take_ready": 3600,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.016666666666666,
+    "unique_encoded_pts": 3601,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6745,
+      "p95": 17.0448,
+      "p99": 17.0981,
+      "max": 17.3526
+    },
+    "publish_spacing_ms": {
+      "n": 3599,
+      "p50": 16.753,
+      "p95": 17.2645,
+      "p99": 17.3505,
+      "max": 18.0958
+    },
+    "encode_spacing_ms": {
+      "n": 3600,
+      "p50": 16.669,
+      "p95": 17.0548,
+      "p99": 17.1398,
+      "max": 19.0577
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6689,
+      "p95": 17.0543,
+      "p99": 17.1391,
+      "max": 19.0581
+    },
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 3600,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 3600,
+        "distance_from_half_frame_ms": {
+          "n": 3600,
+          "p50": 0.2813333333316829,
+          "p95": 0.5033999999947506,
+          "p99": 0.532700000000356,
+          "max": 0.7992333333352993
+        },
+        "lookahead_minus_due_ms": {
+          "n": 3600,
+          "p50": -0.28103333333409813,
+          "p95": -0.04213333333116971,
+          "p99": -0.022766333338116243,
+          "max": -0.0145663333346608
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 3600,
+      "p50": 0.27666699999999955,
+      "p95": 0.49963300000000105,
+      "p99": 0.5283330000000006,
+      "max": 0.7959329999999987
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 3600,
+      "p50": 1.2914999999999999,
+      "p95": 1.5508,
+      "p99": 1.5783,
+      "max": 2.1153
+    },
+    "copy_poll_counts": {
+      "1": 3600
+    },
+    "consumed_pts_step_frames": {
+      "n": 3600,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 9000,
+        "p50": 0.0585,
+        "p95": 0.1733,
+        "p99": 0.2162,
+        "max": 0.3402
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 3600,
+        "p50": 1.3687,
+        "p95": 1.6359,
+        "p99": 1.6619,
+        "max": 2.2281
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 3600,
+        "p50": 1.5202,
+        "p95": 1.803,
+        "p99": 1.8365,
+        "max": 2.4889
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 3600,
+        "p50": 7.6805,
+        "p95": 8.2092,
+        "p99": 8.3361,
+        "max": 10.1892
+      },
+      "encode_to_callback_ms": {
+        "n": 3599,
+        "p50": 17.0597,
+        "p95": 17.465,
+        "p99": 17.6353,
+        "max": 19.3859
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 3600,
+        "ticks": 3601
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 3600,
+        "ticks": 3600
+      }
+    ]
+  },
+  "app-headless-4k60.analysis.json": {
+    "wall_s": 60.0,
+    "events": {
+      "encode": 3600,
+      "submit_begin": 9000,
+      "gpu_complete": 3600,
+      "payload_drop": 3600,
+      "submit_end": 9000,
+      "worker_timeout": 3600,
+      "worker_wake": 3600,
+      "decode_begin": 3600,
+      "playhead": 3600,
+      "select": 3600,
+      "decoded_pts": 3600,
+      "copy_begin": 3600,
+      "decoder_fence_at_submit": 3600,
+      "native_submit": 3600,
+      "copy_sleep": 3600,
+      "copy_complete": 3600,
+      "publish_begin": 3600,
+      "publish": 3600,
+      "worker_wait": 3600,
+      "take_ready": 3599,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 3600,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 3599,
+      "p50": 16.5865,
+      "p95": 17.0467,
+      "p99": 17.0902,
+      "max": 17.1661
+    },
+    "publish_spacing_ms": {
+      "n": 3599,
+      "p50": 16.5787,
+      "p95": 17.2074,
+      "p99": 17.3474,
+      "max": 17.6721
+    },
+    "encode_spacing_ms": {
+      "n": 3599,
+      "p50": 16.5921,
+      "p95": 17.0602,
+      "p99": 17.1591,
+      "max": 18.5914
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 3598,
+      "p50": 16.592,
+      "p95": 17.06,
+      "p99": 17.1591,
+      "max": 18.591
+    },
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 3600,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 3600,
+        "distance_from_half_frame_ms": {
+          "n": 3600,
+          "p50": 0.26479999999840703,
+          "p95": 0.4977000000053522,
+          "p99": 0.5183333333339609,
+          "max": 0.5766666666659148
+        },
+        "lookahead_minus_due_ms": {
+          "n": 3600,
+          "p50": -0.26470033333361903,
+          "p95": -0.04243333333467554,
+          "p99": -0.022300333331533653,
+          "max": -0.01606633333797909
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 3600,
+      "p50": 0.26116699999999965,
+      "p95": 0.49330000000000035,
+      "p99": 0.5137330000000006,
+      "max": 0.5719669999999997
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 3600,
+      "p50": 1.1597,
+      "p95": 1.5234999999999999,
+      "p99": 1.5563,
+      "max": 1.6398000000000001
+    },
+    "copy_poll_counts": {
+      "1": 3600
+    },
+    "consumed_pts_step_frames": {
+      "n": 3599,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 9000,
+        "p50": 0.0581,
+        "p95": 0.166,
+        "p99": 0.1978,
+        "max": 0.3229
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 3600,
+        "p50": 1.2583,
+        "p95": 1.6052,
+        "p99": 1.6712,
+        "max": 1.7633
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 3600,
+        "p50": 1.5085,
+        "p95": 1.7988,
+        "p99": 2.0453,
+        "max": 2.3484
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 3599,
+        "p50": 2.66,
+        "p95": 3.1874,
+        "p99": 3.294,
+        "max": 4.7853
+      },
+      "encode_to_callback_ms": {
+        "n": 3599,
+        "p50": 17.003,
+        "p95": 17.4814,
+        "p99": 17.6303,
+        "max": 19.0598
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 3600,
+        "ticks": 3601
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 2696,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 3600,
+        "ticks": 3600
+      }
+    ]
+  },
+  "app-headless-speed2.analysis.json": {
+    "wall_s": 20.0,
+    "events": {
+      "encode": 1201,
+      "submit_begin": 3000,
+      "worker_timeout": 1200,
+      "worker_wake": 1200,
+      "decode_begin": 1200,
+      "playhead": 1200,
+      "select": 2400,
+      "gpu_complete": 1200,
+      "payload_drop": 1200,
+      "submit_end": 3000,
+      "decoded_pts": 2400,
+      "copy_begin": 1200,
+      "decoder_fence_at_submit": 1200,
+      "native_submit": 1200,
+      "copy_sleep": 1203,
+      "copy_complete": 1200,
+      "publish_begin": 1200,
+      "publish": 1200,
+      "worker_wait": 1200,
+      "take_ready": 1200,
+      "decoder_fence_observed": 3,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.05,
+    "unique_encoded_pts": 1201,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 1200,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 1199,
+      "p50": 16.6046,
+      "p95": 17.0396,
+      "p99": 17.0833,
+      "max": 17.1909
+    },
+    "publish_spacing_ms": {
+      "n": 1199,
+      "p50": 16.6098,
+      "p95": 17.1357,
+      "p99": 17.5126,
+      "max": 19.0678
+    },
+    "encode_spacing_ms": {
+      "n": 1200,
+      "p50": 16.6104,
+      "p95": 17.0556,
+      "p99": 17.1277,
+      "max": 17.6351
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 1199,
+      "p50": 16.6093,
+      "p95": 17.0557,
+      "p99": 17.1277,
+      "max": 17.6352
+    },
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 1197,
+    "pts_decision_phase": {
+      "supersede": {
+        "ticks": 1191,
+        "distance_from_half_frame_ms": {
+          "n": 1191,
+          "p50": 0.48516666666576685,
+          "p95": 0.9543666666672834,
+          "p99": 1.0010333333336046,
+          "max": 1.1509000000008502
+        },
+        "lookahead_minus_due_ms": {
+          "n": 1191,
+          "p50": -17.15523333333427,
+          "p95": -16.71983333333363,
+          "p99": -16.678966333332685,
+          "max": -16.666700333335644
+        }
+      },
+      "single": {
+        "ticks": 9,
+        "distance_from_half_frame_ms": {
+          "n": 9,
+          "p50": -0.007366666667015427,
+          "p95": -0.00016666666624587378,
+          "p99": -0.00016666666624587378,
+          "max": -0.00016666666624587378
+        },
+        "lookahead_minus_due_ms": {
+          "n": 9,
+          "p50": -16.65930033333088,
+          "p95": -16.653833333333285,
+          "p99": -16.653833333333285,
+          "max": -16.653833333333285
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 1200,
+      "p50": 0.26114099999999946,
+      "p95": 0.49754599999999977,
+      "p99": 0.5216099999999988,
+      "max": 0.5957199999999993
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 1203,
+      "p50": 1.0505,
+      "p95": 1.5206,
+      "p99": 1.5498,
+      "max": 1.8951
+    },
+    "copy_poll_counts": {
+      "1": 1197,
+      "2": 3
+    },
+    "consumed_pts_step_frames": {
+      "n": 1200,
+      "p50": 1.9999999800000978,
+      "p95": 2.000000040000103,
+      "p99": 2.000000040000316,
+      "max": 3.000000000000256
+    },
+    "consumed_pts_missing_frames": 1200,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3000,
+        "p50": 0.0611,
+        "p95": 0.1657,
+        "p99": 0.2068,
+        "max": 0.2765
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 1200,
+        "p50": 1.1509,
+        "p95": 1.6302,
+        "p99": 1.694,
+        "max": 3.1296
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 1200,
+        "p50": 1.5032,
+        "p95": 2.023,
+        "p99": 2.148,
+        "max": 3.6193
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 1200,
+        "p50": 15.1632,
+        "p95": 15.6163,
+        "p99": 15.7021,
+        "max": 16.3222
+      },
+      "encode_to_callback_ms": {
+        "n": 1199,
+        "p50": 16.9671,
+        "p95": 17.4481,
+        "p99": 17.5788,
+        "max": 18.0194
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 1199,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 1101,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 1200,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 1200,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 1200,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 1200,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 1200,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 1200,
+        "ticks": 1200
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 1200,
+        "ticks": 1200
+      }
+    ]
+  },
+  "app-seek-phase-0-offset0.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "engine_timer_wait": 480,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6276,
+      "p95": 17.0588,
+      "p99": 17.1261,
+      "max": 17.1775
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6014,
+      "p95": 17.3082,
+      "p99": 17.4083,
+      "max": 17.5768
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.6419,
+      "p95": 17.0478,
+      "p99": 17.1104,
+      "max": 17.1631
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.6418,
+      "p95": 17.048,
+      "p99": 17.11,
+      "max": 17.1624
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6279,
+      "p95": 17.4917,
+      "p99": 17.8158,
+      "max": 20.8815
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.239800000000893,
+          "p95": 0.5000333333346892,
+          "p99": 0.5333999999985887,
+          "max": 0.555133333333894
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.23930033333433193,
+          "p95": -0.04440033333400102,
+          "p99": -0.02340033333284204,
+          "max": -0.019366333332134292
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.23570000000000013,
+      "p95": 0.4957669999999994,
+      "p99": 0.5148669999999987,
+      "max": 0.5515329999999998
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.684400000000002,
+      "p95": 16.1412,
+      "p99": 16.3677,
+      "max": 16.4057
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.2408040000000007,
+      "p95": 0.49734300000000076,
+      "p99": 0.5311230000000013,
+      "max": 0.6086140000000004
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.00039999999999999996,
+      "p95": 0.0011,
+      "p99": 0.0013,
+      "max": 0.0015999999999999999
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0006,
+      "p99": 0.0007999999999999999,
+      "max": 0.001
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2367000000000001,
+      "p95": 1.5417,
+      "p99": 1.5927,
+      "max": 1.6293
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199999448,
+      "p95": 1.0000000200000514,
+      "p99": 1.0000000200000514,
+      "max": 1.0000000200000514
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0579,
+        "p95": 0.1392,
+        "p99": 0.2039,
+        "max": 0.2964
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1664,
+        "p95": 0.2876,
+        "p99": 0.3333,
+        "max": 0.46
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3204,
+        "p95": 1.6262,
+        "p99": 1.6726,
+        "max": 1.7287
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5095,
+        "p95": 1.8148,
+        "p99": 1.8554,
+        "max": 1.9634
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 12.1881,
+        "p95": 12.6602,
+        "p99": 12.7748,
+        "max": 12.9452
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8429,
+        "p95": 1.0811,
+        "p99": 1.1725,
+        "max": 1.3899
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 457,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-0-offset1.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "decoded_pts": 481,
+      "copy_begin": 481,
+      "decoder_fence_at_submit": 481,
+      "native_submit": 481,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6454,
+      "p95": 17.0441,
+      "p99": 17.0876,
+      "max": 17.1448
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6437,
+      "p95": 17.2409,
+      "p99": 17.342,
+      "max": 17.4186
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6445,
+      "p95": 17.0151,
+      "p99": 17.1115,
+      "max": 17.1456
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6443,
+      "p95": 17.0114,
+      "p99": 17.112,
+      "max": 17.1459
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6328,
+      "p95": 17.4005,
+      "p99": 17.987,
+      "max": 21.2286
+    },
+    "decoder_fences_ready_at_submit": 481,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 479,
+        "distance_from_half_frame_ms": {
+          "n": 479,
+          "p50": 0.2509333333326443,
+          "p95": 0.5086333333338189,
+          "p99": 0.5324999999970714,
+          "max": 0.5534666666676458
+        },
+        "lookahead_minus_due_ms": {
+          "n": 479,
+          "p50": -0.25093333333051254,
+          "p95": -0.04190033333320749,
+          "p99": -0.025600333331017924,
+          "max": -0.015500333333780605
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.24740000000000006,
+      "p95": 0.5037669999999987,
+      "p99": 0.5288000000000012,
+      "max": 0.5482669999999998
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.7143,
+      "p95": 16.1648,
+      "p99": 16.2531,
+      "max": 16.3428
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.27092499999999997,
+      "p95": 0.4922569999999994,
+      "p99": 0.5134010000000001,
+      "max": 0.546783000000002
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.00039999999999999996,
+      "p95": 0.0007999999999999999,
+      "p99": 0.001,
+      "max": 0.044199999999999996
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 9.999999999999999e-05,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0006,
+      "max": 0.0007
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2389000000000001,
+      "p95": 1.5257999999999998,
+      "p99": 1.5479999999999998,
+      "max": 1.6375000000000002
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.057,
+        "p95": 0.1279,
+        "p99": 0.1687,
+        "max": 0.2623
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.332,
+        "p95": 1.6128,
+        "p99": 1.6409,
+        "max": 1.7176
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.164,
+        "p95": 0.2585,
+        "p99": 0.2906,
+        "max": 0.3544
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 479,
+        "p50": 1.5173,
+        "p95": 1.7823,
+        "p99": 1.8169,
+        "max": 1.8812
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 15.635,
+        "p95": 15.9376,
+        "p99": 16.0265,
+        "max": 16.0903
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8285,
+        "p95": 1.0654,
+        "p99": 1.1695,
+        "max": 1.2367
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-0-offset2.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 424,
+      "submit_begin": 3247,
+      "submit_end": 3246,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_wait": 480,
+      "gpu_complete": 423,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 53.0,
+    "unique_encoded_pts": 424,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 57,
+    "unencoded_payload_drops": 57,
+    "empty_takes": 57,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6262,
+      "p95": 17.0468,
+      "p99": 17.1026,
+      "max": 17.161
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6337,
+      "p95": 17.0428,
+      "p99": 17.0931,
+      "max": 17.1284
+    },
+    "encode_spacing_ms": {
+      "n": 423,
+      "p50": 16.708,
+      "p95": 33.1384,
+      "p99": 33.3042,
+      "max": 33.3571
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.6334,
+      "p95": 17.0564,
+      "p99": 17.1232,
+      "max": 17.2922
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.675,
+      "p95": 17.5463,
+      "p99": 17.9303,
+      "max": 21.0282
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 479,
+        "distance_from_half_frame_ms": {
+          "n": 479,
+          "p50": 0.2737333333395024,
+          "p95": 0.5018333333282499,
+          "p99": 0.523033333335358,
+          "max": 0.5364000000023831
+        },
+        "lookahead_minus_due_ms": {
+          "n": 479,
+          "p50": -0.27373333333760747,
+          "p95": -0.04040033333344191,
+          "p99": -0.02473333333388901,
+          "max": -0.018133333334920468
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.26983300000000054,
+      "p95": 0.49803300000000017,
+      "p99": 0.5188329999999998,
+      "max": 0.5316000000000001
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.8907,
+      "p95": 16.4271,
+      "p99": 16.5603,
+      "max": 16.641199999999998
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.28975399999999973,
+      "p95": 0.5050790000000003,
+      "p99": 0.5304319999999974,
+      "max": 0.7987569999999989
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.00039999999999999996,
+      "p95": 0.0007,
+      "p99": 0.001,
+      "max": 0.0011
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0005,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2390999999999999,
+      "p95": 1.3075999999999999,
+      "p99": 1.5053,
+      "max": 1.5211999999999999
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 423,
+      "p50": 1.0000000199997316,
+      "p95": 1.9999999800000978,
+      "p99": 2.0000000399998896,
+      "max": 2.000000040000316
+    },
+    "consumed_pts_missing_frames": 57,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3246,
+        "p50": 0.0537,
+        "p95": 0.1192,
+        "p99": 0.1814,
+        "max": 0.2467
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1664,
+        "p95": 0.2447,
+        "p99": 0.2821,
+        "max": 0.9195
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 479,
+        "p50": 1.3354,
+        "p95": 1.3818,
+        "p99": 1.6073,
+        "max": 1.686
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 479,
+        "p50": 1.5173,
+        "p95": 1.5549,
+        "p99": 1.7916,
+        "max": 2.0188
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 423,
+        "p50": 16.1997,
+        "p95": 16.5817,
+        "p99": 16.6789,
+        "max": 16.7439
+      },
+      "encode_to_callback_ms": {
+        "n": 423,
+        "p50": 0.8441,
+        "p95": 1.0071,
+        "p99": 1.0777,
+        "max": 3.0714
+      },
+      "empty_to_next_publish_ms": {
+        "n": 57,
+        "p50": 0.4061,
+        "p95": 0.4394,
+        "p99": 0.4516,
+        "max": 0.4516
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 441,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-0-offset3.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 479,
+      "engine_frame": 479,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6042,
+      "p95": 17.0354,
+      "p99": 17.0843,
+      "max": 17.11
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.587,
+      "p95": 17.0675,
+      "p99": 17.2569,
+      "max": 17.5064
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6082,
+      "p95": 17.0273,
+      "p99": 17.0839,
+      "max": 17.1337
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6081,
+      "p95": 17.0256,
+      "p99": 17.0839,
+      "max": 17.1338
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6581,
+      "p95": 17.3287,
+      "p99": 17.8305,
+      "max": 19.1895
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.25949999999284046,
+          "p95": 0.48556666665717785,
+          "p99": 0.5180999999993219,
+          "max": 0.5818999999974039
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.25900033333717437,
+          "p95": -0.049966333329128435,
+          "p99": -0.024066333331991888,
+          "max": -0.01696633334139115
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.25529999999999997,
+      "p95": 0.47960000000000014,
+      "p99": 0.514800000000001,
+      "max": 0.5772999999999994
+    },
+    "engine_timer_wait_ms": {
+      "n": 479,
+      "p50": 15.661499999999998,
+      "p95": 16.1015,
+      "p99": 16.269599999999997,
+      "max": 16.3126
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 479,
+      "p50": 0.3048180000000001,
+      "p95": 0.49603600000000003,
+      "p99": 0.5136140000000025,
+      "max": 0.5528699999999988
+    },
+    "engine_baton_wait_ms": {
+      "n": 479,
+      "p50": 0.00039999999999999996,
+      "p95": 0.0007999999999999999,
+      "p99": 0.001,
+      "max": 0.0012
+    },
+    "engine_gpu_wait_ms": {
+      "n": 479,
+      "p50": 9.999999999999999e-05,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0005,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2116,
+      "p95": 1.5221,
+      "p99": 1.571,
+      "max": 1.7288
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0564,
+        "p95": 0.1639,
+        "p99": 0.207,
+        "max": 0.298
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.159,
+        "p95": 0.2587,
+        "p99": 0.3139,
+        "max": 0.3558
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3077,
+        "p95": 1.6082,
+        "p99": 1.6645,
+        "max": 1.8212
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5113,
+        "p95": 1.7931,
+        "p99": 1.8423,
+        "max": 2.0229
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 0.6217,
+        "p95": 1.1299,
+        "p99": 1.1738,
+        "max": 1.2276
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8499,
+        "p95": 1.0376,
+        "p99": 1.1396,
+        "max": 1.1877
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 476,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 440,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-0-offset4.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 479,
+      "engine_frame": 479,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6523,
+      "p95": 17.0176,
+      "p99": 17.0754,
+      "max": 17.1706
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6005,
+      "p95": 17.304,
+      "p99": 17.4201,
+      "max": 17.4982
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6387,
+      "p95": 17.0507,
+      "p99": 17.1282,
+      "max": 17.157
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6393,
+      "p95": 17.0507,
+      "p99": 17.128,
+      "max": 17.1561
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6783,
+      "p95": 17.3439,
+      "p99": 17.535,
+      "max": 19.4173
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.2784333333390047,
+          "p95": 0.49576666666932095,
+          "p99": 0.5181333333287815,
+          "max": 0.5505666666673884
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.2783333333345201,
+          "p95": -0.0348333333240209,
+          "p99": -0.021000333341210722,
+          "max": -0.015300333338548813
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.274367000000001,
+      "p95": 0.49156700000000003,
+      "p99": 0.514233000000001,
+      "max": 0.5464669999999984
+    },
+    "engine_timer_wait_ms": {
+      "n": 479,
+      "p50": 15.7025,
+      "p95": 16.172700000000003,
+      "p99": 16.337799999999998,
+      "max": 16.4699
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 479,
+      "p50": 0.25122100000000286,
+      "p95": 0.5017580000000015,
+      "p99": 0.5138359999999984,
+      "max": 0.5996690000000006
+    },
+    "engine_baton_wait_ms": {
+      "n": 479,
+      "p50": 0.00039999999999999996,
+      "p95": 0.0007999999999999999,
+      "p99": 0.001,
+      "max": 0.0011
+    },
+    "engine_gpu_wait_ms": {
+      "n": 479,
+      "p50": 9.999999999999999e-05,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0007,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2121,
+      "p95": 1.5460999999999998,
+      "p99": 1.5817999999999999,
+      "max": 1.6125
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0566,
+        "p95": 0.1362,
+        "p99": 0.188,
+        "max": 0.2266
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1587,
+        "p95": 0.2478,
+        "p99": 0.3133,
+        "max": 0.6647
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3122,
+        "p95": 1.6381,
+        "p99": 1.6811,
+        "max": 1.7025
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5092,
+        "p95": 1.8161,
+        "p99": 1.8538,
+        "max": 1.8849
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 2.1163,
+        "p95": 2.2752,
+        "p99": 2.6738,
+        "max": 2.6963
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8454,
+        "p95": 1.0208,
+        "p99": 1.1279,
+        "max": 1.1827
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-0-offset5.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "engine_timer_wait": 480,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 479,
+      "engine_frame": 479,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.676,
+      "p95": 17.0304,
+      "p99": 17.0867,
+      "max": 17.1252
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.672,
+      "p95": 17.2167,
+      "p99": 17.3523,
+      "max": 17.7119
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6928,
+      "p95": 17.0302,
+      "p99": 17.0964,
+      "max": 17.1566
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6917,
+      "p95": 17.0303,
+      "p99": 17.0961,
+      "max": 17.1563
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6844,
+      "p95": 17.2144,
+      "p99": 17.5924,
+      "max": 20.7668
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.2971000000040173,
+          "p95": 0.5027333333449254,
+          "p99": 0.5214333333393976,
+          "max": 0.5394666666688863
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.29623333333764384,
+          "p95": -0.058566333344363744,
+          "p99": -0.030733333325845894,
+          "max": -0.016166333332042274
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.2928999999999987,
+      "p95": 0.49863300000000005,
+      "p99": 0.5183329999999993,
+      "max": 0.5343669999999991
+    },
+    "engine_timer_wait_ms": {
+      "n": 479,
+      "p50": 15.969500000000002,
+      "p95": 16.320700000000002,
+      "p99": 16.473000000000003,
+      "max": 16.5066
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 479,
+      "p50": 0.2959810000000007,
+      "p95": 0.49779099999999915,
+      "p99": 0.5195760000000007,
+      "max": 0.5402019999999983
+    },
+    "engine_baton_wait_ms": {
+      "n": 479,
+      "p50": 0.00039999999999999996,
+      "p95": 0.0007,
+      "p99": 0.001,
+      "max": 0.0015
+    },
+    "engine_gpu_wait_ms": {
+      "n": 479,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0005,
+      "max": 0.0006
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.5172,
+      "p95": 1.5558,
+      "p99": 1.5833,
+      "max": 1.6121
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.049,
+        "p95": 0.0977,
+        "p99": 0.1261,
+        "max": 0.207
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.155,
+        "p95": 0.2168,
+        "p99": 0.2539,
+        "max": 0.5224
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.5913,
+        "p95": 1.643,
+        "p99": 1.681,
+        "max": 1.7625
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.7315,
+        "p95": 1.8119,
+        "p99": 1.8539,
+        "max": 2.1332
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 2.1071,
+        "p95": 2.6405,
+        "p99": 2.6768,
+        "max": 2.7325
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8051,
+        "p95": 0.9815,
+        "p99": 1.1011,
+        "max": 4.5031
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-12-offset0.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6665,
+      "p95": 17.0314,
+      "p99": 17.1354,
+      "max": 17.4425
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6783,
+      "p95": 17.2779,
+      "p99": 17.4371,
+      "max": 17.4703
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.6824,
+      "p95": 17.0142,
+      "p99": 17.0939,
+      "max": 17.1399
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.679,
+      "p95": 17.0144,
+      "p99": 17.0939,
+      "max": 17.1397
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6813,
+      "p95": 17.4511,
+      "p99": 18.0553,
+      "max": 21.5545
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.3027000000050369,
+          "p95": 0.5274666666688669,
+          "p99": 0.6433333333310051,
+          "max": 0.9366333333370372
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.30246633333111567,
+          "p95": -0.042433333327570114,
+          "p99": -0.021466333330029744,
+          "max": -0.01493333334015752
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.2985670000000013,
+      "p95": 0.5244669999999989,
+      "p99": 0.6406329999999998,
+      "max": 0.9336329999999997
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.941600000000001,
+      "p95": 16.281299999999998,
+      "p99": 16.398,
+      "max": 16.4575
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.24410000000000057,
+      "p95": 0.49141200000000007,
+      "p99": 0.5107849999999997,
+      "max": 0.5697050000000002
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0007999999999999999
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0006,
+      "max": 0.0006
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.5176,
+      "p95": 1.5601,
+      "p99": 1.5922,
+      "max": 1.7631999999999999
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0505,
+        "p95": 0.099,
+        "p99": 0.1414,
+        "max": 0.2637
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1554,
+        "p95": 0.2185,
+        "p99": 0.2688,
+        "max": 0.2895
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.584,
+        "p95": 1.634,
+        "p99": 1.6734,
+        "max": 1.8289
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.7257,
+        "p95": 1.8111,
+        "p99": 1.8665,
+        "max": 1.9997
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 13.2934,
+        "p95": 13.7842,
+        "p99": 14.0867,
+        "max": 14.1658
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.7729,
+        "p95": 0.9678,
+        "p99": 1.0921,
+        "max": 5.5333
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 478,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-12-offset12.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "engine_timer_wait": 480,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6138,
+      "p95": 17.0462,
+      "p99": 17.1071,
+      "max": 17.2939
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6317,
+      "p95": 17.1022,
+      "p99": 17.4129,
+      "max": 17.7757
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.6325,
+      "p95": 17.0468,
+      "p99": 17.1189,
+      "max": 17.1832
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.6335,
+      "p95": 17.0468,
+      "p99": 17.1189,
+      "max": 17.1828
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6619,
+      "p95": 17.5018,
+      "p99": 17.8769,
+      "max": 20.2763
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.2953000000009827,
+          "p95": 0.5014333333330493,
+          "p99": 0.5567333333317492,
+          "max": 0.6648333333335662
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.29496633333406413,
+          "p95": -0.04610033333432746,
+          "p99": -0.02400033333363645,
+          "max": -0.01633333333253724
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.2906330000000002,
+      "p95": 0.49813299999999955,
+      "p99": 0.5441330000000004,
+      "max": 0.6613330000000001
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.738999999999999,
+      "p95": 16.2547,
+      "p99": 16.3689,
+      "max": 16.4681
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.23855199999999951,
+      "p95": 0.4969149999999971,
+      "p99": 0.5152950000000007,
+      "max": 0.5565569999999992
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0007999999999999999,
+      "p99": 0.001,
+      "max": 0.0015999999999999999
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2062,
+      "p95": 1.5408,
+      "p99": 1.5843,
+      "max": 2.1675
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199999448,
+      "p95": 1.0000000200000514,
+      "p99": 1.0000000200000514,
+      "max": 1.0000000200000514
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.056,
+        "p95": 0.1403,
+        "p99": 0.2021,
+        "max": 0.2848
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1714,
+        "p95": 0.2703,
+        "p99": 0.3604,
+        "max": 1.1595
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.2967,
+        "p95": 1.6208,
+        "p99": 1.6781,
+        "max": 2.272
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5091,
+        "p95": 1.8011,
+        "p99": 1.8887,
+        "max": 2.4907
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 6.6255,
+        "p95": 6.8231,
+        "p99": 7.1526,
+        "max": 7.2407
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8646,
+        "p95": 1.1208,
+        "p99": 1.3599,
+        "max": 4.3236
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 380,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-12-offset13.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "engine_timer_wait": 480,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6617,
+      "p95": 17.0262,
+      "p99": 17.0687,
+      "max": 17.1428
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6255,
+      "p95": 17.1447,
+      "p99": 17.3637,
+      "max": 17.5121
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.6369,
+      "p95": 17.0405,
+      "p99": 17.0828,
+      "max": 17.1324
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.637,
+      "p95": 17.0408,
+      "p99": 17.0829,
+      "max": 17.1324
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6496,
+      "p95": 17.4278,
+      "p99": 17.9708,
+      "max": 20.4962
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.28996666666595655,
+          "p95": 0.4974333333317797,
+          "p99": 0.5323666666678643,
+          "max": 0.5619000000024243
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.2898663333330848,
+          "p95": -0.05193333333200663,
+          "p99": -0.0212003333328898,
+          "max": -0.015533333332958324
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.28636699999999915,
+      "p95": 0.4935329999999991,
+      "p99": 0.5279670000000007,
+      "max": 0.5582
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.739800000000002,
+      "p95": 16.186200000000003,
+      "p99": 16.345,
+      "max": 16.4122
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.28022999999999937,
+      "p95": 0.4936400000000001,
+      "p99": 0.5156339999999991,
+      "max": 0.5436669999999995
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0006,
+      "p99": 0.0007999999999999999,
+      "max": 0.001
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0005,
+      "max": 0.0007
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2415,
+      "p95": 1.5421,
+      "p99": 1.5684,
+      "max": 1.5962
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0562,
+        "p95": 0.1354,
+        "p99": 0.2051,
+        "max": 0.2575
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1654,
+        "p95": 0.2556,
+        "p99": 0.3016,
+        "max": 0.3446
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3261,
+        "p95": 1.6217,
+        "p99": 1.6719,
+        "max": 1.677
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5105,
+        "p95": 1.8004,
+        "p99": 1.8411,
+        "max": 1.8726
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 8.1391,
+        "p95": 8.3282,
+        "p99": 8.6884,
+        "max": 8.7244
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8475,
+        "p95": 1.0279,
+        "p99": 1.098,
+        "max": 1.2055
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-12-offset14.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6317,
+      "p95": 17.0451,
+      "p99": 17.105,
+      "max": 17.1533
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6202,
+      "p95": 17.0803,
+      "p99": 17.2566,
+      "max": 17.4371
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6329,
+      "p95": 17.0406,
+      "p99": 17.1176,
+      "max": 17.1362
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6325,
+      "p95": 17.0405,
+      "p99": 17.1178,
+      "max": 17.1364
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6737,
+      "p95": 17.3338,
+      "p99": 17.7538,
+      "max": 21.3287
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.26400000000042684,
+          "p95": 0.49696666666629125,
+          "p99": 0.5241666666658299,
+          "max": 0.5565000000008998
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.26290033333301216,
+          "p95": -0.053500333330210384,
+          "p99": -0.02390033333246784,
+          "max": -0.020933333332114404
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.2599999999999998,
+      "p95": 0.49346699999999916,
+      "p99": 0.5205669999999996,
+      "max": 0.5515999999999993
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.7384,
+      "p95": 16.1545,
+      "p99": 16.3354,
+      "max": 16.3941
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.24050500000000025,
+      "p95": 0.4951300000000016,
+      "p99": 0.5108480000000013,
+      "max": 0.5351379999999992
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0006,
+      "p99": 0.0009,
+      "max": 0.0015
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 9.999999999999999e-05,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0006,
+      "max": 0.0007
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2301,
+      "p95": 1.5312999999999999,
+      "p99": 1.5640999999999998,
+      "max": 1.6003
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199997316,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.057,
+        "p95": 0.1329,
+        "p99": 0.1995,
+        "max": 0.2527
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.166,
+        "p95": 0.2484,
+        "p99": 0.3056,
+        "max": 0.3351
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3187,
+        "p95": 1.6149,
+        "p99": 1.6434,
+        "max": 1.69
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5105,
+        "p95": 1.7981,
+        "p99": 1.8187,
+        "max": 1.8887
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 9.2269,
+        "p95": 9.6998,
+        "p99": 9.8542,
+        "max": 9.9179
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8375,
+        "p95": 1.0361,
+        "p99": 1.1296,
+        "max": 1.1743
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 467,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-12-offset15.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6586,
+      "p95": 17.0313,
+      "p99": 17.1068,
+      "max": 17.1357
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6489,
+      "p95": 17.1094,
+      "p99": 17.3089,
+      "max": 17.4835
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6541,
+      "p95": 17.0303,
+      "p99": 17.0962,
+      "max": 17.154
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6541,
+      "p95": 17.03,
+      "p99": 17.0962,
+      "max": 17.1538
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6579,
+      "p95": 17.3684,
+      "p99": 17.7161,
+      "max": 20.8045
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.2582333333369509,
+          "p95": 0.4969333333368316,
+          "p99": 0.5232000000129725,
+          "max": 0.6063333333258925
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.25543333334402013,
+          "p95": -0.04470033332684871,
+          "p99": -0.02443333333038318,
+          "max": -0.016900333343035714
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.25376700000000024,
+      "p95": 0.49393300000000023,
+      "p99": 0.5199000000000003,
+      "max": 0.602033
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.803,
+      "p95": 16.2224,
+      "p99": 16.405099999999997,
+      "max": 16.525000000000002
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.2537119999999997,
+      "p95": 0.49273199999999917,
+      "p99": 0.5144559999999999,
+      "max": 0.5332830000000007
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0006,
+      "p99": 0.0007999999999999999,
+      "max": 0.001
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 9.999999999999999e-05,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0005,
+      "max": 0.0007
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2619,
+      "p95": 1.5375,
+      "p99": 1.5671000000000002,
+      "max": 1.6209
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0553,
+        "p95": 0.1261,
+        "p99": 0.1938,
+        "max": 0.2416
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1602,
+        "p95": 0.2449,
+        "p99": 0.3028,
+        "max": 0.4232
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3445,
+        "p95": 1.6191,
+        "p99": 1.6533,
+        "max": 1.706
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5122,
+        "p95": 1.8033,
+        "p99": 1.8426,
+        "max": 1.9049
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 10.1482,
+        "p95": 10.6799,
+        "p99": 10.777,
+        "max": 10.8416
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8232,
+        "p95": 1.0572,
+        "p99": 1.1428,
+        "max": 4.4847
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-12-offset16.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3361,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6549,
+      "p95": 17.0436,
+      "p99": 17.1036,
+      "max": 17.1551
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.654,
+      "p95": 17.115,
+      "p99": 17.3491,
+      "max": 17.5402
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.6466,
+      "p95": 17.0091,
+      "p99": 17.0999,
+      "max": 17.1431
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.6466,
+      "p95": 17.0089,
+      "p99": 17.1005,
+      "max": 17.1432
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6497,
+      "p95": 17.2579,
+      "p99": 18.382,
+      "max": 20.9919
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.25439999999434804,
+          "p95": 0.4995333333378464,
+          "p99": 0.5332666666618024,
+          "max": 0.5793999999999263
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.253633333337196,
+          "p95": -0.04120033333568536,
+          "p99": -0.02373333332930834,
+          "max": -0.016500333338361275
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.2515,
+      "p95": 0.4960999999999993,
+      "p99": 0.5295669999999999,
+      "max": 0.575299999999999
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.8809,
+      "p95": 16.290499999999998,
+      "p99": 16.364900000000002,
+      "max": 16.4335
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.27275399999999833,
+      "p95": 0.5009869999999979,
+      "p99": 0.5134000000000006,
+      "max": 0.5343599999999976
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0006,
+      "p99": 0.0007999999999999999,
+      "max": 0.001
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0005,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.3404999999999998,
+      "p95": 1.553,
+      "p99": 1.5774000000000001,
+      "max": 1.5906
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0504,
+        "p95": 0.1081,
+        "p99": 0.1514,
+        "max": 0.2184
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1578,
+        "p95": 0.2192,
+        "p99": 0.2584,
+        "max": 0.2853
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.4102,
+        "p95": 1.6332,
+        "p99": 1.6617,
+        "max": 1.6945
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5641,
+        "p95": 1.803,
+        "p99": 1.8502,
+        "max": 1.8642
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 11.3463,
+        "p95": 11.8046,
+        "p99": 11.9724,
+        "max": 12.2375
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8035,
+        "p95": 1.0093,
+        "p99": 1.1773,
+        "max": 3.6455
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-6-offset10.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3361,
+      "submit_end": 3360,
+      "engine_timer_wait": 480,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6947,
+      "p95": 17.0427,
+      "p99": 17.1061,
+      "max": 17.1505
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6512,
+      "p95": 17.251,
+      "p99": 17.3385,
+      "max": 17.5442
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.6747,
+      "p95": 17.0393,
+      "p99": 17.1136,
+      "max": 17.1342
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.6734,
+      "p95": 17.0393,
+      "p99": 17.1136,
+      "max": 17.1332
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6492,
+      "p95": 17.3068,
+      "p99": 17.9385,
+      "max": 20.5983
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.26803333333494567,
+          "p95": 0.49723333333228464,
+          "p99": 0.5149000000074011,
+          "max": 0.5380666666648418
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.2673333333338707,
+          "p95": -0.043566333325391685,
+          "p99": -0.01910033334032342,
+          "max": -0.01780033333223692
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.26463300000000023,
+      "p95": 0.4938330000000008,
+      "p99": 0.5111999999999999,
+      "max": 0.5339669999999997
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.8434,
+      "p95": 16.2805,
+      "p99": 16.3523,
+      "max": 16.4053
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.2602079999999996,
+      "p95": 0.4991389999999991,
+      "p99": 0.5361399999999992,
+      "max": 0.5595650000000014
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0006,
+      "p99": 0.0009,
+      "max": 0.001
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0009
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2807000000000002,
+      "p95": 1.5571000000000002,
+      "p99": 1.5749,
+      "max": 1.6360000000000001
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0514,
+        "p95": 0.1183,
+        "p99": 0.1722,
+        "max": 0.262
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1657,
+        "p95": 0.2517,
+        "p99": 0.3256,
+        "max": 0.6011
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3578,
+        "p95": 1.6399,
+        "p99": 1.663,
+        "max": 1.7216
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5193,
+        "p95": 1.8077,
+        "p99": 1.839,
+        "max": 1.9002
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 5.1391,
+        "p95": 5.68,
+        "p99": 5.7486,
+        "max": 5.8373
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8402,
+        "p95": 1.0501,
+        "p99": 1.24,
+        "max": 4.8353
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-6-offset11.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3362,
+      "submit_end": 3362,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6453,
+      "p95": 17.0375,
+      "p99": 17.1346,
+      "max": 17.1895
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6299,
+      "p95": 17.1362,
+      "p99": 17.3391,
+      "max": 17.5212
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.647,
+      "p95": 17.0081,
+      "p99": 17.08,
+      "max": 17.1144
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.6473,
+      "p95": 17.0076,
+      "p99": 17.0799,
+      "max": 17.114
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.671,
+      "p95": 17.4098,
+      "p99": 17.8901,
+      "max": 19.4668
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.27213333332838374,
+          "p95": 0.4952000000078745,
+          "p99": 0.5337999999937892,
+          "max": 0.5792999999963891
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.2708333333392449,
+          "p95": -0.039433333335144385,
+          "p99": -0.022233333333095476,
+          "max": -0.016900333343035714
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.26859999999999906,
+      "p95": 0.4914000000000012,
+      "p99": 0.5292329999999987,
+      "max": 0.5735999999999988
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.753199999999998,
+      "p95": 16.1463,
+      "p99": 16.328200000000002,
+      "max": 16.343300000000003
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.3022790000000008,
+      "p95": 0.49825100000000166,
+      "p99": 0.519778000000002,
+      "max": 0.5457020000000004
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0006,
+      "p99": 0.0007999999999999999,
+      "max": 0.001
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0043
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2488,
+      "p95": 1.5446,
+      "p99": 1.573,
+      "max": 1.6032
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3362,
+        "p50": 0.0571,
+        "p95": 0.1212,
+        "p99": 0.1719,
+        "max": 0.2704
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1693,
+        "p95": 0.2595,
+        "p99": 0.3179,
+        "max": 0.805
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3315,
+        "p95": 1.6253,
+        "p99": 1.6608,
+        "max": 1.6819
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5138,
+        "p95": 1.8026,
+        "p99": 1.8385,
+        "max": 1.854
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 6.1133,
+        "p95": 6.2703,
+        "p99": 6.4166,
+        "max": 6.6556
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.8281,
+        "p95": 1.0405,
+        "p99": 1.1366,
+        "max": 3.347
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 472,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-6-offset6.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 481,
+      "submit_begin": 3361,
+      "submit_end": 3361,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 480,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.125,
+    "unique_encoded_pts": 481,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6597,
+      "p95": 17.027,
+      "p99": 17.0748,
+      "max": 17.14
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6438,
+      "p95": 17.1973,
+      "p99": 17.3556,
+      "max": 17.4755
+    },
+    "encode_spacing_ms": {
+      "n": 480,
+      "p50": 16.6566,
+      "p95": 17.038,
+      "p99": 17.1045,
+      "max": 17.2801
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 479,
+      "p50": 16.6566,
+      "p95": 17.0381,
+      "p99": 17.1036,
+      "max": 17.2799
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6475,
+      "p95": 17.2327,
+      "p99": 17.8002,
+      "max": 21.0463
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.2827333333338326,
+          "p95": 0.4986666666657887,
+          "p99": 0.5333333333339851,
+          "max": 0.5947666666656914
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.28236633333336875,
+          "p95": -0.038000333333816985,
+          "p99": -0.019666333332975586,
+          "max": -0.016100333333686837
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.27966699999999906,
+      "p95": 0.49466700000000074,
+      "p99": 0.529033,
+      "max": 0.5902670000000002
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.949499999999999,
+      "p95": 16.3463,
+      "p99": 16.4415,
+      "max": 16.492199999999997
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.24731000000000058,
+      "p95": 0.49198400000000087,
+      "p99": 0.5154560000000009,
+      "max": 0.5622659999999988
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0007999999999999999
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0007,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.2951,
+      "p95": 1.5389,
+      "p99": 1.5674000000000001,
+      "max": 1.5913
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 480,
+      "p50": 1.0000000199999448,
+      "p95": 1.0000000200000514,
+      "p99": 1.0000000200000514,
+      "max": 1.0000000200000514
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3361,
+        "p50": 0.0488,
+        "p95": 0.0958,
+        "p99": 0.1309,
+        "max": 0.2309
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1496,
+        "p95": 0.2119,
+        "p99": 0.2821,
+        "max": 0.7407
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3688,
+        "p95": 1.6209,
+        "p99": 1.6545,
+        "max": 1.6698
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5133,
+        "p95": 1.7907,
+        "p99": 1.8127,
+        "max": 1.8586
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 480,
+        "p50": 2.615,
+        "p95": 3.1397,
+        "p99": 3.1964,
+        "max": 3.2393
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.7806,
+        "p95": 0.9552,
+        "p99": 1.0388,
+        "max": 1.1746
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 410,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-6-offset7.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "engine_timer_wait": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6979,
+      "p95": 16.9774,
+      "p99": 17.1013,
+      "max": 17.3799
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6887,
+      "p95": 17.0906,
+      "p99": 17.4058,
+      "max": 17.5135
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6807,
+      "p95": 17.0417,
+      "p99": 17.1138,
+      "max": 17.1951
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6823,
+      "p95": 17.0417,
+      "p99": 17.1136,
+      "max": 17.1951
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6869,
+      "p95": 17.2475,
+      "p99": 17.7961,
+      "max": 21.2092
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.2811999999986862,
+          "p95": 0.4954666666662888,
+          "p99": 0.6007666666657011,
+          "max": 0.7757666666634577
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.2806333333329764,
+          "p95": -0.04283333333224455,
+          "p99": -0.022766333331010816,
+          "max": -0.01546633333807286
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.2777330000000005,
+      "p95": 0.4912670000000001,
+      "p99": 0.5976669999999996,
+      "max": 0.7715670000000008
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.925000000000002,
+      "p95": 16.3453,
+      "p99": 16.4468,
+      "max": 16.5193
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.29601799999999856,
+      "p95": 0.4977359999999986,
+      "p99": 0.5152900000000016,
+      "max": 0.5392209999999995
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.0003,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0009
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0007,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.5215999999999998,
+      "p95": 1.5601,
+      "p99": 1.5848,
+      "max": 1.6054000000000002
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0491,
+        "p95": 0.0985,
+        "p99": 0.1442,
+        "max": 0.2091
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1518,
+        "p95": 0.2183,
+        "p99": 0.269,
+        "max": 0.9627
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.6018,
+        "p95": 1.6417,
+        "p99": 1.6655,
+        "max": 1.6978
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.7464,
+        "p95": 1.8066,
+        "p99": 1.8397,
+        "max": 1.8672
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 5.0998,
+        "p95": 5.259,
+        "p99": 5.6607,
+        "max": 5.7465
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.7955,
+        "p95": 0.9801,
+        "p99": 1.0867,
+        "max": 4.9032
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 477,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-6-offset8.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "engine_timer_wait": 480,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 479,
+      "engine_frame": 479,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.7024,
+      "p95": 16.9878,
+      "p99": 17.0829,
+      "max": 17.1432
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6859,
+      "p95": 17.0985,
+      "p99": 17.2753,
+      "max": 17.5267
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.6832,
+      "p95": 16.9974,
+      "p99": 17.0668,
+      "max": 17.1431
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6826,
+      "p95": 16.9971,
+      "p99": 17.0666,
+      "max": 17.1432
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6942,
+      "p95": 17.179,
+      "p99": 17.5922,
+      "max": 18.5687
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.29173333333195234,
+          "p95": 0.5025000000008125,
+          "p99": 0.5219666666638053,
+          "max": 0.5442666666643466
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.2901003333311298,
+          "p95": -0.04250033333666643,
+          "p99": -0.020966333331292122,
+          "max": -0.01740033332756248
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.28873300000000107,
+      "p95": 0.49880000000000063,
+      "p99": 0.5190669999999998,
+      "max": 0.5405670000000005
+    },
+    "engine_timer_wait_ms": {
+      "n": 479,
+      "p50": 15.940699999999998,
+      "p95": 16.3174,
+      "p99": 16.3994,
+      "max": 16.5504
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 479,
+      "p50": 0.29048100000000215,
+      "p95": 0.49550399999999906,
+      "p99": 0.5342769999999997,
+      "max": 0.635137000000001
+    },
+    "engine_baton_wait_ms": {
+      "n": 479,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0006,
+      "max": 0.0007
+    },
+    "engine_gpu_wait_ms": {
+      "n": 479,
+      "p50": 9.999999999999999e-05,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0006,
+      "max": 0.0007999999999999999
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.5203,
+      "p95": 1.5604,
+      "p99": 1.5903,
+      "max": 1.7489000000000001
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199997316,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0486,
+        "p95": 0.0963,
+        "p99": 0.1471,
+        "max": 0.2073
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1469,
+        "p95": 0.2035,
+        "p99": 0.2579,
+        "max": 0.66
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.5988,
+        "p95": 1.6365,
+        "p99": 1.6657,
+        "max": 1.8258
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.743,
+        "p95": 1.8003,
+        "p99": 1.8322,
+        "max": 1.9838
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 5.1719,
+        "p95": 5.6861,
+        "p99": 5.7566,
+        "max": 5.996
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.7811,
+        "p95": 0.9418,
+        "p99": 1.0335,
+        "max": 1.1388
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-seek-phase-6-offset9.analysis.json": {
+    "wall_s": 8.0,
+    "events": {
+      "encode": 480,
+      "submit_begin": 3360,
+      "submit_end": 3360,
+      "engine_timer_wait": 480,
+      "gpu_complete": 480,
+      "payload_drop": 480,
+      "ui_present_begin": 480,
+      "ui_present_end": 480,
+      "worker_timeout": 480,
+      "worker_wake": 480,
+      "decode_begin": 480,
+      "playhead": 480,
+      "select": 480,
+      "decoded_pts": 480,
+      "copy_begin": 480,
+      "decoder_fence_at_submit": 480,
+      "native_submit": 480,
+      "copy_sleep": 480,
+      "copy_complete": 480,
+      "publish_begin": 480,
+      "publish": 480,
+      "worker_wait": 480,
+      "engine_timer_return": 480,
+      "engine_frame": 480,
+      "take_ready": 479,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.0,
+    "unique_encoded_pts": 480,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 479,
+      "p50": 16.6517,
+      "p95": 17.0212,
+      "p99": 17.0903,
+      "max": 17.1293
+    },
+    "publish_spacing_ms": {
+      "n": 479,
+      "p50": 16.6543,
+      "p95": 17.0809,
+      "p99": 17.318,
+      "max": 17.4377
+    },
+    "encode_spacing_ms": {
+      "n": 479,
+      "p50": 16.649,
+      "p95": 17.0102,
+      "p99": 17.1182,
+      "max": 17.1566
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 478,
+      "p50": 16.6492,
+      "p95": 17.0102,
+      "p99": 17.1181,
+      "max": 17.1565
+    },
+    "ui_present_spacing_ms": {
+      "n": 479,
+      "p50": 16.6504,
+      "p95": 17.2109,
+      "p99": 17.5082,
+      "max": 19.0214
+    },
+    "decoder_fences_ready_at_submit": 480,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 480,
+        "distance_from_half_frame_ms": {
+          "n": 480,
+          "p50": 0.26226666667146975,
+          "p95": 0.48343333332923066,
+          "p99": 0.5142333333348384,
+          "max": 0.5470333333202385
+        },
+        "lookahead_minus_due_ms": {
+          "n": 480,
+          "p50": -0.26146633333515473,
+          "p95": -0.050700333340121875,
+          "p99": -0.01996633333381688,
+          "max": -0.0173003333334993
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 480,
+      "p50": 0.2592670000000005,
+      "p95": 0.47950000000000076,
+      "p99": 0.5112329999999998,
+      "max": 0.5423329999999991
+    },
+    "engine_timer_wait_ms": {
+      "n": 480,
+      "p50": 15.9248,
+      "p95": 16.3269,
+      "p99": 16.423000000000002,
+      "max": 16.5048
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 480,
+      "p50": 0.28306000000000164,
+      "p95": 0.49245799999999773,
+      "p99": 0.5138849999999986,
+      "max": 0.544285000000002
+    },
+    "engine_baton_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0009
+    },
+    "engine_gpu_wait_ms": {
+      "n": 480,
+      "p50": 0.00019999999999999998,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0006,
+      "max": 0.001
+    },
+    "copy_sleep_ms": {
+      "n": 480,
+      "p50": 1.3049,
+      "p95": 1.5510000000000002,
+      "p99": 1.568,
+      "max": 1.6449
+    },
+    "copy_poll_counts": {
+      "1": 480
+    },
+    "consumed_pts_step_frames": {
+      "n": 479,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3360,
+        "p50": 0.0486,
+        "p95": 0.0955,
+        "p99": 0.1368,
+        "max": 0.1928
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 480,
+        "p50": 0.1472,
+        "p95": 0.209,
+        "p99": 0.2405,
+        "max": 1.0244
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 480,
+        "p50": 1.3777,
+        "p95": 1.6312,
+        "p99": 1.662,
+        "max": 1.7283
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 480,
+        "p50": 1.5182,
+        "p95": 1.7937,
+        "p99": 1.8235,
+        "max": 1.877
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 479,
+        "p50": 3.5991,
+        "p95": 3.7093,
+        "p99": 4.1438,
+        "max": 4.1733
+      },
+      "encode_to_callback_ms": {
+        "n": 480,
+        "p50": 0.7788,
+        "p95": 0.9705,
+        "p99": 1.1001,
+        "max": 3.5357
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 480,
+        "ticks": 481
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 479,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 480,
+        "ticks": 480
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 480,
+        "ticks": 480
+      }
+    ]
+  },
+  "app-windowed-final-occluded.analysis.json": {
+    "wall_s": 60.0,
+    "events": {
+      "encode": 3601,
+      "decoded_pts": 3601,
+      "copy_begin": 3601,
+      "decoder_fence_at_submit": 3601,
+      "native_submit": 3601,
+      "submit_begin": 25200,
+      "submit_end": 25200,
+      "engine_timer_wait": 3600,
+      "gpu_complete": 3600,
+      "payload_drop": 3600,
+      "copy_sleep": 3602,
+      "copy_complete": 3600,
+      "publish_begin": 3600,
+      "publish": 3600,
+      "worker_wait": 3600,
+      "ui_present_begin": 3600,
+      "ui_present_end": 3600,
+      "engine_timer_return": 3600,
+      "worker_timeout": 3600,
+      "engine_frame": 3600,
+      "worker_wake": 3600,
+      "decode_begin": 3600,
+      "playhead": 3600,
+      "select": 3600,
+      "take_ready": 3600,
+      "take": 0,
+      "render_tick": 0
+    },
+    "encoded_fps": 60.016666666666666,
+    "unique_encoded_pts": 3601,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6309,
+      "p95": 17.0323,
+      "p99": 17.109,
+      "max": 17.1857
+    },
+    "publish_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6474,
+      "p95": 17.1828,
+      "p99": 17.4507,
+      "max": 18.2325
+    },
+    "encode_spacing_ms": {
+      "n": 3600,
+      "p50": 16.6349,
+      "p95": 17.0303,
+      "p99": 17.0897,
+      "max": 17.2493
+    },
+    "render_spacing_ms": null,
+    "render_spacing_after_process_sample_ms": null,
+    "render_spacing_other_ms": null,
+    "app_consumer_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6352,
+      "p95": 17.0306,
+      "p99": 17.0899,
+      "max": 17.2496
+    },
+    "ui_present_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6533,
+      "p95": 17.221,
+      "p99": 17.6445,
+      "max": 21.4186
+    },
+    "decoder_fences_ready_at_submit": 3601,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 3599,
+        "distance_from_half_frame_ms": {
+          "n": 3599,
+          "p50": 0.25883333332785696,
+          "p95": 0.4998999999922186,
+          "p99": 0.5239999999957945,
+          "max": 0.5849666666639072
+        },
+        "lookahead_minus_due_ms": {
+          "n": 3599,
+          "p50": -0.25883333332690944,
+          "p95": -0.04010033332993608,
+          "p99": -0.021400333331674307,
+          "max": -0.013566333337185557
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 3600,
+      "p50": 0.25406700000000015,
+      "p95": 0.4954999999999994,
+      "p99": 0.5207000000000007,
+      "max": 0.5804670000000012
+    },
+    "engine_timer_wait_ms": {
+      "n": 3600,
+      "p50": 15.856499999999999,
+      "p95": 16.287699999999997,
+      "p99": 16.357300000000002,
+      "max": 16.4696
+    },
+    "engine_timer_wait_excess_ms": {
+      "n": 3600,
+      "p50": 0.271772,
+      "p95": 0.4995370000000013,
+      "p99": 0.5249480000000007,
+      "max": 0.6487300000000001
+    },
+    "engine_baton_wait_ms": {
+      "n": 3600,
+      "p50": 0.00019999999999999998,
+      "p95": 0.0005,
+      "p99": 0.0007,
+      "max": 0.0014
+    },
+    "engine_gpu_wait_ms": {
+      "n": 3600,
+      "p50": 9.999999999999999e-05,
+      "p95": 0.00039999999999999996,
+      "p99": 0.0006,
+      "max": 0.0019
+    },
+    "copy_sleep_ms": {
+      "n": 3602,
+      "p50": 1.2401,
+      "p95": 1.5395999999999999,
+      "p99": 1.5685,
+      "max": 2.1904
+    },
+    "copy_poll_counts": {
+      "1": 3598,
+      "2": 2
+    },
+    "consumed_pts_step_frames": {
+      "n": 3600,
+      "p50": 1.0000000199997316,
+      "p95": 1.0000000200005843,
+      "p99": 1.0000000200005843,
+      "max": 1.0000000200005843
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 25200,
+        "p50": 0.0494,
+        "p95": 0.0977,
+        "p99": 0.1291,
+        "max": 0.2936
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 3600,
+        "p50": 1.3276,
+        "p95": 1.6279,
+        "p99": 1.6565,
+        "max": 2.7584
+      },
+      "ui_present_begin_to_ui_present_end_ms": {
+        "n": 3600,
+        "p50": 0.1519,
+        "p95": 0.2161,
+        "p99": 0.2555,
+        "max": 0.9908
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 3599,
+        "p50": 1.5091,
+        "p95": 1.8103,
+        "p99": 1.8418,
+        "max": 3.0183
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 3600,
+        "p50": 15.3096,
+        "p95": 15.7821,
+        "p99": 15.8561,
+        "max": 16.0247
+      },
+      "encode_to_callback_ms": {
+        "n": 3600,
+        "p50": 0.8446,
+        "p95": 1.0432,
+        "p99": 1.3304,
+        "max": 4.8192
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 3596,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 3600,
+        "ticks": 3600
+      }
+    ]
+  },
+  "phase12.analysis.json": {
+    "wall_s": 30.0004348,
+    "events": {
+      "measurement_begin": 1,
+      "render_tick": 1800,
+      "take": 1800,
+      "encode": 1800,
+      "submit_begin": 1800,
+      "submit_end": 1800,
+      "gpu_complete": 1800,
+      "payload_drop": 1800,
+      "render_complete": 1800,
+      "render_wait": 1800,
+      "worker_timeout": 1800,
+      "worker_wake": 1800,
+      "decode_begin": 1800,
+      "playhead": 1800,
+      "select": 1800,
+      "decoded_pts": 1800,
+      "copy_begin": 1800,
+      "decoder_fence_at_submit": 1800,
+      "native_submit": 1800,
+      "copy_sleep": 1800,
+      "copy_complete": 1800,
+      "publish_begin": 1800,
+      "publish": 1800,
+      "worker_wait": 1800,
+      "measurement_end": 1,
+      "take_ready": 0
+    },
+    "encoded_fps": 59.99913041260322,
+    "unique_encoded_pts": 1800,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 1799,
+      "p50": 16.6905,
+      "p95": 17.0321,
+      "p99": 17.0849,
+      "max": 17.1517
+    },
+    "publish_spacing_ms": {
+      "n": 1799,
+      "p50": 16.7635,
+      "p95": 17.0838,
+      "p99": 17.2958,
+      "max": 17.6182
+    },
+    "encode_spacing_ms": {
+      "n": 1799,
+      "p50": 16.6898,
+      "p95": 17.0262,
+      "p99": 17.0724,
+      "max": 17.1432
+    },
+    "render_spacing_ms": {
+      "n": 1799,
+      "p50": 16.6893,
+      "p95": 17.0266,
+      "p99": 17.0717,
+      "max": 17.1425
+    },
+    "render_spacing_after_process_sample_ms": {
+      "n": 59,
+      "p50": 16.541,
+      "p95": 17.0372,
+      "p99": 17.1198,
+      "max": 17.1198
+    },
+    "render_spacing_other_ms": {
+      "n": 1740,
+      "p50": 16.6926,
+      "p95": 17.0266,
+      "p99": 17.0675,
+      "max": 17.1425
+    },
+    "app_consumer_spacing_ms": null,
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 1800,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 1800,
+        "distance_from_half_frame_ms": {
+          "n": 1800,
+          "p50": 0.29749999999921783,
+          "p95": 0.49893333333557166,
+          "p99": 0.5272333333332805,
+          "max": 0.5603666666653832
+        },
+        "lookahead_minus_due_ms": {
+          "n": 1800,
+          "p50": -0.29710033333122005,
+          "p95": -0.04356633333338529,
+          "p99": -0.021166333333629342,
+          "max": -0.015300333333441787
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 1800,
+      "p50": 0.2932000000000004,
+      "p95": 0.49463299999999955,
+      "p99": 0.5191329999999997,
+      "max": 0.5568329999999997
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 1800,
+      "p50": 1.3008,
+      "p95": 1.5443,
+      "p99": 1.5734,
+      "max": 1.7619
+    },
+    "copy_poll_counts": {
+      "1": 1800
+    },
+    "consumed_pts_step_frames": {
+      "n": 1799,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 1800,
+        "p50": 0.0621,
+        "p95": 0.0878,
+        "p99": 0.1062,
+        "max": 0.9907
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 1800,
+        "p50": 1.3738,
+        "p95": 1.6339,
+        "p99": 1.6635,
+        "max": 1.8542
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 1800,
+        "p50": 1.5204,
+        "p95": 1.8022,
+        "p99": 1.8341,
+        "max": 2.0265
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 1799,
+        "p50": 9.5393,
+        "p95": 10.0299,
+        "p99": 10.148,
+        "max": 10.2369
+      },
+      "encode_to_callback_ms": {
+        "n": 1800,
+        "p50": 0.6207,
+        "p95": 0.7534,
+        "p99": 0.8549,
+        "max": 2.3535
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 1800,
+        "ticks": 1801
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 1800,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 1800,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 1800,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 1800,
+        "ticks": 1800
+      }
+    ]
+  },
+  "phase4.analysis.json": {
+    "wall_s": 30.0002601,
+    "events": {
+      "measurement_begin": 1,
+      "render_tick": 1800,
+      "take": 1800,
+      "encode": 1800,
+      "submit_begin": 1800,
+      "submit_end": 1800,
+      "gpu_complete": 1800,
+      "payload_drop": 1800,
+      "render_complete": 1800,
+      "render_wait": 1800,
+      "worker_timeout": 1800,
+      "worker_wake": 1800,
+      "decode_begin": 1800,
+      "playhead": 1800,
+      "select": 1800,
+      "decoded_pts": 1800,
+      "copy_begin": 1800,
+      "decoder_fence_at_submit": 1800,
+      "native_submit": 1800,
+      "copy_sleep": 1800,
+      "copy_complete": 1800,
+      "publish_begin": 1800,
+      "publish": 1800,
+      "worker_wait": 1800,
+      "measurement_end": 1,
+      "take_ready": 0
+    },
+    "encoded_fps": 59.999479804510095,
+    "unique_encoded_pts": 1800,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 1799,
+      "p50": 16.6972,
+      "p95": 17.0176,
+      "p99": 17.0644,
+      "max": 17.1499
+    },
+    "publish_spacing_ms": {
+      "n": 1799,
+      "p50": 16.74,
+      "p95": 17.052,
+      "p99": 17.2323,
+      "max": 17.5368
+    },
+    "encode_spacing_ms": {
+      "n": 1799,
+      "p50": 16.7111,
+      "p95": 17.0132,
+      "p99": 17.0643,
+      "max": 17.1348
+    },
+    "render_spacing_ms": {
+      "n": 1799,
+      "p50": 16.7117,
+      "p95": 17.0138,
+      "p99": 17.0646,
+      "max": 17.1346
+    },
+    "render_spacing_after_process_sample_ms": {
+      "n": 59,
+      "p50": 16.5768,
+      "p95": 16.9692,
+      "p99": 17.024,
+      "max": 17.024
+    },
+    "render_spacing_other_ms": {
+      "n": 1740,
+      "p50": 16.7144,
+      "p95": 17.0145,
+      "p99": 17.0646,
+      "max": 17.1346
+    },
+    "app_consumer_spacing_ms": null,
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 1800,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 1800,
+        "distance_from_half_frame_ms": {
+          "n": 1800,
+          "p50": 0.27296666666671854,
+          "p95": 0.4929666666688111,
+          "p99": 0.5169000000004568,
+          "max": 0.5400666666664241
+        },
+        "lookahead_minus_due_ms": {
+          "n": 1800,
+          "p50": -0.2728663333333731,
+          "p95": -0.04170033333442298,
+          "p99": -0.020933333335667118,
+          "max": -0.013533333334455125
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 1800,
+      "p50": 0.269867,
+      "p95": 0.4897000000000009,
+      "p99": 0.5123000000000002,
+      "max": 0.5364670000000006
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 1800,
+      "p50": 1.5171,
+      "p95": 1.5476,
+      "p99": 1.5736999999999999,
+      "max": 1.6907999999999999
+    },
+    "copy_poll_counts": {
+      "1": 1800
+    },
+    "consumed_pts_step_frames": {
+      "n": 1799,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 1800,
+        "p50": 0.0536,
+        "p95": 0.0699,
+        "p99": 0.0784,
+        "max": 0.8103
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 1800,
+        "p50": 1.5847,
+        "p95": 1.6247,
+        "p99": 1.6538,
+        "max": 1.7908
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 1800,
+        "p50": 1.7079,
+        "p95": 1.7845,
+        "p99": 1.815,
+        "max": 1.9725
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 1799,
+        "p50": 2.01,
+        "p95": 2.0484,
+        "p99": 2.5045,
+        "max": 2.5328
+      },
+      "encode_to_callback_ms": {
+        "n": 1800,
+        "p50": 0.5675,
+        "p95": 0.6496,
+        "p99": 0.7086,
+        "max": 2.2078
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 1800,
+        "ticks": 1801
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 1800,
+        "ticks": 1800
+      }
+    ]
+  },
+  "phase8.analysis.json": {
+    "wall_s": 30.0004281,
+    "events": {
+      "measurement_begin": 1,
+      "render_tick": 1800,
+      "take": 1800,
+      "encode": 1800,
+      "submit_begin": 1800,
+      "submit_end": 1800,
+      "gpu_complete": 1800,
+      "payload_drop": 1800,
+      "render_complete": 1800,
+      "render_wait": 1800,
+      "worker_timeout": 1800,
+      "worker_wake": 1800,
+      "decode_begin": 1800,
+      "playhead": 1800,
+      "select": 1800,
+      "decoded_pts": 1800,
+      "copy_begin": 1800,
+      "decoder_fence_at_submit": 1800,
+      "native_submit": 1800,
+      "copy_sleep": 1800,
+      "copy_complete": 1800,
+      "publish_begin": 1800,
+      "publish": 1800,
+      "worker_wait": 1800,
+      "measurement_end": 1,
+      "take_ready": 0
+    },
+    "encoded_fps": 59.999143812217795,
+    "unique_encoded_pts": 1800,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 0,
+    "worker_spacing_ms": {
+      "n": 1799,
+      "p50": 16.6942,
+      "p95": 17.0263,
+      "p99": 17.0842,
+      "max": 17.1521
+    },
+    "publish_spacing_ms": {
+      "n": 1799,
+      "p50": 16.7523,
+      "p95": 17.0617,
+      "p99": 17.275,
+      "max": 17.6298
+    },
+    "encode_spacing_ms": {
+      "n": 1799,
+      "p50": 16.6917,
+      "p95": 17.0074,
+      "p99": 17.0809,
+      "max": 17.1423
+    },
+    "render_spacing_ms": {
+      "n": 1799,
+      "p50": 16.692,
+      "p95": 17.0071,
+      "p99": 17.0809,
+      "max": 17.1416
+    },
+    "render_spacing_after_process_sample_ms": {
+      "n": 59,
+      "p50": 16.5901,
+      "p95": 17.0268,
+      "p99": 17.0293,
+      "max": 17.0293
+    },
+    "render_spacing_other_ms": {
+      "n": 1740,
+      "p50": 16.6958,
+      "p95": 17.0071,
+      "p99": 17.0809,
+      "max": 17.1416
+    },
+    "app_consumer_spacing_ms": null,
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 1800,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 1800,
+        "distance_from_half_frame_ms": {
+          "n": 1800,
+          "p50": 0.2705999999989217,
+          "p95": 0.4952333333335446,
+          "p99": 0.5187333333348457,
+          "max": 0.5686000000006667
+        },
+        "lookahead_minus_due_ms": {
+          "n": 1800,
+          "p50": -0.2701663333320187,
+          "p95": -0.04086633333291907,
+          "p99": -0.021066333332460732,
+          "max": -0.014033333333192746
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 1800,
+      "p50": 0.2654000000000007,
+      "p95": 0.49073300000000014,
+      "p99": 0.5150669999999993,
+      "max": 0.5643000000000002
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 1800,
+      "p50": 1.3353,
+      "p95": 1.5430000000000001,
+      "p99": 1.5690000000000002,
+      "max": 1.6155
+    },
+    "copy_poll_counts": {
+      "1": 1800
+    },
+    "consumed_pts_step_frames": {
+      "n": 1799,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 1800,
+        "p50": 0.0588,
+        "p95": 0.0801,
+        "p99": 0.0967,
+        "max": 0.9661
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 1800,
+        "p50": 1.4024,
+        "p95": 1.6305,
+        "p99": 1.6561,
+        "max": 1.7253
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 1800,
+        "p50": 1.5464,
+        "p95": 1.7992,
+        "p99": 1.8264,
+        "max": 2.04
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 1799,
+        "p50": 5.6109,
+        "p95": 6.1233,
+        "p99": 6.2436,
+        "max": 6.5577
+      },
+      "encode_to_callback_ms": {
+        "n": 1800,
+        "p50": 0.6052,
+        "p95": 0.7134,
+        "p99": 0.8188,
+        "max": 2.2841
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 1800,
+        "ticks": 1801
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 1799,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 1800,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 1800,
+        "ticks": 1800
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 1800,
+        "ticks": 1800
+      }
+    ]
+  },
+  "traced-1080.analysis.json": {
+    "wall_s": 60.0001151,
+    "events": {
+      "measurement_begin": 1,
+      "render_tick": 3600,
+      "take": 3600,
+      "submit_begin": 3600,
+      "worker_timeout": 3600,
+      "worker_wake": 3600,
+      "decode_begin": 3600,
+      "playhead": 3600,
+      "select": 3600,
+      "decoded_pts": 3600,
+      "copy_begin": 3600,
+      "decoder_fence_at_submit": 3600,
+      "native_submit": 3600,
+      "submit_end": 3600,
+      "render_complete": 3600,
+      "render_wait": 3600,
+      "copy_sleep": 3600,
+      "copy_complete": 3600,
+      "publish_begin": 3600,
+      "publish": 3600,
+      "worker_wait": 3600,
+      "encode": 3599,
+      "gpu_complete": 3599,
+      "payload_drop": 3599,
+      "measurement_end": 1,
+      "take_ready": 0
+    },
+    "encoded_fps": 59.98321826552629,
+    "unique_encoded_pts": 3599,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 1,
+    "worker_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6443,
+      "p95": 17.0331,
+      "p99": 17.105,
+      "max": 17.3592
+    },
+    "publish_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6359,
+      "p95": 17.158,
+      "p99": 17.3359,
+      "max": 17.6145
+    },
+    "encode_spacing_ms": {
+      "n": 3598,
+      "p50": 16.6474,
+      "p95": 17.0273,
+      "p99": 17.0932,
+      "max": 17.1853
+    },
+    "render_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6473,
+      "p95": 17.0272,
+      "p99": 17.0934,
+      "max": 17.1868
+    },
+    "render_spacing_after_process_sample_ms": {
+      "n": 119,
+      "p50": 16.6609,
+      "p95": 17.0607,
+      "p99": 17.0959,
+      "max": 17.1146
+    },
+    "render_spacing_other_ms": {
+      "n": 3480,
+      "p50": 16.6459,
+      "p95": 17.0272,
+      "p99": 17.0898,
+      "max": 17.1868
+    },
+    "app_consumer_spacing_ms": null,
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 3600,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 3600,
+        "distance_from_half_frame_ms": {
+          "n": 3600,
+          "p50": 0.27200000000296615,
+          "p95": 0.501933333333208,
+          "p99": 0.5239999999957945,
+          "max": 0.7688999999989695
+        },
+        "lookahead_minus_due_ms": {
+          "n": 3600,
+          "p50": -0.27193333333078334,
+          "p95": -0.043866333328897514,
+          "p99": -0.023033333335338926,
+          "max": -0.01240033333308084
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 3600,
+      "p50": 0.26816700000000143,
+      "p95": 0.49833300000000014,
+      "p99": 0.5198329999999991,
+      "max": 0.7635999999999997
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 3600,
+      "p50": 1.5199,
+      "p95": 1.5617,
+      "p99": 1.5826,
+      "max": 1.6158
+    },
+    "copy_poll_counts": {
+      "1": 3600
+    },
+    "consumed_pts_step_frames": {
+      "n": 3598,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3600,
+        "p50": 0.063,
+        "p95": 0.0887,
+        "p99": 0.1042,
+        "max": 1.4578
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 3600,
+        "p50": 1.5947,
+        "p95": 1.6404,
+        "p99": 1.6616,
+        "max": 1.798
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 3600,
+        "p50": 1.7473,
+        "p95": 1.8139,
+        "p99": 1.8401,
+        "max": 2.0034
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 3599,
+        "p50": 14.5271,
+        "p95": 15.0296,
+        "p99": 15.1369,
+        "max": 15.3113
+      },
+      "encode_to_callback_ms": {
+        "n": 3599,
+        "p50": 0.622,
+        "p95": 0.7456,
+        "p99": 0.8263,
+        "max": 1.4925
+      },
+      "empty_to_next_publish_ms": {
+        "n": 1,
+        "p50": 2.5853,
+        "p95": 2.5853,
+        "p99": 2.5853,
+        "max": 2.5853
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 3600,
+        "ticks": 3601
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 3306,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 3600,
+        "ticks": 3600
+      }
+    ]
+  },
+  "traced-4k.analysis.json": {
+    "wall_s": 60.0003054,
+    "events": {
+      "measurement_begin": 1,
+      "render_tick": 3600,
+      "take": 3600,
+      "submit_begin": 3600,
+      "submit_end": 3600,
+      "render_complete": 3600,
+      "render_wait": 3600,
+      "worker_timeout": 3600,
+      "worker_wake": 3600,
+      "decode_begin": 3600,
+      "playhead": 3600,
+      "select": 3600,
+      "decoded_pts": 3600,
+      "copy_begin": 3600,
+      "decoder_fence_at_submit": 3600,
+      "native_submit": 3600,
+      "copy_sleep": 3600,
+      "copy_complete": 3600,
+      "publish_begin": 3600,
+      "publish": 3600,
+      "worker_wait": 3600,
+      "encode": 3599,
+      "gpu_complete": 3599,
+      "payload_drop": 3599,
+      "measurement_end": 1,
+      "take_ready": 0
+    },
+    "encoded_fps": 59.98302801972071,
+    "unique_encoded_pts": 3599,
+    "repeated_encoded_pts": 0,
+    "backward_encoded_pts_steps": 0,
+    "selected_superseding_previous": 0,
+    "mailbox_replacements": 0,
+    "unencoded_payload_drops": 0,
+    "empty_takes": 1,
+    "worker_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6395,
+      "p95": 17.0159,
+      "p99": 17.0827,
+      "max": 17.204
+    },
+    "publish_spacing_ms": {
+      "n": 3599,
+      "p50": 16.625,
+      "p95": 17.2389,
+      "p99": 17.4055,
+      "max": 17.6764
+    },
+    "encode_spacing_ms": {
+      "n": 3598,
+      "p50": 16.6384,
+      "p95": 17.0367,
+      "p99": 17.0957,
+      "max": 17.1773
+    },
+    "render_spacing_ms": {
+      "n": 3599,
+      "p50": 16.6384,
+      "p95": 17.0364,
+      "p99": 17.0948,
+      "max": 17.1765
+    },
+    "render_spacing_after_process_sample_ms": {
+      "n": 119,
+      "p50": 16.6456,
+      "p95": 17.0158,
+      "p99": 17.0721,
+      "max": 17.1309
+    },
+    "render_spacing_other_ms": {
+      "n": 3480,
+      "p50": 16.6377,
+      "p95": 17.0365,
+      "p99": 17.0948,
+      "max": 17.1765
+    },
+    "app_consumer_spacing_ms": null,
+    "ui_present_spacing_ms": null,
+    "decoder_fences_ready_at_submit": 3600,
+    "pts_decision_phase": {
+      "single": {
+        "ticks": 3600,
+        "distance_from_half_frame_ms": {
+          "n": 3600,
+          "p50": 0.27683333333167565,
+          "p95": 0.49500000000080036,
+          "p99": 0.5210333333328284,
+          "max": 0.792266666667274
+        },
+        "lookahead_minus_due_ms": {
+          "n": 3600,
+          "p50": -0.27663333333597,
+          "p95": -0.043400333332973065,
+          "p99": -0.02323333333057072,
+          "max": -0.014200333332799533
+        }
+      }
+    },
+    "worker_timeout_excess_ms": {
+      "n": 3600,
+      "p50": 0.27273300000000067,
+      "p95": 0.49116699999999897,
+      "p99": 0.517933,
+      "max": 0.7885670000000005
+    },
+    "engine_timer_wait_ms": null,
+    "engine_timer_wait_excess_ms": null,
+    "engine_baton_wait_ms": null,
+    "engine_gpu_wait_ms": null,
+    "copy_sleep_ms": {
+      "n": 3600,
+      "p50": 1.0399,
+      "p95": 1.5384,
+      "p99": 1.5669,
+      "max": 1.6260000000000001
+    },
+    "copy_poll_counts": {
+      "1": 3600
+    },
+    "consumed_pts_step_frames": {
+      "n": 3598,
+      "p50": 1.0000000199999448,
+      "p95": 1.000000020000158,
+      "p99": 1.000000020000158,
+      "max": 1.000000020000158
+    },
+    "consumed_pts_missing_frames": 0,
+    "durations": {
+      "submit_begin_to_submit_end_ms": {
+        "n": 3600,
+        "p50": 0.0594,
+        "p95": 0.0822,
+        "p99": 0.0972,
+        "max": 1.398
+      },
+      "copy_begin_to_copy_complete_ms": {
+        "n": 3600,
+        "p50": 1.1485,
+        "p95": 1.6138,
+        "p99": 1.6416,
+        "max": 1.7249
+      },
+      "decode_begin_to_publish_ms": {
+        "n": 3600,
+        "p50": 1.4385,
+        "p95": 1.8055,
+        "p99": 1.8367,
+        "max": 2.1964
+      },
+      "copy_observed_to_encode_ms": {
+        "n": 3599,
+        "p50": 13.5333,
+        "p95": 14.0276,
+        "p99": 14.1443,
+        "max": 14.2393
+      },
+      "encode_to_callback_ms": {
+        "n": 3599,
+        "p50": 1.1077,
+        "p95": 1.4753,
+        "p99": 1.5525,
+        "max": 2.3039
+      },
+      "empty_to_next_publish_ms": {
+        "n": 1,
+        "p50": 4.016,
+        "p95": 4.016,
+        "p99": 4.016,
+        "max": 4.016
+      }
+    },
+    "modeled_consumer_phase_sweep": [
+      {
+        "phase_ms": 0,
+        "fresh": 3600,
+        "ticks": 3601
+      },
+      {
+        "phase_ms": 2,
+        "fresh": 3599,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 4,
+        "fresh": 3594,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 6,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 8,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 10,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 12,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 14,
+        "fresh": 3600,
+        "ticks": 3600
+      },
+      {
+        "phase_ms": 16,
+        "fresh": 3600,
+        "ticks": 3600
+      }
+    ]
+  }
+}

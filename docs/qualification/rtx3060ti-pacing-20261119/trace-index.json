@@ -1,0 +1,50 @@
+[
+  {
+    "run": "phase12-1080",
+    "path": "target/gpu-pacing-20261119/phase12-1080.log.trace.jsonl",
+    "sha256": "92AE0B1D087EC10C0547FC29E7D8EFE37D1E79F437F81EF8308916A0D09E6A18",
+    "bytes": 2197479
+  },
+  {
+    "run": "phase4-1080",
+    "path": "target/gpu-pacing-20261119/phase4-1080.log.trace.jsonl",
+    "sha256": "0C4B17FF083B4F95F5C024444C5718835B42D0F78F53601E5F03A7F64CC2FA1D",
+    "bytes": 2182477
+  },
+  {
+    "run": "phase8-1080",
+    "path": "target/gpu-pacing-20261119/phase8-1080.log.trace.jsonl",
+    "sha256": "5FEFFDA1238F26074AB1D8C21792A537BA82E3A499842614FFBB9365BD34421E",
+    "bytes": 2282629
+  },
+  {
+    "run": "poll-1080",
+    "path": "target/gpu-pacing-20261119/poll-1080.log.trace.jsonl",
+    "sha256": "8895DFA81BC6C44E05FC6DFF0BA467CAA2A67DDB0FF4AE498912EDBF60D8204F",
+    "bytes": 4510228
+  },
+  {
+    "run": "timer1-1080",
+    "path": "target/gpu-pacing-20261119/timer1-1080.log.trace.jsonl",
+    "sha256": "2BB80E191D58B2962AF04505B1D2BE42F141A4CBBB5DE7AD16CD23C1E95C1A33",
+    "bytes": 4267733
+  },
+  {
+    "run": "timer1-4k",
+    "path": "target/gpu-pacing-20261119/timer1-4k.log.trace.jsonl",
+    "sha256": "261CB7BE3CD0F36D9C69D1916F75840A6496433861DCFC7E3A3933B297E61335",
+    "bytes": 4600876
+  },
+  {
+    "run": "traced-1080",
+    "path": "target/gpu-pacing-20261119/traced-1080.log.trace.jsonl",
+    "sha256": "E039EC0023998F35AF43CE6B7EFE6F7FDBE0D806341088B31E60C1C40466AECB",
+    "bytes": 4548034
+  },
+  {
+    "run": "traced-4k",
+    "path": "target/gpu-pacing-20261119/traced-4k.log.trace.jsonl",
+    "sha256": "30FF93AF636B6FCE4D03A8BE8440A7FDBC85A3B5554E2085C0477A1AD91FB078",
+    "bytes": 4355875
+  }
+]

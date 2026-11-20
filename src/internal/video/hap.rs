@@ -1,7 +1,7 @@
 //! HAP video codec decoder — demuxes with ffmpeg, parses HAP frames,
 //! Snappy-decompresses `BCn` texture blocks for direct GPU upload.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::path::Path;
 extern crate ffmpeg_next as ffmpeg;
 use super::{HapTextureFormat, LoopMode, PlaybackState};
@@ -502,7 +502,7 @@ impl HapPlayer {
         self.playback.playing
     }
     pub fn set_playing(&mut self, playing: bool) {
-        self.playback.playing = playing;
+        self.playback.set_playing(playing);
     }
     pub fn is_looping(&self) -> bool {
         self.playback.loop_mode == LoopMode::Loop

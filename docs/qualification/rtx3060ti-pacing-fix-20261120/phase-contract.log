@@ -1,0 +1,10 @@
+
+running 5 tests
+test cadence::tests::decoding_uses_the_remaining_slot_and_stalls_do_not_burst ... ok
+test cadence::tests::over_budget_decode_does_not_add_another_frame_of_wait ... ok
+test cadence::tests::early_commands_preserve_the_pending_deadline ... ok
+test cadence::tests::picture_deadlines_preserve_source_and_effective_rate_caps ... ok
+test command_wakes_cover_every_frame_phase_and_boundary_jitter ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

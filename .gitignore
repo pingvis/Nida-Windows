@@ -33,4 +33,5 @@ __pycache__/
 /dist/
 /.windows-tools/
 /tools/stream-bitrate-probe/target/
+/tools/gpu-video-checks/target/
 /tests/ndi-loader/target/

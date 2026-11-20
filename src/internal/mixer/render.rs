@@ -584,8 +584,17 @@ impl Mixer {
                     label: Some("Video Upload Encoder"),
                 });
         let FrameTiming { refresh_at, held } = self.frame_timing;
+        // One deadline across channels and nested playlists/slides, rather
+        // than a separate full timeout for every empty video mailbox.
+        let mut readiness = crate::video::FrameReadiness::new(target_fps, chase.running);
         for channel in &mut self.channels {
-            channel.tick_video_frames(&mut video_encoder, target_fps, refresh_at, held);
+            channel.tick_video_frames_with_readiness(
+                &mut video_encoder,
+                target_fps,
+                refresh_at,
+                held,
+                &mut readiness,
+            );
         }
         let mut prefix_cmds = vec![video_encoder.finish()];
         let video_tick_us = t_video_tick.elapsed().as_micros();
@@ -2220,7 +2229,7 @@ fn apply_lut_in_place(
 
 #[cfg(test)]
 mod gpu_load_ratio_tests {
-    use super::{raw_gpu_load_ratio, MAX_GPU_LOAD_RATIO};
+    use super::{MAX_GPU_LOAD_RATIO, raw_gpu_load_ratio};
 
     const BUDGET_60FPS: f32 = 1_000_000.0 / 60.0;
 

@@ -1,0 +1,40 @@
+{
+  "model_only": true,
+  "input": "target/gpu-pacing-fix-20261120-qualified/app-seek-phase-0.trace.jsonl",
+  "input_sha256": "aad8fc3a4ec861de3ec92598f84a364446188ce25c7934b057547e458bc3d3e8",
+  "roi_pts": 47.002,
+  "seconds": 8,
+  "takes": 480,
+  "actual_fresh_takes": 423,
+  "sweep": [
+    {
+      "budget_ms": 0,
+      "fresh": 423,
+      "empty": 57,
+      "waits": 0,
+      "max_wait_ms": 0
+    },
+    {
+      "budget_ms": 0.25,
+      "fresh": 423,
+      "empty": 57,
+      "waits": 0,
+      "max_wait_ms": 0
+    },
+    {
+      "budget_ms": 0.5,
+      "fresh": 479,
+      "empty": 1,
+      "waits": 399,
+      "max_wait_ms": 0.4595
+    },
+    {
+      "budget_ms": 1,
+      "fresh": 480,
+      "empty": 0,
+      "waits": 407,
+      "max_wait_ms": 0.8097
+    }
+  ],
+  "limits": "Fixed producer and tick starts; ignores scheduling feedback, changed GPU lifetime timing and scanout. Must verify in actual app."
+}

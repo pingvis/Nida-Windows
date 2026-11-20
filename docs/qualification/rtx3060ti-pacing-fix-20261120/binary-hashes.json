@@ -1,0 +1,12 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C8AB9D9E73B7849F58F041D838C1026E85E67B5FAAF2E35C5555A03B98E49FBC",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-pacing-fix-20261120-qualified\\pacing-test.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "07C9A7417902263C6293BF85D316D9CF987D4DE8F2A0522ED7D7D24F50AF9B26",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-pacing-fix-20261120-qualified\\pacing-app.exe"
+  }
+]

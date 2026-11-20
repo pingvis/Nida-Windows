@@ -1,0 +1,92 @@
+[
+  {
+    "resolution": "1080p60",
+    "run": 1,
+    "ticks": 3600,
+    "produced": 3326,
+    "consumed": 3296,
+    "producer_shortfall": 274,
+    "unconsumed_net": 30
+  },
+  {
+    "resolution": "1080p60",
+    "run": 2,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3600,
+    "producer_shortfall": -1,
+    "unconsumed_net": 1
+  },
+  {
+    "resolution": "1080p60",
+    "run": 3,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3595,
+    "producer_shortfall": -1,
+    "unconsumed_net": 6
+  },
+  {
+    "resolution": "1080p60",
+    "run": 4,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3600,
+    "producer_shortfall": -1,
+    "unconsumed_net": 1
+  },
+  {
+    "resolution": "1080p60",
+    "run": 5,
+    "ticks": 3600,
+    "produced": 3578,
+    "consumed": 3569,
+    "producer_shortfall": 22,
+    "unconsumed_net": 9
+  },
+  {
+    "resolution": "4k60",
+    "run": 1,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3599,
+    "producer_shortfall": -1,
+    "unconsumed_net": 2
+  },
+  {
+    "resolution": "4k60",
+    "run": 2,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3599,
+    "producer_shortfall": -1,
+    "unconsumed_net": 2
+  },
+  {
+    "resolution": "4k60",
+    "run": 3,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3563,
+    "producer_shortfall": -1,
+    "unconsumed_net": 38
+  },
+  {
+    "resolution": "4k60",
+    "run": 4,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3600,
+    "producer_shortfall": -1,
+    "unconsumed_net": 1
+  },
+  {
+    "resolution": "4k60",
+    "run": 5,
+    "ticks": 3600,
+    "produced": 3601,
+    "consumed": 3583,
+    "producer_shortfall": -1,
+    "unconsumed_net": 18
+  }
+]

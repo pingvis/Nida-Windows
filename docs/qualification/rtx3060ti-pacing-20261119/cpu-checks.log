@@ -1,0 +1,29 @@
+   Compiling nida-gpu-video-checks v0.1.0 (E:\Custom Apps\Nida-Windows\tools\gpu-video-checks)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.18s
+     Running unittests src\lib.rs (target/gpu-video-cpu-checks\debug\deps\nida_gpu_video_checks-cd8ea62ac3a56408.exe)
+
+running 15 tests
+test frame_mailbox::tests::overwriting_and_invalidating_release_owned_payloads ... ok
+test hdr::tests::timing_of_a_4k_frame ... ignored, a timing, not a test
+test frame_mailbox::tests::seek_invalidates_queued_and_already_decoding_frames ... ok
+test gpu_colour::tests::full_range_and_untagged_sd_match_the_cpu_defaults ... ok
+test gpu_colour::tests::hdr_tags_and_cropping_survive_the_handoff ... ok
+test gpu_colour::tests::limited_p010_uses_high_bits_and_video_levels ... ok
+test gpu_pool::tests::allocation_errors_do_not_leak_a_slot ... ok
+test gpu_pool::tests::format_changes_wait_for_old_leases_and_pool_drop_does_not_destroy_in_flight_resources ... ok
+test gpu_pool::tests::three_in_flight_leases_apply_backpressure_and_reuse_a_released_slot ... ok
+test hdr::tests::pq_puts_reference_white_at_its_known_signal ... ok
+test frame_mailbox::tests::in_flight_worker_cannot_overwrite_the_new_seek_picture ... ok
+test hdr::tests::bt2020_colours_come_to_bt709 ... ok
+test hdr::tests::highlights_roll_off_to_white ... ok
+test hdr::tests::reference_white_comes_out_near_white ... ok
+test production_video_shader_validates_without_a_gpu ... ok
+
+test result: ok. 14 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests nida_gpu_video_checks
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

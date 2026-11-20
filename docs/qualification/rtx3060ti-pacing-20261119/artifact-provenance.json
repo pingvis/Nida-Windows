@@ -1,0 +1,12 @@
+{
+  "base_revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+  "profile": "opt-level=3; lto=thin; codegen-units=1; strip=symbols; panic=unwind",
+  "features": "no default features; screen-capture,windows-browser",
+  "test_feature_note": "test-fixtures is enabled through the existing self development dependency; not in app",
+  "measured_source": "target/gpu-pacing-20261119/source-snapshot/",
+  "source_note": "After all measurements, publish_decoded match was rewritten to equivalent if-let to satisfy Clippy single_match_else. Measured snapshot and binaries are preserved; not claimed as a rebuild of that lint-only edit.",
+  "intermediate_build": "intermediate-unmeasured-test.exe excluded: source edits overlapped Cargo library/test passes",
+  "analyzer_sha256": "ED5403EE18F71FD14B953DB9952D2658644CDEC60AC180AFCE4BEF1E6848662A",
+  "wrapper_sha256": "35038E02D805BC46C1906C55204023D5D9CBBFA55012012C7D039E93D97B1A67",
+  "final_video_mod_sha256": "81ED1DD207ACB20A8B9123EC94BC96E803C9E92C16973B0111540E7523C0A098"
+}

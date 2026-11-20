@@ -1,0 +1,6 @@
+{"primitive":"mpsc-0","wall_s":5.0156123,"wakes":162,"cpu_ms":0,"cpu_core_percent":0,"cycles":6969320,"cycles_per_wake":43020}
+{"primitive":"native-0","wall_s":5.0121373,"wakes":296,"cpu_ms":0,"cpu_core_percent":0,"cycles":6939740,"cycles_per_wake":23445}
+{"primitive":"mpsc-1","wall_s":5.0258548,"wakes":161,"cpu_ms":0,"cpu_core_percent":0,"cycles":6812920,"cycles_per_wake":42316}
+{"primitive":"native-1","wall_s":5.0156713,"wakes":297,"cpu_ms":0,"cpu_core_percent":0,"cycles":6823800,"cycles_per_wake":22975}
+{"primitive":"mpsc-2","wall_s":5.0127409,"wakes":162,"cpu_ms":0,"cpu_core_percent":0,"cycles":7153600,"cycles_per_wake":44158}
+{"primitive":"native-2","wall_s":5.006791,"wakes":296,"cpu_ms":0,"cpu_core_percent":0,"cycles":8240920,"cycles_per_wake":27840}

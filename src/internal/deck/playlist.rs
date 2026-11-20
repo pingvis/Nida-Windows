@@ -18,8 +18,8 @@ use super::{Deck, ScalingMode};
 use crate::engine::value::playlist::{
     PlaylistItem, PlaylistSettings, PlaylistSnapshot, PlaylistTransition,
 };
-use crate::renderer::playlist_mix::{Mix, PlaylistMixPipeline};
 use crate::renderer::GpuContext;
+use crate::renderer::playlist_mix::{Mix, PlaylistMixPipeline};
 
 /// The longest step time takes between two looks, so a stall (a dragged
 /// window, a slow frame) does not jump a picture's time.
@@ -326,11 +326,18 @@ impl Playlist {
     /// Once a frame: take what has opened, move time on, and bring each clip's
     /// newest frame to its texture.
     pub fn tick(&mut self, encoder: &mut wgpu::CommandEncoder) {
+        self.tick_with_readiness(encoder, &mut crate::video::FrameReadiness::disabled());
+    }
+
+    pub(crate) fn tick_with_readiness(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        readiness: &mut crate::video::FrameReadiness,
+    ) {
         self.step(Instant::now());
         for open in self.shown.iter_mut().chain(self.next.iter_mut()) {
-            if let Err(e) = open.deck.update_video_frame(encoder) {
-                log::warn!("Playlist item '{}': {e}", open.path);
-            }
+            open.deck
+                .update_video_frame_with_readiness(encoder, readiness);
         }
     }
 

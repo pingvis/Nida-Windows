@@ -1,0 +1,112 @@
+[
+  {
+    "resolution": "1080p60",
+    "run": 0,
+    "ticks": 3600,
+    "produced": 3576,
+    "delivered": 3544,
+    "producer_shortfall": 24,
+    "unconsumed_net": 32,
+    "gpu_discard_cumulative": 91,
+    "backpressure": 0
+  },
+  {
+    "resolution": "1080p60",
+    "run": 1,
+    "ticks": 3600,
+    "produced": 3264,
+    "delivered": 3263,
+    "producer_shortfall": 336,
+    "unconsumed_net": 1,
+    "gpu_discard_cumulative": 57,
+    "backpressure": 0
+  },
+  {
+    "resolution": "1080p60",
+    "run": 2,
+    "ticks": 3600,
+    "produced": 3145,
+    "delivered": 3143,
+    "producer_shortfall": 455,
+    "unconsumed_net": 2,
+    "gpu_discard_cumulative": 58,
+    "backpressure": 0
+  },
+  {
+    "resolution": "1080p60",
+    "run": 3,
+    "ticks": 3600,
+    "produced": 3106,
+    "delivered": 2988,
+    "producer_shortfall": 494,
+    "unconsumed_net": 118,
+    "gpu_discard_cumulative": 173,
+    "backpressure": 0
+  },
+  {
+    "resolution": "1080p60",
+    "run": 4,
+    "ticks": 3600,
+    "produced": 3149,
+    "delivered": 3147,
+    "producer_shortfall": 451,
+    "unconsumed_net": 2,
+    "gpu_discard_cumulative": 56,
+    "backpressure": 0
+  },
+  {
+    "resolution": "4k60",
+    "run": 0,
+    "ticks": 3600,
+    "produced": 3201,
+    "delivered": 3200,
+    "producer_shortfall": 399,
+    "unconsumed_net": 1,
+    "gpu_discard_cumulative": 55,
+    "backpressure": 0
+  },
+  {
+    "resolution": "4k60",
+    "run": 1,
+    "ticks": 3600,
+    "produced": 3203,
+    "delivered": 3202,
+    "producer_shortfall": 397,
+    "unconsumed_net": 1,
+    "gpu_discard_cumulative": 55,
+    "backpressure": 0
+  },
+  {
+    "resolution": "4k60",
+    "run": 2,
+    "ticks": 3600,
+    "produced": 3213,
+    "delivered": 3212,
+    "producer_shortfall": 387,
+    "unconsumed_net": 1,
+    "gpu_discard_cumulative": 54,
+    "backpressure": 0
+  },
+  {
+    "resolution": "4k60",
+    "run": 3,
+    "ticks": 3600,
+    "produced": 3174,
+    "delivered": 3173,
+    "producer_shortfall": 426,
+    "unconsumed_net": 1,
+    "gpu_discard_cumulative": 54,
+    "backpressure": 0
+  },
+  {
+    "resolution": "4k60",
+    "run": 4,
+    "ticks": 3600,
+    "produced": 3164,
+    "delivered": 3163,
+    "producer_shortfall": 436,
+    "unconsumed_net": 1,
+    "gpu_discard_cumulative": 53,
+    "backpressure": 0
+  }
+]

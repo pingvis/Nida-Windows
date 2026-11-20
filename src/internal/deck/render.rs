@@ -10,8 +10,8 @@ use crate::audio::AudioData;
 use crate::isf::{ISFPass, PhaseInput};
 use crate::modulation::ModulationEngine;
 use crate::params::ShaderParams;
-use crate::renderer::region::{draw_within, scissors_for, Area, Pixels};
 use crate::renderer::BlitPipeline;
+use crate::renderer::region::{Area, Pixels, draw_within, scissors_for};
 use crate::renderer::{GpuContext, ISFUniforms, UnifiedPipeline};
 use anyhow::Result;
 use std::collections::HashMap;
@@ -172,6 +172,18 @@ impl Deck {
     /// are a no-op. The `Result` is kept so callers stay source-compatible if
     /// staging-buffer allocation becomes fallible.
     pub fn update_video_frame(&mut self, encoder: &mut wgpu::CommandEncoder) -> Result<()> {
+        self.update_video_frame_with_readiness(
+            encoder,
+            &mut crate::video::FrameReadiness::disabled(),
+        );
+        Ok(())
+    }
+
+    pub(crate) fn update_video_frame_with_readiness(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        readiness: &mut crate::video::FrameReadiness,
+    ) {
         match &mut self.source {
             // A frame is taken only when it can be uploaded; one taken while
             // the staging buffer is still on its way back would be lost. A
@@ -183,7 +195,9 @@ impl Deck {
                 ref mut staging,
                 ..
             } => {
-                if let Some(frame) = handle.take_ready_frame(staging.ready()) {
+                if let Some(frame) =
+                    handle.take_ready_frame_with_readiness(staging.ready(), readiness)
+                {
                     let width = handle.width;
                     let height = handle.height;
                     match frame.color_data {
@@ -236,15 +250,14 @@ impl Deck {
                     self.frames_uploaded += 1;
                 }
             }
-            DeckSource::Playlist(list) => list.tick(encoder),
-            DeckSource::Slides(slides) => slides.tick(encoder),
+            DeckSource::Playlist(list) => list.tick_with_readiness(encoder, readiness),
+            DeckSource::Slides(slides) => slides.tick_with_readiness(encoder, readiness),
             DeckSource::Timer(timer) => timer.tick(),
             DeckSource::LowerThird(lower) => lower.tick(),
             DeckSource::Text(text) => text.tick(),
             DeckSource::Presenter(presenter) => presenter.tick(),
             _ => {}
         }
-        Ok(())
     }
 
     /// Request re-mapping of staging buffers after `queue.submit()`.
@@ -1355,8 +1368,7 @@ impl Deck {
             return Err("not a live input");
         };
         let drawn = self.drawn_effects(modulation);
-        let others =
-            "effects other than its crop and Transform, or a crop or Transform modulated, \
+        let others = "effects other than its crop and Transform, or a crop or Transform modulated, \
                       masked, inverted, turned or wrapped";
         let (crop, pos, scale, flip) = if drawn.is_empty() {
             (None, [0.0; 2], [1.0; 2], [false; 2])

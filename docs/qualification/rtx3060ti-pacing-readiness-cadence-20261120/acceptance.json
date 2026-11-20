@@ -1,0 +1,191 @@
+{
+  "all_passed": false,
+  "steady_and_speed_checks_passed": true,
+  "phase_windows_with_residual_loss": [
+    "app-seek-phase-0-offset4.analysis.json",
+    "app-seek-phase-0.5-offset2.5.analysis.json",
+    "app-seek-phase-0.5-offset4.5.analysis.json"
+  ],
+  "checks": [
+    {
+      "name": "three-clips-phase250",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.99975010104083,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase250",
+      "clip_index": 1,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.99975010104083,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase250",
+      "clip_index": 2,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.99975010104083,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase300",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98313808821885,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase300",
+      "clip_index": 1,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.9998047006357,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase300",
+      "clip_index": 2,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.9998047006357,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98315238415697,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips",
+      "clip_index": 1,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98315238415697,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips",
+      "clip_index": 2,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98315238415697,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "traced-1080",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98295943955283,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "traced-4k",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.982973135579655,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-0",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98295194173057,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-1",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.9829236499648,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-2",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98297253575353,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-0",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.983283447235934,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-1",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98309340095973,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-2",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.9832925446944,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-headless-1080p60.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.016666666666666,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-headless-4k60.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 59.96666666666667,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-windowed-final-occluded.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.016666666666666,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-seek-hold-offset2.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.0,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "2x fresh pictures",
+      "kind": "20-second fast-playback freshness",
+      "fresh_fps": 60.0,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "2x output cap",
+      "kind": "bounded native copies",
+      "copy_count": 1200,
+      "seconds": 20.0,
+      "maximum_count_with_boundary_allowance": 1202.0,
+      "passed": true
+    }
+  ],
+  "limits": "Fresh PTS before composition; no physical scanout qualification. Short seek-phase windows are exploratory."
+}

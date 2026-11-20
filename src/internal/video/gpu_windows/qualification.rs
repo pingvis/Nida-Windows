@@ -3,7 +3,7 @@ use crate::{
     deck::playlist::Playlist,
     engine::value::playlist::{PlaylistItem, PlaylistSettings, PlaylistTransition},
     renderer::GpuContext,
-    video::{hwdecode, VideoPlayer},
+    video::{VideoPlayer, hwdecode},
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -137,7 +137,10 @@ fn playlist_playback_seek_pause_reload_and_soak() {
         let mut encoder = gpu
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-        list.tick(&mut encoder);
+        list.tick_with_readiness(
+            &mut encoder,
+            &mut crate::video::FrameReadiness::new(60, false),
+        );
         let mut commands = vec![encoder.finish()];
         list.render(&audio, &modulation, "qualification", &mut commands, &view);
         gpu.submit(commands);

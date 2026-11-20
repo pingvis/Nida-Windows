@@ -1,0 +1,42 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "EF014257EF9CF29BBE00EE0522C793D7E619F8FCF1C10A508550BFB62F1BB6A8",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\mod.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1FB02AE430A16382963564BD159549F98FF0CFABBF6BB4953C06CD5BF18997F4",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\frame_mailbox.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B826753566E557F0DFCE34BFDBCE7377FA47B9356FE618769611D2F4EBBCC336",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\pacing_trace.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "6136D56DBFBFC4FCF50D837B5C24815B2962B4F470015706D56486CD4B1533E1",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\playback_diagnostics.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1A922BC6E64023AD580EBC9CA072169BE57DB46020708C788D160FCE9C2D0244",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\gpu_windows.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "27C652834C6439AE4905D62456E5BF2E2B50E01BDF6C7C9A6F7DD526DEDE3614",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\renderer\\context.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "5FA3D59005D4017DE9B4FCD5845EFDACB9D5114C4AEA0BE1B1C241548764F9A1",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\usecases\\ui\\runner\\mod.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "966FB03AA7378FF06259B408EE5478F0605C638CE5ED0E017F8F9DED7BC18B04",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\tools\\gpu-video-checks\\src\\lib.rs"
+  }
+]

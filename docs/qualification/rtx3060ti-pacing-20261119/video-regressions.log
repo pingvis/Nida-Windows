@@ -1,0 +1,312 @@
+
+running 183 tests
+test internal::video::chase::tests::auto_is_default ... ok
+test internal::video::chase::tests::base_speed_scales_mapped_time ... ok
+test internal::video::chase::tests::before_offset_holds_in_point ... ok
+test internal::video::chase::tests::deadband_does_not_seek ... ok
+test internal::video::chase::tests::delay_frames_use_transport_fps_not_clip_fps ... ok
+test internal::video::chase::tests::discontinuity_always_seeks ... ok
+test internal::video::chase::tests::half_second_error_seeks ... ok
+test internal::video::chase::tests::inbox_keeps_latest_sample_and_consumes_discontinuity_once ... ok
+test internal::video::chase::tests::offset_places_in_point_on_the_transport ... ok
+test internal::video::chase::tests::outside_range_holds_the_boundary ... ok
+test internal::video::chase::tests::residency_wake_forces_a_discontinuity ... ok
+test internal::video::chase::tests::scripted_series_converges_without_seeking ... ok
+test internal::video::chase::tests::signed_delay_moves_the_target_both_ways ... ok
+test internal::video::chase::tests::threshold_is_inclusive ... ok
+test internal::video::chase::tests::trim_band_does_not_seek ... ok
+test internal::video::chase::tests::trim_is_clamped_to_twenty_percent_of_base ... ok
+test internal::video::chase::tests::zero_speed_holds_the_in_point_even_at_extreme_transport_time ... ok
+test internal::video::diagnostics::pipeline_measurement ... ignored, explicit media benchmark; see docs/windows-gpu-decoding.md
+test internal::video::frame_mailbox::tests::in_flight_worker_cannot_overwrite_the_new_seek_picture ... ok
+test internal::video::frame_mailbox::tests::overwriting_and_invalidating_release_owned_payloads ... ok
+test internal::video::frame_mailbox::tests::seek_invalidates_queued_and_already_decoding_frames ... ok
+test internal::video::gpu_colour::tests::full_range_and_untagged_sd_match_the_cpu_defaults ... ok
+test internal::video::gpu_colour::tests::hdr_tags_and_cropping_survive_the_handoff ... ok
+test internal::video::gpu_colour::tests::limited_p010_uses_high_bits_and_video_levels ... ok
+test internal::video::gpu_pool::tests::allocation_errors_do_not_leak_a_slot ... ok
+test internal::video::gpu_pool::tests::format_changes_wait_for_old_leases_and_pool_drop_does_not_destroy_in_flight_resources ... ok
+test internal::video::gpu_pool::tests::three_in_flight_leases_apply_backpressure_and_reuse_a_released_slot ... ok
+test internal::video::gpu_windows::qualification::interlaced_uses_cpu_conversion_without_losing_the_picture ... ignored, explicit GPU qualification with NIDA_GPU_INTERLACED_CLIP
+test internal::video::gpu_windows::qualification::playlist_playback_seek_pause_reload_and_soak ... ignored, explicit GPU playlist smoke/soak; NIDA_GPU_SOAK_SECONDS defaults to 30
+test internal::video::gpu_windows::tests::gpu_resident_picture_seek_pool_and_fallback ... ignored, requires an idle GPU and VARDA_REQUIRE_GPU_RESIDENT=1; performs GPU readback for picture comparison
+test internal::video::hap::tests::a_corrupt_frame_is_an_error_not_a_panic ... ok
+test internal::video::hap::tests::detect_hap_format_multi_image_returns_color_plane ... ok
+test internal::video::hap::tests::detect_hap_format_single_bc1 ... ok
+test internal::video::hap::tests::detect_hap_format_single_bc7 ... ok
+test internal::video::hap::tests::test_decode_single_frame_snappy ... ok
+test internal::video::hap::tests::test_decode_single_frame_uncompressed ... ok
+test internal::video::hap::tests::test_decode_single_frame_ycocg ... ok
+test internal::video::hap::tests::test_parse_header_4byte ... ok
+test internal::video::hap::tests::test_parse_header_8byte ... ok
+test internal::video::hap::tests::test_parse_header_too_short ... ok
+test internal::video::hap::tests::test_tex_fmt_bc1 ... ok
+test internal::video::hap::tests::test_tex_fmt_bc3 ... ok
+test internal::video::hap::tests::test_tex_fmt_bc4 ... ok
+test internal::video::hap::tests::test_tex_fmt_bc7 ... ok
+test internal::video::hap::tests::test_tex_fmt_unsupported ... ok
+test internal::video::hap::tests::test_tex_fmt_ycocg ... ok
+test internal::video::hdr::tests::bt2020_colours_come_to_bt709 ... ok
+test internal::video::hdr::tests::highlights_roll_off_to_white ... ok
+test internal::video::hdr::tests::pq_puts_reference_white_at_its_known_signal ... ok
+test internal::video::hdr::tests::reference_white_comes_out_near_white ... ok
+test internal::video::hdr::tests::timing_of_a_4k_frame ... ignored, a timing, not a test
+test internal::video::hwdecode::preference_tests::reused_download_properties_replace_hdr_side_data_and_clear_absent_tags ... ok
+test internal::video::hwdecode::preference_tests::saved_decoding_choice_survives_restart_and_overrides_the_environment_default ... ok
+test internal::video::modulation::tests::a_backward_step_must_seek ... ok
+test internal::video::modulation::tests::a_default_inbox_is_inert ... ok
+test internal::video::modulation::tests::a_forward_step_walks_instead_of_seeking ... ok
+test internal::video::modulation::tests::a_long_forward_step_seeks_rather_than_decoding_the_gap ... ok
+test internal::video::modulation::tests::a_non_finite_step_is_ignored ... ok
+test internal::video::modulation::tests::a_still_playhead_does_nothing ... ok
+test internal::video::modulation::tests::a_sub_frame_backward_step_neither_seeks_nor_decodes ... ok
+test internal::video::modulation::tests::a_sub_frame_forward_step_is_carried_not_discarded ... ok
+test internal::video::modulation::tests::absolute_position_addresses_the_whole_clip_not_the_region ... ok
+test internal::video::modulation::tests::absolute_position_matches_a_live_seek_on_the_same_value ... ok
+test internal::video::modulation::tests::absolute_position_stays_inside_the_clip ... ok
+test internal::video::modulation::tests::absolute_speed_replaces_the_stored_base ... ok
+test internal::video::modulation::tests::additive_speed_rides_on_the_stored_base ... ok
+test internal::video::modulation::tests::an_absolute_source_owns_a_discrete_target ... ok
+test internal::video::modulation::tests::an_inverted_region_does_not_produce_a_negative_offset_scale ... ok
+test internal::video::modulation::tests::discrete_value_clamps_into_fader_range ... ok
+test internal::video::modulation::tests::gate_does_not_chatter_across_a_slow_sweep_through_the_band ... ok
+test internal::video::modulation::tests::gate_holds_inside_the_hysteresis_band ... ok
+test internal::video::modulation::tests::gate_opens_above_the_upper_threshold_and_closes_below_the_lower ... ok
+test internal::video::modulation::tests::inbox_keeps_only_the_newest_value ... ok
+test internal::video::modulation::tests::inbox_repeats_the_last_value_because_it_is_a_level_not_an_event ... ok
+test internal::video::modulation::tests::no_assignment_leaves_the_playhead_free ... ok
+test internal::video::modulation::tests::offset_scales_against_the_loop_region_not_the_clip ... ok
+test internal::video::modulation::tests::speed_clamps_to_the_slider_range_at_both_ends ... ok
+test internal::video::modulation::tests::speed_never_reverses ... ok
+test internal::video::modulation::tests::unassigned_speed_is_the_stored_speed ... ok
+test internal::video::playback_diagnostics::realtime_measurement ... ignored, real-time multi-clip playback and offscreen rendering benchmark
+test internal::video::sound_only::tests::a_sound_file_is_sound_only_and_a_video_is_not ... ok
+test internal::video::sound_only::tests::an_mp3_with_a_cover_picture_is_still_sound_only ... ok
+test internal::video::sound_only::tests::the_playhead_runs_only_while_playing_and_shows_one_clear_picture ... ok
+test internal::video::tests::a_backward_offset_seeks_because_ffmpeg_cannot_walk_back ... ok
+[h264 @ 000001d45471e140] co located POCs unavailable
+[h264 @ 000001d45471e880] mmco: unref short failure
+[h264 @ 000001d45471e880] co located POCs unavailable
+[h264 @ 000001d45471d640] mmco: unref short failure
+[h264 @ 000001d45471e140] co located POCs unavailable
+[h264 @ 000001d45471e880] co located POCs unavailable
+test internal::video::tests::a_broadcast_file_counts_from_its_own_start ... ok
+test internal::video::tests::a_clip_recorded_on_its_side_is_shown_upright ... ok
+test internal::video::tests::a_clip_resumes_where_it_was_suspended ... ok
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [version]:	SVT-AV1 Encoder Lib v4.2.0-151-g5ed9ffbcb
+Svt[info]: SVT [build]  :	GCC 16.2.0	 64 bit
+Svt[info]: LIB Build date: Oct 17 2026 18:25:27
+Svt[info]: -------------------------------------------
+Svt[warn]: Preset M12 is mapped to M11.
+Svt[warn]: Screen-content detection and tools are disabled for RA mode coding at M9 and above; forcing NSC path
+Svt[warn]: Non-RTC M10+ are meant for automation tooling usage. Visual artifacts may occur otherwise.
+Svt[info]: Level of Parallelism: 6
+Svt[info]: Number of PPCS 161
+Svt[info]: [asm level on system : up to avx2]
+Svt[info]: [asm level selected : up to avx2]
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [config]: main profile	tier (auto)	level (auto)
+Svt[info]: SVT [config]: width / height / fps numerator / fps denominator 		: 640 / 360 / 25 / 1
+Svt[info]: SVT [config]: bit-depth / color format 					: 8 / YUV420
+Svt[info]: SVT [config]: preset / tune / pred struct 					: 11 / PSNR / random access
+Svt[info]: SVT [config]: gop size / mini-gop size / key-frame type 			: 161 / 16 / key frame
+Svt[info]: SVT [config]: BRC mode / rate factor 					: CRF / 35.00 
+Svt[info]: SVT [config]: AQ mode / Variance Boost 					: 2 / 0
+Svt[info]: SVT [config]: sharpness / luminance-based QP bias 				: 0 / 0
+Svt[info]: SVT [config]: QP scale compress strength 					: 0
+Svt[info]: -------------------------------------------
+test internal::video::tests::a_clip_the_engine_cannot_decode_plays_in_software ... ok
+test internal::video::tests::a_clip_whose_rate_varies_keeps_time ... ok
+test internal::video::tests::a_forward_offset_walks_the_playhead_rather_than_seeking ... ok
+test internal::video::tests::a_modulated_playhead_has_no_authority_while_chasing ... ok
+test internal::video::tests::a_modulated_speed_cannot_move_the_chase_map ... ok
+test internal::video::tests::a_paused_clip_carried_to_the_out_point_clamps_instead_of_looping ... ok
+test internal::video::tests::a_paused_clip_decodes_the_one_frame_it_owes_and_no_more ... ok
+test internal::video::tests::a_paused_clip_ignores_modulated_speed ... ok
+test internal::video::tests::a_paused_clip_still_follows_a_modulated_playhead ... ok
+test internal::video::tests::a_paused_clip_swings_around_where_it_was_parked ... ok
+test internal::video::tests::a_paused_clip_with_an_in_that_is_no_number_moves_without_a_panic ... ok
+test internal::video::tests::a_paused_first_picture_survives_loop_setup_and_waits_for_cpu_upload_readiness ... ok
+test internal::video::tests::a_playing_clip_offsets_from_its_own_march ... ok
+test internal::video::tests::a_seek_lands_on_its_frame_not_the_keyframe_before ... ok
+test internal::video::tests::a_speed_wobble_a_minute_into_a_show_does_not_throw_the_playhead ... ok
+test internal::video::tests::a_steady_offset_costs_nothing_after_it_has_been_reached ... ok
+test internal::video::tests::an_absolute_position_cannot_leave_the_clip ... ok
+test internal::video::tests::an_absolute_position_past_the_out_point_does_not_trip_the_loop ... ok
+test internal::video::tests::an_absolute_position_replaces_rather_than_nudges ... ok
+test internal::video::tests::an_absolute_position_that_holds_still_stops_seeking ... ok
+test internal::video::tests::an_anamorphic_clip_is_shown_at_its_width ... ok
+test internal::video::tests::an_hdr_clip_is_tone_mapped_not_dim ... ok
+test internal::video::tests::an_in_past_the_out_lets_the_out_go_and_an_out_before_the_in_the_in ... ok
+test internal::video::tests::an_interlaced_clip_shows_no_comb ... ok
+test internal::video::tests::an_offset_applied_before_a_chase_does_not_survive_into_it ... ok
+test internal::video::tests::an_offset_still_respects_the_loop_boundary ... ok
+test internal::video::tests::auto_reacquires_with_a_seek_after_free_run ... ok
+test internal::video::tests::auto_restores_loop_mode_while_transport_is_stopped ... ok
+test internal::video::tests::chaos_extreme_position_recovery ... ok
+test internal::video::tests::chaos_extreme_speed_1e6_does_not_overflow ... ok
+test internal::video::tests::chaos_in_point_greater_than_out_point ... ok
+test internal::video::tests::chaos_infinity_speed_does_not_panic ... ok
+test internal::video::tests::chaos_nan_in_point_does_not_panic ... ok
+test internal::video::tests::chaos_nan_position_does_not_panic ... ok
+test internal::video::tests::chaos_nan_speed_does_not_propagate ... ok
+test internal::video::tests::chaos_negative_duration ... ok
+test internal::video::tests::chaos_negative_extreme_speed ... ok
+test internal::video::tests::chaos_zero_duration ... ok
+test internal::video::tests::chase_always_freezes_on_stopped_transport ... ok
+test internal::video::tests::chase_auto_does_not_chase_when_transport_is_stopped ... ok
+test internal::video::tests::chase_auto_follows_a_running_transport ... ok
+test internal::video::tests::chase_ignores_every_loop_mode_and_holds_out_point ... ok
+test internal::video::tests::chase_moving_back_more_than_a_frame_seeks ... ok
+test internal::video::tests::chase_never_free_runs_while_transport_runs ... ok
+test internal::video::tests::chase_trim_preserves_the_servos_decode_request ... ok
+test internal::video::tests::clip_pause_wins_over_chase ... ok
+test internal::video::tests::conversion_failure_returns_the_recovered_picture_instead_of_stale_pixels ... ok
+test internal::video::tests::decode_rate_is_bounded_by_what_the_renderer_can_present ... ok
+skipping: tests/media/birds_combined_hap.mov not present (local-only fixture)
+test internal::video::tests::detect_hap_codec_birds_fixture_is_bc1 ... ok
+test internal::video::tests::every_frame_of_a_clip_is_shown_to_the_last ... ok
+test internal::video::tests::frame_pool_reuses_and_bounds_buffers ... ok
+test internal::video::tests::frame_schedule_absorbs_decode_time_instead_of_adding_to_it ... ok
+test internal::video::tests::frame_schedule_resyncs_after_an_overrun_instead_of_bursting ... ok
+skipping: tests/media/birds_combined_hap.mov not present (local-only fixture)
+test internal::video::tests::hap_player_decodes_frames_and_survives_the_loop_wrap ... ok
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [version]:	SVT-AV1 Encoder Lib v4.2.0-151-g5ed9ffbcb
+Svt[info]: SVT [build]  :	GCC 16.2.0	 64 bit
+Svt[info]: LIB Build date: Oct 17 2026 18:25:27
+Svt[info]: -------------------------------------------
+Svt[warn]: Preset M12 is mapped to M11.
+Svt[warn]: Screen-content detection and tools are disabled for RA mode coding at M9 and above; forcing NSC path
+Svt[warn]: Non-RTC M10+ are meant for automation tooling usage. Visual artifacts may occur otherwise.
+Svt[info]: Level of Parallelism: 6
+Svt[info]: Number of PPCS 161
+Svt[info]: [asm level on system : up to avx2]
+Svt[info]: [asm level selected : up to avx2]
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [config]: main profile	tier (auto)	level (auto)
+Svt[info]: SVT [config]: width / height / fps numerator / fps denominator 		: 640 / 360 / 25 / 1
+Svt[info]: SVT [config]: bit-depth / color format 					: 8 / YUV420
+Svt[info]: SVT [config]: preset / tune / pred struct 					: 11 / PSNR / random access
+Svt[info]: SVT [config]: gop size / mini-gop size / key-frame type 			: 161 / 16 / key frame
+Svt[info]: SVT [config]: BRC mode / rate factor 					: CRF / 35.00 
+Svt[info]: SVT [config]: AQ mode / Variance Boost 					: 2 / 0
+Svt[info]: SVT [config]: sharpness / luminance-based QP bias 				: 0 / 0
+Svt[info]: SVT [config]: QP scale compress strength 					: 0
+Svt[info]: -------------------------------------------
+test internal::video::tests::hardware_download_reuses_storage_without_changing_samples_or_properties ... ok
+test internal::video::tests::hardware_fallback_restarts_at_a_keyframe_after_a_seek ... ok
+test internal::video::tests::in_and_out_always_leave_something_to_play ... ok
+test internal::video::tests::in_and_out_the_wrong_way_round_seek_the_in_every_frame ... ok
+test internal::video::tests::letting_a_clip_go_never_waits_for_its_decoder ... ok
+test internal::video::tests::letting_go_of_the_offset_hands_the_playhead_back ... ok
+test internal::video::tests::modulated_speed_leaves_the_stored_set_point_alone ... ok
+test internal::video::tests::modulated_speed_moves_the_playhead_faster_without_seeking ... ok
+test internal::video::tests::nearby_forward_scrubbing_reuses_the_decoder_and_keeps_the_right_picture ... ok
+test internal::video::tests::playback_state_advance_with_clamped_rate_does_not_divide_by_zero ... ok
+test internal::video::tests::playback_state_nan_frame_rate_clamped ... ok
+test internal::video::tests::playback_state_negative_frame_rate_clamped ... ok
+test internal::video::tests::playback_state_valid_frame_rate_preserved ... ok
+test internal::video::tests::playback_state_zero_frame_rate_clamped ... ok
+test internal::video::tests::quarter_turns_follow_the_display_matrix ... ok
+test internal::video::tests::reference_repacking_does_not_rescale_full_range_yuv_samples ... ok
+test internal::video::tests::scrub_boundaries_eof_and_restarts_match_fresh_seeks ... ok
+test internal::video::tests::test_decode_handle_take_frame_returns_none_initially ... ok
+test internal::video::tests::test_hap_texture_format_block_bytes ... ok
+test internal::video::tests::test_hap_texture_format_frame_byte_size ... ok
+test internal::video::tests::test_hap_texture_format_needs_ycocg ... ok
+test internal::video::tests::test_playback_frame_pacing_slow_speed ... ok
+test internal::video::tests::test_playback_snapshot_from_state ... ok
+test internal::video::tests::test_playback_state_advance_moves_position ... ok
+test internal::video::tests::test_playback_state_defaults ... ok
+test internal::video::tests::test_playback_state_hold_last ... ok
+test internal::video::tests::test_playback_state_in_out_points ... ok
+test internal::video::tests::test_playback_state_loop_restart ... ok
+test internal::video::tests::test_playback_state_not_playing ... ok
+test internal::video::tests::test_playback_state_one_shot_stops ... ok
+test internal::video::tests::test_playback_state_ping_pong ... ok
+test internal::video::tests::test_playback_state_speed_affects_position ... ok
+h264.mp4: media engine = true
+hevc.mp4: media engine = true
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [version]:	SVT-AV1 Encoder Lib v4.2.0-151-g5ed9ffbcb
+Svt[info]: SVT [build]  :	GCC 16.2.0	 64 bit
+Svt[info]: LIB Build date: Oct 17 2026 18:25:27
+Svt[info]: -------------------------------------------
+Svt[warn]: Preset M12 is mapped to M11.
+Svt[warn]: Screen-content detection and tools are disabled for RA mode coding at M9 and above; forcing NSC path
+Svt[warn]: Non-RTC M10+ are meant for automation tooling usage. Visual artifacts may occur otherwise.
+Svt[info]: Level of Parallelism: 6
+Svt[info]: Number of PPCS 161
+Svt[info]: [asm level on system : up to avx2]
+Svt[info]: [asm level selected : up to avx2]
+Svt[info]: -------------------------------------------
+Svt[info]: SVT [config]: main profile	tier (auto)	level (auto)
+Svt[info]: SVT [config]: width / height / fps numerator / fps denominator 		: 640 / 360 / 25 / 1
+Svt[info]: SVT [config]: bit-depth / color format 					: 8 / YUV420
+Svt[info]: SVT [config]: preset / tune / pred struct 					: 11 / PSNR / random access
+Svt[info]: SVT [config]: gop size / mini-gop size / key-frame type 			: 161 / 16 / key frame
+Svt[info]: SVT [config]: BRC mode / rate factor 					: CRF / 35.00 
+Svt[info]: SVT [config]: AQ mode / Variance Boost 					: 2 / 0
+Svt[info]: SVT [config]: sharpness / luminance-based QP bias 				: 0 / 0
+Svt[info]: SVT [config]: QP scale compress strength 					: 0
+Svt[info]: -------------------------------------------
+av1.mp4: media engine = true
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d457f25bc0] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d4e47a0640] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 000001d45990c340] deprecated pixel format used, make sure you did set range correctly
+full-range.mp4: media engine = true
+hdr10.mp4: media engine = true
+hevc10.mp4: media engine = true
+test internal::video::tests::the_media_engine_decodes_the_same_picture_and_does_the_work ... ok
+test internal::video::tests::the_stored_speed_still_scales_the_chase_map ... ok
+test internal::video::tests::transport_locate_reaches_video_as_a_seek ... ok
+test internal::video::tests::unmodulated_speed_falls_back_to_the_stored_speed ... ok
+[swscaler @ 000001d4525f9000] deprecated pixel format used, make sure you did set range correctly
+test internal::video::yuv::tests::a_yuvj_frame_is_full_range_whatever_its_tag ... ok
+test internal::video::yuv::tests::an_untagged_hd_frame_is_taken_as_bt709 ... ok
+test internal::video::yuv::tests::full_range_levels_are_not_stretched ... ok
+test internal::video::yuv::tests::hd_red_is_red ... ok
+test internal::video::yuv::tests::limited_range_grey_keeps_its_level ... ok
+test internal::video::yuv::tests::rgb_frames_are_left_alone ... ok
+
+test result: ok. 177 passed; 0 failed; 6 ignored; 0 measured; 4428 filtered out; finished in 10.04s
+

@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-pacing-20261119\\diagnostic-test.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "00B7C142BC8FF8FDBA734FDC97DAE015D7A104FC76DB55CB237775FD199CC59C",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-pacing-20261119\\diagnostic-app.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "D651DB90D51608CE57B498F2BBF827F8D0982925F28379DFE1601438A8AF3B4A",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\gpu_video.wgsl"
+  }
+]

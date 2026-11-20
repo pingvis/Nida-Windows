@@ -1,0 +1,392 @@
+[
+  {
+    "run": "app-untraced-headless-1080",
+    "manifest": {
+      "started_utc": "2026-11-19T21:35:36.0451673+00:00",
+      "finished_utc": "2026-11-19T21:36:48.5664574+00:00",
+      "pid": 25340,
+      "process_start_utc": "2026-11-19T21:35:36.0402795Z",
+      "main_window_title": "",
+      "channel": "0c55230f",
+      "deck": "ce8477f7",
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "resolution": "1080p60",
+      "headless": true,
+      "seconds": 70,
+      "warmup_control_events": [],
+      "binary_sha256": "00B7C142BC8FF8FDBA734FDC97DAE015D7A104FC76DB55CB237775FD199CC59C",
+      "trace": null
+    },
+    "samples": [
+      {
+        "index": 4,
+        "elapsed_s": 5.0626406,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 368986600,
+            "downloaded_bytes": 0,
+            "dropped_frames": 13,
+            "fallback_reason": null,
+            "gpu_copies": 634,
+            "gpu_frames": 303,
+            "occupied_slots": 2,
+            "peak_slots": 3,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 5.332915600000005,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      },
+      {
+        "index": 34,
+        "elapsed_s": 35.4195109,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 2567102700,
+            "downloaded_bytes": 0,
+            "dropped_frames": 50,
+            "fallback_reason": null,
+            "gpu_copies": 4238,
+            "gpu_frames": 2068,
+            "occupied_slots": 1,
+            "peak_slots": 3,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 35.67651379999995,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      },
+      {
+        "index": 64,
+        "elapsed_s": 65.7140838,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 4765504400,
+            "downloaded_bytes": 0,
+            "dropped_frames": 88,
+            "fallback_reason": null,
+            "gpu_copies": 7858,
+            "gpu_frames": 3840,
+            "occupied_slots": 2,
+            "peak_slots": 3,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 66.00248969999988,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      },
+      {
+        "index": 69,
+        "elapsed_s": 70.7628959,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 5137219400,
+            "downloaded_bytes": 0,
+            "dropped_frames": 92,
+            "fallback_reason": null,
+            "gpu_copies": 8450,
+            "gpu_frames": 4132,
+            "occupied_slots": 2,
+            "peak_slots": 3,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 71.00399199999991,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      }
+    ],
+    "frames_delta": 3537,
+    "client_elapsed_s": 60.651443199999996,
+    "playhead_elapsed_s": 60.66957409999988,
+    "payload_fps_client": 58.31683161003497,
+    "payload_fps_playhead": 58.2994038192862,
+    "scope": "published-counter estimates with asynchronous endpoints; no PTS gap/unique-picture trace"
+  },
+  {
+    "run": "app-untraced-visible-1080",
+    "manifest": {
+      "started_utc": "2026-11-19T21:36:50.5697240+00:00",
+      "finished_utc": "2026-11-19T21:38:02.9927918+00:00",
+      "pid": 14040,
+      "process_start_utc": "2026-11-19T21:36:50.5659995Z",
+      "main_window_title": "Nida",
+      "channel": "b0625e30",
+      "deck": "efc9f52b",
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "resolution": "1080p60",
+      "headless": false,
+      "seconds": 70,
+      "warmup_control_events": [],
+      "binary_sha256": "00B7C142BC8FF8FDBA734FDC97DAE015D7A104FC76DB55CB237775FD199CC59C",
+      "trace": null
+    },
+    "samples": [
+      {
+        "index": 4,
+        "elapsed_s": 5.037955,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 314707300,
+            "downloaded_bytes": 0,
+            "dropped_frames": 25,
+            "fallback_reason": null,
+            "gpu_copies": 556,
+            "gpu_frames": 252,
+            "occupied_slots": 1,
+            "peak_slots": 2,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 5.343784399999998,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      },
+      {
+        "index": 34,
+        "elapsed_s": 35.348957,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 2149987900,
+            "downloaded_bytes": 0,
+            "dropped_frames": 132,
+            "fallback_reason": null,
+            "gpu_copies": 3746,
+            "gpu_frames": 1740,
+            "occupied_slots": 1,
+            "peak_slots": 2,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 35.68548180000003,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      },
+      {
+        "index": 64,
+        "elapsed_s": 65.6246349,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 3966249000,
+            "downloaded_bytes": 0,
+            "dropped_frames": 194,
+            "fallback_reason": null,
+            "gpu_copies": 6914,
+            "gpu_frames": 3262,
+            "occupied_slots": 1,
+            "peak_slots": 2,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 65.8540304,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      },
+      {
+        "index": 69,
+        "elapsed_s": 70.6774466,
+        "video": {
+          "auto": {
+            "main_only": false,
+            "pause": true,
+            "play": true,
+            "restart": true
+          },
+          "delivery": {
+            "backpressure_events": 0,
+            "copy_wait_ns": 4279746200,
+            "downloaded_bytes": 0,
+            "dropped_frames": 204,
+            "fallback_reason": null,
+            "gpu_copies": 7456,
+            "gpu_frames": 3523,
+            "occupied_slots": 1,
+            "peak_slots": 2,
+            "uploaded_bytes": 0
+          },
+          "duration": 120.0,
+          "effective_speed": 1.0,
+          "frame_rate": 60.0,
+          "gpu_resident": true,
+          "hardware_decode": true,
+          "in_point": 0.0,
+          "loop_mode": "Loop",
+          "out_point": 0.0,
+          "playing": true,
+          "position": 71.01644329999993,
+          "position_offset": 0.0,
+          "sound_only": false,
+          "speed": 1.0,
+          "transport_sync": {
+            "delay_frames": 0,
+            "mode": "Auto",
+            "offset": 0.0
+          }
+        }
+      }
+    ],
+    "frames_delta": 3010,
+    "client_elapsed_s": 60.58667990000001,
+    "playhead_elapsed_s": 60.510246,
+    "payload_fps_client": 49.68088703602984,
+    "payload_fps_playhead": 49.74364176275205,
+    "scope": "published-counter estimates with asynchronous endpoints; no PTS gap/unique-picture trace"
+  }
+]

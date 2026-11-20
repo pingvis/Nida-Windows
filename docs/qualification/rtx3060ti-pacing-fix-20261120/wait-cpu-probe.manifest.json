@@ -1,0 +1,21 @@
+{
+  "scope": "CPU-only wait primitive; no video/GPU workload",
+  "finished_utc": "2026-11-20T05:02:41.3981309+00:00",
+  "hashes": [
+    {
+      "Algorithm": "SHA256",
+      "Hash": "DCA1D6EC95AB50E375F2DF0E2A5627C128E93DE4F8CDFDAB7E8B7132C628D52C",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-pacing-fix-20261120-qualified\\wait-cpu-probe.rs"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "9A77E93BF735F93D8808220BE85EFB1B62479FEFAA0E199EEB72E825C0658CF4",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-pacing-fix-20261120-qualified\\wait-cpu-probe.exe"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "83B90AA0723656D88035CE53AF8835F6F55F2C09FCDAAE0145E1001DCEFDE9EA",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\command_channel.rs"
+    }
+  ]
+}

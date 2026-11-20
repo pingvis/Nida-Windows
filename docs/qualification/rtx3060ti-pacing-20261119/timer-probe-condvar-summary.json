@@ -1,0 +1,122 @@
+[
+  {
+    "phase": 0,
+    "timer_1ms": false,
+    "kind": "sleep",
+    "requested_ms": 1.0,
+    "n": 100,
+    "p50_ms": 1.5229,
+    "p95_ms": 1.5769,
+    "max_ms": 1.6038999999999999
+  },
+  {
+    "phase": 0,
+    "timer_1ms": false,
+    "kind": "sleep",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 16.7617,
+    "p95_ms": 17.1828,
+    "max_ms": 17.1854
+  },
+  {
+    "phase": 0,
+    "timer_1ms": false,
+    "kind": "recv",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 30.4571,
+    "p95_ms": 31.4383,
+    "max_ms": 31.545099999999998
+  },
+  {
+    "phase": 0,
+    "timer_1ms": false,
+    "kind": "condvar",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 31.0026,
+    "p95_ms": 32.0404,
+    "max_ms": 32.095400000000005
+  },
+  {
+    "phase": 1,
+    "timer_1ms": true,
+    "kind": "sleep",
+    "requested_ms": 1.0,
+    "n": 100,
+    "p50_ms": 1.5196,
+    "p95_ms": 1.5608,
+    "max_ms": 1.5716
+  },
+  {
+    "phase": 1,
+    "timer_1ms": true,
+    "kind": "sleep",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 17.0078,
+    "p95_ms": 17.1826,
+    "max_ms": 17.2098
+  },
+  {
+    "phase": 1,
+    "timer_1ms": true,
+    "kind": "recv",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 17.230900000000002,
+    "p95_ms": 17.8399,
+    "max_ms": 18.266000000000002
+  },
+  {
+    "phase": 1,
+    "timer_1ms": true,
+    "kind": "condvar",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 17.233700000000002,
+    "p95_ms": 17.8705,
+    "max_ms": 18.161199999999997
+  },
+  {
+    "phase": 2,
+    "timer_1ms": false,
+    "kind": "sleep",
+    "requested_ms": 1.0,
+    "n": 100,
+    "p50_ms": 1.5225,
+    "p95_ms": 1.5636,
+    "max_ms": 1.5896000000000001
+  },
+  {
+    "phase": 2,
+    "timer_1ms": false,
+    "kind": "sleep",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 16.7226,
+    "p95_ms": 17.169,
+    "max_ms": 17.2544
+  },
+  {
+    "phase": 2,
+    "timer_1ms": false,
+    "kind": "recv",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 30.8095,
+    "p95_ms": 31.9981,
+    "max_ms": 32.0252
+  },
+  {
+    "phase": 2,
+    "timer_1ms": false,
+    "kind": "condvar",
+    "requested_ms": 16.666666666666668,
+    "n": 100,
+    "p50_ms": 31.3992,
+    "p95_ms": 32.021800000000006,
+    "max_ms": 32.0455
+  }
+]

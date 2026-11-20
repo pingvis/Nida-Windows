@@ -1,0 +1,2522 @@
+[
+  {
+    "run": "phase12-1080",
+    "fresh_fps": 51.82190902075001,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 1.0431033777167042,
+      "cpu_ms": 313,
+      "delivered_per_clip": [
+        1555
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2181661100,
+          "downloaded_bytes": 0,
+          "dropped_frames": 80,
+          "fallback_reason": null,
+          "gpu_copies": 3272,
+          "gpu_frames": 1555,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 12.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        245
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1580
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2180638200,
+          "downloaded_bytes": 0,
+          "dropped_frames": 79,
+          "fallback_reason": null,
+          "gpu_copies": 3270,
+          "gpu_frames": 1555,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1580
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 233418752,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5657,
+      "tick_service_p95_ms": 0.8607,
+      "wall_s": 30.0066136,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 76337700,
+          "downloaded_bytes": 0,
+          "dropped_frames": 56,
+          "fallback_reason": null,
+          "gpu_copies": 114,
+          "gpu_frames": 0,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "phase4-1080",
+    "fresh_fps": 47.82328438599625,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 1.456360646458562,
+      "cpu_ms": 437,
+      "delivered_per_clip": [
+        1435
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2109333000,
+          "downloaded_bytes": 0,
+          "dropped_frames": 195,
+          "fallback_reason": null,
+          "gpu_copies": 3262,
+          "gpu_frames": 1435,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 4.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        365
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1575
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2109333000,
+          "downloaded_bytes": 0,
+          "dropped_frames": 195,
+          "fallback_reason": null,
+          "gpu_copies": 3262,
+          "gpu_frames": 1435,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1575
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 234127360,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5779,
+      "tick_service_p95_ms": 0.8954,
+      "wall_s": 30.0063038,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 75160100,
+          "downloaded_bytes": 0,
+          "dropped_frames": 56,
+          "fallback_reason": null,
+          "gpu_copies": 112,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "phase8-1080",
+    "fresh_fps": 54.15359164298842,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 3.2292203262803554,
+      "cpu_ms": 969,
+      "delivered_per_clip": [
+        1625
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2431267300,
+          "downloaded_bytes": 0,
+          "dropped_frames": 207,
+          "fallback_reason": null,
+          "gpu_copies": 3666,
+          "gpu_frames": 1625,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 8.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        175
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1772
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2431267300,
+          "downloaded_bytes": 0,
+          "dropped_frames": 207,
+          "fallback_reason": null,
+          "gpu_copies": 3666,
+          "gpu_frames": 1625,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1772
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 233472000,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5856,
+      "tick_service_p95_ms": 0.7900999999999999,
+      "wall_s": 30.0072433,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 78288800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 122,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "poll-1080",
+    "fresh_fps": 51.29416810955678,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 7.134188878395471,
+      "cpu_ms": 4281,
+      "delivered_per_clip": [
+        3078
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4876349800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 496,
+          "fallback_reason": null,
+          "gpu_copies": 7150,
+          "gpu_frames": 3078,
+          "occupied_slots": 2,
+          "peak_slots": 3,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": true,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        522
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3515
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4876349800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 496,
+          "fallback_reason": null,
+          "gpu_copies": 7150,
+          "gpu_frames": 3078,
+          "occupied_slots": 2,
+          "peak_slots": 3,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        3515
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 235880448,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.2001,
+      "tick_service_p95_ms": 0.2878,
+      "wall_s": 60.0068217,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 82969500,
+          "downloaded_bytes": 0,
+          "dropped_frames": 60,
+          "fallback_reason": null,
+          "gpu_copies": 120,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 60.0
+    }
+  },
+  {
+    "run": "timer1-1080",
+    "fresh_fps": 49.11033650799191,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 5.597611819828464,
+      "cpu_ms": 3359,
+      "delivered_per_clip": [
+        2947
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4287836200,
+          "downloaded_bytes": 0,
+          "dropped_frames": 50,
+          "fallback_reason": null,
+          "gpu_copies": 5996,
+          "gpu_frames": 2947,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": true,
+      "empty_output_ticks_per_clip": [
+        653
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        2949
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4286352400,
+          "downloaded_bytes": 0,
+          "dropped_frames": 49,
+          "fallback_reason": null,
+          "gpu_copies": 5994,
+          "gpu_frames": 2947,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        2949
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 234151936,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5773,
+      "tick_service_p95_ms": 0.7865,
+      "wall_s": 60.0077338,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 63782300,
+          "downloaded_bytes": 0,
+          "dropped_frames": 49,
+          "fallback_reason": null,
+          "gpu_copies": 98,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 60.0
+    }
+  },
+  {
+    "run": "timer1-4k",
+    "fresh_fps": 59.99286554844087,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 4.791096901437986,
+      "cpu_ms": 2875,
+      "delivered_per_clip": [
+        3600
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 5213502900,
+          "downloaded_bytes": 0,
+          "dropped_frames": 62,
+          "fallback_reason": null,
+          "gpu_copies": 7326,
+          "gpu_frames": 3600,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": true,
+      "empty_output_ticks_per_clip": [
+        0
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3602
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 5212469400,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 7324,
+          "gpu_frames": 3600,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        3602
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 299397120,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 1.0621999999999998,
+      "tick_service_p95_ms": 1.1531,
+      "wall_s": 60.0071353,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 93343800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 122,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "3384C24647C1B17F884BA1D8B8BF1B74EC8425A3D2C6ED0C109558AF167B3CDE",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.640034",
+            "width": 3840,
+            "height": 2160,
+            "coded_width": 3840,
+            "coded_height": 2160,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 52,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "51270396",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "769129193",
+          "bit_rate": "51275279",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 60.0
+    }
+  },
+  {
+    "run": "traced-1080",
+    "fresh_fps": 52.06097492704619,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 1.458173913609648,
+      "cpu_ms": 875,
+      "delivered_per_clip": [
+        3124
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4943507800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 533,
+          "fallback_reason": null,
+          "gpu_copies": 7316,
+          "gpu_frames": 3124,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        476
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3597
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4943507800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 533,
+          "fallback_reason": null,
+          "gpu_copies": 7316,
+          "gpu_frames": 3124,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        3597
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 233512960,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5783999999999999,
+      "tick_service_p95_ms": 0.8955000000000001,
+      "wall_s": 60.0065597,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 84250100,
+          "downloaded_bytes": 0,
+          "dropped_frames": 61,
+          "fallback_reason": null,
+          "gpu_copies": 122,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 60.0
+    }
+  },
+  {
+    "run": "traced-4k",
+    "fresh_fps": 47.77787733863065,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 5.077753479274768,
+      "cpu_ms": 3047,
+      "delivered_per_clip": [
+        2867
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4084061000,
+          "downloaded_bytes": 0,
+          "dropped_frames": 337,
+          "fallback_reason": null,
+          "gpu_copies": 6410,
+          "gpu_frames": 2867,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        733
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        3148
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 4083031200,
+          "downloaded_bytes": 0,
+          "dropped_frames": 336,
+          "fallback_reason": null,
+          "gpu_copies": 6408,
+          "gpu_frames": 2867,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        3148
+      ],
+      "render_ticks": 3600,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 299823104,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 1.0614999999999999,
+      "tick_service_p95_ms": 1.6121,
+      "wall_s": 60.0068517,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 63043900,
+          "downloaded_bytes": 0,
+          "dropped_frames": 57,
+          "fallback_reason": null,
+          "gpu_copies": 114,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "3384C24647C1B17F884BA1D8B8BF1B74EC8425A3D2C6ED0C109558AF167B3CDE",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.640034",
+            "width": 3840,
+            "height": 2160,
+            "coded_width": 3840,
+            "coded_height": 2160,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 52,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "51270396",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "769129193",
+          "bit_rate": "51275279",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 60.0
+    }
+  },
+  {
+    "run": "untraced-1080-0",
+    "fresh_fps": 48.82074116230115,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 6.821573867524262,
+      "cpu_ms": 2047,
+      "delivered_per_clip": [
+        1465
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2265427000,
+          "downloaded_bytes": 0,
+          "dropped_frames": 201,
+          "fallback_reason": null,
+          "gpu_copies": 3334,
+          "gpu_frames": 1465,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        335
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1612
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2265427000,
+          "downloaded_bytes": 0,
+          "dropped_frames": 201,
+          "fallback_reason": null,
+          "gpu_copies": 3334,
+          "gpu_frames": 1465,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1612
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 257126400,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5572,
+      "tick_service_p95_ms": 0.8593000000000001,
+      "wall_s": 30.0077378,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 73333600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 55,
+          "fallback_reason": null,
+          "gpu_copies": 110,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "untraced-1080-1",
+    "fresh_fps": 51.12072968783123,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 1.093063842086613,
+      "cpu_ms": 328,
+      "delivered_per_clip": [
+        1534
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2443889900,
+          "downloaded_bytes": 0,
+          "dropped_frames": 246,
+          "fallback_reason": null,
+          "gpu_copies": 3562,
+          "gpu_frames": 1534,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        266
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1721
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2443889900,
+          "downloaded_bytes": 0,
+          "dropped_frames": 246,
+          "fallback_reason": null,
+          "gpu_copies": 3562,
+          "gpu_frames": 1534,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1721
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 233648128,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5606,
+      "tick_service_p95_ms": 0.8656999999999999,
+      "wall_s": 30.0073964,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 82469800,
+          "downloaded_bytes": 0,
+          "dropped_frames": 60,
+          "fallback_reason": null,
+          "gpu_copies": 120,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "untraced-1080-2",
+    "fresh_fps": 47.42229247519926,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 1.299697404450296,
+      "cpu_ms": 390,
+      "delivered_per_clip": [
+        1423
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2187814700,
+          "downloaded_bytes": 0,
+          "dropped_frames": 209,
+          "fallback_reason": null,
+          "gpu_copies": 3266,
+          "gpu_frames": 1423,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        377
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1577
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2187814700,
+          "downloaded_bytes": 0,
+          "dropped_frames": 209,
+          "fallback_reason": null,
+          "gpu_copies": 3266,
+          "gpu_frames": 1423,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1577
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 233611264,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 0.5655,
+      "tick_service_p95_ms": 0.875,
+      "wall_s": 30.0069846,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 75984300,
+          "downloaded_bytes": 0,
+          "dropped_frames": 56,
+          "fallback_reason": null,
+          "gpu_copies": 112,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "4AA2A4B8F4001D7610C1B76CAEA6A758E8E6D15B3152027FC9866C4498E3F6AC",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.64002a",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 42,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "13819538",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-1080p60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "207364639",
+          "bit_rate": "13824309",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "untraced-4k-0",
+    "fresh_fps": 47.554441053930915,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 8.641111818699569,
+      "cpu_ms": 2593,
+      "delivered_per_clip": [
+        1427
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2017759600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 193,
+          "fallback_reason": null,
+          "gpu_copies": 3242,
+          "gpu_frames": 1427,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        373
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1566
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2016730600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 193,
+          "fallback_reason": null,
+          "gpu_copies": 3240,
+          "gpu_frames": 1427,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1566
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 299585536,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 1.0511,
+      "tick_service_p95_ms": 1.5716,
+      "wall_s": 30.0077126,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 65455900,
+          "downloaded_bytes": 0,
+          "dropped_frames": 55,
+          "fallback_reason": null,
+          "gpu_copies": 110,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "3384C24647C1B17F884BA1D8B8BF1B74EC8425A3D2C6ED0C109558AF167B3CDE",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.640034",
+            "width": 3840,
+            "height": 2160,
+            "coded_width": 3840,
+            "coded_height": 2160,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 52,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "51270396",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "769129193",
+          "bit_rate": "51275279",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "untraced-4k-1",
+    "fresh_fps": 47.88880503404719,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 3.8524327501293354,
+      "cpu_ms": 1156,
+      "delivered_per_clip": [
+        1437
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2127245600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 210,
+          "fallback_reason": null,
+          "gpu_copies": 3296,
+          "gpu_frames": 1437,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        363
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1592
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2127245600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 210,
+          "fallback_reason": null,
+          "gpu_copies": 3296,
+          "gpu_frames": 1437,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1592
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 300085248,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 1.0497,
+      "tick_service_p95_ms": 1.5995,
+      "wall_s": 30.0070131,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 69496600,
+          "downloaded_bytes": 0,
+          "dropped_frames": 56,
+          "fallback_reason": null,
+          "gpu_copies": 112,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "3384C24647C1B17F884BA1D8B8BF1B74EC8425A3D2C6ED0C109558AF167B3CDE",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.640034",
+            "width": 3840,
+            "height": 2160,
+            "coded_width": 3840,
+            "coded_height": 2160,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 52,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "51270396",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "769129193",
+          "bit_rate": "51275279",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  },
+  {
+    "run": "untraced-4k-2",
+    "fresh_fps": 47.921829538413206,
+    "record": {
+      "clip": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+      "clips": 1,
+      "cpu_core_percent": 4.322295751830454,
+      "cpu_ms": 1297,
+      "delivered_per_clip": [
+        1438
+      ],
+      "delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2088428100,
+          "downloaded_bytes": 0,
+          "dropped_frames": 190,
+          "fallback_reason": null,
+          "gpu_copies": 3258,
+          "gpu_frames": 1438,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "diagnostic_phase_ms": 0.0,
+      "diagnostic_poll_only": false,
+      "diagnostic_timer_1ms": false,
+      "empty_output_ticks_per_clip": [
+        362
+      ],
+      "gpu_resident_required": true,
+      "hardware_frames_per_clip": [
+        1577
+      ],
+      "hardware_required": true,
+      "late_render_ticks": 0,
+      "measured_end_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 2088428100,
+          "downloaded_bytes": 0,
+          "dropped_frames": 190,
+          "fallback_reason": null,
+          "gpu_copies": 3258,
+          "gpu_frames": 1438,
+          "occupied_slots": 1,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ],
+      "produced_per_clip": [
+        1577
+      ],
+      "render_ticks": 1800,
+      "renderer_adapter": "AdapterInfo { name: \"NVIDIA GeForce RTX 3060 Ti\", vendor: 4318, device: 9353, device_type: DiscreteGpu, device_pci_bus_id: \"0000:09:00.0\", driver: \"32.0.16.2124\", driver_info: \"\", backend: Dx12, subgroup_min_size: 32, subgroup_max_size: 32, transient_saves_memory: Some(false), limit_bucket: None }",
+      "sampled_peak_rss_bytes": 300126208,
+      "source_fps": 60.0,
+      "tick_service_p50_ms": 1.0509,
+      "tick_service_p95_ms": 1.6036,
+      "wall_s": 30.0072016,
+      "warmup_delivery_per_clip": [
+        {
+          "backpressure_events": 0,
+          "copy_wait_ns": 60461900,
+          "downloaded_bytes": 0,
+          "dropped_frames": 52,
+          "fallback_reason": null,
+          "gpu_copies": 104,
+          "gpu_frames": 0,
+          "occupied_slots": 0,
+          "peak_slots": 2,
+          "uploaded_bytes": 0
+        }
+      ]
+    },
+    "manifest": {
+      "clip_sha256": "3384C24647C1B17F884BA1D8B8BF1B74EC8425A3D2C6ED0C109558AF167B3CDE",
+      "binary_sha256": "745D5651533B4FCB906D451095142C5DF7F19626CC1DF331D10AD5C13B8D9B01",
+      "revision": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+      "ffmpeg": "ffmpeg version n9.0.2-31-gc89d6ee1ca-20261021 Copyright (c) 2000-2026 the FFmpeg developers",
+      "os": "Microsoft Windows 10.0.26300",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "mime_codec_string": "avc1.640034",
+            "width": 3840,
+            "height": 2160,
+            "coded_width": 3840,
+            "coded_height": 2160,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": 52,
+            "color_range": "tv",
+            "color_space": "bt709",
+            "color_transfer": "bt709",
+            "color_primaries": "bt709",
+            "chroma_location": "left",
+            "field_order": "progressive",
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "60/1",
+            "avg_frame_rate": "60/1",
+            "time_base": "1/15360",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 1843200,
+            "duration": "120.000000",
+            "bit_rate": "51270396",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "7200",
+            "extradata_size": 50,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "encoder": "Lavc63.1.102 libx264"
+            }
+          }
+        ],
+        "format": {
+          "filename": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\continuous\\h264-4k60.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "120.000000",
+          "size": "769129193",
+          "bit_rate": "51275279",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf63.1.102"
+          }
+        }
+      },
+      "hardware_required": true,
+      "gpu_resident_required": true,
+      "shader_sha256": "embedded",
+      "upload_wait": false,
+      "realtime_rendering": true,
+      "clips": 1,
+      "seconds": 30.0
+    }
+  }
+]

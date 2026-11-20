@@ -1,0 +1,27 @@
+   Compiling nida-gpu-video-checks v0.1.0 (E:\Custom Apps\Nida-Windows\tools\gpu-video-checks)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\E:\Custom Apps\Nida-Windows\tools\gpu-video-checks\target\debug\incremental\nida_gpu_video_checks-077py2x330o0h\s-hoboi9h7e1-17cqdzj-working`
+
+warning: `nida-gpu-video-checks` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.81s
+     Running unittests src\lib.rs (tools\gpu-video-checks\target\debug\deps\nida_gpu_video_checks-cd660ebc50867e06.exe)
+
+running 1 test
+test cadence::tests::over_budget_decode_does_not_add_another_frame_of_wait ... FAILED
+
+failures:
+
+---- cadence::tests::over_budget_decode_does_not_add_another_frame_of_wait stdout ----
+
+thread 'cadence::tests::over_budget_decode_does_not_add_another_frame_of_wait' (32404) panicked at src\..\..\..\src\internal\video\cadence.rs:30:13:
+assertion `left == right` failed: a decoder already over budget must not be paced at half throughput
+  left: 15ms
+ right: 0ns
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    cadence::tests::over_budget_decode_does_not_add_another_frame_of_wait
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

@@ -1,0 +1,13 @@
+{
+  "input": "target/gpu-pacing-20261119/app-windowed-visible.trace.jsonl",
+  "sha256": "eeb4cfdc5368290d3853b93c3b3e34d113b5c94f5a3d8d9cd33d400ddf9864cb",
+  "begin_ns": 47558878200,
+  "duration_s": 60,
+  "consumer_ticks": 3599,
+  "exhaustive_phase_candidates": 3574,
+  "best_unique": 3566,
+  "best_fps": 59.43333333333333,
+  "worst_unique": 3325,
+  "worst_fps": 55.416666666666664,
+  "model_only": true
+}

@@ -1,0 +1,27 @@
+{
+  "estimates": [
+    {
+      "name": "app-headless-untraced",
+      "client_seconds": 60.6338618,
+      "playhead_seconds": 60.666769400000035,
+      "encoded_counter_delta": 3640,
+      "rate_per_client_seconds": 60.03246192707455,
+      "rate_per_playhead_seconds": 59.99989839577642,
+      "payload_discard_delta": 0,
+      "cpu_core_percent": 4.6900360880526994,
+      "cpu_cycles_per_second": 205658973.87720075
+    },
+    {
+      "name": "app-windowed-untraced-occluded",
+      "client_seconds": 60.530043600000006,
+      "playhead_seconds": 60.49997890000005,
+      "encoded_counter_delta": 3630,
+      "rate_per_client_seconds": 59.97021948287511,
+      "rate_per_playhead_seconds": 60.000020925627084,
+      "payload_discard_delta": 0,
+      "cpu_core_percent": 14.971903968692992,
+      "cpu_cycles_per_second": 554605039.141257
+    }
+  ],
+  "limits": "Asynchronous worker snapshots and RPC endpoints; estimates are not exact per-picture or presentation intervals."
+}

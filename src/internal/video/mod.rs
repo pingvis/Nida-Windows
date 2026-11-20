@@ -5,9 +5,13 @@
 //!   Supports Hap (BC1), Hap Alpha (BC3), Hap R (BC7).
 //! - **ffmpeg path**: hardware decoding where supported, with CPU fallback for other codecs.
 
+mod cadence;
 pub mod chase;
+pub(crate) mod command_channel;
 pub mod delivery;
 mod frame_mailbox;
+mod frame_readiness;
+pub(crate) use frame_readiness::FrameReadiness;
 #[cfg(any(target_os = "windows", test))]
 mod gpu_colour;
 #[cfg(any(target_os = "windows", test))]
@@ -18,6 +22,7 @@ pub mod hap;
 pub mod hdr;
 pub(crate) mod hwdecode;
 pub mod modulation;
+pub(crate) mod pacing_trace;
 pub mod sound_only;
 pub mod yuv;
 
@@ -35,11 +40,11 @@ thread_local! {
 use anyhow::{Context, Result};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 
 extern crate ffmpeg_next as ffmpeg;
 
-use ffmpeg::format::{input, Pixel};
+use ffmpeg::format::{Pixel, input};
 use ffmpeg::media::Type;
 use ffmpeg::software::scaling::context::Context as Scaler;
 use ffmpeg::util::frame::video::Video;
@@ -52,7 +57,7 @@ pub use chase::{ChaseInbox, VideoChaseBroadcast};
 pub use modulation::{
     PlaybackModulation, PlaybackModulationInbox, PositionTarget as ModulatedPosition,
 };
-pub use sound_only::{is_sound_only, SoundOnlyPlayer, SOUND_PICTURE_SIZE};
+pub use sound_only::{SOUND_PICTURE_SIZE, SoundOnlyPlayer, is_sound_only};
 
 /// Result of advancing playback state.
 pub struct AdvanceResult {
@@ -192,6 +197,14 @@ impl PlaybackState {
     /// is what lets the UI slider keep showing where they left it.
     pub fn effective_speed(&self) -> f64 {
         self.modulation.speed.unwrap_or(self.speed)
+    }
+
+    /// Paused decode/preload time must never advance a newly started playhead.
+    fn set_playing(&mut self, playing: bool) {
+        if self.playing != playing {
+            self.last_advance = std::time::Instant::now();
+            self.playing = playing;
+        }
     }
 
     /// Advance playback position using real wall-clock time.
@@ -621,17 +634,18 @@ fn publish_decoded(
     generation: u64,
     pool: &Mutex<Vec<Vec<u8>>>,
 ) -> bool {
-    match mailbox.publish(frame, generation) {
-        Ok(old) => {
-            if let Some(old) = old {
-                old.color_data.recycle(pool);
-                if let Some(alpha) = old.alpha_data {
-                    pool_return(pool, alpha);
-                }
+    pacing_trace::emit("publish_begin", generation as f64, 0.0);
+    if let Ok(old) = mailbox.publish(frame, generation) {
+        if let Some(old) = old {
+            old.color_data.recycle(pool);
+            if let Some(alpha) = old.alpha_data {
+                pool_return(pool, alpha);
             }
-            true
         }
-        Err(_) => false,
+        true
+    } else {
+        pacing_trace::emit("publish_stale", generation as f64, 0.0);
+        false
     }
 }
 
@@ -770,6 +784,11 @@ pub struct DecodeInboxes {
 /// What a decode thread drives: a playhead that hands out RGBA frames — a
 /// video file, or a sound file's stand-in picture.
 pub trait FramePlayer: Send {
+    /// Next source eligibility boundary, if this player has timestamped lookahead.
+    /// Other transport modes keep their existing bounded periodic updates.
+    fn next_picture_deadline(&self) -> Option<std::time::Instant> {
+        None
+    }
     fn retry_picture(&mut self) {
         self.playback().show_frame = true;
     }
@@ -826,6 +845,34 @@ pub trait FramePlayer: Send {
 }
 
 impl FramePlayer for VideoPlayer {
+    fn next_picture_deadline(&self) -> Option<std::time::Instant> {
+        // A retained GPU picture freezes the playhead until a slot is free.
+        // Its old lookahead deadline must not turn pool pressure into hot polling.
+        #[cfg(target_os = "windows")]
+        if self.gpu_retry {
+            return None;
+        }
+        let state = &self.playback;
+        if !state.playing
+            || state.suspended
+            || state.reverse
+            || state.chasing
+            || !matches!(state.modulation.position, modulation::PositionTarget::Free)
+        {
+            return None;
+        }
+        let speed = state.effective_speed().abs();
+        if !speed.is_finite() || speed <= 0.0 {
+            return None;
+        }
+        let delta = (self.lookahead_at? - self.due()) / speed;
+        if !delta.is_finite() || delta < 0.0 {
+            return None;
+        }
+        state
+            .last_advance
+            .checked_add(std::time::Duration::try_from_secs_f64(delta).ok()?)
+    }
     fn retry_picture(&mut self) {
         self.playback.show_frame = true;
         self.retained_seek_frame = true;
@@ -900,7 +947,7 @@ impl FramePlayer for VideoPlayer {
 /// Main-thread handle to a background video decode thread.
 pub struct VideoDecodeHandle {
     delivery: Option<Arc<delivery::DeliveryCounters>>,
-    cmd_tx: mpsc::Sender<VideoCommand>,
+    cmd_tx: Box<command_channel::Sender<VideoCommand>>,
     frame_data: Arc<FrameMailbox>,
     snapshot: Arc<Mutex<PlaybackSnapshot>>,
     stop_flag: Arc<AtomicBool>,
@@ -955,7 +1002,7 @@ impl VideoDecodeHandle {
         let fps = player.frame_rate();
         let initial_snapshot = PlaybackSnapshot::from_state(player.playback_state());
 
-        let (cmd_tx, cmd_rx) = mpsc::channel();
+        let (cmd_tx, cmd_rx) = command_channel::channel();
         let frame_data = Arc::new(FrameMailbox::default());
         let snapshot: Arc<Mutex<PlaybackSnapshot>> = Arc::new(Mutex::new(initial_snapshot));
         let stop_flag = Arc::new(AtomicBool::new(false));
@@ -980,7 +1027,7 @@ impl VideoDecodeHandle {
 
         Self {
             delivery,
-            cmd_tx,
+            cmd_tx: Box::new(cmd_tx),
             frame_data,
             snapshot,
             stop_flag,
@@ -1008,7 +1055,7 @@ impl VideoDecodeHandle {
         let is_dual_plane = player.is_dual_plane;
         let initial_snapshot = PlaybackSnapshot::from_state(&player.playback);
 
-        let (cmd_tx, cmd_rx) = mpsc::channel();
+        let (cmd_tx, cmd_rx) = command_channel::channel();
         let frame_data = Arc::new(FrameMailbox::default());
         let snapshot: Arc<Mutex<PlaybackSnapshot>> = Arc::new(Mutex::new(initial_snapshot));
         let stop_flag = Arc::new(AtomicBool::new(false));
@@ -1033,7 +1080,7 @@ impl VideoDecodeHandle {
 
         Self {
             delivery: None,
-            cmd_tx,
+            cmd_tx: Box::new(cmd_tx),
             frame_data,
             snapshot,
             stop_flag,
@@ -1105,13 +1152,24 @@ impl VideoDecodeHandle {
     /// Return the frame to the decode thread via [`Self::recycle`] after upload
     /// so its buffer is reused instead of freed.
     pub fn take_frame(&self) -> Option<DecodedFrame> {
-        self.frame_data.lock().ok()?.take()
+        let mut slot = self.frame_data.lock().ok()?;
+        let frame = slot.take();
+        pacing_trace::emit("take", f64::from(frame.is_some()), 0.0);
+        frame
     }
 
     /// Native frames do not use upload staging. Keep a paused CPU picture in
     /// the mailbox until its upload buffer is ready, while allowing GPU frames
     /// to reach the compositor without mapping any CPU upload buffer first.
     pub fn take_ready_frame(&self, cpu_upload_ready: bool) -> Option<DecodedFrame> {
+        self.take_ready_frame_with_readiness(cpu_upload_ready, &mut FrameReadiness::disabled())
+    }
+
+    pub(crate) fn take_ready_frame_with_readiness(
+        &self,
+        cpu_upload_ready: bool,
+        readiness: &mut FrameReadiness,
+    ) -> Option<DecodedFrame> {
         let mut slot = self.frame_data.lock().ok()?;
         let ready = slot.as_ref().is_some_and(|frame| match &frame.color_data {
             DecodedPixels::Cpu(_) => cpu_upload_ready,
@@ -1119,8 +1177,62 @@ impl VideoDecodeHandle {
             DecodedPixels::Gpu(_) => true,
         });
         if ready {
+            pacing_trace::emit("take_ready", 1.0, f64::from(cpu_upload_ready));
             slot.take()
         } else {
+            let empty = slot.is_none();
+            let generation = self.frame_data.generation.load(Ordering::Acquire);
+            drop(slot);
+            if cfg!(target_os = "windows") && empty && readiness.enabled() && !self.is_suspended() {
+                let snapshot = self.playback_snapshot();
+                if snapshot.gpu_resident
+                    && snapshot.playing
+                    && !snapshot.suspended
+                    && !snapshot.reverse
+                    && snapshot.loop_mode != LoopMode::PingPong
+                    && (snapshot.loop_mode != LoopMode::HoldLast
+                        || snapshot.position < snapshot.effective_out())
+                    && !self
+                        .transport_sync()
+                        .mode
+                        .is_chasing(readiness.transport_running)
+                    && self.inboxes.modulation.take().is_inert()
+                {
+                    if let Some(deadline) =
+                        readiness.deadline(snapshot.frame_rate, snapshot.effective_speed)
+                    {
+                        pacing_trace::emit(
+                            "readiness_begin",
+                            deadline
+                                .saturating_duration_since(std::time::Instant::now())
+                                .as_secs_f64(),
+                            0.0,
+                        );
+                        let started = std::time::Instant::now();
+                        let frame =
+                            self.frame_data
+                                .take_until(generation, deadline, |frame| {
+                                    match &frame.color_data {
+                                        DecodedPixels::Cpu(_) => cpu_upload_ready,
+                                        #[cfg(target_os = "windows")]
+                                        DecodedPixels::Gpu(_) => true,
+                                    }
+                                });
+                        pacing_trace::emit(
+                            "readiness_end",
+                            started.elapsed().as_secs_f64(),
+                            f64::from(frame.is_some()),
+                        );
+                        pacing_trace::emit(
+                            "take_ready",
+                            f64::from(frame.is_some()),
+                            f64::from(cpu_upload_ready),
+                        );
+                        return frame;
+                    }
+                }
+            }
+            pacing_trace::emit("take_ready", 0.0, f64::from(cpu_upload_ready));
             None
         }
     }
@@ -1245,8 +1357,8 @@ fn frame_of(frame_rate: f64) -> f64 {
 /// Apply a command to a `PlaybackState`.
 fn apply_command(ps: &mut PlaybackState, cmd: &VideoCommand) {
     match cmd {
-        VideoCommand::Play => ps.playing = true,
-        VideoCommand::Pause => ps.playing = false,
+        VideoCommand::Play => ps.set_playing(true),
+        VideoCommand::Pause => ps.set_playing(false),
         VideoCommand::SetSuspended(s) => {
             // Back from suspension, the playhead moves on from now: the time
             // it was frozen is not time it plays (it jumped a tenth of a second).
@@ -1344,17 +1456,16 @@ fn wake_interval(suspended: bool, video_fps: f64, output_fps: &AtomicU32) -> std
     }
 }
 
-fn wait_for_next_frame(
-    next_frame_at: &mut std::time::Instant,
-    interval: std::time::Duration,
-) -> std::time::Duration {
+fn advance_frame_schedule(next_frame_at: &mut std::time::Instant, interval: std::time::Duration) {
     let now = std::time::Instant::now();
-    let wait = next_frame_at.saturating_duration_since(now);
-    *next_frame_at += interval;
-    if *next_frame_at <= now {
-        *next_frame_at = now + interval;
+    if now.saturating_duration_since(*next_frame_at) >= interval {
+        pacing_trace::emit(
+            "schedule_reset",
+            now.saturating_duration_since(*next_frame_at).as_secs_f64(),
+            interval.as_secs_f64(),
+        );
     }
-    wait
+    cadence::on_wake(next_frame_at, interval, now);
 }
 
 // Decode-thread plumbing: each arg is a distinct channel to the render thread,
@@ -1362,7 +1473,7 @@ fn wait_for_next_frame(
 #[allow(clippy::too_many_arguments)]
 fn video_decode_thread<P: FramePlayer>(
     mut player: P,
-    cmd_rx: &mpsc::Receiver<VideoCommand>,
+    cmd_rx: &command_channel::Receiver<VideoCommand>,
     frame_data: &FrameMailbox,
     snapshot: &Mutex<PlaybackSnapshot>,
     stop_flag: &AtomicBool,
@@ -1375,7 +1486,13 @@ fn video_decode_thread<P: FramePlayer>(
     let mut next_frame_at = std::time::Instant::now() + interval;
     let mut was_suspended = false;
 
+    #[cfg(test)]
+    let periodic_only = std::env::var("NIDA_VIDEO_BENCH_PERIODIC_WAKE").is_ok_and(|v| v == "1");
+    #[cfg(not(test))]
+    let periodic_only = false;
+
     while !stop_flag.load(Ordering::Acquire) {
+        pacing_trace::emit("worker_wake", player.playback_state().position, 0.0);
         let generation = frame_data.generation.load(Ordering::Acquire);
         // Drain all pending commands
         let mut had_seek = None;
@@ -1410,6 +1527,7 @@ fn video_decode_thread<P: FramePlayer>(
         player.playback().set_modulation(inboxes.modulation.take());
 
         // Decode next frame
+        pacing_trace::emit("decode_begin", player.playback_state().position, 0.0);
         match player.next_decoded_frame(frame_pool) {
             Ok(Some(frame)) => {
                 if !publish_decoded(frame_data, frame, generation, frame_pool) {
@@ -1417,7 +1535,9 @@ fn video_decode_thread<P: FramePlayer>(
                     player.retry_picture();
                 }
             }
-            Ok(None) => {}
+            Ok(None) => {
+                pacing_trace::emit("decode_none", player.playback_state().position, 0.0);
+            }
             Err(e) => {
                 log::warn!("Video decode error: {e}");
             }
@@ -1437,8 +1557,37 @@ fn video_decode_thread<P: FramePlayer>(
 
         // Sleep until the next frame falls due, or wake early on a command.
         interval = wake_interval(player.playback().suspended, fps, output_fps);
-        match cmd_rx.recv_timeout(wait_for_next_frame(&mut next_frame_at, interval)) {
+        let periodic_wait = cadence::next_wait(next_frame_at, std::time::Instant::now());
+        let cap = output_fps.load(Ordering::Relaxed);
+        let wait = if !periodic_only
+            && cadence::picture_deadline_allowed(
+                fps,
+                player.playback_state().effective_speed(),
+                cap,
+            ) {
+            player
+                .next_picture_deadline()
+                .map_or(periodic_wait, |deadline| {
+                    // Keep snapshots/transport responsive across VFR gaps. The
+                    // eligibility deadline does not yet imply presentation lead.
+                    deadline
+                        .saturating_duration_since(std::time::Instant::now())
+                        .clamp(std::time::Duration::from_micros(1), interval)
+                })
+        } else {
+            periodic_wait
+        };
+        pacing_trace::emit("worker_wait", wait.as_secs_f64(), interval.as_secs_f64());
+        let waited_at = std::time::Instant::now();
+        let received = cmd_rx.recv_timeout(wait);
+        advance_frame_schedule(&mut next_frame_at, interval);
+        match received {
             Ok(cmd) => {
+                pacing_trace::emit(
+                    "worker_command",
+                    waited_at.elapsed().as_secs_f64(),
+                    wait.as_secs_f64(),
+                );
                 if let VideoCommand::Stop = &cmd {
                     return;
                 }
@@ -1450,7 +1599,13 @@ fn video_decode_thread<P: FramePlayer>(
                     apply_command(player.playback(), &cmd);
                 }
             }
-            Err(mpsc::RecvTimeoutError::Timeout) => {}
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                pacing_trace::emit(
+                    "worker_timeout",
+                    waited_at.elapsed().as_secs_f64(),
+                    wait.as_secs_f64(),
+                );
+            }
             Err(mpsc::RecvTimeoutError::Disconnected) => return,
         }
     }
@@ -1462,7 +1617,7 @@ fn video_decode_thread<P: FramePlayer>(
 #[allow(clippy::too_many_arguments)]
 fn hap_decode_thread(
     mut player: hap::HapPlayer,
-    cmd_rx: &mpsc::Receiver<VideoCommand>,
+    cmd_rx: &command_channel::Receiver<VideoCommand>,
     frame_data: &FrameMailbox,
     snapshot: &Mutex<PlaybackSnapshot>,
     stop_flag: &AtomicBool,
@@ -1545,7 +1700,10 @@ fn hap_decode_thread(
 
         // Sleep until the next frame falls due, or wake early on a command.
         interval = wake_interval(player.playback.suspended, fps, output_fps);
-        match cmd_rx.recv_timeout(wait_for_next_frame(&mut next_frame_at, interval)) {
+        let wait = cadence::next_wait(next_frame_at, std::time::Instant::now());
+        let received = cmd_rx.recv_timeout(wait);
+        advance_frame_schedule(&mut next_frame_at, interval);
+        match received {
             Ok(cmd) => {
                 if let VideoCommand::Stop = &cmd {
                     return;
@@ -2032,6 +2190,11 @@ impl VideoPlayer {
         }
         let was_reverse = self.playback.reverse;
         let result = self.playback.advance_frame();
+        pacing_trace::emit(
+            "playhead",
+            self.playback.position,
+            self.lookahead_at.unwrap_or(-1.0),
+        );
 
         // No frames to decode this tick — hold current frame.
         // Return None so the caller skips the GPU texture upload;
@@ -2137,6 +2300,7 @@ impl VideoPlayer {
                 }
             }
             // Due: the frame to show, unless a later one is due too.
+            pacing_trace::emit("select", at, f64::from(current));
             std::mem::swap(&mut self.decoded, &mut self.lookahead);
             self.lookahead_at = None;
             self.sought = None;
@@ -2237,6 +2401,7 @@ impl VideoPlayer {
                             t as f64 * self.time_base - self.start
                         });
                     self.last_at = at;
+                    pacing_trace::emit("decoded_pts", at, 0.0);
                     return Ok(Some(at));
                 }
                 Err(ffmpeg::Error::Eof) => return Ok(None),
@@ -2570,7 +2735,7 @@ impl VideoPlayer {
         self.playback.playing
     }
     pub fn set_playing(&mut self, playing: bool) {
-        self.playback.playing = playing;
+        self.playback.set_playing(playing);
     }
     pub fn is_looping(&self) -> bool {
         self.playback.loop_mode == LoopMode::Loop
@@ -2634,8 +2799,14 @@ mod tests {
         }
         handle.send(VideoCommand::SetLoopMode(LoopMode::HoldLast));
         assert!(handle.take_ready_frame(false).is_none());
+        let mut readiness = FrameReadiness::new(60, false);
+        assert!(
+            handle
+                .take_ready_frame_with_readiness(false, &mut readiness)
+                .is_none()
+        );
         let frame = handle
-            .take_ready_frame(true)
+            .take_ready_frame_with_readiness(true, &mut readiness)
             .expect("paused picture was lost");
         assert_eq!(frame.color_data.cpu_bytes(), &[42, 63, 84, 255]);
     }
@@ -2697,6 +2868,49 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn play_excludes_paused_work_and_repeated_play_keeps_elapsed_time() {
+        let mut state = PlaybackState::new(10.0, 60.0);
+        state.set_playing(false);
+        state.last_advance = std::time::Instant::now() - std::time::Duration::from_secs(1);
+        let before_play = std::time::Instant::now();
+        apply_command(&mut state, &VideoCommand::Play);
+        assert!(state.last_advance >= before_play);
+        let epoch = state.last_advance;
+        apply_command(&mut state, &VideoCommand::Play);
+        assert_eq!(state.last_advance, epoch);
+        assert_eq!(state.position, 0.0);
+        apply_command(&mut state, &VideoCommand::Pause);
+        state.last_advance = before_play - std::time::Duration::from_secs(1);
+        apply_command(&mut state, &VideoCommand::Play);
+        assert!(state.last_advance >= before_play);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn retained_gpu_picture_uses_periodic_retry_instead_of_a_stale_deadline() {
+        let dir = tempfile::tempdir().unwrap();
+        let Some(path) = test_clip(dir.path(), "retry-deadline.mp4", 1, &[]) else {
+            return;
+        };
+        let mut player = VideoPlayer::open(&path, false).unwrap();
+        player.set_playing(false);
+        player.seek_and_reset(0.0).unwrap();
+        player
+            .next_frame()
+            .unwrap()
+            .expect("prepared first picture");
+        player.set_playing(true);
+        player.playback.last_advance =
+            std::time::Instant::now() - std::time::Duration::from_secs(1);
+        let deadline = player.next_picture_deadline().expect("prepared lookahead");
+        assert!(deadline < std::time::Instant::now());
+        player.gpu_retry = true;
+        assert_eq!(player.next_picture_deadline(), None);
+        player.gpu_retry = false;
+        assert_eq!(player.next_picture_deadline(), Some(deadline));
+    }
+
     /// Decode time must come out of the wait, not be added to it. Waiting a
     /// full interval after each decode paced frames at `1/(interval + decode)`,
     /// which lost 4-18% of the frames of every source.
@@ -2712,17 +2926,9 @@ mod tests {
         let mut waits = Vec::new();
         for _ in 0..3 {
             let mut at = start + elapsed;
-            let wait = {
-                // Same arithmetic as `wait_for_next_frame`, driven off a
-                // simulated clock so the test does not have to sleep.
-                let w = next_frame_at.saturating_duration_since(at);
-                next_frame_at += interval;
-                if next_frame_at <= at {
-                    next_frame_at = at + interval;
-                }
-                at += w;
-                w
-            };
+            let wait = cadence::next_wait(next_frame_at, at);
+            at += wait;
+            cadence::on_wake(&mut next_frame_at, interval, at);
             waits.push(wait);
             elapsed = at.duration_since(start) + decode;
         }
@@ -2776,12 +2982,13 @@ mod tests {
             .checked_sub(std::time::Duration::from_secs(1))
             .unwrap();
 
-        let wait = wait_for_next_frame(&mut next_frame_at, interval);
+        let wait = cadence::next_wait(next_frame_at, std::time::Instant::now());
         assert_eq!(
             wait,
             std::time::Duration::ZERO,
-            "a late frame waits not at all"
+            "an over-budget decode must not pay another interval"
         );
+        advance_frame_schedule(&mut next_frame_at, interval);
         assert!(
             next_frame_at > std::time::Instant::now(),
             "the schedule must restart in the future, not replay a backlog"
@@ -3816,7 +4023,7 @@ mod tests {
     fn test_playback_state_loop_restart() {
         let mut ps = PlaybackState::new(1.0, 30.0);
         ps.position = 1.1; // already past out-point
-                           // Ensure some dt elapses
+        // Ensure some dt elapses
         std::thread::sleep(std::time::Duration::from_millis(5));
         let result = ps.advance_frame();
         assert!(result.needs_seek);

@@ -76,6 +76,10 @@ and compressed input packets are not frame transfers. Pool backpressure and
 discarded GPU payloads have separate counters. Picture-test readback is expressly
 test-only and does not pass through production transfer counters.
 
+The [frame-pacing investigation](windows-video-frame-pacing.md) separates worker
+clock/PTS alignment, Windows timed waits, mailbox losses and benchmark sampling
+artifacts from actual-app playback. Its proposed scheduling fix is not applied.
+
 ## Safe CPU checks
 
 After loading `.windows-tools/build-env.ps1`, these commands never initialize a

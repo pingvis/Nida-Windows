@@ -1,0 +1,95 @@
+{
+  "all_passed": false,
+  "steady_and_speed_checks_passed": true,
+  "phase_windows_with_residual_loss": [
+    "app-seek-phase-0-offset2.analysis.json"
+  ],
+  "checks": [
+    {
+      "name": "traced-1080",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98321606614592,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "traced-4k",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.983026320210286,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-0",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98299832828767,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-1",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.983064209318584,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-2",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98314538614446,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-0",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.983071407254855,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-1",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98312109305653,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-2",
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.983039316468954,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-headless-1080p60.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.016666666666666,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-headless-4k60.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.0,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-windowed-final-occluded.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.016666666666666,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "2x output cap",
+      "kind": "bounded native copies",
+      "copy_count": 1200,
+      "seconds": 20.0,
+      "maximum_count_with_boundary_allowance": 1202.0,
+      "passed": true
+    }
+  ],
+  "limits": "Fresh PTS before composition; no physical scanout qualification. Short seek-phase windows are exploratory."
+}

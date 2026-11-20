@@ -1,0 +1,9 @@
+{
+  "base": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+  "shader_sha256": "D651DB90D51608CE57B498F2BBF827F8D0982925F28379DFE1601438A8AF3B4A",
+  "qualification_complete_utc": "2026-11-20T10:33:19.9651186+00:00",
+  "source_snapshot_local": "target/gpu-pacing-fix-20261120-readiness-margin/source-snapshot",
+  "production_shader_override": false,
+  "physical_scanout_measured": false,
+  "unobstructed_foreground_verified": false
+}

@@ -1,0 +1,6 @@
+
+running 1 test
+test internal::video::tests::a_paused_first_picture_survives_loop_setup_and_waits_for_cpu_upload_readiness ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4627 filtered out; finished in 0.00s
+
