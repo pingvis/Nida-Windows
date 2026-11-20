@@ -15,6 +15,11 @@ all 36 seek-phase windows. The
 records the results and limits. Earlier failed candidates remain preserved.
 Physical scanout is not qualified. No merge or push has been performed.
 
+The subsequent [one-hour soak](qualification/rtx3060ti-pacing-soak-1h-20261120/README.md)
+also passes on the qualified release harness. Final strict test-target Clippy
+and post-cleanup CPU checks pass; the evidence distinguishes measured frozen
+source from subsequent behavior-preserving test-style cleanup.
+
 **Measured result:** the deficit is a scheduling/deadline-alignment problem before
 composition, with additional losses in the independently timed latest-picture
 mailbox. It occurs in the actual app as well as the offscreen harness. Coarse

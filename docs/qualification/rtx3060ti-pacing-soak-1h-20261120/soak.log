@@ -1,0 +1,67 @@
+
+running 1 test
+GPU_PLAYLIST_SOAK {"elapsed_s":59.9913281,"frames":3670,"peak_rss_bytes":450609152,"reloads":0,"rss_bytes":450609152,"seeks":3}
+GPU_PLAYLIST_SOAK {"elapsed_s":119.9915459,"frames":7140,"peak_rss_bytes":450609152,"reloads":0,"rss_bytes":435400704,"seeks":7}
+GPU_PLAYLIST_SOAK {"elapsed_s":179.9913592,"frames":10809,"peak_rss_bytes":450609152,"reloads":1,"rss_bytes":443039744,"seeks":11}
+GPU_PLAYLIST_SOAK {"elapsed_s":239.9915048,"frames":14461,"peak_rss_bytes":450609152,"reloads":1,"rss_bytes":419672064,"seeks":15}
+GPU_PLAYLIST_SOAK {"elapsed_s":299.9919463,"frames":17948,"peak_rss_bytes":466493440,"reloads":2,"rss_bytes":466493440,"seeks":19}
+GPU_PLAYLIST_SOAK {"elapsed_s":359.9913103,"frames":21599,"peak_rss_bytes":466493440,"reloads":2,"rss_bytes":432095232,"seeks":23}
+GPU_PLAYLIST_SOAK {"elapsed_s":419.9914476,"frames":25267,"peak_rss_bytes":466493440,"reloads":3,"rss_bytes":435867648,"seeks":27}
+GPU_PLAYLIST_SOAK {"elapsed_s":479.9913717,"frames":28739,"peak_rss_bytes":474288128,"reloads":3,"rss_bytes":474288128,"seeks":31}
+GPU_PLAYLIST_SOAK {"elapsed_s":539.9913713,"frames":32406,"peak_rss_bytes":474288128,"reloads":4,"rss_bytes":440881152,"seeks":35}
+GPU_PLAYLIST_SOAK {"elapsed_s":599.9914258,"frames":36058,"peak_rss_bytes":474288128,"reloads":4,"rss_bytes":460750848,"seeks":39}
+GPU_PLAYLIST_SOAK {"elapsed_s":659.9912736,"frames":39545,"peak_rss_bytes":474288128,"reloads":5,"rss_bytes":439255040,"seeks":43}
+GPU_PLAYLIST_SOAK {"elapsed_s":719.9916963,"frames":43196,"peak_rss_bytes":474288128,"reloads":5,"rss_bytes":456609792,"seeks":47}
+GPU_PLAYLIST_SOAK {"elapsed_s":779.9914281,"frames":46864,"peak_rss_bytes":474288128,"reloads":6,"rss_bytes":451055616,"seeks":51}
+GPU_PLAYLIST_SOAK {"elapsed_s":839.9915955,"frames":50335,"peak_rss_bytes":474288128,"reloads":6,"rss_bytes":470814720,"seeks":55}
+GPU_PLAYLIST_SOAK {"elapsed_s":899.9914039,"frames":54006,"peak_rss_bytes":474824704,"reloads":7,"rss_bytes":474824704,"seeks":59}
+GPU_PLAYLIST_SOAK {"elapsed_s":959.9910305,"frames":57657,"peak_rss_bytes":474824704,"reloads":7,"rss_bytes":470106112,"seeks":63}
+GPU_PLAYLIST_SOAK {"elapsed_s":1019.9915377,"frames":61145,"peak_rss_bytes":480972800,"reloads":8,"rss_bytes":480972800,"seeks":67}
+GPU_PLAYLIST_SOAK {"elapsed_s":1079.9909359,"frames":64797,"peak_rss_bytes":480972800,"reloads":8,"rss_bytes":427626496,"seeks":71}
+GPU_PLAYLIST_SOAK {"elapsed_s":1139.9914888,"frames":68466,"peak_rss_bytes":480976896,"reloads":9,"rss_bytes":480976896,"seeks":75}
+GPU_PLAYLIST_SOAK {"elapsed_s":1199.9917098,"frames":71935,"peak_rss_bytes":480976896,"reloads":9,"rss_bytes":464990208,"seeks":79}
+GPU_PLAYLIST_SOAK {"elapsed_s":1259.9908406,"frames":75605,"peak_rss_bytes":480976896,"reloads":10,"rss_bytes":459878400,"seeks":83}
+GPU_PLAYLIST_SOAK {"elapsed_s":1319.9910247,"frames":79257,"peak_rss_bytes":480976896,"reloads":10,"rss_bytes":456974336,"seeks":87}
+GPU_PLAYLIST_SOAK {"elapsed_s":1379.9913572,"frames":82744,"peak_rss_bytes":480976896,"reloads":11,"rss_bytes":476131328,"seeks":91}
+GPU_PLAYLIST_SOAK {"elapsed_s":1439.9914435,"frames":86396,"peak_rss_bytes":480976896,"reloads":11,"rss_bytes":473772032,"seeks":95}
+GPU_PLAYLIST_SOAK {"elapsed_s":1499.9913947,"frames":90066,"peak_rss_bytes":480976896,"reloads":12,"rss_bytes":433074176,"seeks":99}
+GPU_PLAYLIST_SOAK {"elapsed_s":1559.9913114,"frames":93538,"peak_rss_bytes":496066560,"reloads":12,"rss_bytes":496066560,"seeks":103}
+GPU_PLAYLIST_SOAK {"elapsed_s":1619.9914199,"frames":97206,"peak_rss_bytes":496066560,"reloads":13,"rss_bytes":454594560,"seeks":107}
+GPU_PLAYLIST_SOAK {"elapsed_s":1679.9916235,"frames":100858,"peak_rss_bytes":496066560,"reloads":13,"rss_bytes":445108224,"seeks":111}
+GPU_PLAYLIST_SOAK {"elapsed_s":1739.9911644,"frames":104345,"peak_rss_bytes":496066560,"reloads":14,"rss_bytes":485953536,"seeks":115}
+GPU_PLAYLIST_SOAK {"elapsed_s":1799.9916045,"frames":107996,"peak_rss_bytes":496066560,"reloads":14,"rss_bytes":474722304,"seeks":119}
+GPU_PLAYLIST_SOAK {"elapsed_s":1859.9912942,"frames":111664,"peak_rss_bytes":496066560,"reloads":15,"rss_bytes":462827520,"seeks":123}
+GPU_PLAYLIST_SOAK {"elapsed_s":1919.9919733,"frames":115135,"peak_rss_bytes":496066560,"reloads":15,"rss_bytes":448745472,"seeks":127}
+GPU_PLAYLIST_SOAK {"elapsed_s":1979.9915962,"frames":118804,"peak_rss_bytes":496066560,"reloads":16,"rss_bytes":473251840,"seeks":131}
+GPU_PLAYLIST_SOAK {"elapsed_s":2039.9911879,"frames":122455,"peak_rss_bytes":496066560,"reloads":16,"rss_bytes":465592320,"seeks":135}
+GPU_PLAYLIST_SOAK {"elapsed_s":2099.991458,"frames":125944,"peak_rss_bytes":496066560,"reloads":17,"rss_bytes":451629056,"seeks":139}
+GPU_PLAYLIST_SOAK {"elapsed_s":2159.9910578,"frames":129596,"peak_rss_bytes":496066560,"reloads":17,"rss_bytes":474558464,"seeks":143}
+GPU_PLAYLIST_SOAK {"elapsed_s":2219.9908696,"frames":133266,"peak_rss_bytes":496066560,"reloads":18,"rss_bytes":469450752,"seeks":147}
+GPU_PLAYLIST_SOAK {"elapsed_s":2279.9912298,"frames":136736,"peak_rss_bytes":496066560,"reloads":18,"rss_bytes":492568576,"seeks":151}
+GPU_PLAYLIST_SOAK {"elapsed_s":2339.9914738,"frames":140406,"peak_rss_bytes":496066560,"reloads":19,"rss_bytes":441434112,"seeks":155}
+GPU_PLAYLIST_SOAK {"elapsed_s":2399.9917087,"frames":144057,"peak_rss_bytes":496066560,"reloads":19,"rss_bytes":484999168,"seeks":159}
+GPU_PLAYLIST_SOAK {"elapsed_s":2459.9912183,"frames":147545,"peak_rss_bytes":496066560,"reloads":20,"rss_bytes":477495296,"seeks":163}
+GPU_PLAYLIST_SOAK {"elapsed_s":2519.9914368,"frames":151197,"peak_rss_bytes":496066560,"reloads":20,"rss_bytes":454234112,"seeks":167}
+GPU_PLAYLIST_SOAK {"elapsed_s":2579.9917685,"frames":154867,"peak_rss_bytes":496066560,"reloads":21,"rss_bytes":466579456,"seeks":171}
+GPU_PLAYLIST_SOAK {"elapsed_s":2639.9912179,"frames":158336,"peak_rss_bytes":496066560,"reloads":21,"rss_bytes":492572672,"seeks":175}
+GPU_PLAYLIST_SOAK {"elapsed_s":2699.9911319,"frames":162006,"peak_rss_bytes":496066560,"reloads":22,"rss_bytes":473182208,"seeks":179}
+GPU_PLAYLIST_SOAK {"elapsed_s":2759.9912411,"frames":165657,"peak_rss_bytes":496066560,"reloads":22,"rss_bytes":456454144,"seeks":183}
+GPU_PLAYLIST_SOAK {"elapsed_s":2819.9920864,"frames":169145,"peak_rss_bytes":496066560,"reloads":23,"rss_bytes":492032000,"seeks":187}
+GPU_PLAYLIST_SOAK {"elapsed_s":2879.9914976,"frames":172796,"peak_rss_bytes":496066560,"reloads":23,"rss_bytes":468762624,"seeks":191}
+GPU_PLAYLIST_SOAK {"elapsed_s":2939.991112,"frames":176466,"peak_rss_bytes":496066560,"reloads":24,"rss_bytes":453820416,"seeks":195}
+GPU_PLAYLIST_SOAK {"elapsed_s":2999.9911626,"frames":179935,"peak_rss_bytes":503422976,"reloads":24,"rss_bytes":503422976,"seeks":199}
+GPU_PLAYLIST_SOAK {"elapsed_s":3059.9911959,"frames":183605,"peak_rss_bytes":503422976,"reloads":25,"rss_bytes":467316736,"seeks":203}
+GPU_PLAYLIST_SOAK {"elapsed_s":3119.9911387,"frames":187257,"peak_rss_bytes":503422976,"reloads":25,"rss_bytes":475959296,"seeks":207}
+GPU_PLAYLIST_SOAK {"elapsed_s":3179.9910875,"frames":190745,"peak_rss_bytes":503422976,"reloads":26,"rss_bytes":457609216,"seeks":211}
+GPU_PLAYLIST_SOAK {"elapsed_s":3239.9913621,"frames":194397,"peak_rss_bytes":503422976,"reloads":26,"rss_bytes":473620480,"seeks":215}
+GPU_PLAYLIST_SOAK {"elapsed_s":3299.9910857,"frames":198065,"peak_rss_bytes":503422976,"reloads":27,"rss_bytes":463994880,"seeks":219}
+GPU_PLAYLIST_SOAK {"elapsed_s":3359.9914006,"frames":201536,"peak_rss_bytes":503422976,"reloads":27,"rss_bytes":471670784,"seeks":223}
+GPU_PLAYLIST_SOAK {"elapsed_s":3419.9910579,"frames":205207,"peak_rss_bytes":503422976,"reloads":28,"rss_bytes":456966144,"seeks":227}
+GPU_PLAYLIST_SOAK {"elapsed_s":3479.9915295,"frames":208859,"peak_rss_bytes":503422976,"reloads":28,"rss_bytes":470147072,"seeks":231}
+GPU_PLAYLIST_SOAK {"elapsed_s":3539.9910019,"frames":212350,"peak_rss_bytes":503422976,"reloads":29,"rss_bytes":479989760,"seeks":235}
+GPU_PLAYLIST_SOAK {"elapsed_s":3599.9908322,"frames":216002,"peak_rss_bytes":503422976,"reloads":29,"rss_bytes":448147456,"seeks":239}
+GPU_PLAYLIST_SOAK_COMPLETE {"frames":216002,"peak_rss_bytes":503422976,"reloads":29,"seeks":239,"shown_items":7,"wall_s":3600.0002999}
+test internal::video::gpu_windows::qualification::playlist_playback_seek_pause_reload_and_soak ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4629 filtered out; finished in 3600.34s
+

@@ -1,0 +1,45 @@
+{
+  "started_utc": "2026-11-20T15:16:44.6604123+00:00",
+  "seconds": 3600,
+  "qualified_commit": "c19e528",
+  "binary": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-pacing-fix-20261120-fence-event\\pacing-test.exe",
+  "binary_sha256": "F8977B60914974B4DBBFBC582505C6BDB184AD56938D9BE4D738E3C7DB13A91C",
+  "fixtures": [
+    {
+      "Algorithm": "SHA256",
+      "Hash": "A4F4C1A82ED82194511992A02E3FC4B35D2F062FBD3FCCADD8462239F9D62390",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\performance\\h264-1080p60.mp4"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "034E329690BF988EE95F75A3508E95D0E5A726D141581CE46120298CC45E87B1",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\performance\\h264-4k60.mp4"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "2D4CCB2B4F8CA57A274F737E0A0C5AFC238F872627CA3D8FCC655CA7E03EDFC8",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\performance\\hevc10-1080p60.mp4"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "E835867769BEC67D5E6FEE8568C73BC27917AD66A26245ACD34964834C67958A",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification\\fixtures\\performance\\hdr10-1080p60.mp4"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "84B32E15C7FD7C5E093DAEA8EFCB38229A266E78BBDDDDD1ED801790F2122293",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification-repro\\p010-regression-fixtures\\p010-full.mp4"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "B9AC1D3B04B4516037BFEC2023D345C67BFAB99159F3D934628C16F5B67D6471",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification-repro\\p010-regression-fixtures\\p010-wide.mp4"
+    },
+    {
+      "Algorithm": "SHA256",
+      "Hash": "277B3F79B6FA8970A31CDDD0E99A4B046D6A33F646563EBD17B814D0A7BB89DE",
+      "Path": "E:\\Custom Apps\\Nida-Windows\\target\\gpu-qualification-repro\\p010-regression-fixtures\\p010-narrow.mp4"
+    }
+  ],
+  "kind": "release qualification playlist harness; not scanout or per-PTS pacing measurement"
+}

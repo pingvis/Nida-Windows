@@ -1,0 +1,13 @@
+{
+  "finished_utc": "2026-11-20T16:16:45.8540170+00:00",
+  "exit_code": 0,
+  "passed": true,
+  "summary": {
+    "frames": 216002,
+    "peak_rss_bytes": 503422976,
+    "reloads": 29,
+    "seeks": 239,
+    "shown_items": 7,
+    "wall_s": 3600.0002999
+  }
+}

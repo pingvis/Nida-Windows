@@ -64,3 +64,19 @@ qualified. No universal Windows deadline, audio-sync or arbitrary-load guarantee
 is claimed. Finite passing phase checks do not prove every possible phase.
 GPU discard totals include warmup payloads and are not comparable directly with
 the CPU path's GPU-payload-discard counter. AMD/Intel qualification stays deferred.
+
+## Completed follow-ups
+
+The requested [one-hour playlist soak](../rtx3060ti-pacing-soak-1h-20261120/README.md)
+passed using the same qualified release binary: 216,002 pictures, 239 seeks,
+29 reloads, seven fixtures including 4K60, and no validation failure.
+
+Final strict Clippy now passes for all test targets, followed by 28 passing
+CPU checks. Broad test lint cleanup preserves empty/nonempty conditions,
+colour tolerances and timing bounds; it adds no production scheduling change.
+The two intentional style-lint expectations retain an external fixture's PID
+field names and inspection of a graph held for native-resource lifetime.
+No test or performance gate is disabled. Logs and test-cleanup provenance are
+included here. Qualified binary hashes and frozen source snapshots refer to
+`c19e528`, before the later test-style cleanup; no new production build is
+claimed for those subsequent test-only edits and item-order changes.
