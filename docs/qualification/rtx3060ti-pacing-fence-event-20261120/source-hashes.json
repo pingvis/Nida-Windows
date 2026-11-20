@@ -1,0 +1,137 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "725F40BCCD99732C4F221804D134064D5759F1494C82754805E995702C8C2690",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\Cargo.toml"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "60A9F49E59AB00BB36FC70555592784824565023BB4AE53DC823A6AB514861FB",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\Cargo.lock"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "4374EF30E7A9A829111BE8FE3FF4A562BF5EE86D1C5BD04E5B92148B7CEF85BE",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\mod.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "F2498D682C789B1F362EA67E8C865E054B5FCD5C31BAFDD0EC14138667B2CB13",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\hap.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "226267E75434E34FF8349415A723D7826362C773CD7C6FE43CBEE797E9310D52",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\cadence.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "83B90AA0723656D88035CE53AF8835F6F55F2C09FCDAAE0145E1001DCEFDE9EA",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\command_channel.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "338A7358BC28435C7E481E888E8BE590E55747EC39EF41C4E7E026FB62774C34",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\frame_mailbox.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E69F3823A462256DBE6CE56EF588D688658934F7FBB7260C3A1B819A5B65EE6C",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\frame_readiness.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "44E9596681F7C70FC071B3B5CA9E18CCBC57BCBE4D77CB639F7820CFCCC3EB98",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\gpu_windows\\qualification.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "87B3818CC5DC08B17B4DD14D675BAF157B0EFFFCC18F322891E818C5B9C7C7E9",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\deck\\render.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "FC800ED22D87ACFCEB58B6A3F95BFF7E15D5D6E4CB876394846D677B527BE683",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\deck\\playlist.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E01C88B309FEDE2FB7EEF28A0EE25442E5F2C8DAAC92C1D3C37C543C5B958E05",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\deck\\slides.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "DB68C063C64977559BC9870A201A4DECBC8F0E0061DA4C61CD79C17DC3EC9C40",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\channel\\mod.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "F8A3AA5CE7292D2612B0036656EDADB598E0C428A5DE7869266A3C497772629B",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\mixer\\render.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B826753566E557F0DFCE34BFDBCE7377FA47B9356FE618769611D2F4EBBCC336",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\pacing_trace.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2C9B9943E44AF7B8BE42F8A61D6374547402506FF202C96D21DA87210C006F7B",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\playback_diagnostics.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "90696A798F9D179AD0BE9E1A86565E000097F4D78EF9786CF8A0C1E6081CE742",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\gpu_windows.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "D8EE42A48D443D2EA62B8CE0D3F6FD46BB5FA131F1D63E7A0629818BBA027EB4",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\gpu_windows\\tests.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "D651DB90D51608CE57B498F2BBF827F8D0982925F28379DFE1601438A8AF3B4A",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\video\\gpu_video.wgsl"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "27C652834C6439AE4905D62456E5BF2E2B50E01BDF6C7C9A6F7DD526DEDE3614",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\internal\\renderer\\context.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "5FA3D59005D4017DE9B4FCD5845EFDACB9D5114C4AEA0BE1B1C241548764F9A1",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\usecases\\ui\\runner\\mod.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A0DF890DB4037F273AC9C9B12D4008DB35246BC8CEC03FA183CBFC01B463941C",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\src\\usecases\\ui\\runner\\engine_thread.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "0149F74C9A0BDEDE1F518577D4ABCB230221F30A1810EE6F990156CC9C0CBD25",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\scripts\\measure-video-pacing.ps1"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "87E19DBF907ED144532CCA48A02C262DD2DC1911CCFECD83623B840B56A67A62",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\scripts\\analyze-video-pacing.py"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C4D0E9D6A75D3A5722E5CDD7179145994927CC01AA2DFCD4D4D8DE80E3151372",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\tools\\gpu-video-checks\\src\\lib.rs"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "D1939A56AC32B69EE5E6E1EEB3F7198CC84699DE48E09FFE98AF167CC566C5A3",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\tools\\gpu-video-checks\\Cargo.toml"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "452737D2F7AD60E7EB10DC0A3E07E0BCD40E9B0BF31E7EE50C9660F452002044",
+    "Path": "E:\\Custom Apps\\Nida-Windows\\tools\\gpu-video-checks\\Cargo.lock"
+  }
+]

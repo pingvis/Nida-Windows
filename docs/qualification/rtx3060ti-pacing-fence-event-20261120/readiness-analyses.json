@@ -1,0 +1,77 @@
+{
+  "three-clips-phase250.readiness.json": {
+    "waits": 0,
+    "recovered": 0,
+    "wait_ms": null,
+    "waiting_per_frame_ms": {
+      "n": 3600,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "waits_per_frame": {
+      "n": 3600,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "max": 0
+    },
+    "window_span_per_frame_ms": null,
+    "limits": "CPU observations; includes OS scheduling excess. No PTS or scanout inference."
+  },
+  "three-clips-phase300.readiness.json": {
+    "waits": 0,
+    "recovered": 0,
+    "wait_ms": null,
+    "waiting_per_frame_ms": {
+      "n": 3600,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "waits_per_frame": {
+      "n": 3600,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "max": 0
+    },
+    "window_span_per_frame_ms": null,
+    "limits": "CPU observations; includes OS scheduling excess. No PTS or scanout inference."
+  },
+  "three-clips.readiness.json": {
+    "waits": 5505,
+    "recovered": 5505,
+    "wait_ms": {
+      "n": 5505,
+      "p50": 0.35340000000000005,
+      "p95": 0.7456,
+      "p99": 0.8195,
+      "max": 1.2196
+    },
+    "waiting_per_frame_ms": {
+      "n": 3600,
+      "p50": 0.5767,
+      "p95": 0.8427,
+      "p99": 0.982,
+      "max": 1.2509
+    },
+    "waits_per_frame": {
+      "n": 3600,
+      "p50": 2,
+      "p95": 2,
+      "p99": 3,
+      "max": 3
+    },
+    "window_span_per_frame_ms": {
+      "n": 3596,
+      "p50": 0.6098,
+      "p95": 0.9687,
+      "p99": 1.0875,
+      "max": 1.3854
+    },
+    "limits": "CPU observations; includes OS scheduling excess. No PTS or scanout inference."
+  }
+}

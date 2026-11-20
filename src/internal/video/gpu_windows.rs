@@ -5,17 +5,18 @@
 //! slot is released by the *consuming command buffer's* completion callback.
 //! Dropping an unconsumed mailbox frame releases its slot immediately.
 use super::gpu_colour::Params;
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use ffmpeg_next as ffmpeg;
 use std::{
     mem::ManuallyDrop,
-    sync::{atomic::Ordering, Arc},
+    os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle},
+    sync::{Arc, atomic::Ordering},
     time::{Duration, Instant},
 };
 use wgpu::util::DeviceExt;
 use windows::{
-    core::Interface,
     Win32::Graphics::{Direct3D12 as dx12, Dxgi::Common as dxgi},
+    core::Interface,
 };
 
 #[cfg(test)]
@@ -36,6 +37,54 @@ struct Converter {
     layout: wgpu::BindGroupLayout,
 }
 
+/// One decoder-owned event, moved with an outstanding native submission.
+/// A timed-out submission must retain the registered handle until retirement.
+struct CopyCompletion(OwnedHandle);
+
+impl CopyCompletion {
+    fn new() -> Option<Self> {
+        // SAFETY: unnamed, auto-reset, non-inherited event; uniquely owned below.
+        let raw = unsafe {
+            windows_sys::Win32::System::Threading::CreateEventW(
+                std::ptr::null(),
+                0,
+                0,
+                std::ptr::null(),
+            )
+        };
+        (!raw.is_null()).then(|| Self(unsafe { OwnedHandle::from_raw_handle(raw) }))
+    }
+
+    fn arm(&self, fence: &dx12::ID3D12Fence, serial: u64) -> bool {
+        let raw = self.0.as_raw_handle();
+        // SAFETY: the prior submission completed before this event was returned
+        // to the decoder. The current submission retains it until completion.
+        unsafe {
+            windows_sys::Win32::System::Threading::ResetEvent(raw) != 0
+                && fence
+                    .SetEventOnCompletion(serial, windows::Win32::Foundation::HANDLE(raw))
+                    .is_ok()
+        }
+    }
+
+    fn wait(&self, left: Duration) -> bool {
+        // Timeout is a safety bound, not a polling interval. Fence notification
+        // wakes immediately; the caller always rechecks the fence and deadline.
+        let millis = u32::try_from(left.as_nanos().div_ceil(1_000_000))
+            .unwrap_or(u32::MAX - 1)
+            .min(u32::MAX - 1);
+        // SAFETY: the submission owns this live event throughout the wait.
+        let result = unsafe {
+            windows_sys::Win32::System::Threading::WaitForSingleObject(
+                self.0.as_raw_handle(),
+                millis,
+            )
+        };
+        result == windows_sys::Win32::Foundation::WAIT_OBJECT_0
+            || result == windows_sys::Win32::Foundation::WAIT_TIMEOUT
+    }
+}
+
 /// Native submissions must retain their allocator and decoder frame even when
 /// a driver error prevents normal completion. This holder is retired off-thread.
 struct InFlightCopy {
@@ -47,6 +96,7 @@ struct InFlightCopy {
     device: dx12::ID3D12Device,
     fence: dx12::ID3D12Fence,
     serial: u64,
+    completion_event: Option<CopyCompletion>,
 }
 impl InFlightCopy {
     fn retire(self) {
@@ -210,6 +260,7 @@ pub(crate) struct GpuDecoder {
     queue: dx12::ID3D12CommandQueue,
     fence: dx12::ID3D12Fence,
     serial: u64,
+    completion_event: Option<CopyCompletion>,
     commands: Option<(
         dx12::ID3D12CommandAllocator,
         dx12::ID3D12GraphicsCommandList,
@@ -237,6 +288,14 @@ impl GpuDecoder {
             })
         }?;
         let fence = unsafe { device.CreateFence(0, dx12::D3D12_FENCE_FLAG_NONE) }?;
+        let completion_event = CopyCompletion::new();
+        #[cfg(test)]
+        let completion_event =
+            if std::env::var("NIDA_VIDEO_BENCH_COPY_POLL").is_ok_and(|v| v == "1") {
+                None
+            } else {
+                completion_event
+            };
         let shader_source: std::borrow::Cow<'_, str> = include_str!("gpu_video.wgsl").into();
         // Hardware qualification can iterate on the production WGSL without
         // relinking the complete application's test binary. Never a release-app override.
@@ -313,6 +372,7 @@ impl GpuDecoder {
             queue,
             fence,
             serial: 0,
+            completion_event,
             commands: None,
             pool: super::gpu_pool::Pool::new(counters.clone()),
             counters,
@@ -535,6 +595,7 @@ impl GpuDecoder {
             device: self.device.clone(),
             fence: self.fence.clone(),
             serial,
+            completion_event: self.completion_event.take(),
         };
         // Configure must not overlap a native submission either. This queue is
         // private to the worker, so no other writer can interleave its commands.
@@ -564,6 +625,13 @@ impl GpuDecoder {
         }
         let started = Instant::now();
         let mut polls = 0_u32;
+        let mut event_wait = copy
+            .completion_event
+            .as_ref()
+            .filter(|event| event.arm(&self.fence, serial));
+        if event_wait.is_none() {
+            super::pacing_trace::emit("copy_wait_fallback", timestamp, 0.0);
+        }
         loop {
             if trace_fences
                 && !decode_ready
@@ -576,15 +644,36 @@ impl GpuDecoder {
             if completed >= serial && completed != u64::MAX {
                 break;
             }
-            if completed == u64::MAX || started.elapsed() > Duration::from_secs(2) {
+            if completed == u64::MAX || started.elapsed() >= Duration::from_secs(2) {
                 // Keep every native dependency alive if the driver has not
                 // finished. Reap off-thread; no engine/UI wait or unsafe reuse.
                 copy.retire();
                 bail!("GPU video copy timed out or the device was removed");
             }
+            if let Some(event) = event_wait {
+                let waiting_at = Instant::now();
+                let succeeded =
+                    event.wait(Duration::from_secs(2).saturating_sub(started.elapsed()));
+                super::pacing_trace::emit(
+                    "copy_event_wait",
+                    timestamp,
+                    waiting_at.elapsed().as_secs_f64(),
+                );
+                if !succeeded {
+                    // Keep the registered event in copy even on wait failure.
+                    // Safe legacy polling remains available for OS/API failures.
+                    event_wait = None;
+                    super::pacing_trace::emit("copy_wait_fallback", timestamp, 1.0);
+                }
+                continue;
+            }
             let sleep_started = Instant::now();
             std::thread::sleep(Duration::from_millis(1));
-            super::pacing_trace::emit("copy_sleep", timestamp, sleep_started.elapsed().as_secs_f64());
+            super::pacing_trace::emit(
+                "copy_sleep",
+                timestamp,
+                sleep_started.elapsed().as_secs_f64(),
+            );
             polls += 1;
         }
         super::pacing_trace::emit("copy_complete", timestamp, f64::from(polls));
@@ -594,6 +683,7 @@ impl GpuDecoder {
             Ordering::Relaxed,
         );
         self.commands = Some((copy.allocator, copy.list));
+        self.completion_event = copy.completion_event;
         Ok(Some(GpuFrame {
             lease: copy.lease,
             converter: self.converter.clone(),

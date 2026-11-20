@@ -5,6 +5,41 @@ use crate::{
 };
 
 #[test]
+#[ignore = "creates a D3D12 device; requires an idle GPU"]
+fn copy_completion_notification_rechecks_fence_and_reuses_event() {
+    use std::{os::windows::io::AsRawHandle, time::Duration};
+    let gpu = GpuContext::new_headless().unwrap();
+    let device = unsafe { gpu.device.as_hal::<wgpu::hal::api::Dx12>() }
+        .unwrap()
+        .raw_device()
+        .clone();
+    let fence: super::dx12::ID3D12Fence =
+        unsafe { device.CreateFence(0, super::dx12::D3D12_FENCE_FLAG_NONE) }.unwrap();
+    let event = super::CopyCompletion::new().expect("native completion event");
+    assert!(event.arm(&fence, 1));
+    // A timeout is not completion, and must not release registered ownership.
+    assert!(event.wait(Duration::ZERO));
+    assert_eq!(unsafe { fence.GetCompletedValue() }, 0);
+    let producer = fence.clone();
+    let worker = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(20));
+        unsafe { producer.Signal(1) }.unwrap();
+    });
+    assert!(event.wait(Duration::from_secs(2)));
+    worker.join().unwrap();
+    assert_eq!(unsafe { fence.GetCompletedValue() }, 1);
+
+    assert!(event.arm(&fence, 2));
+    // A stale/spurious event must not be mistaken for the new fence value.
+    unsafe { windows_sys::Win32::System::Threading::SetEvent(event.0.as_raw_handle()) };
+    assert!(event.wait(Duration::ZERO));
+    assert_eq!(unsafe { fence.GetCompletedValue() }, 1);
+    unsafe { fence.Signal(2) }.unwrap();
+    assert!(event.wait(Duration::from_secs(2)));
+    assert_eq!(unsafe { fence.GetCompletedValue() }, 2);
+}
+
+#[test]
 #[ignore = "requires an idle GPU and VARDA_REQUIRE_GPU_RESIDENT=1; performs GPU readback for picture comparison"]
 fn gpu_resident_picture_seek_pool_and_fallback() {
     assert!(

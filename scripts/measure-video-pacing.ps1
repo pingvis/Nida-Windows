@@ -11,10 +11,11 @@ param(
     [switch]$LegacyWait,
     [switch]$PeriodicWake,
     [switch]$NoReadiness,
+    [switch]$CopyPoll,
     [switch]$Trace
 )
 $ErrorActionPreference = 'Stop'
-$names = @('NIDA_VIDEO_PACING_TRACE','NIDA_VIDEO_BENCH_PHASE_MS','NIDA_VIDEO_BENCH_POLL_ONLY','NIDA_VIDEO_BENCH_TIMER_1MS','NIDA_VIDEO_BENCH_HISTORICAL_SAMPLING','NIDA_VIDEO_BENCH_LEGACY_WAIT','NIDA_VIDEO_BENCH_PERIODIC_WAKE','NIDA_VIDEO_BENCH_NO_READINESS')
+$names = @('NIDA_VIDEO_PACING_TRACE','NIDA_VIDEO_BENCH_PHASE_MS','NIDA_VIDEO_BENCH_POLL_ONLY','NIDA_VIDEO_BENCH_TIMER_1MS','NIDA_VIDEO_BENCH_HISTORICAL_SAMPLING','NIDA_VIDEO_BENCH_LEGACY_WAIT','NIDA_VIDEO_BENCH_PERIODIC_WAKE','NIDA_VIDEO_BENCH_NO_READINESS','NIDA_VIDEO_BENCH_COPY_POLL')
 $previous = @{}
 foreach ($name in $names) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
@@ -26,6 +27,7 @@ try {
     $env:NIDA_VIDEO_BENCH_LEGACY_WAIT = if ($LegacyWait) { '1' } else { $null }
     $env:NIDA_VIDEO_BENCH_PERIODIC_WAKE = if ($PeriodicWake) { '1' } else { $null }
     $env:NIDA_VIDEO_BENCH_NO_READINESS = if ($NoReadiness) { '1' } else { $null }
+    $env:NIDA_VIDEO_BENCH_COPY_POLL = if ($CopyPoll) { '1' } else { $null }
     if ($Trace -and (Test-Path -LiteralPath $env:NIDA_VIDEO_PACING_TRACE)) { throw 'Trace already exists' }
     $sourcePaths = @('src/internal/video/mod.rs','src/internal/video/hap.rs','src/internal/video/cadence.rs','src/internal/video/command_channel.rs','src/internal/video/frame_mailbox.rs','src/internal/video/frame_readiness.rs','src/internal/video/pacing_trace.rs','src/internal/video/playback_diagnostics.rs','src/internal/video/gpu_windows.rs','src/internal/video/gpu_windows/qualification.rs','src/internal/deck/render.rs','src/internal/deck/playlist.rs','src/internal/deck/slides.rs','src/internal/channel/mod.rs','src/internal/mixer/render.rs','src/internal/renderer/context.rs','src/usecases/ui/runner/mod.rs','src/usecases/ui/runner/engine_thread.rs','tools/gpu-video-checks/src/lib.rs')
     $manifest = [ordered]@{
@@ -35,6 +37,7 @@ try {
         historical_sampling = [bool]$HistoricalSampling
         legacy_wait = [bool]$LegacyWait; periodic_wake = [bool]$PeriodicWake
         no_readiness = [bool]$NoReadiness; clips = $Clips
+        copy_poll = [bool]$CopyPoll
         trace = $env:NIDA_VIDEO_PACING_TRACE
     }
     ./scripts/measure-video.ps1 -TestBinary $TestBinary -Clip $Clip -Output $Output -Seconds $Seconds -Clips $Clips -Repeats 1 -Playback -GpuResident

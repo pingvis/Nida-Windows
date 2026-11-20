@@ -8,12 +8,12 @@ the initial diagnostic build. Implementation now proceeds on
 `fix/windows-video-frame-pacing`; its separate evidence must not be confused
 with those baseline measurements.
 
-**Current branch status:** fresh release builds restore approximately 60 fresh
-pictures/s in the ordinary app, 4K and fast-playback checks. Overall qualification
-still fails three short seek-phase windows. The
-[latest measured candidate](qualification/rtx3060ti-pacing-readiness-cadence-20261120/README.md)
-retains these residuals explicitly; this branch is not ready to merge as a
-fully qualified pacing fix. No push has been performed.
+**Current branch status:** the completed fence-notification candidate passes
+all measured acceptance checks, including ordinary app/4K/fast playback and
+all 36 seek-phase windows. The
+[final evidence](qualification/rtx3060ti-pacing-fence-event-20261120/README.md)
+records the results and limits. Earlier failed candidates remain preserved.
+Physical scanout is not qualified. No merge or push has been performed.
 
 **Measured result:** the deficit is a scheduling/deadline-alignment problem before
 composition, with additional losses in the independently timed latest-picture
@@ -159,6 +159,8 @@ buffer; do not treat such a trace as a completed run.
 | `decoder_fence_observed` | picture PTS | 0 |
 | `native_submit` | picture PTS | worker-local copy serial |
 | `copy_sleep` | picture PTS | observed sleep seconds |
+| `copy_event_wait` | picture PTS | observed native fence-event wait seconds |
+| `copy_wait_fallback` | picture PTS | 0: event absent/registration failed; 1: native wait failed |
 | `copy_complete` | picture PTS | one-millisecond polling sleeps performed |
 | `pool_full` | retained picture PTS | 0 |
 | `publish_begin`, `publish`, `publish_stale`, `invalidate` | mailbox generation | `publish`/`invalidate`: 1 if displacing a picture |
@@ -639,3 +641,32 @@ same timeout, device-removal retirement and three-slot lifetime guarantees,
 compared against the existing polling path. Do not keep enlarging grace or
 declare arbitrary-phase behavior solved. The implementation and evidence remain
 on the separate branch for review; no merge or push is performed.
+
+### Fence-completion follow-up
+
+The next candidate replaces the decoder's ordinary 1 ms copy-completion polling
+with `ID3D12Fence::SetEventOnCompletion` and an auto-reset native event. The
+decoder registers its copy fence's exact serial, waits off the engine thread,
+and rechecks both the fence value and the existing two-second safety deadline.
+An event notification alone is never treated as proof that a picture is ready.
+The event moves into the native in-flight holder and is returned for reuse only
+after completion; timed-out or failed submissions retain it during retirement.
+Event creation/registration/wait failures preserve legacy polling. This follows
+[Microsoft's documented fence synchronization pattern](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12fence-seteventoncompletion),
+with bounded waiting and the application's existing lifetime guarantees.
+
+The 1.5 ms shared readiness window is unchanged. The test-only
+`NIDA_VIDEO_BENCH_COPY_POLL=1` control enables the old copy polling path in the
+release test harness; production apps do not read that override. Trace rows
+separately record native event waiting, fallback and copy polling. Qualification
+will assert that default runs exercised native completion without polling
+fallback, retain old-policy controls, and repeat the full seek-phase sweep.
+That queue completed successfully: all acceptance checks pass. Actual app
+1080p/4K, GUI pause/seek and fractional-seek hold deliver approximately 60 fresh
+pictures/s over 60 seconds, with zero empty takes or replacements. Fast playback
+delivers 60 over 20 seconds without bypassing the output cap. All 36 short seek
+windows have zero residual loss; 899 initial misses are recovered, with maximum
+observed wait 0.493 ms. Three-clip playback also exercises shared waiting:
+5,505 waits recover pictures, with up to three waits in a frame and maximum
+observed shared-window span 1.3854 ms. These finite observations are not hard
+Windows scheduling guarantees.

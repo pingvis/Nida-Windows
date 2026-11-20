@@ -1,0 +1,579 @@
+{
+  "all_passed": true,
+  "steady_and_speed_checks_passed": true,
+  "phase_windows_with_residual_loss": [],
+  "checks": [
+    {
+      "name": "three-clips-phase250",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.99970520144844,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase250",
+      "clip_index": 1,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.99970520144844,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase250",
+      "clip_index": 2,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.99970520144844,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase300",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.9995556032915,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase300",
+      "clip_index": 1,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.9995556032915,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips-phase300",
+      "clip_index": 2,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.9995556032915,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98320306981066,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips",
+      "clip_index": 1,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98320306981066,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "three-clips",
+      "clip_index": 2,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98320306981066,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "traced-1080",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.96622421587566,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "traced-4k",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98288886012688,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-0",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98307310676784,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-1",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98301522340926,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-1080-2",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.983106697161865,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-0",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98309020187438,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-1",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.98291675197649,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "untraced-4k-2",
+      "clip_index": 0,
+      "kind": "60-second harness freshness",
+      "fresh_fps": 59.982951341904865,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-headless-1080p60.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.016666666666666,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-headless-4k60.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.0,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-windowed-final-occluded.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.0,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "app-seek-hold-offset2.analysis.json",
+      "kind": "60-second app freshness",
+      "fresh_fps": 60.0,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "2x fresh pictures",
+      "kind": "20-second fast-playback freshness",
+      "fresh_fps": 60.0,
+      "minimum": 59.9,
+      "passed": true
+    },
+    {
+      "name": "2x output cap",
+      "kind": "bounded native copies",
+      "copy_count": 1200,
+      "seconds": 20.0,
+      "maximum_count_with_boundary_allowance": 1202.0,
+      "passed": true
+    },
+    {
+      "name": "app-headless-1080p60.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-headless-4k60.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-headless-speed2.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-hold-offset2.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0-offset0.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0-offset1.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0-offset2.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0-offset3.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0-offset4.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0-offset5.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.25-offset0.25.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.25-offset1.25.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.25-offset2.25.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.25-offset3.25.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.25-offset4.25.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.25-offset5.25.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.5-offset0.5.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.5-offset1.5.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.5-offset2.5.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.5-offset3.5.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.5-offset4.5.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.5-offset5.5.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.75-offset0.75.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.75-offset1.75.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.75-offset2.75.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.75-offset3.75.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.75-offset4.75.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-0.75-offset5.75.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-12-offset0.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-12-offset12.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-12-offset13.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-12-offset14.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-12-offset15.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-12-offset16.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-6-offset10.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-6-offset11.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-6-offset6.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-6-offset7.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-6-offset8.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-seek-phase-6-offset9.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "app-windowed-final-occluded.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "copy-event-1080.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "copy-event-4k.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "no-readiness-phase225.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "no-readiness-phase250.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "no-readiness-phase275.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "no-readiness-phase300.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "phase12.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "phase4.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "phase8.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "readiness-phase225.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "readiness-phase250.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "readiness-phase275.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "readiness-phase300.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "traced-1080.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    },
+    {
+      "name": "traced-4k.analysis.json",
+      "kind": "native fence notification without polling fallback",
+      "copy_sleeps": 0,
+      "fallbacks": 0,
+      "passed": true
+    }
+  ],
+  "limits": "Fresh PTS before composition; no physical scanout qualification. Short seek-phase windows are exploratory."
+}

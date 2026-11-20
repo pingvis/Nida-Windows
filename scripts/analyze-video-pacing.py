@@ -168,6 +168,8 @@ def analyze(rows, start=None, seconds=None, pts_start=None):
         "engine_baton_wait_ms": stats([r[3] * 1000 for r in events["engine_frame"]]),
         "engine_gpu_wait_ms": stats([r[4] * 1000 for r in events["engine_frame"]]),
         "copy_sleep_ms": stats([r[4] * 1000 for r in events["copy_sleep"]]),
+        "copy_event_wait_ms": stats([r[4] * 1000 for r in events["copy_event_wait"]]),
+        "copy_wait_fallbacks": len(events["copy_wait_fallback"]),
         "copy_poll_counts": dict(collections.Counter(int(r[4]) for r in events["copy_complete"])),
         "consumed_pts_step_frames": stats(gaps),
         "consumed_pts_missing_frames": sum(max(0, round(g) - 1) for g in gaps if g > 0),

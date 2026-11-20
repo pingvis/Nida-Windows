@@ -1,0 +1,8 @@
+{
+  "captured_utc": "2026-11-19T23:02:57.1335020+00:00",
+  "os": "Microsoft Windows NT 10.0.26300.0",
+  "power_plan": "Power Scheme GUID: 0a5f119c-c942-4ea7-b4e8-b3df993e0eb4  (ChrisTitus - Ultimate Power Plan)",
+  "gpu": "NVIDIA GeForce RTX 3060 Ti, 621.24, 8192 MiB",
+  "base_commit": "a5b98f1fe93b9f1e4f82214fc0cc83ce63b2c1bd",
+  "branch": "fix/windows-video-frame-pacing"
+}

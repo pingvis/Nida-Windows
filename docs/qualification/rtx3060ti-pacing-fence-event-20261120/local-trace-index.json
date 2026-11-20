@@ -1,0 +1,797 @@
+[
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/app-windowed-worker-fix.trace.jsonl",
+    "bytes": 13561584,
+    "sha256": "79F9D060C636571D5FC11CA5114E82C0F710FF883472B6F49226B30F7B419606"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/control-periodic-legacy.log.trace.jsonl",
+    "bytes": 4331909,
+    "sha256": "175890970D55B50068FA79184B8DDFE9B60749803F914D8C711865B4508ECF54"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/control-periodic-native.log.trace.jsonl",
+    "bytes": 4599068,
+    "sha256": "D59AC7EEB0B757B127E8DB7F7ADAAF6AA5D3D17504BAB5A2E30D9F40CDF9EC2F"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/control-pts-legacy.log.trace.jsonl",
+    "bytes": 4335717,
+    "sha256": "A6D51ECB28276DCAFE29738E5003BE6EE836BACD78BBC9659B34EED7DE138645"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/phase12.log.trace.jsonl",
+    "bytes": 2312113,
+    "sha256": "FE66E9B9D059EC64E4D339646DF19A221D08F6A1D817CE5A822808CF129F71D1"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/phase4.log.trace.jsonl",
+    "bytes": 2312111,
+    "sha256": "230AD405638A38C8F1A3F46DD378D82E894259FEC1F4C8CC73E67F9592053482"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/phase8.log.trace.jsonl",
+    "bytes": 2312111,
+    "sha256": "9AA9AF191E51451C220FAFBFED9C73ACA81FFE58104270148611C9FCBE3539D8"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/traced-1080.log.trace.jsonl",
+    "bytes": 4599077,
+    "sha256": "68CD0F620767595F53F440D5A1857247D898A7731208871060B5A359799E3F00"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120/traced-4k.log.trace.jsonl",
+    "bytes": 4599098,
+    "sha256": "8A6282A1BED476B2360C146D865685E8A30D4BC0CAD829A9B85359E2CE03D2DA"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/app-headless-1080p60.trace.jsonl",
+    "bytes": 5405743,
+    "sha256": "23078094E878BA48646BDA11B2566089BC32D9759E0FC8741DF62DBF6E0A1A3A"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/app-headless-4k60.trace.jsonl",
+    "bytes": 5398247,
+    "sha256": "1DC53206638180F15BD0A66CFE4F75998F5663BE1D97C1C0CEE7D00EC1C71CB9"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/app-windowed-engine-fix-occluded.trace.jsonl",
+    "bytes": 13706574,
+    "sha256": "847FF46C7824B24108D5D3412AEE5AA9F57C483AA8CC340AB803FD095B9AA307"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/control-periodic-legacy.log.trace.jsonl",
+    "bytes": 4342796,
+    "sha256": "DD02D1931718699BE1E583F7B7591D265C045C658F0E887D4E4B33C257BA4B39"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/control-periodic-native.log.trace.jsonl",
+    "bytes": 4599068,
+    "sha256": "D66DF70582B96E84A52DF20AB224E73D3873A1B649EBEF591A4EF0E904D62AF4"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/control-pts-legacy.log.trace.jsonl",
+    "bytes": 4569277,
+    "sha256": "38DBD5F4BA40565EE7876794F7D3D5EA69E8A330816FEB7A39FC0BCDCEEC9E99"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/phase12.log.trace.jsonl",
+    "bytes": 2312900,
+    "sha256": "2D1AAA8FED251CBAF5CF1EB06318BCE5DE6E62458930D6CB357F4389125284E9"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/phase4.log.trace.jsonl",
+    "bytes": 2312082,
+    "sha256": "FAA620191F7CABB38D7C5B9BE86A33358A656497B6BEDBD37E5F5F55BAB480E6"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/phase8.log.trace.jsonl",
+    "bytes": 2312109,
+    "sha256": "89785642DFBD15CBC31C6958D1BA16379F06077EC4E4E318E09B35F849F9407C"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/traced-1080.log.trace.jsonl",
+    "bytes": 4599806,
+    "sha256": "0A662F4A3517B4DCB17F2EEBD68CA9EF81FA7E24028BF8E46A34CE807A97AED0"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-engine/traced-4k.log.trace.jsonl",
+    "bytes": 4600072,
+    "sha256": "CCFB990DC6BAF73AAE4B9577285A05F2FA6A93FDCCA1AB1FE63AE30399FEDC02"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/app-headless-1080p60.trace.jsonl",
+    "bytes": 5392871,
+    "sha256": "A7E5AD08A9FB67F6C6D56039EB4119D9D5D97841214E2FEAC219EBE0065520D8"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/app-headless-4k60.trace.jsonl",
+    "bytes": 5398133,
+    "sha256": "9E268E255C6FFE3017498FC9E9330398619ED6C2B04942F7650601CB848F8134"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/app-headless-speed2-before-guard.trace.jsonl",
+    "bytes": 5151499,
+    "sha256": "0F987BC7233C948565864A54FE9E7070C1B65D109BAFEB45D2B90C0E4CB32B50"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/app-seek-phase-resumed-0.trace.jsonl",
+    "bytes": 9067639,
+    "sha256": "7A6842F99AA90A645199A77405AACDFE1A00063C5CF28D71BB88B4FB37CFD0C2"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/app-seek-phase-resumed-12.trace.jsonl",
+    "bytes": 9032431,
+    "sha256": "51C6F2698F6EE2AB88E2FA5E08F2911DCB098BEB0637B4E2FF3C47CE0047F799"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/app-seek-phase-resumed-6.trace.jsonl",
+    "bytes": 9051074,
+    "sha256": "AE5E4A5287E22CE330F42236CAF409A02295AC1A2F453A479ACAAB40BB8B4DDD"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/app-windowed-final-occluded.trace.jsonl",
+    "bytes": 13696389,
+    "sha256": "88E02551F379EF5E401B26307DD683123832EADC7A40E171993B82DCD5B74AE4"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/control-periodic-legacy.log.trace.jsonl",
+    "bytes": 4341163,
+    "sha256": "70C45EC6F380B1D0FE819848E511F47913804403935D79D2AC59B8FAE6EFC620"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/control-periodic-native.log.trace.jsonl",
+    "bytes": 4599907,
+    "sha256": "7F5121C0456085968A4A8AD973A4BECC7D081012B9DFBEA61582C122567509AB"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/control-pts-legacy.log.trace.jsonl",
+    "bytes": 4575503,
+    "sha256": "E2650CC5DEEA7397F462429BAFEAB4B0F2962A1B2D6D0BA9C7E990AE942C08FB"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/phase12.log.trace.jsonl",
+    "bytes": 2312919,
+    "sha256": "E01DF7BD280DCFE8270FCE65B5AF6262D4E619EC61703966DD521C3E1DEC7C98"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/phase4.log.trace.jsonl",
+    "bytes": 2312086,
+    "sha256": "947C144F9CE12C59F2230F9D2B0A83816A8F3949C51A9E356DE2323491B9B733"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/phase8.log.trace.jsonl",
+    "bytes": 2312082,
+    "sha256": "B61B5CD972CE2C8B335A4A756C5050B4770EEAEBE95286ED87A46D0C13FBB496"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/traced-1080.log.trace.jsonl",
+    "bytes": 4599801,
+    "sha256": "1CBB8C2766C18EBC45CA7005BCEFF64EC1DC7A745AF60A62AB7BA2334F46BA90"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-final/traced-4k.log.trace.jsonl",
+    "bytes": 4600234,
+    "sha256": "00621F61CF619E7DE3D7A268ABD141ECF2F2169326697DB5E2D876F4B2D89ACE"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/app-headless-1080p60.trace.jsonl",
+    "bytes": 5399457,
+    "sha256": "7D0A94CF626D306306C2512993DCB89ED4E6F1206C80B060373592EB1D34B60D"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/app-headless-4k60.trace.jsonl",
+    "bytes": 5394940,
+    "sha256": "9139E9F51C4A597FD427518C995B885DF26ADEF89D61BCB45CCB943AF869BDB6"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/app-headless-speed2.trace.jsonl",
+    "bytes": 3356975,
+    "sha256": "5491C533296C8746112605C1194C511C39767180CD34FFB71709148DFAB01E6D"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/app-seek-phase-0.trace.jsonl",
+    "bytes": 9019376,
+    "sha256": "AAD8FC3A4EC861DE3EC92598F84A364446188CE25C7934B057547E458BC3D3E8"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/app-seek-phase-12.trace.jsonl",
+    "bytes": 9046514,
+    "sha256": "B8C4379B8108B2442CD2B36B82862EDAA8FE12DD54620015F064BB3CD791A4E2"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/app-seek-phase-6.trace.jsonl",
+    "bytes": 9050817,
+    "sha256": "2D048F7F06907530C73E57E1CF54869B1299A76950D0B46870340582BE61F0A5"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/app-windowed-final-occluded.trace.jsonl",
+    "bytes": 13690298,
+    "sha256": "5D9C90AA6A660B9963C20D5502B246CF022E5458950959C10F965EF75633FEF8"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/phase12.log.trace.jsonl",
+    "bytes": 2312917,
+    "sha256": "768A3DE95623EC6D5221390F01DF62727558FDD0AC2B228B4CEA94FCD5CFEEEF"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/phase4.log.trace.jsonl",
+    "bytes": 2312071,
+    "sha256": "B1F946CCDE2D47F822F72A9867D777AAD02E58777EEFA28D172436916135B40E"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/phase8.log.trace.jsonl",
+    "bytes": 2312109,
+    "sha256": "728EDDAE664512FB360E678E574598D2B3E2C0071E27DF8D928E39D21B28017B"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/traced-1080.log.trace.jsonl",
+    "bytes": 4599806,
+    "sha256": "DAE3611E3D6F2361021AE7F5A83B2CC64959EC356235CE3C4384587C00DC6195"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-qualified/traced-4k.log.trace.jsonl",
+    "bytes": 4599806,
+    "sha256": "42BB57F1D1325BACC6D707BC83705909F69DB95137E92109CDC1E34AF81DCB79"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-headless-1080p60.trace.jsonl",
+    "bytes": 5395842,
+    "sha256": "D582B1143793D8A732450050A29C9A5EAE793CB1B4C7D2521A85C9FD3F6FE8F7"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-headless-4k60.trace.jsonl",
+    "bytes": 5396209,
+    "sha256": "62F72D184B2BF7A5D6933069AAEF2F34CC48E7ED092716056029C8A751ACB50C"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-headless-speed2.trace.jsonl",
+    "bytes": 3351911,
+    "sha256": "6CC00BCF4A7BA2674A664F5361278373A5AE3009DE4A663AF3D1B174E69B0E38"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-seek-hold-offset2.trace.jsonl",
+    "bytes": 12012165,
+    "sha256": "84E4BD8C5381E7538EA448295987EE046762D7CF014B725927A8A568BF8518D0"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-seek-phase-0.25.trace.jsonl",
+    "bytes": 9050052,
+    "sha256": "A4443017D316378F0D90CE8B67ACE9316135C50EE148A51F27271BAA3F4D628D"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-seek-phase-0.5.trace.jsonl",
+    "bytes": 9050305,
+    "sha256": "AD1068D1114F86D45B759CD2EA34D2A9464F712B6B364411319494FC2B8161CF"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-seek-phase-0.75.trace.jsonl",
+    "bytes": 9091295,
+    "sha256": "9DBCEF35F590E9894C2FC7844937CF2A46EF015C41B568BB9228C9FBFEB2CBE5"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-seek-phase-0.trace.jsonl",
+    "bytes": 9100484,
+    "sha256": "7CAC1D71DCDD2AB3A668B863F475B3EA2767079923DBE03CE16BB1355846B058"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-seek-phase-12.trace.jsonl",
+    "bytes": 9036776,
+    "sha256": "D77798F3E2998CD47B45C1D53C658CD486D1A9AC640090BD03FC819261E7C535"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-seek-phase-6.trace.jsonl",
+    "bytes": 9040314,
+    "sha256": "2D42348CB0633B35DAF03FAD1F5551F3850E2657835F01970752403DC4CFBBD2"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/app-windowed-final-occluded.trace.jsonl",
+    "bytes": 13695053,
+    "sha256": "8D108E66CB5BF9EED10B97D5583B270806FD6BC50B2A34D9FAC251386064CA6F"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/no-readiness-phase225.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "D718E56B55552DE0192C027A7760CA95758870C663A8C061FA015E8833D356B9"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/no-readiness-phase250.log.trace.jsonl",
+    "bytes": 2278852,
+    "sha256": "0B7B4A107ADFCF924F62AAAC9CF9F028166FCAB3C12781C14821F557FD49BEC1"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/no-readiness-phase275.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "9E57D69C68B8D3FECCE8C1800C997069E42AA57B20FAA992EBA9AE2CB7E33415"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/no-readiness-phase300.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "3DE41381AF323301E42C36E96F39BB82E06213AD16B54C889662163A8837AE47"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/phase12.log.trace.jsonl",
+    "bytes": 2323717,
+    "sha256": "DCAB32F246674D6797D7C7D3C942B845CCC32FBAB2A7B349BF98DAB51E730FE8"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/phase4.log.trace.jsonl",
+    "bytes": 2322895,
+    "sha256": "4505072CDA079039ED681BF8057E9E5D6F735A528A12F36EC5C64FBC86C6E416"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/phase8.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "9686BC29DB3434CF8EDDE2C968868A7C7A6028E514AFA4F8EBC7217A9A5C0CED"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/readiness-phase225.log.trace.jsonl",
+    "bytes": 2326520,
+    "sha256": "50527CC711E3AC74DCCE8AB68860667EBCB5FE121FCC5A55F62F24E6D02E9FBE"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/readiness-phase250.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "D20440E67DED78287A255C10832E1640B490FFC50E02A17A348F2DBC780A517E"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/readiness-phase275.log.trace.jsonl",
+    "bytes": 2322890,
+    "sha256": "49F3E6D7F5E83559AFF7AE344CA9D851D0C8A530A126FAB1F587E787EE6F5D55"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/readiness-phase300.log.trace.jsonl",
+    "bytes": 2322886,
+    "sha256": "9767E865C513C9C5FEC4464306F5C81400D09475CDE3EE7EF7EEEC91B9D5F4C7"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/three-clips-phase250.log.trace.jsonl",
+    "bytes": 11849340,
+    "sha256": "301395BE40F8DD66B35CCF68715013777D077D98C7D1A4D9DEBF930AC0CEDB2D"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/three-clips-phase300.log.trace.jsonl",
+    "bytes": 11850016,
+    "sha256": "D3C484EFCDA24E0BBFBDD701638C7E2F83800CFA41E4C1D9B2FB2F94FDE78C3E"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/three-clips.log.trace.jsonl",
+    "bytes": 11850002,
+    "sha256": "3AC17C65FB6889DACB749B29B9FE1F3D62141041472AA8FE28E0A41892FB87DA"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/traced-1080.log.trace.jsonl",
+    "bytes": 4621403,
+    "sha256": "67305A10FA6F7086D7C5606466F82C8445844513AA95CFBDE0988CB70E594B88"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness/traced-4k.log.trace.jsonl",
+    "bytes": 4621994,
+    "sha256": "4165B010E19CCD89ACD403440F63622DFDDFC8BC684C67283EDC83F9F53F8F32"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-headless-1080p60.trace.jsonl",
+    "bytes": 5399223,
+    "sha256": "9642167C42FBF8A5A62709078E5FC983A72030C03D5CDF807B7150A1634E8640"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-headless-4k60.trace.jsonl",
+    "bytes": 5396759,
+    "sha256": "4D39259705DB9C31F336B61F3041D8C26F7EC6531CB959D618C329A5DF09D6A2"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-headless-speed2.trace.jsonl",
+    "bytes": 3337289,
+    "sha256": "F22AC0DB459F431572BFB41BE56F749D7F0F71A733DCC3C85E738D1381BD0CC9"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-seek-hold-offset2.trace.jsonl",
+    "bytes": 12020336,
+    "sha256": "1EB863DE29F0F7FB18F156833E1EC9530139433C546956C86695CFF24286C7DD"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-seek-phase-0.25.trace.jsonl",
+    "bytes": 9039472,
+    "sha256": "496AC966EB12E7889E2685B18D2A92D6CDC9F1C3987DD79802AAE2A0B6C52E8E"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-seek-phase-0.5.trace.jsonl",
+    "bytes": 9048633,
+    "sha256": "2E9A8622219E27816A679F05A72105387B27EA714D4D8C4F2FE3A1266DD22C17"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-seek-phase-0.75.trace.jsonl",
+    "bytes": 9054447,
+    "sha256": "959967E1B262182B9B4F2E096A99ABD74D251CBF4B031AEA7E5FA2F4650CD9AD"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-seek-phase-0.trace.jsonl",
+    "bytes": 9063085,
+    "sha256": "E5AAD2DD4B314AA6D9BE2E30A1196E7056BF695CECD6316E665E6A2453F97303"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-seek-phase-12.trace.jsonl",
+    "bytes": 9036867,
+    "sha256": "CE0D622F676514F3EEDB5AF95270198D795E597FE46EDAA79E9BDFD33F499B84"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-seek-phase-6.trace.jsonl",
+    "bytes": 9041190,
+    "sha256": "A0B193C41C3DAABA9F215D07F8DCF6479E6FE6FC42EF08DAE53BC8BA858F490C"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/app-windowed-final-occluded.trace.jsonl",
+    "bytes": 13701393,
+    "sha256": "DE7D990E666DD623FBA5F24CC502342462F547D8AE3D79269A0493E4EDA0374D"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/no-readiness-phase225.log.trace.jsonl",
+    "bytes": 2296807,
+    "sha256": "E74254919F30376BCF5D404644157C93E7810099152473CBFE1F83EEEC3FFAA4"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/no-readiness-phase250.log.trace.jsonl",
+    "bytes": 2306948,
+    "sha256": "79BFDCFFDBD0084C64BC387368A3BD7AD1971491CB064D2FA8AABF00F5F079D6"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/no-readiness-phase275.log.trace.jsonl",
+    "bytes": 2322882,
+    "sha256": "9FBAB1439FD0CD48E1E8D7013D14F469FCFC1398AD7360ECF768E1835707243A"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/no-readiness-phase300.log.trace.jsonl",
+    "bytes": 2316199,
+    "sha256": "853E2B09F43BB763831C6F6795C26CBB657849BE10E1568621AA4BCD02DE0333"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/phase12.log.trace.jsonl",
+    "bytes": 2323706,
+    "sha256": "614221AEABEB4C510177B3FFA75D26579658D50521C46E7DA55350D5F5405D64"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/phase4.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "71BE2DBD693B7B7C090AB186ECBE1E70212F97BD35371D419C80360F1517397B"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/phase8.log.trace.jsonl",
+    "bytes": 2323699,
+    "sha256": "25A7D17F66E10453DD32C507A8E16C887FB1F4C0E9F9DF656CDED2C1AA355A9F"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/readiness-phase225.log.trace.jsonl",
+    "bytes": 2429162,
+    "sha256": "E47316400B0BD429E99B9F3D2178457E937C10568D3910C0BFA98E5B4908A634"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/readiness-phase250.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "214D387285630AC56560C7986236720CC976FD5685B9D14B190353DD7C383195"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/readiness-phase275.log.trace.jsonl",
+    "bytes": 2325624,
+    "sha256": "A567B1ABAA8767F39F1DB9C2152481241C51FABF88CD20A370AAB5DB75D9CB99"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/readiness-phase300.log.trace.jsonl",
+    "bytes": 2322882,
+    "sha256": "851553531EF61395D925F3D24E2003743E171B0BE7FE691C1B394F2730386E6B"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/three-clips-phase250.log.trace.jsonl",
+    "bytes": 11848532,
+    "sha256": "555B41811D35D6ECEF3C9BE04FBD0053CC7A0DF5ECB410EF708862219FDE11D8"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/three-clips-phase300.log.trace.jsonl",
+    "bytes": 11848899,
+    "sha256": "C58479877166EDA7809EAD6FA39BE5239046D57D116E87F46139FBBD606DA972"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/three-clips.log.trace.jsonl",
+    "bytes": 11848420,
+    "sha256": "5C47F830058D1184E62703876BA22572992B6B9EA764C8C88B90BAFCE85EF5EF"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/traced-1080.log.trace.jsonl",
+    "bytes": 4621353,
+    "sha256": "8BC624F743C9F4C7465AE3770D9C948DA1EBD3178D617A6B8443E7516E12748A"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-margin/traced-4k.log.trace.jsonl",
+    "bytes": 4621568,
+    "sha256": "883A58222791E12264646E8F4D222086DE2936FEFA4CE9157B76CBB3C61AF577"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-headless-1080p60.trace.jsonl",
+    "bytes": 5399199,
+    "sha256": "B59B71CBF050A3DDF5FDBB367551524800EAEB6D1BAA6040271F9799BE0F4B8C"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-headless-4k60.trace.jsonl",
+    "bytes": 5418111,
+    "sha256": "2B7C588C44D3DD873D1FAFDD318549F4622A6D2177E968B359DC038ADCDA3893"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-headless-speed2.trace.jsonl",
+    "bytes": 3363568,
+    "sha256": "C24532B240989927F57B07A157C71DDE7FBE9BFF57B2042E4CBEF9F0A3FC1CD6"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-seek-hold-offset2.trace.jsonl",
+    "bytes": 12030815,
+    "sha256": "3D8F854715C124589B5EA7D301D965A4ACA1E48D09EDE0C25B2337D6E9C38468"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-seek-phase-0.25.trace.jsonl",
+    "bytes": 9033606,
+    "sha256": "DA56EB0D689A135F19635952472AC763441DB1346E34A4C69B4533E1D0107A27"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-seek-phase-0.5.trace.jsonl",
+    "bytes": 9104641,
+    "sha256": "1991E425031CE8FDB7F20EFD87A25498ADD1507D144CA00344408C73B96B5B45"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-seek-phase-0.75.trace.jsonl",
+    "bytes": 9055107,
+    "sha256": "B7F4836EEDE09CCFB4D8C267252B0C291740A2F05BDCECAAB742AA0865902FF2"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-seek-phase-0.trace.jsonl",
+    "bytes": 9095909,
+    "sha256": "840836127011E725A961AC3BC83B774C80C4FB43EE4F9E8A28761ED1450A50F2"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-seek-phase-12.trace.jsonl",
+    "bytes": 9051708,
+    "sha256": "B8B9ED01AA4844E3991844A372800423BDB88970852B34676EE2587ECBB4CC42"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-seek-phase-6.trace.jsonl",
+    "bytes": 9055382,
+    "sha256": "0952AD2769BD66FCFA27BDBE5C309863CE7A1B9B61360239A7FD798C503DC060"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/app-windowed-final-occluded.trace.jsonl",
+    "bytes": 13701155,
+    "sha256": "4D50CABBBA0D28F89E6C5DE2BFF0A7DCA8205B50734F15DD9508BE79DB68A7EC"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/no-readiness-phase225.log.trace.jsonl",
+    "bytes": 2306401,
+    "sha256": "F09E648A0CBC6AF34E7EAEC9176F0E7D22CA6F9497701F707EEAE71F08876D1D"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/no-readiness-phase250.log.trace.jsonl",
+    "bytes": 2312272,
+    "sha256": "497E0B4B928785E801D2BC7118CC09E533973047ADD00DC52AA80CBE888386DA"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/no-readiness-phase275.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "DE63E36C0CD02DCB44D73AACE89A8AEB962B88FD63310568A3B2EEAD2D6DE713"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/no-readiness-phase300.log.trace.jsonl",
+    "bytes": 2322909,
+    "sha256": "0FD92346C6FB822F885A9B98C595B7FB3AE5FCE409EFEE588A991B153592F0D1"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/phase12.log.trace.jsonl",
+    "bytes": 2323721,
+    "sha256": "8A54C4CC24AE00D83BC3F668126EDE58045EDAAB9A6D15F1FF322CD5EF8C2563"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/phase4.log.trace.jsonl",
+    "bytes": 2322882,
+    "sha256": "9719978AD239072656285024734B88E723269FD0A0B3618E8C0769E372EBBDED"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/phase8.log.trace.jsonl",
+    "bytes": 2322882,
+    "sha256": "03CFC2B9085B3E11C50D492D91A61BFA6BD7BA4958611C5B0DB32F75A1D079EA"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/readiness-phase225.log.trace.jsonl",
+    "bytes": 2335943,
+    "sha256": "967C22B0D4C5BD7850376B3F013F7ED425F725E3DF802B250A22D559A2F82C73"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/readiness-phase250.log.trace.jsonl",
+    "bytes": 2420200,
+    "sha256": "4DF7EC2FF1A5FE21888BED81DD6320814E5E4F6A47901797EA6A0A79F86C14CE"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/readiness-phase275.log.trace.jsonl",
+    "bytes": 2355891,
+    "sha256": "D50CC44A3F3753D5A957657D2D50E79FC3F440A69AEC1DA1447E5409B206D6A8"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/readiness-phase300.log.trace.jsonl",
+    "bytes": 2322882,
+    "sha256": "11105C0AEEDE4DD74DC5C7067BEA646CF5E647CEDEAF7058771E675D786BA43E"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/three-clips-phase250.log.trace.jsonl",
+    "bytes": 11848532,
+    "sha256": "37A6E0DAA1EF64B529251CA685E35879533AC959C29CE8FECC9B24F5B61F1184"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/three-clips-phase300.log.trace.jsonl",
+    "bytes": 11850201,
+    "sha256": "4994A69827D53B2BE8FA9D125714E3E3A5D62D2F57DFDB8B7A3680C90BF2E676"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/three-clips.log.trace.jsonl",
+    "bytes": 11849153,
+    "sha256": "770D66792A4879481CE21D04D39FE45247011E3AEC4824EE4C89B999735AC60A"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/traced-1080.log.trace.jsonl",
+    "bytes": 4621374,
+    "sha256": "31A53B99F0611C964104721C8564E2BFBE446059ECC226D568CFB7D33BB54D46"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-readiness-cadence/traced-4k.log.trace.jsonl",
+    "bytes": 4621514,
+    "sha256": "F14B4C80251A2C7F377B83D758453E9374AD098CAA38B0886DCF804B1BC92B6E"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-headless-1080p60.trace.jsonl",
+    "bytes": 5400347,
+    "sha256": "D03D2725CD74FD9F6E2BFBAC072110134E4A884992B27C56DE52E36176DBE338"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-headless-4k60.trace.jsonl",
+    "bytes": 5406973,
+    "sha256": "C71AFC7C525B995105970A1A00AE374DE335306DAE1D2D4CF8548BC4717C1FC2"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-headless-speed2.trace.jsonl",
+    "bytes": 3365699,
+    "sha256": "15AF96438E9ABDD9C89D5A818CC277A9D8E0AD9D8CCEF390DAEBAC93A74563A4"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-seek-hold-offset2.trace.jsonl",
+    "bytes": 12035174,
+    "sha256": "A72676D88EC6EFC99280108D6389345108590D6C3FA31FD625CB1EAA63D6431D"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-seek-phase-0.25.trace.jsonl",
+    "bytes": 9122452,
+    "sha256": "B4B0807FE100A5756AE79DA0D81A5AF21A51094BD5D64D4938D918BCA01BB7CB"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-seek-phase-0.5.trace.jsonl",
+    "bytes": 9061501,
+    "sha256": "D210D9CCEFEF03726DE3452352FAC176720E447643BB4F38F6B8F907353A08E9"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-seek-phase-0.75.trace.jsonl",
+    "bytes": 9064969,
+    "sha256": "F796786829E4B326F61A8A4C549910360CF562DC8B66EC5AFE685EBA59936C36"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-seek-phase-0.trace.jsonl",
+    "bytes": 9157331,
+    "sha256": "82CC7CFB367D853BF66F1AEA3B9259857D791E5C886B8D31F1E53A356BD6E640"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-seek-phase-12.trace.jsonl",
+    "bytes": 9075384,
+    "sha256": "B83507E0F83A37B4975C88979E38B02BA15C56E848CB4DE8826F4E7B5E1C5EBF"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-seek-phase-6.trace.jsonl",
+    "bytes": 9055683,
+    "sha256": "E85DDF68C40781ED2641C4B46589CD04EB005A7E4B80F3C5133FB0533C3A2874"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/app-windowed-final-occluded.trace.jsonl",
+    "bytes": 14333081,
+    "sha256": "0801ABDC63ED948AD68F27D0904DFCD0250CC832A9F36C7DE13EFB9A98EA7DEE"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/copy-event-1080.log.trace.jsonl",
+    "bytes": 2332073,
+    "sha256": "58E4432660259557D1D892B06D35009B789CF12DD0948030C8EF81BBCFE6564B"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/copy-event-4k.log.trace.jsonl",
+    "bytes": 2332111,
+    "sha256": "34CCC31531D70B3E3D0452AAE0D00A23F579A546F34BB3312B223EF3CDA65D52"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/copy-poll-1080.log.trace.jsonl",
+    "bytes": 2436990,
+    "sha256": "AD1B325C5BA0838B3350528662FE486ED4E875C9D5A95140F8ADE28F014E9B13"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/copy-poll-4k.log.trace.jsonl",
+    "bytes": 2497694,
+    "sha256": "6366230D1C6A50D0B7649F261EB82EA07C9590BF7245C77A10CDECB4CD6A6BBA"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/no-readiness-phase225.log.trace.jsonl",
+    "bytes": 2332161,
+    "sha256": "1100689ED6850F2D70E4B71C7124C1A05C003789FEE2030879A4F12D1B877D05"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/no-readiness-phase250.log.trace.jsonl",
+    "bytes": 2332214,
+    "sha256": "E33C4FA1D2B176325CE54D1C327CF5120E9539B7F716BE9ADC563B6028F6DE49"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/no-readiness-phase275.log.trace.jsonl",
+    "bytes": 2332170,
+    "sha256": "3520873BF351A030598883E7E798C894FDDB1B47EB8A00EDD85CB51082650FD1"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/no-readiness-phase300.log.trace.jsonl",
+    "bytes": 2332170,
+    "sha256": "1C2438B4F868730FABA44648097F9199C72E84FB5CBC63F0CB850C694671EC21"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/phase12.log.trace.jsonl",
+    "bytes": 2333054,
+    "sha256": "2C6D41739CC975068331D1C6C3805B5BCB44AD32FCC18E4F3DC7B92E8D28179E"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/phase4.log.trace.jsonl",
+    "bytes": 2332214,
+    "sha256": "C5306E5BE799D190EBFEFEB4819BF39B4FF2E9F7080DB13A7686CB76DAFFFF28"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/phase8.log.trace.jsonl",
+    "bytes": 2332214,
+    "sha256": "2A868108F01C20941703F4E932B441767EF5F306491F33AA454B07DB3E61293C"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/readiness-phase225.log.trace.jsonl",
+    "bytes": 2332170,
+    "sha256": "F2FFB5B61D5D3393E4B35028AE9A8789CE99D0DD9A7154D94D03862AFB310684"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/readiness-phase250.log.trace.jsonl",
+    "bytes": 2332170,
+    "sha256": "CEBD2EE6A2FBE5FEA6FA1D41C15D4B171530E72FAB565BDE814712775278B11B"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/readiness-phase275.log.trace.jsonl",
+    "bytes": 2332170,
+    "sha256": "3F63FBFA5F7EAAC62CF2E3EBBC88E76B3E34903F6B78CC9A9F6A3C8A3AA275AE"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/readiness-phase300.log.trace.jsonl",
+    "bytes": 2332170,
+    "sha256": "AC01787EB76170B1460CCE12B2B4F93D7171C77125C87564C904CC75BF47F146"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/three-clips-phase250.log.trace.jsonl",
+    "bytes": 11903525,
+    "sha256": "552CD578EBBBD172E77EDD53A9907D6CC55AAA044D42A51538BA5A4118017635"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/three-clips-phase300.log.trace.jsonl",
+    "bytes": 11903356,
+    "sha256": "AC8ABF8EB1B94B3B3BF0BA17C4640D7C4384CA3002C5B958D2818B02B2CA499F"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/three-clips.log.trace.jsonl",
+    "bytes": 12529252,
+    "sha256": "05951D46D57AB4F4B369F9E838C3CEE34FBEEEAF824265E6B9C857CBCB999F7A"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/traced-1080.log.trace.jsonl",
+    "bytes": 4717465,
+    "sha256": "DD94100936DCFD425981BAAC8D2794F57C06ECAB8EF780449A6BC4EE88357F06"
+  },
+  {
+    "local_path": "target/gpu-pacing-fix-20261120-fence-event/traced-4k.log.trace.jsonl",
+    "bytes": 4639711,
+    "sha256": "8FD91BCBEBA8C944BFBE4951893BAA7A5815E9E1081AD6C27311C7D8801126E9"
+  }
+]
