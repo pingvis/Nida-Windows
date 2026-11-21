@@ -1,0 +1,7 @@
+# Keep project Rust sources and configuration consistent with rustfmt output.
+.gitattributes text eol=lf
+*.rs text eol=lf
+*.toml text eol=lf
+
+# Preserve the existing line-ending handling of vendored dependencies.
+/vendor/** !text !eol
