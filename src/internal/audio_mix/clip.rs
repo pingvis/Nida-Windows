@@ -462,7 +462,10 @@ mod tests {
     fn a_retired_clip_stays_silent() {
         let shared = ClipAudioShared::default();
         let sound = || VecDeque::from(vec![[0.5_f32, 0.5]; 4800]);
-        assert!(shared.publish(sound(), 0.0), "heard while the clip is there");
+        assert!(
+            shared.publish(sound(), 0.0),
+            "heard while the clip is there"
+        );
         let mut out = vec![[0.0_f32; 2]; 256];
         shared.pull(&mut out);
         assert!(out.iter().any(|f| f[0] != 0.0));

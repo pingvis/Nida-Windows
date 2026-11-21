@@ -488,7 +488,9 @@ mod tests {
         assert_eq!(serde_json::from_str::<CameraColour>(&json).unwrap(), colour);
         let half: CameraColour = serde_json::from_str(r#"{"range":"limited"}"#).unwrap();
         assert_eq!(half.matrix, CameraMatrix::Auto);
-        assert!(serde_json::from_str::<CameraColour>("{}").unwrap().is_auto());
+        assert!(serde_json::from_str::<CameraColour>("{}")
+            .unwrap()
+            .is_auto());
     }
 
     /// Every colour survives the byte a capture thread reads it from, and a

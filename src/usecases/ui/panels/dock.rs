@@ -145,7 +145,12 @@ pub(super) fn render_dock(
 /// of its own, here.
 const OPEN_IN_A_WINDOW: &str = "Open in a window";
 
-fn show_dock(ui: &mut egui::Ui, screen: &mut ScreenLayout, viewer: &mut Viewer<'_>, area: egui::Rect) {
+fn show_dock(
+    ui: &mut egui::Ui,
+    screen: &mut ScreenLayout,
+    viewer: &mut Viewer<'_>,
+    area: egui::Rect,
+) {
     let locked = screen.locked;
     let menu = &mut screen.dock.translations.tab_context_menu;
     if menu.eject_button != OPEN_IN_A_WINDOW {
@@ -232,11 +237,10 @@ fn render_windows(ctx: &egui::Context, screen: &mut ScreenLayout, viewer: &mut V
             Some([x, y, w, h]) => builder.with_position([x, y]).with_inner_size([w, h]),
             None => builder.with_inner_size(window_size(pane)),
         };
-        let (put_back, rect) = ctx.show_viewport_immediate(
-            window_viewport(pane),
-            builder,
-            |ui, class| render_window(ui, class, pane, &title, locked, viewer),
-        );
+        let (put_back, rect) =
+            ctx.show_viewport_immediate(window_viewport(pane), builder, |ui, class| {
+                render_window(ui, class, pane, &title, locked, viewer)
+            });
         if put_back {
             back.push(pane);
         // Where it is kept follows the window — unless a layout chosen has
@@ -364,9 +368,9 @@ fn panel_row(ui: &mut egui::Ui, screen: &mut ScreenLayout, pane: Pane, title: &s
         };
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if screen.in_window(pane) {
-                let button = ui
-                    .small_button("Put back")
-                    .on_hover_text(format!("{title}: back from its window into the panels here"));
+                let button = ui.small_button("Put back").on_hover_text(format!(
+                    "{title}: back from its window into the panels here"
+                ));
                 if named(button, format!("Put {title} back")).clicked() {
                     screen.put_back(pane);
                 }
@@ -803,7 +807,10 @@ mod tests {
         harness.run();
         let screen = &data.borrow().screen;
         assert!(screen.has(Pane::Setup));
-        assert!(screen.windows.is_empty(), "the window's panel back in the dock");
+        assert!(
+            screen.windows.is_empty(),
+            "the window's panel back in the dock"
+        );
         assert!(screen_layout::has_pane(&screen.dock, Pane::Audio));
         assert!(harness.query_by_label("Layout: Classic").is_some());
     }
@@ -864,14 +871,18 @@ mod tests {
         open_layout_menu(&mut harness);
         harness.run();
         assert!(
-            harness.query_by_label_contains("Audio Mixer — Nida").is_some(),
+            harness
+                .query_by_label_contains("Audio Mixer — Nida")
+                .is_some(),
             "its window"
         );
         harness.get_by_label("Put back").click();
         harness.run();
         assert!(!data.borrow().screen.in_window(Pane::Audio));
         assert!(has_pane(&data.borrow().screen.dock, Pane::Audio));
-        assert!(harness.query_by_label_contains("Audio Mixer — Nida").is_none());
+        assert!(harness
+            .query_by_label_contains("Audio Mixer — Nida")
+            .is_none());
     }
 
     /// A tab floated out of the dock — dragged out, or a layout from before
@@ -997,13 +1008,19 @@ mod tests {
         data.borrow_mut().screen.locked = true;
         WINDOW.with(|w| w.borrow_mut().0.events.push(egui::ViewportEvent::Close));
         harness.run();
-        assert!(data.borrow().screen.in_window(Pane::Audio), "locked: it stays");
+        assert!(
+            data.borrow().screen.in_window(Pane::Audio),
+            "locked: it stays"
+        );
 
         data.borrow_mut().screen.locked = false;
         WINDOW.with(|w| w.borrow_mut().0.events.push(egui::ViewportEvent::Close));
         harness.run();
         assert!(!data.borrow().screen.in_window(Pane::Audio));
-        assert!(has_pane(&data.borrow().screen.dock, Pane::Audio), "back in the dock");
+        assert!(
+            has_pane(&data.borrow().screen.dock, Pane::Audio),
+            "back in the dock"
+        );
     }
 
     /// A layout chosen asks a window already open to go where the layout
@@ -1092,15 +1109,25 @@ mod tests {
                 .filter(|c| matches!(c, crate::engine::EngineCommand::RundownGo { .. }))
                 .count()
         };
-        WINDOW.with(|w| w.borrow_mut().1.extend([key(egui::Key::Space), key(egui::Key::Escape)]));
+        WINDOW.with(|w| {
+            w.borrow_mut()
+                .1
+                .extend([key(egui::Key::Space), key(egui::Key::Escape)]);
+        });
         harness.step();
         assert_eq!(gos(&harness), 1, "GO from the window");
-        assert_eq!(KEYS_LEFT.with(|k| k.borrow().clone()), vec![egui::Key::Escape]);
+        assert_eq!(
+            KEYS_LEFT.with(|k| k.borrow().clone()),
+            vec![egui::Key::Escape]
+        );
         // Held: the key comes again, a repeat.
         WINDOW.with(|w| w.borrow_mut().1.push(key(egui::Key::Space)));
         harness.step();
         assert_eq!(gos(&harness), 1, "one GO a press");
-        assert!(KEYS_LEFT.with(|k| k.borrow().is_empty()), "the repeat taken too");
+        assert!(
+            KEYS_LEFT.with(|k| k.borrow().is_empty()),
+            "the repeat taken too"
+        );
     }
 
     /// Open in a window, from a tab's menu: the panel in a window of its
@@ -1110,7 +1137,11 @@ mod tests {
         let mut data = UIData::test_fixture();
         data.screen = ScreenLayout::builtin(Builtin::Classic);
         let (mut harness, data) = harness(data);
-        harness.get_all_by_label("Rundown").next().unwrap().click_secondary();
+        harness
+            .get_all_by_label("Rundown")
+            .next()
+            .unwrap()
+            .click_secondary();
         harness.run();
         harness.get_by_label(OPEN_IN_A_WINDOW).click();
         harness.run();

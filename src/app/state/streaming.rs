@@ -187,8 +187,15 @@ impl super::super::VardaApp {
             encoder_fps: fps,
             stream_fps: self.streaming.settings.options.fps.unwrap_or(fps).max(1),
             rate_live: h.subprocess.as_ref().is_some_and(|s| s.changes_rate_live()),
-            rate_mode_live: h.subprocess.as_ref().is_some_and(|s| s.changes_rate_mode_live()),
-            rate_mode: h.subprocess.as_ref().and_then(|s| s.rate_plan()).map(|p| p.mode),
+            rate_mode_live: h
+                .subprocess
+                .as_ref()
+                .is_some_and(|s| s.changes_rate_mode_live()),
+            rate_mode: h
+                .subprocess
+                .as_ref()
+                .and_then(|s| s.rate_plan())
+                .map(|p| p.mode),
             rate_note: h
                 .subprocess
                 .as_ref()
@@ -240,7 +247,10 @@ impl super::super::VardaApp {
             // Constant and Variable are one encoding, padded or not: that
             // changes while live in Nida. Average is another encoding.
             let held = |m: crate::streaming::RateMode| {
-                matches!(m, crate::streaming::RateMode::Constant | crate::streaming::RateMode::Variable)
+                matches!(
+                    m,
+                    crate::streaming::RateMode::Constant | crate::streaming::RateMode::Variable
+                )
             };
             let refused = if !rest_alike {
                 Some(if live_rate {
@@ -249,11 +259,13 @@ impl super::super::VardaApp {
                     "Stop the stream to change that: only the picture changes while live"
                 })
             } else if (rate_changed || mode_changed) && !live_rate {
-                Some(if current.encoder == crate::streaming::StreamEncoder::Software {
-                    "The video bit rate changes while live only with the Hardware encoder: stop the stream to change it"
-                } else {
-                    "This stream's encoder cannot change its bit rate while live (the log says why): stop the stream to change it"
-                })
+                Some(
+                    if current.encoder == crate::streaming::StreamEncoder::Software {
+                        "The video bit rate changes while live only with the Hardware encoder: stop the stream to change it"
+                    } else {
+                        "This stream's encoder cannot change its bit rate while live (the log says why): stop the stream to change it"
+                    },
+                )
             } else if mode_changed && !(held(options.rate_mode) && held(current.rate_mode)) {
                 Some("Average is encoded apart from Constant and Variable: stop the stream to change to it or from it")
             } else if mode_changed && !self.stream_holds_rate_constant() {
@@ -825,7 +837,10 @@ fn follow_upload(rate: &mut RateControl, sub: &crate::renderer::FfmpegSubprocess
             queued: usize::try_from(d.backlog_bytes).unwrap_or(usize::MAX),
             dropped: d.dropped,
             kbps: d.kbps,
-            sending: matches!(d.state, DestinationState::Live | DestinationState::Struggling),
+            sending: matches!(
+                d.state,
+                DestinationState::Live | DestinationState::Struggling
+            ),
             live_secs: d.live_secs,
             generation: d.generation,
             network: d.network,

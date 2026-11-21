@@ -103,8 +103,7 @@ impl ISFShader {
                 .is_some_and(|source| uses_any(source, MOVING_UNIFORMS))
             || m.persistent_buffers.as_ref().is_some_and(|b| !b.is_empty())
             || m.buffers.iter().any(|b| b.persistent)
-            || m
-                .passes
+            || m.passes
                 .as_ref()
                 .is_some_and(|passes| passes.iter().any(|p| p.persistent == Some(true)))
             || !m.preprocessors.is_empty()
@@ -266,14 +265,18 @@ fn uses_any(source: &str, names: &[&str]) -> bool {
         // `float TIME;` — or several, `float TIME; uint FRAMEINDEX;` — only
         // declares them.
         let declaration = code.contains(';')
-            && code.split(';').map(str::trim).filter(|st| !st.is_empty()).all(|statement| {
-                let parts: Vec<&str> = statement.split_whitespace().collect();
-                parts.len() == 2
-                    && matches!(
-                        parts[0],
-                        "float" | "int" | "uint" | "bool" | "vec2" | "vec3" | "vec4"
-                    )
-            });
+            && code
+                .split(';')
+                .map(str::trim)
+                .filter(|st| !st.is_empty())
+                .all(|statement| {
+                    let parts: Vec<&str> = statement.split_whitespace().collect();
+                    parts.len() == 2
+                        && matches!(
+                            parts[0],
+                            "float" | "int" | "uint" | "bool" | "vec2" | "vec3" | "vec4"
+                        )
+                });
         // The library's keep-alive sums — `float audioSum = audio_level + …`,
         // `float timeSum = TIMEDELTA + …` — read every uniform only for a
         // branch never taken, so the compiler keeps them all.

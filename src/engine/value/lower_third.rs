@@ -379,7 +379,8 @@ impl LowerThirdSettings {
     pub fn normalized(mut self) -> Self {
         self.cued = self.cued.min(self.rows.len().saturating_sub(1));
         let mut seen = std::collections::HashSet::new();
-        self.targets.retain(|uuid| !uuid.trim().is_empty() && seen.insert(uuid.clone()));
+        self.targets
+            .retain(|uuid| !uuid.trim().is_empty() && seen.insert(uuid.clone()));
         let look = &mut self.look;
         look.palette = look.palette.min(PALETTE_COUNT);
         look.plate_opacity = finite_or(look.plate_opacity, 0.85).clamp(0.0, 1.0);
@@ -700,7 +701,11 @@ mod tests {
             targets: vec!["bus1".into(), String::new(), "bus1".into(), "bus2".into()],
         }
         .normalized();
-        assert_eq!(settings.targets, ["bus1", "bus2"], "targets once each, none empty");
+        assert_eq!(
+            settings.targets,
+            ["bus1", "bus2"],
+            "targets once each, none empty"
+        );
         assert_eq!(settings.cued, 2);
         assert_eq!(settings.stepped(1), 2);
         assert_eq!(settings.stepped(-5), 0);

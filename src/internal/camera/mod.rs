@@ -13,6 +13,10 @@ mod avf;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 mod blackmagic;
 
+use crate::engine::value::camera::{CameraColour, CameraMatrix, CameraProfile, CameraRange};
+use crate::frame_picker::FramePicker;
+use crate::renderer::camera_profile::{ConvertedPicture, ProfilePasses};
+use crate::renderer::context::GpuContext;
 use anyhow::{Context, Result};
 #[cfg(not(target_os = "macos"))]
 use nokhwa::pixel_format::RgbAFormat;
@@ -21,10 +25,6 @@ use nokhwa::utils::{CameraFormat, CameraIndex, FrameFormat};
 use nokhwa::utils::{RequestedFormat, RequestedFormatType};
 #[cfg(not(target_os = "macos"))]
 use nokhwa::Camera;
-use crate::engine::value::camera::{CameraColour, CameraMatrix, CameraProfile, CameraRange};
-use crate::frame_picker::FramePicker;
-use crate::renderer::camera_profile::{ConvertedPicture, ProfilePasses};
-use crate::renderer::context::GpuContext;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::{mpsc, Arc, Mutex, OnceLock};
@@ -2681,7 +2681,14 @@ impl CameraManager {
                     CameraProfile::Lut { file } => Some(std::path::Path::new(file)),
                     _ => None,
                 };
-                match ConvertedPicture::new(device, queue, passes, &active.texture, &active.profile, lut) {
+                match ConvertedPicture::new(
+                    device,
+                    queue,
+                    passes,
+                    &active.texture,
+                    &active.profile,
+                    lut,
+                ) {
                     Ok(converted) => active.converted = Some(converted),
                     Err(e) => {
                         log::warn!(
@@ -2801,7 +2808,10 @@ mod tests {
         assert!(!watch.look(7.7, Some(60.0)));
         assert!(watch.look(7.7, Some(60.0)), "the third slow look");
         assert!(!watch.look(7.7, Some(60.0)), "said once");
-        assert!(!watch.look(45.0, Some(60.0)), "between: still slow, not said again");
+        assert!(
+            !watch.look(45.0, Some(60.0)),
+            "between: still slow, not said again"
+        );
         assert!(!watch.look(60.0, Some(60.0)), "back");
         for _ in 0..2 {
             assert!(!watch.look(10.0, Some(60.0)));
@@ -3165,7 +3175,13 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn this_macs_camera_effects_can_be_read() {
-        let known = ["Portrait", "Studio Light", "Edge Light", "Background", "Reactions gestures"];
+        let known = [
+            "Portrait",
+            "Studio Light",
+            "Edge Light",
+            "Background",
+            "Reactions gestures",
+        ];
         for effect in read_video_effects() {
             assert!(known.contains(&effect), "{effect}");
         }
@@ -3184,7 +3200,11 @@ mod tests {
             "one more came on"
         );
         assert_eq!(news(&[], &mut warned), None, "all off: nothing to say");
-        assert_eq!(news(&["Portrait"], &mut warned), Some(vec!["Portrait"]), "on again");
+        assert_eq!(
+            news(&["Portrait"], &mut warned),
+            Some(vec!["Portrait"]),
+            "on again"
+        );
         let text = video_effects_warning(&["Portrait", "Reactions gestures"]);
         assert!(text.contains("Portrait, Reactions gestures"), "{text}");
         assert!(text.contains("Video Effects"), "{text}");
@@ -3470,7 +3490,10 @@ mod tests {
             })
         };
         held_rx.recv().expect("held");
-        assert!(sink.take(10.05, 0).is_some(), "waited for the pictures, not gone without");
+        assert!(
+            sink.take(10.05, 0).is_some(),
+            "waited for the pictures, not gone without"
+        );
         putting.join().expect("the putting thread");
     }
 
@@ -3993,7 +4016,10 @@ mod tests {
         mgr.set_profiles(&HashMap::from([(7, CameraProfile::SonySLog3Cine)]));
         mgr.update_selective(&gpu, &needed, 10.05);
         assert!(mgr.active[&7].converted.is_some(), "converted");
-        assert!(mgr.texture_view(7) != Some(&own), "decks read the converted picture");
+        assert!(
+            mgr.texture_view(7) != Some(&own),
+            "decks read the converted picture"
+        );
 
         mgr.set_profiles(&HashMap::from([(7, CameraProfile::Normal)]));
         sink.put(frame(), 10.1);
@@ -4007,7 +4033,11 @@ mod tests {
         mgr.set_profiles(&HashMap::from([(7, missing.clone())]));
         mgr.update_selective(&gpu, &needed, 10.2);
         assert!(mgr.texture_view(7) == Some(&own), "as it comes");
-        assert_eq!(mgr.active[&7].failed.as_ref(), Some(&missing), "not tried again");
+        assert_eq!(
+            mgr.active[&7].failed.as_ref(),
+            Some(&missing),
+            "not tried again"
+        );
         mgr.release_camera(7);
     }
 

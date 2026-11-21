@@ -550,7 +550,10 @@ fn a_recording_keeps_its_colours_through_the_gpu_conversion() {
         "{}",
         String::from_utf8_lossy(&out.stderr)
     );
-    assert!(out.stdout.len() >= 3, "the recording has no decoded picture");
+    assert!(
+        out.stdout.len() >= 3,
+        "the recording has no decoded picture"
+    );
     let srgb = |c: f32| {
         let c = if c <= 0.003_130_8 {
             c * 12.92

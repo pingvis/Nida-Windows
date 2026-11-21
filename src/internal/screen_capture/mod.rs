@@ -501,10 +501,12 @@ impl ScreenCaptureManager {
         // while one at 1080p captured the same screen — never smaller: what
         // is on air from it does not blur for an input added. Its other
         // settings are left as they are.
-        let raised = self.config(id).and_then(|running| match (running.scale_to, config.scale_to) {
-            (Some((w, h)), Some((bw, bh))) => Some((w.max(bw), h.max(bh))),
-            _ => None,
-        });
+        let raised =
+            self.config(id)
+                .and_then(|running| match (running.scale_to, config.scale_to) {
+                    (Some((w, h)), Some((bw, bh))) => Some((w.max(bw), h.max(bh))),
+                    _ => None,
+                });
         self.cap_to(id, raised);
         Some(opened)
     }
@@ -1370,12 +1372,11 @@ fn retire(active: &mut ActiveCapture) -> Option<std::thread::JoinHandle<()>> {
 mod tests {
     use super::backend::{
         mock_targets, CaptureConfig, CaptureError, CaptureTargetInfo, CaptureTargetKind, CropRect,
-        Drawn, MockBackend,
-        ScreenCaptureBackend, TargetIdentity,
+        Drawn, MockBackend, ScreenCaptureBackend, TargetIdentity,
     };
-    use super::{poll_interval, ScreenCaptureManager, SELF_PACED_MAX_POLL, SELF_PACED_MIN_POLL};
     use super::{capture_loop, CaptureFrame, FramePicker, PICKER_FRAMES};
     use super::{coded_of, room_of, ROOM};
+    use super::{poll_interval, ScreenCaptureManager, SELF_PACED_MAX_POLL, SELF_PACED_MIN_POLL};
     use std::collections::HashMap;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Mutex};
@@ -1560,9 +1561,15 @@ mod tests {
         let mut mgr = ScreenCaptureManager::new_disabled();
         mgr.targets = listed(&[("capture", 1920), ("4k", 3840)]);
         let saved = display("Display 1", None);
-        let found = mgr.find_target(&saved).expect("the screen of that name now");
+        let found = mgr
+            .find_target(&saved)
+            .expect("the screen of that name now");
         assert_eq!(found.uuid.as_deref(), Some("capture"));
-        assert_eq!(saved.restored_to(found), saved, "not the capture box's for good");
+        assert_eq!(
+            saved.restored_to(found),
+            saved,
+            "not the capture box's for good"
+        );
         assert!(saved.is_display_by_name());
         assert!(mgr.goes_by_name(&saved));
 
@@ -1758,15 +1765,21 @@ mod tests {
             scale_to: Some((w, h)),
             ..Default::default()
         };
-        let (id, _, _) = mgr.open_mock(&target, at(1920, 1080), &gpu.device).expect("open");
+        let (id, _, _) = mgr
+            .open_mock(&target, at(1920, 1080), &gpu.device)
+            .expect("open");
         mgr.update_config(id, |c| c.crop.w = 0.5);
-        let (again, _, _) = mgr.open_mock(&target, at(3840, 2160), &gpu.device).expect("open");
+        let (again, _, _) = mgr
+            .open_mock(&target, at(3840, 2160), &gpu.device)
+            .expect("open");
         assert_eq!(again, id, "shared");
         let config = mgr.config(id).expect("live");
         assert_eq!(config.scale_to, Some((3840, 2160)));
         assert!((config.crop.w - 0.5).abs() < 1e-6, "its crop kept");
         // Never lowered: what is on air from it stays as sharp.
-        let (_, _, _) = mgr.open_mock(&target, at(1920, 1080), &gpu.device).expect("open");
+        let (_, _, _) = mgr
+            .open_mock(&target, at(1920, 1080), &gpu.device)
+            .expect("open");
         assert_eq!(mgr.config(id).expect("live").scale_to, Some((3840, 2160)));
         mgr.release(id);
         mgr.release(id);
@@ -2015,17 +2028,23 @@ mod tests {
             );
         };
         // Released.
-        let (id, _, _) = mgr.adopt(&target, slow(&target), config.clone(), &gpu.device).unwrap();
+        let (id, _, _) = mgr
+            .adopt(&target, slow(&target), config.clone(), &gpu.device)
+            .unwrap();
         let started = std::time::Instant::now();
         mgr.release(id);
         quick("release", started);
         assert!(!mgr.is_active(id));
         // Replaced: the window at another size.
-        let (id, _, _) = mgr.adopt(&target, slow(&target), config.clone(), &gpu.device).unwrap();
+        let (id, _, _) = mgr
+            .adopt(&target, slow(&target), config.clone(), &gpu.device)
+            .unwrap();
         let mut resized = target.clone();
         resized.width /= 2;
         let started = std::time::Instant::now();
-        let (again, _, _) = mgr.adopt(&resized, slow(&resized), config.clone(), &gpu.device).unwrap();
+        let (again, _, _) = mgr
+            .adopt(&resized, slow(&resized), config.clone(), &gpu.device)
+            .unwrap();
         quick("replacing", started);
         assert_eq!(again, id);
         // Outliving its last deck.
@@ -2068,7 +2087,11 @@ mod tests {
 
     impl Drop for LetGo {
         fn drop(&mut self) {
-            *self.0 .0.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = false;
+            *self
+                .0
+                 .0
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = false;
             self.0 .1.notify_all();
         }
     }
@@ -2097,9 +2120,14 @@ mod tests {
         let many = super::RETIRING_SAID_PAST + 2;
         for _ in 0..many {
             let started = std::time::Instant::now();
-            let (id, _, _) = mgr.adopt(&target, session(&target), config.clone(), &gpu.device).unwrap();
+            let (id, _, _) = mgr
+                .adopt(&target, session(&target), config.clone(), &gpu.device)
+                .unwrap();
             mgr.release(id);
-            assert!(started.elapsed() < Duration::from_millis(300), "never waited");
+            assert!(
+                started.elapsed() < Duration::from_millis(300),
+                "never waited"
+            );
         }
         assert_eq!(mgr.retiring.len(), many, "kept while still ending");
         // macOS lets go: cleared.
@@ -2107,7 +2135,10 @@ mod tests {
         held.1.notify_all();
         let until = std::time::Instant::now() + Duration::from_secs(5);
         while !mgr.retiring.is_empty() {
-            assert!(std::time::Instant::now() < until, "the ending captures ended");
+            assert!(
+                std::time::Instant::now() < until,
+                "the ending captures ended"
+            );
             // As the show's frame does, needing none.
             mgr.update_selective(&gpu, &std::collections::HashSet::new(), f64::MAX);
             std::thread::sleep(Duration::from_millis(10));
@@ -2133,7 +2164,8 @@ mod tests {
                 Arc::clone(&current),
             );
             std::thread::spawn(move || {
-                let mut session = MockBackend::new("Old".to_string(), 32, 18, CaptureConfig::default());
+                let mut session =
+                    MockBackend::new("Old".to_string(), 32, 18, CaptureConfig::default());
                 capture_loop(
                     &mut session,
                     7,
@@ -2156,7 +2188,11 @@ mod tests {
         current.fetch_add(1, Ordering::SeqCst);
         frames.lock().unwrap().discard_waiting();
         std::thread::sleep(Duration::from_millis(200));
-        assert_eq!(frames.lock().unwrap().waiting(), 0, "the old thread put nothing in");
+        assert_eq!(
+            frames.lock().unwrap().waiting(),
+            0,
+            "the old thread put nothing in"
+        );
         stop.store(true, Ordering::Relaxed);
         running.join().unwrap();
     }
@@ -2284,7 +2320,9 @@ mod tests {
             target.height,
             shows.clone(),
         ));
-        let (show, _, _) = mgr.adopt(&target, session, shows, &gpu.device).expect("adopt");
+        let (show, _, _) = mgr
+            .adopt(&target, session, shows, &gpu.device)
+            .expect("adopt");
         let input = CaptureConfig {
             scale_to: Some((1920, 1080)),
             ..Default::default()
@@ -2313,7 +2351,9 @@ mod tests {
             show_cursor: true,
             ..Default::default()
         };
-        let (id, _, _) = mgr.open_mock(&target, set.clone(), &gpu.device).expect("open");
+        let (id, _, _) = mgr
+            .open_mock(&target, set.clone(), &gpu.device)
+            .expect("open");
         assert_eq!(mgr.drawn(id), Some(Drawn::default()), "fitted, as opened");
         let zoomed = |fitted| Drawn {
             fitted,
@@ -2352,7 +2392,10 @@ mod tests {
         assert_eq!(mgr.drawn(id), Some(fills));
         // Its width alone bigger, then its height alone — stretched, and
         // scaled one way: at once, each.
-        let wider = Drawn { across: 2.0, ..fills };
+        let wider = Drawn {
+            across: 2.0,
+            ..fills
+        };
         mgr.size_as_drawn(id, wider, at(7500));
         assert_eq!(mgr.drawn(id), Some(wider), "wider at once");
         let taller = Drawn {
@@ -2399,7 +2442,9 @@ mod tests {
             show_cursor: true,
             ..Default::default()
         };
-        let (id, _, _) = mgr.open_mock(&target, set.clone(), &gpu.device).expect("open");
+        let (id, _, _) = mgr
+            .open_mock(&target, set.clone(), &gpu.device)
+            .expect("open");
         assert_eq!(mgr.config(id), Some(set.clone()), "as set");
         let twice = Drawn {
             fitted: 2.0,
@@ -2408,7 +2453,11 @@ mod tests {
         };
         mgr.size_as_drawn(id, twice, std::time::Instant::now());
         assert_eq!(mgr.drawn(id), Some(twice), "sized");
-        assert_eq!(mgr.config(id), Some(set.clone()), "its settings as they were");
+        assert_eq!(
+            mgr.config(id),
+            Some(set.clone()),
+            "its settings as they were"
+        );
         mgr.cap_to(id, Some((1920, 1080)));
         assert_eq!(
             mgr.config(id),
@@ -2434,7 +2483,9 @@ mod tests {
             scale_to: Some((960, 540)),
             ..Default::default()
         };
-        let (id, _, _) = mgr.open_mock(&target, set.clone(), &gpu.device).expect("open");
+        let (id, _, _) = mgr
+            .open_mock(&target, set.clone(), &gpu.device)
+            .expect("open");
         let twice = Drawn {
             fitted: 2.0,
             across: 1.5,
@@ -2534,14 +2585,22 @@ mod tests {
         // Room for twice: fitted, it comes twice the size that fits.
         mgr.give_room(2.0);
         mgr.size_as_drawn(id, zoomed(1.0), start + Duration::from_secs(1));
-        assert_eq!(mgr.drawn(id), Some(zoomed(2.0)), "twice what it is drawn at");
+        assert_eq!(
+            mgr.drawn(id),
+            Some(zoomed(2.0)),
+            "twice what it is drawn at"
+        );
         assert_eq!(comes(&mut mgr, (1280, 720)), Some((1280, 720)));
 
         // Zoomed into twice over: four times fitted is more than the
         // screen has.
         mgr.size_as_drawn(id, zoomed(2.0), start + Duration::from_secs(2));
         assert_eq!(mgr.drawn(id), Some(zoomed(4.0)));
-        assert_eq!(comes(&mut mgr, (1920, 1080)), Some((1920, 1080)), "all it has");
+        assert_eq!(
+            comes(&mut mgr, (1920, 1080)),
+            Some((1920, 1080)),
+            "all it has"
+        );
         mgr.release(id);
     }
 
@@ -2729,7 +2788,9 @@ mod tests {
             target.height,
             shows.clone(),
         ));
-        let (show, _, _) = mgr.adopt(&target, session, shows, &gpu.device).expect("adopt");
+        let (show, _, _) = mgr
+            .adopt(&target, session, shows, &gpu.device)
+            .expect("adopt");
         let (own, _, _) = mgr
             .open_mock(&target, CaptureConfig::default(), &gpu.device)
             .expect("open");
@@ -2741,8 +2802,16 @@ mod tests {
         let now = std::time::Instant::now();
         mgr.size_as_drawn(show, bigger, now);
         mgr.size_as_drawn(own, bigger, now);
-        assert_eq!(mgr.drawn(show), Some(Drawn::default()), "its presentation's");
-        assert_eq!(mgr.drawn(own), Some(bigger), "an input's own of that window");
+        assert_eq!(
+            mgr.drawn(show),
+            Some(Drawn::default()),
+            "its presentation's"
+        );
+        assert_eq!(
+            mgr.drawn(own),
+            Some(bigger),
+            "an input's own of that window"
+        );
         mgr.release(own);
         mgr.release(show);
     }

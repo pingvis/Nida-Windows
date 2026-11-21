@@ -551,8 +551,7 @@ impl MacosBackend {
     fn reconfigure(&self) {
         let native = self.native();
         let (width, height) = stream_size(native, &self.config);
-        let stream_config =
-            build_configuration(&self.config, width, height, native, self.scale);
+        let stream_config = build_configuration(&self.config, width, height, native, self.scale);
         unsafe {
             self.handles
                 .stream
@@ -869,8 +868,9 @@ impl ScreenCaptureBackend for MacosBackend {
         // A window off every screen keeps the pixels to a point it had.
         let now = match self.kind {
             CaptureTargetKind::Display => display_geometry(id),
-            CaptureTargetKind::Window => window_geometry(id)
-                .map(|(points, scale)| (points, scale.unwrap_or(self.scale))),
+            CaptureTargetKind::Window => {
+                window_geometry(id).map(|(points, scale)| (points, scale.unwrap_or(self.scale)))
+            }
         };
         let Some((points, scale)) = now else {
             return;
@@ -1039,12 +1039,24 @@ mod tests {
             ..Default::default()
         };
         let show = Some((1920, 1080));
-        assert_eq!(output_size(&target(3840, 2160), 1.0, &half(show)), (1920, 1080));
+        assert_eq!(
+            output_size(&target(3840, 2160), 1.0, &half(show)),
+            (1920, 1080)
+        );
         // No more than the show takes, a bigger screen's half.
-        assert_eq!(output_size(&target(5120, 2880), 1.0, &half(show)), (1920, 1080));
+        assert_eq!(
+            output_size(&target(5120, 2880), 1.0, &half(show)),
+            (1920, 1080)
+        );
         // No more than the screen has: a 1080p screen's half.
-        assert_eq!(output_size(&target(1920, 1080), 1.0, &half(show)), (960, 540));
-        assert_eq!(output_size(&target(3840, 2160), 1.0, &half(None)), (1920, 1080));
+        assert_eq!(
+            output_size(&target(1920, 1080), 1.0, &half(show)),
+            (960, 540)
+        );
+        assert_eq!(
+            output_size(&target(3840, 2160), 1.0, &half(None)),
+            (1920, 1080)
+        );
     }
 
     /// A bound moved past what the target has changes nothing of the
@@ -1058,13 +1070,22 @@ mod tests {
         let native = (3840, 2160);
         assert!(same_stream(native, &at(3840, 2160), &at(4800, 2700)));
         assert!(same_stream(native, &at(4800, 2700), &at(7680, 4320)));
-        assert!(!same_stream(native, &at(1920, 1080), &at(2400, 1350)), "bigger");
-        assert!(!same_stream(native, &at(4800, 2700), &at(1920, 1080)), "smaller");
+        assert!(
+            !same_stream(native, &at(1920, 1080), &at(2400, 1350)),
+            "bigger"
+        );
+        assert!(
+            !same_stream(native, &at(4800, 2700), &at(1920, 1080)),
+            "smaller"
+        );
         let cursor = CaptureConfig {
             show_cursor: true,
             ..at(4800, 2700)
         };
-        assert!(!same_stream(native, &at(3840, 2160), &cursor), "its cursor shown");
+        assert!(
+            !same_stream(native, &at(3840, 2160), &cursor),
+            "its cursor shown"
+        );
         let cropped = CaptureConfig {
             crop: CropRect {
                 x: 0.0,
@@ -1094,13 +1115,31 @@ mod tests {
             ..Default::default()
         };
         let four_k = target(3840, 2160);
-        assert_eq!(output_size(&four_k, 1.0, &drawn(1920, 1080, 1.0, 0.0)), (1920, 1080));
-        assert_eq!(output_size(&four_k, 1.0, &drawn(1920, 1080, 1.5, 0.0)), (2880, 1620));
-        assert_eq!(output_size(&four_k, 1.0, &drawn(1920, 1080, 2.0, 0.0)), (3840, 2160));
-        assert_eq!(output_size(&four_k, 1.0, &drawn(1920, 1080, 8.0, 0.0)), (3840, 2160));
+        assert_eq!(
+            output_size(&four_k, 1.0, &drawn(1920, 1080, 1.0, 0.0)),
+            (1920, 1080)
+        );
+        assert_eq!(
+            output_size(&four_k, 1.0, &drawn(1920, 1080, 1.5, 0.0)),
+            (2880, 1620)
+        );
+        assert_eq!(
+            output_size(&four_k, 1.0, &drawn(1920, 1080, 2.0, 0.0)),
+            (3840, 2160)
+        );
+        assert_eq!(
+            output_size(&four_k, 1.0, &drawn(1920, 1080, 8.0, 0.0)),
+            (3840, 2160)
+        );
         // Filling an upright frame: 1920 high, not the 608 that fit.
-        assert_eq!(output_size(&four_k, 1.0, &drawn(1080, 1920, 1.0, 0.0)), (1080, 608));
-        assert_eq!(output_size(&four_k, 1.0, &drawn(1080, 1920, 1.0, 1.0)), (3413, 1920));
+        assert_eq!(
+            output_size(&four_k, 1.0, &drawn(1080, 1920, 1.0, 0.0)),
+            (1080, 608)
+        );
+        assert_eq!(
+            output_size(&four_k, 1.0, &drawn(1080, 1920, 1.0, 1.0)),
+            (3413, 1920)
+        );
         // Stretched to it, twice as wide and half as high: the pixels its
         // width shows, not all the screen has.
         let stretched = CaptureConfig {
@@ -1113,27 +1152,50 @@ mod tests {
         };
         assert_eq!(output_size(&four_k, 1.0, &stretched), (2160, 1215));
         // As far as a Transform scales, in a frame however small.
-        assert_eq!(output_size(&four_k, 1.0, &drawn(128, 72, 25.0, 0.0)), (3200, 1800));
+        assert_eq!(
+            output_size(&four_k, 1.0, &drawn(128, 72, 25.0, 0.0)),
+            (3200, 1800)
+        );
 
         let native = (3840, 2160);
         assert!(
-            !same_stream(native, &drawn(1920, 1080, 1.0, 0.0), &drawn(1920, 1080, 2.0, 0.0)),
+            !same_stream(
+                native,
+                &drawn(1920, 1080, 1.0, 0.0),
+                &drawn(1920, 1080, 2.0, 0.0)
+            ),
             "zoomed into: bigger"
         );
         assert!(
-            !same_stream(native, &drawn(1920, 1080, 2.0, 0.0), &drawn(1920, 1080, 1.0, 0.0)),
+            !same_stream(
+                native,
+                &drawn(1920, 1080, 2.0, 0.0),
+                &drawn(1920, 1080, 1.0, 0.0)
+            ),
             "and smaller again"
         );
         assert!(
-            same_stream(native, &drawn(1920, 1080, 2.0, 0.0), &drawn(1920, 1080, 5.0, 0.0)),
+            same_stream(
+                native,
+                &drawn(1920, 1080, 2.0, 0.0),
+                &drawn(1920, 1080, 5.0, 0.0)
+            ),
             "past what the screen has"
         );
         assert!(
-            same_stream(native, &drawn(1920, 1080, 1.0, 0.0), &drawn(1920, 1080, 1.0, 1.0)),
+            same_stream(
+                native,
+                &drawn(1920, 1080, 1.0, 0.0),
+                &drawn(1920, 1080, 1.0, 1.0)
+            ),
             "a frame of its shape, filled as it is fitted"
         );
         assert!(
-            same_stream((1920, 1080), &drawn(1920, 1080, 1.0, 0.0), &drawn(1920, 1080, 3.0, 3.0)),
+            same_stream(
+                (1920, 1080),
+                &drawn(1920, 1080, 1.0, 0.0),
+                &drawn(1920, 1080, 3.0, 3.0)
+            ),
             "a screen with no more pixels"
         );
         let cursor = CaptureConfig {
@@ -1204,7 +1266,13 @@ mod tests {
             scale_to: Some((3840, 2160)),
             ..Default::default()
         };
-        for (w, h) in [(1500, 828), (1499, 828), (1500, 827), (1499, 827), (1301, 729)] {
+        for (w, h) in [
+            (1500, 828),
+            (1499, 828),
+            (1500, 827),
+            (1499, 827),
+            (1301, 729),
+        ] {
             assert_eq!(output_size(&target(w, h), 1.0, &room), (w, h));
             assert_eq!(
                 output_size(&target(w, h), 1.0, &CaptureConfig::default()),

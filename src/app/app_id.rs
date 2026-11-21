@@ -15,7 +15,10 @@ pub const OUTPUT: &str = "nida-output";
 /// A panel in a window of its own.
 pub const PANEL: &str = "nida-panel";
 /// The interactive HTML window.
-#[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+#[cfg(any(
+    feature = "html",
+    all(target_os = "windows", feature = "windows-browser")
+))]
 pub const INTERACTIVE: &str = "nida-interactive";
 
 /// Tag `attrs` with `app_id` (Wayland) and `WM_CLASS` (X11). A no-op elsewhere.

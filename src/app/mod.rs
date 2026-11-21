@@ -997,8 +997,7 @@ impl VardaApp {
             } else {
                 // Captures drawn as coded only where the GPU reads a
                 // texture two ways (see `ScreenCaptureManager::on_gpu`).
-                ScreenCaptureManager::new()
-                    .on_gpu(gpu.adapter.get_downlevel_capabilities().flags)
+                ScreenCaptureManager::new().on_gpu(gpu.adapter.get_downlevel_capabilities().flags)
             },
             presentations: state::presentations::Presentations::new(config.powerpoint_disabled),
             web_talks: state::slides::WebTalks::new(config.headless),
@@ -1913,7 +1912,8 @@ impl VardaApp {
             }
         }
         for id in captures {
-            self.screen_capture_manager.cap_to(id, Some((width, height)));
+            self.screen_capture_manager
+                .cap_to(id, Some((width, height)));
         }
         // Clear sub-mix cache since textures were recreated
         self.mixer.clear_sub_mix_cache();
@@ -2506,10 +2506,7 @@ mod tests {
 
     /// The input a show saved as capturing `target`, as the show opened
     /// gives it.
-    fn restored_capture_deck(
-        app: &mut VardaApp,
-        target: &serde_json::Value,
-    ) -> crate::deck::Deck {
+    fn restored_capture_deck(app: &mut VardaApp, target: &serde_json::Value) -> crate::deck::Deck {
         restored_input(
             app,
             "Screen",
@@ -2658,9 +2655,7 @@ mod tests {
         app.mixer.channels_mut()[0].add_deck(deck);
         let captured = |app: &VardaApp| {
             let id = deck_of(app, &uuid).screen_capture_id().expect("a capture");
-            app.screen_capture_manager
-                .label(id)
-                .map(str::to_string)
+            app.screen_capture_manager.label(id).map(str::to_string)
         };
         let before = capture_snapshot(&app, &uuid);
         assert!(before.kept_by_name, "the show has it by its number");
@@ -2673,14 +2668,19 @@ mod tests {
             name: "Display 2".into(),
             uuid: Some("4k".into()),
         };
-        app.set_screen_capture_target(&uuid, &the_4k).expect("picked");
+        app.set_screen_capture_target(&uuid, &the_4k)
+            .expect("picked");
         assert_eq!(captured(&app).as_deref(), Some("Display 2"));
         assert_eq!(
             saved_target(deck_of(&app, &uuid)),
             serde_json::json!({ "kind": "display", "name": "Display 2", "uuid": "4k" })
         );
         assert_eq!(deck_of(&app, &uuid).source_name(), "🖥 Display 2");
-        assert_eq!(deck_of(&app, &uuid).source_size(), Some([3840, 2160]), "the 4K's picture");
+        assert_eq!(
+            deck_of(&app, &uuid).source_size(),
+            Some([3840, 2160]),
+            "the 4K's picture"
+        );
         let after = capture_snapshot(&app, &uuid);
         assert!(!after.kept_by_name);
         assert_eq!(after.target_uuid.as_deref(), Some("4k"));
@@ -2693,7 +2693,8 @@ mod tests {
             name: "Display 1".into(),
             uuid: None,
         };
-        app.set_screen_capture_target(&uuid, &by_name).expect("picked");
+        app.set_screen_capture_target(&uuid, &by_name)
+            .expect("picked");
         assert_eq!(captured(&app).as_deref(), Some("Display 1"));
         assert_eq!(
             saved_target(deck_of(&app, &uuid)),
@@ -2753,7 +2754,10 @@ mod tests {
             "{said}"
         );
         let level = app.session.notifications.history().last().map(|n| n.level);
-        assert_eq!(level, Some(crate::notifications::NotificationLevel::Warning));
+        assert_eq!(
+            level,
+            Some(crate::notifications::NotificationLevel::Warning)
+        );
         for _ in 0..3 {
             app.warn_captures_by_name();
         }
@@ -2764,7 +2768,8 @@ mod tests {
             name: "Display 2".into(),
             uuid: Some("4k".into()),
         };
-        app.set_screen_capture_target(&first, &the_4k).expect("picked");
+        app.set_screen_capture_target(&first, &the_4k)
+            .expect("picked");
         app.warn_captures_by_name();
         assert_eq!(said_by_number(&app).0, 1, "one picked");
 
@@ -2830,7 +2835,11 @@ mod tests {
         };
         let ch0 = channel_uuid(&app, 0);
         let uuid = app
-            .add_screen_capture_deck(&ch0, &display("Display 1", "capture"), CaptureConfig::default())
+            .add_screen_capture_deck(
+                &ch0,
+                &display("Display 1", "capture"),
+                CaptureConfig::default(),
+            )
             .expect("added");
         let (ch, dk) = app.mixer.find_deck_by_uuid(&uuid).expect("the input");
         {
@@ -2862,10 +2871,7 @@ mod tests {
         assert_eq!(app.screen_capture_manager.holders(first), 1, "let go");
         assert_eq!(app.screen_capture_manager.holders(second), 2);
         let state = deck.screen_capture.as_ref().expect("a capture");
-        let runs = app
-            .screen_capture_manager
-            .config(second)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(second).expect("running");
         assert_eq!(
             state.config,
             CaptureConfig {
@@ -2889,10 +2895,7 @@ mod tests {
         // And nothing goes down: the crop it had on the first is not the
         // second's.
         draw_a_frame(&mut app);
-        let runs = app
-            .screen_capture_manager
-            .config(second)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(second).expect("running");
         assert!(runs.crop.is_full_frame(), "as it ran: {:?}", runs.crop);
     }
 
@@ -2918,7 +2921,11 @@ mod tests {
         };
         let ch0 = channel_uuid(&app, 0);
         let first = app
-            .add_screen_capture_deck(&ch0, &display("Display 1", "capture"), CaptureConfig::default())
+            .add_screen_capture_deck(
+                &ch0,
+                &display("Display 1", "capture"),
+                CaptureConfig::default(),
+            )
             .expect("added");
         let joins = app
             .add_screen_capture_deck(&ch0, &display("Display 2", "4k"), CaptureConfig::default())
@@ -2934,10 +2941,7 @@ mod tests {
             .expect("picked");
         app.update_frame_timing();
         app.render_mixer_frame();
-        let runs = app
-            .screen_capture_manager
-            .config(capture)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(capture).expect("running");
         assert!((runs.crop.w - 0.5).abs() < 1e-6, "{:?}", runs.crop);
 
         let joined = capture_state_at(&mut app, (ch, joins_at));
@@ -2950,10 +2954,7 @@ mod tests {
         set_capture(&mut app, (ch, joins_at), "cursor", 1.0);
         app.update_frame_timing();
         app.render_mixer_frame();
-        let runs = app
-            .screen_capture_manager
-            .config(capture)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(capture).expect("running");
         assert!((runs.crop.w - 0.5).abs() < 1e-6, "{:?}", runs.crop);
         assert!(runs.show_cursor, "what it changed is taken");
         let first = capture_state_at(&mut app, (ch, dk));
@@ -3012,10 +3013,7 @@ mod tests {
         set_capture(&mut app, second, "cursor", 1.0);
         app.update_frame_timing();
         app.render_mixer_frame();
-        let runs = app
-            .screen_capture_manager
-            .config(capture)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(capture).expect("running");
         assert!(
             (runs.crop.w - 0.5).abs() < 1e-6,
             "the first's crop: {:?}",
@@ -3212,7 +3210,8 @@ mod tests {
             name: "Display 2".into(),
             uuid: Some("4k".into()),
         };
-        app.set_screen_capture_target(&uuid, &the_4k).expect("picked");
+        app.set_screen_capture_target(&uuid, &the_4k)
+            .expect("picked");
         let id = capture_of(&app, &uuid);
         assert_eq!(app.screen_capture_manager.holders(id), 1, "opened for it");
         let runs = app.screen_capture_manager.config(id).expect("running");
@@ -3265,12 +3264,13 @@ mod tests {
         set_capture(&mut app, second, "cursor", 1.0);
         app.update_frame_timing();
         app.render_mixer_frame();
-        let runs = app
-            .screen_capture_manager
-            .config(capture)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(capture).expect("running");
         assert!((runs.crop.w - 0.5).abs() < 1e-6, "{:?}", runs.crop);
-        assert!((runs.rate - DEFAULT_CAPTURE_RATE).abs() < 1e-6, "{}", runs.rate);
+        assert!(
+            (runs.rate - DEFAULT_CAPTURE_RATE).abs() < 1e-6,
+            "{}",
+            runs.rate
+        );
         assert!(runs.show_cursor);
     }
 
@@ -3287,7 +3287,10 @@ mod tests {
         };
         with_screens(&mut app, &[("capture", 1920)]);
         let at = screen_input(&mut app, CaptureConfig::default());
-        let uuid = app.mixer.channels()[at.0].decks[at.1].deck.uuid().to_string();
+        let uuid = app.mixer.channels()[at.0].decks[at.1]
+            .deck
+            .uuid()
+            .to_string();
         let capture = capture_state_at(&mut app, at).capture_id;
         app.update_frame_timing();
         app.render_mixer_frame();
@@ -3302,10 +3305,7 @@ mod tests {
         set_capture(&mut app, at, "crop_w", 0.5);
         app.update_frame_timing();
         app.render_mixer_frame();
-        let runs = app
-            .screen_capture_manager
-            .config(capture)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(capture).expect("running");
         assert!((runs.crop.w - 0.5).abs() < 1e-6, "{:?}", runs.crop);
 
         app.replace_scene(&saved).expect("opened");
@@ -3315,10 +3315,7 @@ mod tests {
             capture,
             "the capture there was of that screen"
         );
-        let runs = app
-            .screen_capture_manager
-            .config(capture)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(capture).expect("running");
         assert!(runs.crop.is_full_frame(), "as saved: {:?}", runs.crop);
         app.update_frame_timing();
         app.render_mixer_frame();
@@ -3545,7 +3542,11 @@ mod tests {
             app.screen_capture_manager.label(shown),
             Some("Keynote — Opening")
         );
-        assert_eq!(app.screen_capture_manager.holders(shown), 1, "opened for it");
+        assert_eq!(
+            app.screen_capture_manager.holders(shown),
+            1,
+            "opened for it"
+        );
         assert!(
             !app.screen_capture_manager.is_active(screen),
             "closed: no input shows it"
@@ -3569,7 +3570,11 @@ mod tests {
             .expect("picked");
         let again = capture_of(&app, &uuid);
         assert_eq!(app.screen_capture_manager.label(again), Some("Display 1"));
-        assert_eq!(app.screen_capture_manager.holders(again), 1, "opened for it");
+        assert_eq!(
+            app.screen_capture_manager.holders(again),
+            1,
+            "opened for it"
+        );
         assert!(!app.screen_capture_manager.is_active(shown), "closed");
         assert_eq!(
             app.screen_capture_manager.config(again),
@@ -3785,7 +3790,10 @@ mod tests {
                 .iter()
                 .map(|n| n.message.as_str())
                 .collect();
-            assert!(shown.iter().any(|m| m.starts_with(said)), "{said} {shown:?}");
+            assert!(
+                shown.iter().any(|m| m.starts_with(said)),
+                "{said} {shown:?}"
+            );
             assert_eq!(deck_of(&app, &uuid).screen_capture_id(), held, "as it was");
         }
     }
@@ -3813,7 +3821,8 @@ mod tests {
             name: "Display 2".into(),
             uuid: Some("4k".into()),
         };
-        app.set_screen_capture_target(&uuid, &the_4k).expect("picked");
+        app.set_screen_capture_target(&uuid, &the_4k)
+            .expect("picked");
         let (ch, dk) = app.mixer.find_deck_by_uuid(&uuid).expect("the input");
         let deck = &app.mixer.channels()[ch].decks[dk].deck;
         let id = deck.screen_capture_id().expect("a capture now");
@@ -3903,7 +3912,11 @@ mod tests {
             "nothing to capture"
         );
         assert_eq!(deck.source_name(), "🖥 Keynote — Opening");
-        assert_eq!(saved_name(&app, &uuid), "🖥 Keynote — Opening", "saved so again");
+        assert_eq!(
+            saved_name(&app, &uuid),
+            "🖥 Keynote — Opening",
+            "saved so again"
+        );
         assert_eq!(
             saved_target(deck),
             serde_json::json!({ "kind": "window", "app": "com.apple.Keynote", "title": "Opening" }),
@@ -3965,9 +3978,17 @@ mod tests {
             }),
         );
         let id = deck.screen_capture_id().expect("a capture");
-        assert_eq!(app.screen_capture_manager.label(id), Some("Display 2"), "the 4K");
+        assert_eq!(
+            app.screen_capture_manager.label(id),
+            Some("Display 2"),
+            "the 4K"
+        );
         assert_eq!(deck.source_name(), "🖥 Display 2");
-        assert_eq!(listed_as(&deck), Some("Display 2"), "what it is named after now");
+        assert_eq!(
+            listed_as(&deck),
+            Some("Display 2"),
+            "what it is named after now"
+        );
     }
 
     /// The name of the input a show saved under `name` with `source` — what
@@ -3990,7 +4011,8 @@ mod tests {
             name: "Display 2".into(),
             uuid: Some("4k".into()),
         };
-        app.set_screen_capture_target(&uuid, &the_4k).expect("picked");
+        app.set_screen_capture_target(&uuid, &the_4k)
+            .expect("picked");
         let deck = deck_of(&app, &uuid);
         assert_eq!(
             saved_target(deck),
@@ -4059,9 +4081,16 @@ mod tests {
             &keynotes_window_saved(),
         );
         let id = deck.screen_capture_id().expect("a capture");
-        assert_eq!(app.screen_capture_manager.label(id), Some("Keynote — Opening"));
+        assert_eq!(
+            app.screen_capture_manager.label(id),
+            Some("Keynote — Opening")
+        );
         assert_eq!(deck.source_name(), "🖥 Keynote — Opening");
-        assert_eq!(listed_as(&deck), Some("Keynote — Opening"), "what it is named after now");
+        assert_eq!(
+            listed_as(&deck),
+            Some("Keynote — Opening"),
+            "what it is named after now"
+        );
     }
 
     /// Opened with the app closed, such a show's input keeps that name — it
@@ -4221,7 +4250,8 @@ mod tests {
             name: "Display 2".into(),
             uuid: Some("4k".into()),
         };
-        app.set_screen_capture_target(&uuid, &the_4k).expect("picked");
+        app.set_screen_capture_target(&uuid, &the_4k)
+            .expect("picked");
         let deck = deck_of(&app, &uuid);
         assert_eq!(
             saved_target(deck),
@@ -4265,11 +4295,7 @@ mod tests {
     /// The PowerPoint input a show saved under `name`, its show's window
     /// last titled `title`, as the show opened gives it: capturing nothing,
     /// its show not yet playing.
-    fn restored_powerpoint_input(
-        app: &mut VardaApp,
-        name: &str,
-        title: &str,
-    ) -> crate::deck::Deck {
+    fn restored_powerpoint_input(app: &mut VardaApp, name: &str, title: &str) -> crate::deck::Deck {
         let deck = restored_input(
             app,
             name,
@@ -4288,7 +4314,10 @@ mod tests {
             Some(crate::screen_capture::UNBOUND_CAPTURE_ID),
             "its show not yet playing"
         );
-        assert!(deck.screen_capture.as_ref().is_some_and(|s| s.presentation.is_some()));
+        assert!(deck
+            .screen_capture
+            .as_ref()
+            .is_some_and(|s| s.presentation.is_some()));
         deck
     }
 
@@ -4324,11 +4353,18 @@ mod tests {
         with_screens(&mut app, &[("capture", 1920)]);
         for (name, title) in [
             (format!("🖥 {POWERPOINT_ID} — talk"), "talk"),
-            (format!("🖥 {POWERPOINT_ID} — talk"), "PowerPoint Slide Show - [talk]"),
+            (
+                format!("🖥 {POWERPOINT_ID} — talk"),
+                "PowerPoint Slide Show - [talk]",
+            ),
             (format!("🖥 {POWERPOINT_ID}"), ""),
         ] {
             let deck = restored_powerpoint_input(&mut app, &name, title);
-            assert_eq!(deck.source_name(), "📽 talk", "saved as {name}, its window {title:?}");
+            assert_eq!(
+                deck.source_name(),
+                "📽 talk",
+                "saved as {name}, its window {title:?}"
+            );
         }
     }
 
@@ -4369,9 +4405,7 @@ mod tests {
                 },
             })
         };
-        let refused = |result: CommandResult, as_code: ErrorCode| {
-            matches!(result, CommandResult::Err { code, .. } if code == as_code)
-        };
+        let refused = |result: CommandResult, as_code: ErrorCode| matches!(result, CommandResult::Err { code, .. } if code == as_code);
         assert!(refused(
             pick(&mut app, &uuid, "Display 7"),
             ErrorCode::InvalidInput
@@ -4512,7 +4546,12 @@ mod tests {
             app.mixer.channel_mut(0).expect("a channel").add_deck(deck);
         }
         app.set_render_resolution(3840, 2160);
-        let config = |id| app.screen_capture_manager.config(id).expect("live").scale_to;
+        let config = |id| {
+            app.screen_capture_manager
+                .config(id)
+                .expect("live")
+                .scale_to
+        };
         assert_eq!(config(show.0), Some((1920, 1146)));
         assert_eq!(config(own.0), Some((3840, 2160)));
 
@@ -4658,7 +4697,11 @@ mod tests {
                 .expect("its Transform");
             transform.params.set("scale", Float(times));
         };
-        assert_eq!(drawn(&app), Drawn::default(), "fitted, until a frame is drawn");
+        assert_eq!(
+            drawn(&app),
+            Drawn::default(),
+            "fitted, until a frame is drawn"
+        );
 
         // A frame drawn: both fill the frame, as inputs added do.
         draw_a_frame(&mut app);
@@ -4677,10 +4720,7 @@ mod tests {
         set_capture(&mut app, first, "cursor", 1.0);
         app.send_capture_settings();
         assert_eq!(drawn(&app), sized(3.0, 1.0), "as it was");
-        let runs = app
-            .screen_capture_manager
-            .config(capture)
-            .expect("running");
+        let runs = app.screen_capture_manager.config(capture).expect("running");
         assert!(runs.show_cursor, "the setting taken");
         for input in [first, second] {
             let state = capture_state_at(&mut app, input);
@@ -4860,7 +4900,9 @@ mod tests {
         let capture = capture_state_at(&mut app, input).capture_id;
         draw_a_frame(&mut app);
         assert!(
-            deck_at(&mut app, input).external_source_coded_view.is_some(),
+            deck_at(&mut app, input)
+                .external_source_coded_view
+                .is_some(),
             "a screen's: as coded"
         );
 

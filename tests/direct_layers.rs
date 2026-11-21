@@ -47,9 +47,13 @@ fn f16(bits: u16) -> f32 {
 }
 
 /// Every pixel of an `Rgba16Float` texture, row by row.
-fn frame_pixels(gpu: &varda::renderer::context::GpuContext, texture: &wgpu::Texture) -> Vec<[f32; 4]> {
+fn frame_pixels(
+    gpu: &varda::renderer::context::GpuContext,
+    texture: &wgpu::Texture,
+) -> Vec<[f32; 4]> {
     let (w, h) = (texture.width(), texture.height());
-    let row = (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let row =
+        (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: u64::from(row * h),
@@ -250,7 +254,9 @@ fn wall(app: &mut VardaApp, channels: &[String], dir: &std::path::Path) -> Vec<S
             color: [0.1, 0.2, 0.8, 1.0],
         },
     ));
-    let layers: Vec<String> = (0..4).map(|_| tap(app, &channels[1], &channels[0])).collect();
+    let layers: Vec<String> = (0..4)
+        .map(|_| tap(app, &channels[1], &channels[0]))
+        .collect();
     ok(&send_cmd(
         app,
         EngineCommand::SetDeckOpacity {
@@ -265,7 +271,10 @@ fn wall(app: &mut VardaApp, channels: &[String], dir: &std::path::Path) -> Vec<S
             transparent: true,
         },
     ));
-    let (crop, transform) = (effect(app, &layers[1], "crop"), effect(app, &layers[1], "transform"));
+    let (crop, transform) = (
+        effect(app, &layers[1], "crop"),
+        effect(app, &layers[1], "transform"),
+    );
     for (effect, name, value) in [
         (&crop, "crop_left", Float(0.1)),
         (&crop, "crop_right", Float(0.9)),
@@ -285,7 +294,10 @@ fn wall(app: &mut VardaApp, channels: &[String], dir: &std::path::Path) -> Vec<S
     for (name, value) in [("scale", 0.5), ("pos_x", -0.2), ("pos_y", -0.15)] {
         set(app, &transform, name, Float(value));
     }
-    for (layer, mode, opacity) in [(&layers[2], BlendMode::Add, 0.6), (&layers[3], BlendMode::Screen, 0.9)] {
+    for (layer, mode, opacity) in [
+        (&layers[2], BlendMode::Add, 0.6),
+        (&layers[3], BlendMode::Screen, 0.9),
+    ] {
         ok(&send_cmd(
             app,
             EngineCommand::SetDeckBlendMode {
@@ -323,7 +335,11 @@ fn wall(app: &mut VardaApp, channels: &[String], dir: &std::path::Path) -> Vec<S
 fn furthest(a: &[[f32; 4]], b: &[[f32; 4]]) -> f32 {
     a.iter()
         .zip(b)
-        .flat_map(|(p, q)| p.iter().zip(q).map(|(x, y)| (x - y).abs() / y.abs().max(1.0)))
+        .flat_map(|(p, q)| {
+            p.iter()
+                .zip(q)
+                .map(|(x, y)| (x - y).abs() / y.abs().max(1.0))
+        })
         .fold(0.0, f32::max)
 }
 
@@ -343,7 +359,11 @@ fn layers_drawn_from_their_source_look_as_drawn_into_frames_of_their_own() {
     let (from_source, drawn_onto) = second(&mut app);
     assert_eq!(drawn_onto, 4, "all four drawn from their source");
     for slot in app.mixer_ref().channels()[1].decks.iter().skip(1) {
-        assert!(slot.deck.fps() > 0.0, "its rate still shows: {}", slot.deck.fps());
+        assert!(
+            slot.deck.fps() > 0.0,
+            "its rate still shows: {}",
+            slot.deck.fps()
+        );
     }
     direct(&mut app, false);
     let (own_frames, drawn_onto) = second(&mut app);
@@ -359,14 +379,25 @@ fn layers_drawn_from_their_source_look_as_drawn_into_frames_of_their_own() {
     // Input 1 standing still, each drew its frame once and keeps it (see
     // `Deck::still_frame`): the second frame cost nothing. Drawn every
     // frame, they cost.
-    assert!(costs(&app).iter().all(|&us| us == 0.0), "kept: {:?}", costs(&app));
+    assert!(
+        costs(&app).iter().all(|&us| us == 0.0),
+        "kept: {:?}",
+        costs(&app)
+    );
     keep_still(&mut app, false);
     second(&mut app);
-    assert!(costs(&app).iter().all(|&us| us > 0.0), "their frames cost: {:?}", costs(&app));
+    assert!(
+        costs(&app).iter().all(|&us| us > 0.0),
+        "their frames cost: {:?}",
+        costs(&app)
+    );
     keep_still(&mut app, true);
     let lightest = own_frames.iter().map(|p| p[1]).fold(0.0, f32::max);
     let darkest = own_frames.iter().map(|p| p[1]).fold(f32::MAX, f32::min);
-    assert!(lightest - darkest > 0.3, "a picture, not a wash: {darkest}..{lightest}");
+    assert!(
+        lightest - darkest > 0.3,
+        "a picture, not a wash: {darkest}..{lightest}"
+    );
     let off = furthest(&from_source, &own_frames);
     assert!(off < 2e-3, "the same picture: {off} apart at most");
     // Drawn from their source again, what their own frames cost is not
@@ -442,7 +473,11 @@ fn a_layer_back_in_its_own_frame_draws_it_at_once() {
         },
     ));
     app.render_mixer_frame();
-    assert_eq!(app.mixer_ref().channels()[1].drawn_onto, 0, "held at its own rate");
+    assert_eq!(
+        app.mixer_ref().channels()[1].drawn_onto,
+        0,
+        "held at its own rate"
+    );
     let channel = &app.mixer_ref().channels()[1];
     let green = frame_pixels(app.gpu_context(), &channel.composite_texture);
     assert!(
@@ -470,7 +505,10 @@ fn a_layer_held_at_a_rate_of_its_own_draws_its_frames() {
         },
     ));
     let (_, drawn_onto) = second(&mut app);
-    assert_eq!(drawn_onto, 3, "the one held at 15 a second draws its frames");
+    assert_eq!(
+        drawn_onto, 3,
+        "the one held at 15 a second draws its frames"
+    );
 }
 
 /// A layer drawn from its source, then muted — no longer shown, its own
@@ -513,5 +551,9 @@ fn a_layer_muted_after_being_drawn_from_its_source_draws_its_frame_once() {
         .find(|slot| slot.deck.uuid() == layer)
         .unwrap();
     let own = frame_pixels(app.gpu_context(), &slot.deck.texture);
-    assert!(own[0][0] > 0.9 && own[0][3] > 0.9, "its own frame, red: {:?}", own[0]);
+    assert!(
+        own[0][0] > 0.9 && own[0][3] > 0.9,
+        "its own frame, red: {:?}",
+        own[0]
+    );
 }

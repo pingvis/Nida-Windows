@@ -787,7 +787,8 @@ mod tests {
         use crate::renderer::GpuContext;
         let gpu = GpuContext::new_headless().expect("headless GPU required for tests");
         let mut mixer = Mixer::new(&gpu, 64, 64).unwrap();
-        let mut deck = crate::deck::Deck::new_solid_color(&gpu, [1.0, 0.0, 0.0, 1.0], 64, 64).unwrap();
+        let mut deck =
+            crate::deck::Deck::new_solid_color(&gpu, [1.0, 0.0, 0.0, 1.0], 64, 64).unwrap();
         let shader = crate::isf::ISFShader::from_file(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("shaders/crop.fs"),
         )

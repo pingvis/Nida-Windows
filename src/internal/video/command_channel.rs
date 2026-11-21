@@ -97,7 +97,7 @@ impl NativeWait {
     pub(crate) fn new() -> Option<Self> {
         use std::os::windows::io::{FromRawHandle, OwnedHandle};
         use windows_sys::Win32::System::Threading::{
-            CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, CreateEventW, CreateWaitableTimerExW,
+            CreateEventW, CreateWaitableTimerExW, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
             TIMER_ALL_ACCESS,
         };
         fn own(raw: windows_sys::Win32::Foundation::HANDLE) -> Option<OwnedHandle> {
@@ -138,7 +138,7 @@ impl NativeWait {
     pub(crate) fn wait(&self, left: Duration) -> bool {
         use std::os::windows::io::AsRawHandle;
         use windows_sys::Win32::System::Threading::{
-            INFINITE, SetWaitableTimer, WaitForMultipleObjects,
+            SetWaitableTimer, WaitForMultipleObjects, INFINITE,
         };
         // Negative means relative time, in 100 ns units; round up to avoid early expiry.
         let due = -i64::try_from(left.as_nanos().div_ceil(100)).unwrap_or(i64::MAX);

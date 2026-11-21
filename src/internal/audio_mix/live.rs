@@ -246,7 +246,9 @@ pub struct LiveEvents {
 impl Default for LiveEvents {
     fn default() -> Self {
         Self {
-            slots: (0..LIVE_EVENTS_HELD).map(|_| std::array::from_fn(|_| AtomicU64::new(0))).collect(),
+            slots: (0..LIVE_EVENTS_HELD)
+                .map(|_| std::array::from_fn(|_| AtomicU64::new(0)))
+                .collect(),
             written: AtomicUsize::new(0),
             read: AtomicUsize::new(0),
         }
@@ -290,7 +292,9 @@ impl LiveEvents {
         let mut out = Vec::new();
         #[allow(clippy::cast_possible_truncation)] // Frame counts written as usize.
         while read < written {
-            let f: [u64; 8] = std::array::from_fn(|i| self.slots[read % LIVE_EVENTS_HELD][i].load(Ordering::Relaxed));
+            let f: [u64; 8] = std::array::from_fn(|i| {
+                self.slots[read % LIVE_EVENTS_HELD][i].load(Ordering::Relaxed)
+            });
             out.push(LiveEvent {
                 kind: match f[0] {
                     0 => LiveEventKind::Started,
@@ -790,7 +794,11 @@ impl LiveMix {
             // Silent until the quiet after its first start is over: glided up
             // while waiting to start, a long wait opened at full level, no
             // fade-in (Max5: 2 opens in 16).
-            let g = if self.quiet_left.is_none_or(|left| left > 0) { 0.0 } else { g };
+            let g = if self.quiet_left.is_none_or(|left| left > 0) {
+                0.0
+            } else {
+                g
+            };
             let target = [g * (1.0 - b).min(1.0), g * (1.0 + b).min(1.0)];
             let now = &mut self.now[i];
             for (out, sound) in block.iter_mut().zip(mic.iter()) {
@@ -1502,9 +1510,20 @@ mod tests {
             .find(|e| e.kind == super::LiveEventKind::Heard)
             .expect("the mics fading in, told");
         let q = super::LIVE_OPEN_QUIET_FRAMES as u64;
-        assert!(heard.at >= q && heard.at < q + 64, "at the quiet's end: {}", heard.at);
-        assert!(let_go.at < super::LIVE_OPEN_QUIET_FRAMES as u64, "within the quiet: {}", let_go.at);
-        let quiet = peak(&out[..super::LIVE_OPEN_QUIET_FRAMES + super::super::dsp::LIMITER_LOOKAHEAD], 0);
+        assert!(
+            heard.at >= q && heard.at < q + 64,
+            "at the quiet's end: {}",
+            heard.at
+        );
+        assert!(
+            let_go.at < super::LIVE_OPEN_QUIET_FRAMES as u64,
+            "within the quiet: {}",
+            let_go.at
+        );
+        let quiet = peak(
+            &out[..super::LIVE_OPEN_QUIET_FRAMES + super::super::dsp::LIMITER_LOOKAHEAD],
+            0,
+        );
         assert!(quiet < 1e-6, "silent until then: {quiet}");
         assert!(peak(&out[out.len() - 64..], 0) > 0.4, "then heard");
     }
@@ -1565,7 +1584,11 @@ mod tests {
             r.mix.mix(&mut block);
             late_now(&r, &block)
         };
-        assert_eq!(late(true), late(false), "a full margin, as if it had started at 256");
+        assert_eq!(
+            late(true),
+            late(false),
+            "a full margin, as if it had started at 256"
+        );
     }
 
     /// The capture's chunk going back and forth (64, 128, 64 …, the output at
@@ -1597,7 +1620,10 @@ mod tests {
             out.extend_from_slice(&block);
         }
         let heard = out.iter().position(|f| f[0].abs() > 0.01).expect("heard");
-        assert!(heard < super::LIVE_OPEN_QUIET_FRAMES + 2_400, "heard {heard} frames in");
+        assert!(
+            heard < super::LIVE_OPEN_QUIET_FRAMES + 2_400,
+            "heard {heard} frames in"
+        );
         assert_eq!(r.mix.underruns.load(Ordering::Relaxed), 0);
     }
 
@@ -1629,9 +1655,15 @@ mod tests {
         };
         let with = heard_after(true);
         let quiet = super::LIVE_OPEN_QUIET_FRAMES;
-        assert!((quiet..quiet + 2_400).contains(&with), "after the quiet: {with}");
+        assert!(
+            (quiet..quiet + 2_400).contains(&with),
+            "after the quiet: {with}"
+        );
         let without = heard_after(false);
-        assert!((24_000..30_000).contains(&without), "after half a second, mics or not: {without}");
+        assert!(
+            (24_000..30_000).contains(&without),
+            "after half a second, mics or not: {without}"
+        );
     }
 
     /// A device waiting a while for its mics before it starts (callbacks

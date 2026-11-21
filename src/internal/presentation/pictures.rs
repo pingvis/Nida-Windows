@@ -234,12 +234,17 @@ pub fn beside(deck: &Path) -> Option<PathBuf> {
 /// as it is.
 pub fn put_beside(pdf: &Path, deck: &Path) -> Result<Option<PathBuf>, String> {
     let Some(to) = beside(deck) else {
-        return Err(format!("{} has no folder to put them beside", deck.display()));
+        return Err(format!(
+            "{} has no folder to put them beside",
+            deck.display()
+        ));
     };
     let Some(dir) = to.parent() else {
         return Ok(None);
     };
-    let _one_at_a_time = PUTTING.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _one_at_a_time = PUTTING
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     if !deck.is_file() {
         return Ok(None);
     }
@@ -324,7 +329,11 @@ mod tests {
         let first = pdf_in(&folder, &deck).expect("named");
         assert_eq!(first.parent(), Some(folder.as_path()));
         assert_eq!(first.extension().and_then(|e| e.to_str()), Some("pdf"));
-        assert_eq!(pdf_in(&folder, &deck), Some(first.clone()), "the same file: the same name");
+        assert_eq!(
+            pdf_in(&folder, &deck),
+            Some(first.clone()),
+            "the same file: the same name"
+        );
         std::fs::write(&deck, b"changed, and longer").unwrap();
         assert_ne!(pdf_in(&folder, &deck), Some(first), "changed: another");
         assert_eq!(pdf_in(&folder, &dir.path().join("none.pptx")), None);
@@ -374,7 +383,11 @@ mod tests {
             .flatten()
             .map(|entry| entry.file_name())
             .collect();
-        assert_eq!(left, vec![std::ffi::OsString::from("talk.pptx.pdf")], "nothing else");
+        assert_eq!(
+            left,
+            vec![std::ffi::OsString::from("talk.pptx.pdf")],
+            "nothing else"
+        );
     }
 
     /// A deck that is not there (taken away since, or never a file): no
@@ -389,7 +402,11 @@ mod tests {
         let pdf = own.join("0123456789abcdef.pdf");
         std::fs::write(&pdf, b"made").unwrap();
         assert_eq!(put_beside(&pdf, &decks.join("talk.pptx")), Ok(None));
-        assert_eq!(std::fs::read_dir(&decks).unwrap().count(), 0, "nothing made there");
+        assert_eq!(
+            std::fs::read_dir(&decks).unwrap().count(),
+            0,
+            "nothing made there"
+        );
     }
 
     /// A deck kept beside Nida's own folder: nothing is copied into that
@@ -405,7 +422,11 @@ mod tests {
         std::fs::write(&pdf, b"made").unwrap();
         assert_eq!(put_beside(&pdf, &deck), Ok(None));
         assert!(!own.join("talk.pptx.pdf").exists());
-        assert_eq!(std::fs::read_dir(&own).unwrap().count(), 1, "the one made alone");
+        assert_eq!(
+            std::fs::read_dir(&own).unwrap().count(),
+            1,
+            "the one made alone"
+        );
     }
 
     /// A folder that takes no copy — here a file is where the folder would
@@ -423,7 +444,10 @@ mod tests {
         std::fs::write(&pdf, b"made").unwrap();
         std::fs::write(decks.join("Slide pictures"), b"a file in the way").unwrap();
         let put = put_beside(&pdf, &deck);
-        assert!(matches!(&put, Err(why) if why.contains("no folder for them")), "{put:?}");
+        assert!(
+            matches!(&put, Err(why) if why.contains("no folder for them")),
+            "{put:?}"
+        );
         assert_eq!(std::fs::read(&pdf).unwrap(), b"made");
         assert!(said_first(&decks), "the first time");
         assert!(!said_first(&decks), "not again");
@@ -436,9 +460,23 @@ mod tests {
     #[test]
     fn the_next_slides_page_follows_what_the_pdf_has() {
         // 24 slides, 2 hidden: slide 5 is the 4th shown, 6 comes next.
-        assert_eq!(page_of_next(24, Some(6), Some(24), Some(4), Some(22)), Some(6));
-        assert_eq!(page_of_next(22, Some(6), Some(24), Some(4), Some(22)), Some(5));
-        assert_eq!(page_of_next(20, Some(6), Some(24), Some(4), Some(22)), None, "changed");
-        assert_eq!(page_of_next(24, None, Some(24), Some(24), Some(24)), None, "the last");
+        assert_eq!(
+            page_of_next(24, Some(6), Some(24), Some(4), Some(22)),
+            Some(6)
+        );
+        assert_eq!(
+            page_of_next(22, Some(6), Some(24), Some(4), Some(22)),
+            Some(5)
+        );
+        assert_eq!(
+            page_of_next(20, Some(6), Some(24), Some(4), Some(22)),
+            None,
+            "changed"
+        );
+        assert_eq!(
+            page_of_next(24, None, Some(24), Some(24), Some(24)),
+            None,
+            "the last"
+        );
     }
 }

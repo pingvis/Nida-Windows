@@ -142,7 +142,12 @@ pub(super) fn add_dropped_files(
     };
     let mut files: Vec<_> = deck_files(varda, paths)
         .into_iter()
-        .map(|(_, file)| (targets.record_spot(channel_uuid.to_string(), spot.clone()), file))
+        .map(|(_, file)| {
+            (
+                targets.record_spot(channel_uuid.to_string(), spot.clone()),
+                file,
+            )
+        })
         .collect();
     files.reverse();
     let size = (varda.render_width(), varda.render_height());
@@ -328,8 +333,14 @@ mod tests {
         let first = targets.record("ch-aaa".to_string());
         let second = targets.record("ch-bbb".to_string());
         assert_ne!(first, second, "each load gets a distinct token");
-        assert_eq!(targets.claim(first), Some(("ch-aaa".to_string(), Spot::Before(None))));
-        assert_eq!(targets.claim(second), Some(("ch-bbb".to_string(), Spot::Before(None))));
+        assert_eq!(
+            targets.claim(first),
+            Some(("ch-aaa".to_string(), Spot::Before(None)))
+        );
+        assert_eq!(
+            targets.claim(second),
+            Some(("ch-bbb".to_string(), Spot::Before(None)))
+        );
     }
 
     /// A token is single-use: claiming twice must not resurrect a stale target.
@@ -337,7 +348,10 @@ mod tests {
     fn deck_load_token_cannot_be_claimed_twice() {
         let mut targets = DeckLoadTargets::default();
         let token = targets.record("ch-aaa".to_string());
-        assert_eq!(targets.claim(token), Some(("ch-aaa".to_string(), Spot::Before(None))));
+        assert_eq!(
+            targets.claim(token),
+            Some(("ch-aaa".to_string(), Spot::Before(None)))
+        );
         assert_eq!(targets.claim(token), None, "second claim yields nothing");
     }
 
@@ -354,9 +368,18 @@ mod tests {
         let a = targets.record("ch-aaa".to_string());
         let b = targets.record("ch-bbb".to_string());
         let c = targets.record("ch-ccc".to_string());
-        assert_eq!(targets.claim(b), Some(("ch-bbb".to_string(), Spot::Before(None))));
-        assert_eq!(targets.claim(c), Some(("ch-ccc".to_string(), Spot::Before(None))));
-        assert_eq!(targets.claim(a), Some(("ch-aaa".to_string(), Spot::Before(None))));
+        assert_eq!(
+            targets.claim(b),
+            Some(("ch-bbb".to_string(), Spot::Before(None)))
+        );
+        assert_eq!(
+            targets.claim(c),
+            Some(("ch-ccc".to_string(), Spot::Before(None)))
+        );
+        assert_eq!(
+            targets.claim(a),
+            Some(("ch-aaa".to_string(), Spot::Before(None)))
+        );
     }
 
     /// Loads landing behind a channel's layers go there as the channel is
@@ -390,7 +413,11 @@ mod tests {
             );
             decks.insert(at, name);
         }
-        assert_eq!(decks, ["new0", "new2", "live"], "behind the layer on air, in order");
+        assert_eq!(
+            decks,
+            ["new0", "new2", "live"],
+            "behind the layer on air, in order"
+        );
         assert!(targets.landed.is_empty(), "its batch done");
 
         // An earlier arrival taken away, or moved in front, before the next
@@ -498,7 +525,12 @@ mod tests {
                 .recv_timeout(std::time::Duration::from_secs(30))
                 .expect("every file loads");
             let (target, before_deck) = targets.claim(result.token).expect("recorded");
-            assert_eq!((&target, before_deck), (uuid, Spot::Before(None)), "{}", result.name);
+            assert_eq!(
+                (&target, before_deck),
+                (uuid, Spot::Before(None)),
+                "{}",
+                result.name
+            );
         }
     }
 }

@@ -386,11 +386,26 @@ mod tests {
                 Vec::new(),
             );
         harness.run();
-        assert!(harness.query_by_label("Rename").is_none(), "not in the main window");
-        assert!(harness.ctx.data(|d| d.get_temp::<Renaming>(state_id())).is_some(), "kept");
+        assert!(
+            harness.query_by_label("Rename").is_none(),
+            "not in the main window"
+        );
+        assert!(
+            harness
+                .ctx
+                .data(|d| d.get_temp::<Renaming>(state_id()))
+                .is_some(),
+            "kept"
+        );
         open.set(false);
         harness.run();
-        assert!(harness.ctx.data(|d| d.get_temp::<Renaming>(state_id())).is_none(), "let go");
+        assert!(
+            harness
+                .ctx
+                .data(|d| d.get_temp::<Renaming>(state_id()))
+                .is_none(),
+            "let go"
+        );
     }
 
     #[test]
@@ -442,10 +457,14 @@ mod tests {
         harness.key_press(egui::Key::Enter);
         harness.run();
         let uuid = data.buses[0].bus.uuid.clone();
-        assert!(harness.state().iter().any(|c| matches!(
-            c,
-            EngineCommand::RenameBus { uuid: u, name } if *u == uuid && name == "Stage TV"
-        )), "{:?}", harness.state());
+        assert!(
+            harness.state().iter().any(|c| matches!(
+                c,
+                EngineCommand::RenameBus { uuid: u, name } if *u == uuid && name == "Stage TV"
+            )),
+            "{:?}",
+            harness.state()
+        );
         assert!(renaming(&harness.ctx).is_none(), "closed");
     }
 
@@ -463,8 +482,8 @@ mod tests {
             live: None,
             insert_status: None,
             meter_db: [f32::NEG_INFINITY; 2],
-            peak_db: [-96.0;2],
-            equalizer:crate::audio_mix::EqualizerSnapshot::default(),
+            peak_db: [-96.0; 2],
+            equalizer: crate::audio_mix::EqualizerSnapshot::default(),
         }];
         let data = std::rc::Rc::new(data);
         let mut opened = false;

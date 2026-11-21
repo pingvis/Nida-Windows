@@ -371,7 +371,15 @@ impl Default for TimerSettings {
 
 /// Which colour a timer is in.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize, utoipa::ToSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+    utoipa::ToSchema,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum TimerState {
@@ -616,7 +624,9 @@ pub enum TimerAction {
     Reset,
     /// Put seconds on what it shows (take them off, below zero): a count
     /// down gets more time left, a count up more time run.
-    Adjust { secs: i64 },
+    Adjust {
+        secs: i64,
+    },
 }
 
 #[cfg(test)]
@@ -667,7 +677,10 @@ mod tests {
 
     #[test]
     fn lengths_are_written_as_asked() {
-        assert_eq!(span_text(3 * 3600 + 4 * 60 + 5, TimeFormat::Auto), "3:04:05");
+        assert_eq!(
+            span_text(3 * 3600 + 4 * 60 + 5, TimeFormat::Auto),
+            "3:04:05"
+        );
         assert_eq!(span_text(65, TimeFormat::Auto), "1:05");
         assert_eq!(span_text(65, TimeFormat::Hours), "00:01:05");
         assert_eq!(span_text(65, TimeFormat::Minutes), "01:05");
@@ -724,12 +737,18 @@ mod tests {
     #[test]
     fn a_box_is_placed_inside_the_frame() {
         let frame = (1920.0, 1080.0);
-        assert_eq!(Anchor::TopLeft.place((200.0, 100.0), frame, 40.0), (40.0, 40.0));
+        assert_eq!(
+            Anchor::TopLeft.place((200.0, 100.0), frame, 40.0),
+            (40.0, 40.0)
+        );
         assert_eq!(
             Anchor::BottomRight.place((200.0, 100.0), frame, 40.0),
             (1680.0, 940.0)
         );
-        assert_eq!(Anchor::Center.place((200.0, 100.0), frame, 40.0), (860.0, 490.0));
+        assert_eq!(
+            Anchor::Center.place((200.0, 100.0), frame, 40.0),
+            (860.0, 490.0)
+        );
     }
 
     #[test]

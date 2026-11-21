@@ -45,7 +45,11 @@ pub fn check(path: &Path, aspect: f64) -> Vec<String> {
 }
 
 /// [`check`], the fonts this Mac has asked of `mac_fonts` (only for a deck).
-fn check_with(path: &Path, aspect: f64, mac_fonts: &mut dyn FnMut() -> BTreeSet<String>) -> Vec<String> {
+fn check_with(
+    path: &Path,
+    aspect: f64,
+    mac_fonts: &mut dyn FnMut() -> BTreeSet<String>,
+) -> Vec<String> {
     let Some(kind) = TalkKind::of(&path.to_string_lossy()) else {
         return Vec::new();
     };
@@ -168,7 +172,11 @@ const OFFICE_FONTS: &[&str] = &[
     "comic sans ms",
 ];
 
-fn check_pptx(path: &Path, aspect: f64, mac_fonts: &mut dyn FnMut() -> BTreeSet<String>) -> Vec<String> {
+fn check_pptx(
+    path: &Path,
+    aspect: f64,
+    mac_fonts: &mut dyn FnMut() -> BTreeSet<String>,
+) -> Vec<String> {
     let mut out = Vec::new();
     let Ok(mut file) = std::fs::File::open(path) else {
         return out;
@@ -197,7 +205,10 @@ fn check_pptx(path: &Path, aspect: f64, mac_fonts: &mut dyn FnMut() -> BTreeSet<
                 })
                 .unwrap_or(DEFAULT_SLIDE);
             out.extend(shape_warning(size.0 / size.1, aspect));
-            for font in doc.descendants().filter(|n| n.tag_name().name() == "embeddedFont") {
+            for font in doc
+                .descendants()
+                .filter(|n| n.tag_name().name() == "embeddedFont")
+            {
                 for face in font.children().filter(|n| n.tag_name().name() == "font") {
                     if let Some(name) = face.attribute("typeface") {
                         embedded.insert(name.trim().to_lowercase());
@@ -237,17 +248,23 @@ fn check_pptx(path: &Path, aspect: f64, mac_fonts: &mut dyn FnMut() -> BTreeSet<
             continue;
         };
         if rels {
-            for rel in doc.descendants().filter(|n| n.tag_name().name() == "Relationship") {
+            for rel in doc
+                .descendants()
+                .filter(|n| n.tag_name().name() == "Relationship")
+            {
                 let external = rel.attribute("TargetMode") == Some("External");
                 let kind = rel.attribute("Type").unwrap_or_default();
-                let media = ["/video", "/audio", "/media"].iter().any(|k| kind.ends_with(k));
+                let media = ["/video", "/audio", "/media"]
+                    .iter()
+                    .any(|k| kind.ends_with(k));
                 if external && media {
                     if let Some(target) = rel.attribute("Target") {
                         if let Some(file) = linked_file(target, folder) {
                             if !file.exists() {
-                                let shown = file
-                                    .file_name()
-                                    .map_or_else(|| target.to_string(), |f| f.to_string_lossy().into_owned());
+                                let shown = file.file_name().map_or_else(
+                                    || target.to_string(),
+                                    |f| f.to_string_lossy().into_owned(),
+                                );
                                 missing_media.insert(shown);
                             }
                         }
@@ -519,7 +536,10 @@ fn look_over(asks: &mpsc::Receiver<Ask>, found: &Mutex<Found>) {
     let mut fonts: Option<(Instant, BTreeSet<String>)> = None;
     while let Ok(ask) = asks.recv() {
         let mut fonts_now = || {
-            if fonts.as_ref().is_none_or(|(at, _)| at.elapsed() > FONTS_FRESH) {
+            if fonts
+                .as_ref()
+                .is_none_or(|(at, _)| at.elapsed() > FONTS_FRESH)
+            {
                 fonts = Some((Instant::now(), installed_fonts()));
             }
             fonts.as_ref().map(|(_, f)| f.clone()).unwrap_or_default()
@@ -570,7 +590,10 @@ fn installed_fonts() -> BTreeSet<String> {
     let array: CFRetained<CFArray> = unsafe { CFRetained::from_raw(array) };
     // SAFETY: the array holds CFStrings, as documented.
     let array: CFRetained<CFArray<CFString>> = unsafe { CFRetained::cast_unchecked(array) };
-    array.iter().map(|name| name.to_string().to_lowercase()).collect()
+    array
+        .iter()
+        .map(|name| name.to_string().to_lowercase())
+        .collect()
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -611,7 +634,10 @@ pub fn check_html(html: &str, folder: &Path) -> Vec<String> {
     }
     if !missing.is_empty() {
         let list: Vec<String> = missing.into_iter().take(5).collect();
-        out.push(format!("files it shows are not beside it: {}", list.join(", ")));
+        out.push(format!(
+            "files it shows are not beside it: {}",
+            list.join(", ")
+        ));
     }
     out
 }
@@ -742,17 +768,26 @@ mod tests {
                 "files it shows are not beside it: img/bg.jpg, img/gone.png".to_string(),
             ]
         );
-        assert_eq!((check_html("<html><body><h1>Hi</h1></body></html>", dir.path())).len(), 0);
+        assert_eq!(
+            (check_html("<html><body><h1>Hi</h1></body></html>", dir.path())).len(),
+            0
+        );
     }
 
     #[test]
     fn a_font_is_there_by_its_family_or_office_has_it() {
-        let installed: BTreeSet<String> = ["helvetica neue", "montserrat"].iter().map(|s| (*s).to_string()).collect();
+        let installed: BTreeSet<String> = ["helvetica neue", "montserrat"]
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect();
         assert!(font_is_there("Helvetica Neue", &installed));
         assert!(font_is_there("Montserrat SemiBold", &installed));
         assert!(font_is_there("Calibri", &installed), "Office brings it");
         assert!(!font_is_there("Gotham", &installed));
-        assert!(!font_is_there("Montserratish", &installed), "a whole word only");
+        assert!(
+            !font_is_there("Montserratish", &installed),
+            "a whole word only"
+        );
     }
 
     /// What was found for `path` at `stamp`, once the thread has looked.
@@ -788,11 +823,18 @@ mod tests {
         assert_eq!(settled(&checker, &path, stamp_of(&page)), missing);
         // The picture put beside it: the page is not looked at again unasked.
         std::fs::write(dir.path().join("gone.png"), b"x").unwrap();
-        assert_eq!(checker.warnings(&path, stamp_of(&page), 16.0 / 9.0), missing);
+        assert_eq!(
+            checker.warnings(&path, stamp_of(&page), 16.0 / 9.0),
+            missing
+        );
         checker.check_again(Some(std::slice::from_ref(&path)));
         assert_eq!((settled(&checker, &path, stamp_of(&page))).len(), 0);
         // The page changed: looked over again by itself.
-        std::fs::write(&page, r#"<script src="https://cdn.example.com/deck.js"></script>"#).unwrap();
+        std::fs::write(
+            &page,
+            r#"<script src="https://cdn.example.com/deck.js"></script>"#,
+        )
+        .unwrap();
         assert_eq!(
             settled(&checker, &path, stamp_of(&page)),
             ["needs the internet when shown — it loads from cdn.example.com"]
@@ -813,14 +855,24 @@ mod tests {
             aspect: 16.0 / 9.0,
         };
         checker.check_again(Some(&["/talks/deck.pptx".to_string()]));
-        record(&checker.found, ask(0), vec!["linked videos or sounds not there".into()]);
+        record(
+            &checker.found,
+            ask(0),
+            vec!["linked videos or sounds not there".into()],
+        );
         assert!(!lock(&checker.found).done.contains_key("/talks/deck.pptx"));
         record(&checker.found, ask(1), Vec::new());
-        assert_eq!((lock(&checker.found).done["/talks/deck.pptx"].warnings).len(), 0);
+        assert_eq!(
+            (lock(&checker.found).done["/talks/deck.pptx"].warnings).len(),
+            0
+        );
         // Every file asked again: the same.
         checker.check_again(None);
         record(&checker.found, ask(1), vec!["stale".into()]);
-        assert_eq!((lock(&checker.found).done["/talks/deck.pptx"].warnings).len(), 0);
+        assert_eq!(
+            (lock(&checker.found).done["/talks/deck.pptx"].warnings).len(),
+            0
+        );
     }
 
     /// A part bigger than allowed — as it really is, whatever the zip claims
@@ -842,10 +894,21 @@ mod tests {
         }
         let mut zip = zip::ZipArchive::new(bytes).unwrap();
         let mut budget = 1000;
-        assert_eq!(read_part(&mut zip, "small.xml", 4000, &mut budget).map(|t| t.len()), Some(100));
+        assert_eq!(
+            read_part(&mut zip, "small.xml", 4000, &mut budget).map(|t| t.len()),
+            Some(100)
+        );
         assert_eq!(budget, 900);
-        assert_eq!(read_part(&mut zip, "big.xml", 4000, &mut budget), None, "over the part's cap");
-        assert_eq!(read_part(&mut zip, "big.xml", 10_000, &mut budget), None, "over what is left");
+        assert_eq!(
+            read_part(&mut zip, "big.xml", 4000, &mut budget),
+            None,
+            "over the part's cap"
+        );
+        assert_eq!(
+            read_part(&mut zip, "big.xml", 10_000, &mut budget),
+            None,
+            "over what is left"
+        );
         let mut budget = 50;
         assert_eq!(read_part(&mut zip, "small.xml", 4000, &mut budget), None);
     }
@@ -898,11 +961,31 @@ mod tests {
         let r = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
         let rels = "http://schemas.openxmlformats.org/package/2006/relationships";
         let parts = [
-            ("ppt/presentation.xml", format!(r#"<p:presentation xmlns:p="{p}" xmlns:r="{r}"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst><p:sldSz cx="9144000" cy="6858000"/><p:embeddedFontLst><p:embeddedFont><p:font typeface="Carried Along Zz"/><p:regular r:id="rId9"/></p:embeddedFont></p:embeddedFontLst></p:presentation>"#)),
+            (
+                "ppt/presentation.xml",
+                format!(
+                    r#"<p:presentation xmlns:p="{p}" xmlns:r="{r}"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst><p:sldSz cx="9144000" cy="6858000"/><p:embeddedFontLst><p:embeddedFont><p:font typeface="Carried Along Zz"/><p:regular r:id="rId9"/></p:embeddedFont></p:embeddedFontLst></p:presentation>"#
+                ),
+            ),
             ("ppt/fonts/font1.fntdata", "x".to_string()),
-            ("ppt/_rels/presentation.xml.rels", format!(r#"<Relationships xmlns="{rels}"><Relationship Id="rId1" Type="{r}/slide" Target="slides/slide1.xml"/></Relationships>"#)),
-            ("ppt/slides/slide1.xml", format!(r#"<p:sld xmlns:p="{p}" xmlns:a="{a}"><p:cSld><p:spTree><a:latin typeface="Gotham Rounded Zz"/><a:latin typeface="Carried Along Zz"/><a:latin typeface="+mj-lt"/><a:latin typeface="Calibri"/></p:spTree></p:cSld></p:sld>"#)),
-            ("ppt/slides/_rels/slide1.xml.rels", format!(r#"<Relationships xmlns="{rels}"><Relationship Id="rId1" Type="{r}/video" Target="clip%20one.mp4" TargetMode="External"/></Relationships>"#)),
+            (
+                "ppt/_rels/presentation.xml.rels",
+                format!(
+                    r#"<Relationships xmlns="{rels}"><Relationship Id="rId1" Type="{r}/slide" Target="slides/slide1.xml"/></Relationships>"#
+                ),
+            ),
+            (
+                "ppt/slides/slide1.xml",
+                format!(
+                    r#"<p:sld xmlns:p="{p}" xmlns:a="{a}"><p:cSld><p:spTree><a:latin typeface="Gotham Rounded Zz"/><a:latin typeface="Carried Along Zz"/><a:latin typeface="+mj-lt"/><a:latin typeface="Calibri"/></p:spTree></p:cSld></p:sld>"#
+                ),
+            ),
+            (
+                "ppt/slides/_rels/slide1.xml.rels",
+                format!(
+                    r#"<Relationships xmlns="{rels}"><Relationship Id="rId1" Type="{r}/video" Target="clip%20one.mp4" TargetMode="External"/></Relationships>"#
+                ),
+            ),
         ];
         for (name, text) in parts {
             zip.start_file(name, options).unwrap();
@@ -925,6 +1008,8 @@ mod tests {
         );
         // The video copied beside it: no longer said.
         std::fs::write(dir.path().join("clip one.mp4"), b"x").unwrap();
-        assert!(!check(&path, 16.0 / 9.0).iter().any(|w| w.contains("linked")));
+        assert!(!check(&path, 16.0 / 9.0)
+            .iter()
+            .any(|w| w.contains("linked")));
     }
 }

@@ -475,7 +475,7 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
         dynamics: varda::audio_mix::DynamicsSnapshot::default(),
         config: AudioBusConfig {
             compressor: varda::audio_mix::CompressorConfig::default(),
-            equalizer:varda::audio_mix::EqualizerConfig::default(),
+            equalizer: varda::audio_mix::EqualizerConfig::default(),
             limiter: varda::audio_mix::LimiterConfig::default(),
             uuid: uuid.into(),
             name: name.into(),
@@ -495,8 +495,8 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
         live: None,
         insert_status: None,
         meter_db: [meter, meter - 2.0],
-        peak_db: [meter,meter-2.0],
-        equalizer:varda::audio_mix::EqualizerSnapshot::default(),
+        peak_db: [meter, meter - 2.0],
+        equalizer: varda::audio_mix::EqualizerSnapshot::default(),
     };
     let clip =
         |deck: &str, name: &str, on_air: f32, gain_db: f32, meter: f32| AudioSourceSnapshot {
@@ -519,8 +519,8 @@ fn broadcast_audio_mix(data: &UIData) -> varda::audio_mix::AudioMixSnapshot {
             live: true,
             meter_db: [meter, meter - 1.5],
             signal_db: [meter, meter - 1.5],
-            peak_db: [meter,meter-1.5],
-            equalizer:varda::audio_mix::EqualizerSnapshot::default(),
+            peak_db: [meter, meter - 1.5],
+            equalizer: varda::audio_mix::EqualizerSnapshot::default(),
             refused: None,
             echo: Vec::new(),
             send_settings: std::collections::BTreeMap::default(),
@@ -1086,7 +1086,12 @@ fn snapshot_presentations_panel() {
         warnings: Vec::new(),
         pictures: false,
     };
-    let mut keynote = talk("t1", "Opening — keynote", TalkKind::PowerPoint, TalkState::Live);
+    let mut keynote = talk(
+        "t1",
+        "Opening — keynote",
+        TalkKind::PowerPoint,
+        TalkState::Live,
+    );
     keynote.position = Some(3);
     keynote.shown = Some(22);
     keynote.presentation = Some(PresentationSnapshot {

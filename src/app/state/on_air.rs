@@ -173,7 +173,8 @@ impl VardaApp {
         let powerpoint_strip = self.powerpoint_sound_strip(&powerpoint);
         let slides = self.slides_decks();
         let web_strip = self.web_sound_strip(&slides);
-        let of_powerpoint = |strip: &str, deck: &str| self.shares_powerpoint_sound(strip, deck, &powerpoint);
+        let of_powerpoint =
+            |strip: &str, deck: &str| self.shares_powerpoint_sound(strip, deck, &powerpoint);
         let of_web = |strip: &str, deck: &str| self.shares_web_sound(strip, deck, &slides);
         let levels = auto_levels(
             self.audio_mix.auto_sources(),
@@ -551,8 +552,17 @@ mod powerpoint_sound {
             ],
             |_, deck| if deck == "slidesB" { 1.0 } else { 0.0 },
         );
-        assert!((levels["web"] - 1.0).abs() < f32::EPSILON, "heard with B on air");
-        assert!(levels["web2"].abs() < f32::EPSILON, "a second strip of it is quiet");
-        assert!(levels["ppt"].abs() < f32::EPSILON, "PowerPoint's follows its own inputs");
+        assert!(
+            (levels["web"] - 1.0).abs() < f32::EPSILON,
+            "heard with B on air"
+        );
+        assert!(
+            levels["web2"].abs() < f32::EPSILON,
+            "a second strip of it is quiet"
+        );
+        assert!(
+            levels["ppt"].abs() < f32::EPSILON,
+            "PowerPoint's follows its own inputs"
+        );
     }
 }

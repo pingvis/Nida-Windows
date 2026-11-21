@@ -1207,8 +1207,7 @@ mod tests {
     /// curves, because drawing a new one has to stay reachable.
     #[test]
     fn a_scene_of_only_curves_still_offers_a_new_lane() {
-        let commands =
-            click_in_dropdown(&[envelope_entry("env1")], &[], true, "+ Automation lane");
+        let commands = click_in_dropdown(&[envelope_entry("env1")], &[], true, "+ Automation lane");
         assert!(commands
             .iter()
             .any(|c| matches!(c, EngineCommand::AddAutomationLane { .. })));

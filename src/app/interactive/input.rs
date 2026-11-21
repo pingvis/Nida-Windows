@@ -26,15 +26,21 @@ use crate::html::HtmlInputEvent;
 /// Lines→pixels factor for `MouseScrollDelta::LineDelta` (typical UA line height).
 const LINE_HEIGHT_PX: f64 = if cfg!(all(target_os = "windows", feature = "windows-browser")) {
     120.0 // Native Windows wheel delta expected by CEF.
-} else { 16.0 };
+} else {
+    16.0
+};
 
 /// Map a displayed browser texture back to its authored viewport. Resizing
 /// the interaction window must not resize or navigate the live source.
 pub fn displayed_point(cursor: (f64, f64), window: (u32, u32), view: (u32, u32)) -> (f32, f32) {
-    to_device_point((
-        cursor.0 * f64::from(view.0) / f64::from(window.0.max(1)),
-        cursor.1 * f64::from(view.1) / f64::from(window.1.max(1)),
-    ), 1.0, view)
+    to_device_point(
+        (
+            cursor.0 * f64::from(view.0) / f64::from(window.0.max(1)),
+            cursor.1 * f64::from(view.1) / f64::from(window.1.max(1)),
+        ),
+        1.0,
+        view,
+    )
 }
 
 /// Map window logical cursor coords → `WebView` device-pixel point, clamped to the
@@ -202,9 +208,18 @@ mod tests {
 
     #[test]
     fn resized_window_maps_clicks_to_the_same_source_pixels() {
-        assert_eq!(displayed_point((300.0, 200.0), (600, 400), (1200, 800)), (600.0, 400.0));
-        assert_eq!(displayed_point((600.0, 300.0), (1200, 600), (600, 300)), (300.0, 150.0));
-        assert_eq!(displayed_point((9999.0, -1.0), (600, 400), (1200, 800)), (1199.0, 0.0));
+        assert_eq!(
+            displayed_point((300.0, 200.0), (600, 400), (1200, 800)),
+            (600.0, 400.0)
+        );
+        assert_eq!(
+            displayed_point((600.0, 300.0), (1200, 600), (600, 300)),
+            (300.0, 150.0)
+        );
+        assert_eq!(
+            displayed_point((9999.0, -1.0), (600, 400), (1200, 800)),
+            (1199.0, 0.0)
+        );
     }
 
     #[test]

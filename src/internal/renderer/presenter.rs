@@ -169,12 +169,7 @@ impl CatchUp {
     /// means the screen missed one; most of a refresh, frames queued a frame
     /// deep — except where each is `held` on screen a frame's time, which
     /// keeps them queued by design.
-    fn presented(
-        &mut self,
-        waited: std::time::Duration,
-        refresh: std::time::Duration,
-        held: bool,
-    ) {
+    fn presented(&mut self, waited: std::time::Duration, refresh: std::time::Duration, held: bool) {
         let refreshes = waited.as_secs_f64() / refresh.as_secs_f64().max(1e-6);
         self.missed = refreshes >= MISSED_REFRESH;
         self.queued_rest = self.queued_rest.saturating_sub(1);
@@ -365,7 +360,11 @@ pub(crate) fn run_in_real_time(
 #[cfg(all(test, target_os = "macos"))]
 pub(crate) fn real_time_of<T>(
     of: &std::thread::JoinHandle<T>,
-) -> Option<(std::time::Duration, std::time::Duration, std::time::Duration)> {
+) -> Option<(
+    std::time::Duration,
+    std::time::Duration,
+    std::time::Duration,
+)> {
     use std::os::unix::thread::JoinHandleExt;
     // SAFETY: a thread still joinable: its port, not a new right to give back.
     #[allow(deprecated)]
@@ -405,7 +404,11 @@ mod real_time {
         }
     }
 
-    pub(super) fn set(period: Duration, computation: Duration, constraint: Duration) -> Result<(), i32> {
+    pub(super) fn set(
+        period: Duration,
+        computation: Duration,
+        constraint: Duration,
+    ) -> Result<(), i32> {
         let (numer, denom) = timebase().ok_or(-1)?;
         let ticks = |d: Duration| {
             let nanos = u64::try_from(d.as_nanos()).unwrap_or(u64::MAX);
@@ -504,7 +507,10 @@ mod tests {
         let near = |a: Duration, b: Duration| a.abs_diff(b) < Duration::from_micros(5);
         assert!(near(period, Duration::from_micros(16_667)), "{period:?}");
         assert!(near(constraint, Duration::from_millis(6)), "{constraint:?}");
-        assert!(near(computation, Duration::from_millis(3)), "{computation:?}");
+        assert!(
+            near(computation, Duration::from_millis(3)),
+            "{computation:?}"
+        );
         let other = std::thread::spawn(super::real_time::get).join().unwrap();
         assert_eq!(other, None, "only the thread that asked");
     }
@@ -518,7 +524,9 @@ mod tests {
         let (busy_tx, busy_rx) = mpsc::channel::<()>();
         let (took_tx, took_rx) = mpsc::channel();
         let queue = Queue::start("test-present", 3, move |frame: u32, waiting: usize| {
-            took_tx.send((frame, waiting)).expect("the test is listening");
+            took_tx
+                .send((frame, waiting))
+                .expect("the test is listening");
             if frame == 1 {
                 // Held up, as by a screen not freeing a frame.
                 let _ = busy_rx.recv_timeout(Duration::from_secs(5));
@@ -614,9 +622,15 @@ mod tests {
                 let_go.push(n);
             }
         }
-        assert!(let_go.first().is_some_and(|&n| n < QUEUED_TAKES * 2), "{let_go:?}");
+        assert!(
+            let_go.first().is_some_and(|&n| n < QUEUED_TAKES * 2),
+            "{let_go:?}"
+        );
         let again: Vec<u32> = let_go.windows(2).map(|w| w[1] - w[0]).collect();
-        assert!(!again.is_empty() && again.iter().all(|&gap| gap >= QUEUED_AGAIN), "{let_go:?}");
+        assert!(
+            !again.is_empty() && again.iter().all(|&gap| gap >= QUEUED_AGAIN),
+            "{let_go:?}"
+        );
     }
 
     /// A missed refresh at the end of a deep queue lets one frame go, not
@@ -708,7 +722,10 @@ mod tests {
             let _ = ended_tx.send(());
         });
         let first = Arc::new(AtomicBool::new(false));
-        let waiting = [Arc::new(AtomicBool::new(false)), Arc::new(AtomicBool::new(false))];
+        let waiting = [
+            Arc::new(AtomicBool::new(false)),
+            Arc::new(AtomicBool::new(false)),
+        ];
         queue.hand(Frame(Arc::clone(&first)));
         took_rx.recv_timeout(Duration::from_secs(5)).expect("taken");
         for w in &waiting {

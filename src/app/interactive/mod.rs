@@ -53,7 +53,12 @@ impl super::VardaApp {
             .map(|slot| slot.deck.external_source_kind());
         match kind {
             Some(Some(ExternalSourceKind::Html(html_idx))) => {
-                if !self.external_io.html_manager.snapshot(html_idx).is_some_and(|b| b.interactive) {
+                if !self
+                    .external_io
+                    .html_manager
+                    .snapshot(html_idx)
+                    .is_some_and(|b| b.interactive)
+                {
                     return CommandResult::Err {
                         code: ErrorCode::InvalidInput,
                         message: "This browser backend does not support interactive windows".into(),
@@ -115,11 +120,18 @@ impl super::VardaApp {
         // Closing/removing a source must not leave an input window addressing
         // a stopped browser. Viewport changes update mapping, not navigation.
         if let Some(window) = self.interactive.window.as_ref() {
-            let source = self.mixer.channels().iter().flat_map(|ch| &ch.decks)
+            let source = self
+                .mixer
+                .channels()
+                .iter()
+                .flat_map(|ch| &ch.decks)
                 .find(|slot| slot.deck.uuid() == window.target.deck_uuid)
                 .and_then(|slot| match slot.deck.external_source_kind() {
-                    Some(ExternalSourceKind::Html(idx)) => self.external_io.html_manager
-                        .instance_dimensions(idx).map(|size| (idx, size)),
+                    Some(ExternalSourceKind::Html(idx)) => self
+                        .external_io
+                        .html_manager
+                        .instance_dimensions(idx)
+                        .map(|size| (idx, size)),
                     _ => None,
                 });
             if let Some((idx, (width, height))) = source {
@@ -128,7 +140,9 @@ impl super::VardaApp {
                     window.target.width = width;
                     window.target.height = height;
                 }
-            } else { self.interactive.pending_close = true; }
+            } else {
+                self.interactive.pending_close = true;
+            }
         }
         if self.interactive.pending_close {
             self.interactive.pending_close = false;
@@ -153,9 +167,12 @@ impl super::VardaApp {
                 .with_theme(Some(winit::window::Theme::Dark))
                 .with_inner_size({
                     let scale = (1200.0 / f64::from(target.width))
-                        .min(800.0 / f64::from(target.height)).min(1.0);
-                    PhysicalSize::new((f64::from(target.width) * scale) as u32,
-                        (f64::from(target.height) * scale) as u32)
+                        .min(800.0 / f64::from(target.height))
+                        .min(1.0);
+                    PhysicalSize::new(
+                        (f64::from(target.width) * scale) as u32,
+                        (f64::from(target.height) * scale) as u32,
+                    )
                 })
                 .with_resizable(true),
             crate::app::app_id::INTERACTIVE,
@@ -222,7 +239,11 @@ impl super::VardaApp {
             return true;
         }
         if let winit::event::WindowEvent::Resized(size) = event {
-            self.interactive.window.as_mut().unwrap().resize(&self.context, *size);
+            self.interactive
+                .window
+                .as_mut()
+                .unwrap()
+                .resize(&self.context, *size);
             return true;
         }
         let html_idx = self.interactive.window.as_ref().unwrap().target.html_idx;

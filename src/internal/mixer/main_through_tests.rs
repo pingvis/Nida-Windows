@@ -150,7 +150,11 @@ fn a_lone_overlay_at_full_level_is_through() {
     assert_eq!(mixer.main_passes, 1);
     let whole = input_pixel(&gpu, &mixer, overlays[0]);
     assert!(whole[3] > 0.5, "the card is in it: {whole:?}");
-    assert_near(main_pixel(&gpu, &mixer), whole.map(|c| c * 0.5), "half of it");
+    assert_near(
+        main_pixel(&gpu, &mixer),
+        whole.map(|c| c * 0.5),
+        "half of it",
+    );
 }
 
 /// A fade is drawn while it runs — a dissolve's two pictures, and a fade
@@ -164,7 +168,9 @@ fn a_fade_is_drawn_and_its_end_is_through() {
     assert!(through(&gpu, &mut mixer));
     // So long a fade that a frame's time is nothing of it: held where put.
     mixer.main_mut().fade_secs = 1.0e12;
-    mixer.main_mut().take(MainSource::Channel(to_uuid.clone()), true);
+    mixer
+        .main_mut()
+        .take(MainSource::Channel(to_uuid.clone()), true);
     let fade = mixer.main_mut().fade.as_mut().expect("a fade running");
     fade.progress = 0.4;
     assert!(!through(&gpu, &mut mixer), "a dissolve");
@@ -183,7 +189,11 @@ fn a_fade_is_drawn_and_its_end_is_through() {
     fade.progress = 0.4;
     assert!(!through(&gpu, &mut mixer), "a fade up");
     assert_eq!(mixer.main_passes, 1);
-    assert_near(main_pixel(&gpu, &mixer), [0.0, 0.0, 0.4, 0.4], "part way up");
+    assert_near(
+        main_pixel(&gpu, &mixer),
+        [0.0, 0.0, 0.4, 0.4],
+        "part way up",
+    );
 }
 
 /// A master effect that runs works on Main's own picture: the pass is
@@ -266,7 +276,11 @@ fn a_tap_of_main_is_drawn_under() {
     assert_eq!(mixer.main_passes, 1);
     assert_near(main_pixel(&gpu, &mixer), BLUE, "the card");
 
-    mixer.channel_mut(other).expect("the input").decks.remove(at);
+    mixer
+        .channel_mut(other)
+        .expect("the input")
+        .decks
+        .remove(at);
     assert!(through(&gpu, &mut mixer), "the tap gone");
     assert_near(main_pixel(&gpu, &mixer), BLUE, "the card");
 }
@@ -308,7 +322,9 @@ fn main_follows_what_is_taken_and_outlives_its_input() {
     assert!(is_input(&mixer, UNDER));
     assert_near(main_pixel(&gpu, &mixer), BLUE, "the first");
 
-    mixer.main_mut().take(MainSource::Channel(other_uuid), false);
+    mixer
+        .main_mut()
+        .take(MainSource::Channel(other_uuid), false);
     assert!(through(&gpu, &mut mixer));
     assert!(is_input(&mixer, other), "the input taken");
     assert_near(main_pixel(&gpu, &mixer), GREEN, "at once");
@@ -330,7 +346,10 @@ fn a_resize_hands_out_mains_own_until_the_next_frame() {
     let (mut mixer, _) = mixer_of(&gpu, Some(BLUE), &[]);
     assert!(through(&gpu, &mut mixer));
     mixer.resize(&gpu, W * 2, H * 2);
-    assert!(!mixer.main_passed_through(), "not the picture at the old size");
+    assert!(
+        !mixer.main_passed_through(),
+        "not the picture at the old size"
+    );
     assert_eq!(main_size(&mixer), (W * 2, H * 2));
 
     assert!(through(&gpu, &mut mixer), "the input's, resized with Main");
@@ -375,10 +394,18 @@ fn the_layered_mix_is_drawn() {
     mixer.set_mix_mode(MixMode::Layered);
     assert!(!through(&gpu, &mut mixer));
     assert!(!is_input(&mixer, UNDER), "Main's own");
-    assert_near(main_pixel(&gpu, &mixer), [0.0; 4], "no input at any level: clear");
+    assert_near(
+        main_pixel(&gpu, &mixer),
+        [0.0; 4],
+        "no input at any level: clear",
+    );
 
     mixer.channel_mut(UNDER).expect("an input").opacity = 1.0;
     assert!(!through(&gpu, &mut mixer));
     assert!(!is_input(&mixer, UNDER), "Main's own");
-    assert_near(main_pixel(&gpu, &mixer), BLUE, "the one input at a level, drawn");
+    assert_near(
+        main_pixel(&gpu, &mixer),
+        BLUE,
+        "the one input at a level, drawn",
+    );
 }

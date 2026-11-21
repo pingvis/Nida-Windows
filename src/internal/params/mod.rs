@@ -831,7 +831,9 @@ mod tests {
             assert_eq!(params.get_bool("circle"), Some(kept), "{written:?}");
         }
         params.set("radius", ParamValue::Float(0.7));
-        assert!(matches!(params.values.get("radius"), Some(ParamValue::Float(v)) if (*v - 0.7).abs() < 1e-6));
+        assert!(
+            matches!(params.values.get("radius"), Some(ParamValue::Float(v)) if (*v - 0.7).abs() < 1e-6)
+        );
     }
 
     /// A whole number for an integer parameter is kept an integer. JSON has

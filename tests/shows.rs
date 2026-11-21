@@ -335,7 +335,10 @@ fn a_new_show_starts_fresh_keeps_the_desk_and_saves_the_one_before() {
     ));
     let mut options = app.record_settings().options.clone();
     options.folder = dir.path().join("Takes");
-    ok(send_cmd(&mut app, EngineCommand::SetRecordOptions { options }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetRecordOptions { options },
+    ));
     let before = layers(&app);
 
     app.new_show(&n, &layout).expect("new show");
@@ -380,7 +383,11 @@ fn a_new_show_starts_fresh_keeps_the_desk_and_saves_the_one_before() {
         serde_json::from_str(&std::fs::read_to_string(n.join(".varda/keymap.json")).unwrap())
             .unwrap();
     assert!(
-        keys["bindings"].as_array().unwrap().iter().any(|b| b["key"] == "K"),
+        keys["bindings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|b| b["key"] == "K"),
         "and the operator's keys: {keys}"
     );
 

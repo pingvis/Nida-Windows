@@ -177,7 +177,9 @@ impl VardaApp {
         use std::sync::atomic::Ordering;
 
         for (token, path) in images {
-            let Some(ticket) = context.builds.reserve() else { continue };
+            let Some(ticket) = context.builds.reserve() else {
+                continue;
+            };
             let tx = sender.clone();
             let ctx = context.clone();
             let counter = pending.clone();
@@ -214,7 +216,9 @@ impl VardaApp {
         }
 
         for (token, path) in videos {
-            let Some(ticket) = context.builds.reserve() else { continue };
+            let Some(ticket) = context.builds.reserve() else {
+                continue;
+            };
             let tx = sender.clone();
             let ctx = context.clone();
             let counter = pending.clone();
@@ -251,7 +255,9 @@ impl VardaApp {
         }
 
         for (token, shader) in shaders {
-            let Some(ticket) = context.builds.reserve() else { continue };
+            let Some(ticket) = context.builds.reserve() else {
+                continue;
+            };
             let tx = sender.clone();
             let ctx = context.clone();
             let counter = pending.clone();
@@ -621,14 +627,21 @@ impl VardaApp {
             .is_none_or(|at| at.elapsed() >= std::time::Duration::from_secs(2))
         {
             self.camera_rates_at = Some(std::time::Instant::now());
-            self.camera_rates.retain(|id, _| camera_names.contains_key(id));
+            self.camera_rates
+                .retain(|id, _| camera_names.contains_key(id));
             for (id, name) in &camera_names {
                 let Some(signal) = self.camera_manager.signal(*id) else {
                     continue;
                 };
-                if self.camera_rates.entry(*id).or_default().look(signal.fps, signal.opened_fps) {
+                if self
+                    .camera_rates
+                    .entry(*id)
+                    .or_default()
+                    .look(signal.fps, signal.opened_fps)
+                {
                     let text = crate::camera::slow_camera_warning(
-                        name.trim_start_matches(|c: char| !c.is_alphanumeric()).trim(),
+                        name.trim_start_matches(|c: char| !c.is_alphanumeric())
+                            .trim(),
                         signal.fps,
                         signal.opened_fps.unwrap_or_default(),
                     );
@@ -663,9 +676,7 @@ impl VardaApp {
             .update_selective(&self.context, &needed_capture_ids, show_at);
 
         // Update NDI receiver frames
-        self.external_io
-            .ndi_manager
-            .update(&self.context);
+        self.external_io.ndi_manager.update(&self.context);
 
         // Periodic Syphon re-discovery + late-bind of deferred decks (~1×/sec).
         // Removes the start/stop-ordering dependency: a producer that joins or
@@ -2262,7 +2273,9 @@ impl VardaApp {
         if files.is_empty() {
             return;
         }
-        let Some(ticket) = context.builds.reserve() else { return };
+        let Some(ticket) = context.builds.reserve() else {
+            return;
+        };
         let tx = sender.clone();
         let ctx = context.clone();
         let counter = pending.clone();

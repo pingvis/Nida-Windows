@@ -286,7 +286,13 @@ mod tests {
             return;
         };
         app.set_render_resolution(3840, 2160);
-        let bus = app.production_buses.iter().next().expect("a bus").uuid().to_string();
+        let bus = app
+            .production_buses
+            .iter()
+            .next()
+            .expect("a bus")
+            .uuid()
+            .to_string();
         let canvas = app.production_buses.get(&bus).expect("its bus").canvas();
         let part = |x, y, width, height| LedFit::Part {
             x,
@@ -316,7 +322,10 @@ mod tests {
         let now = app.production_buses.get(&bus).expect("its bus").canvas();
         assert_eq!(
             parts(&app),
-            vec![part(0, 368, 1920, 344), part(0, 0, now.width / 2, now.height)],
+            vec![
+                part(0, 368, 1920, 344),
+                part(0, 0, now.width / 2, now.height)
+            ],
             "the same parts of the smaller pictures"
         );
         app.set_render_resolution(3840, 2160);
@@ -337,7 +346,13 @@ mod tests {
             return;
         };
         app.set_render_resolution(1920, 1080);
-        let bus = app.production_buses.iter().next().expect("a bus").uuid().to_string();
+        let bus = app
+            .production_buses
+            .iter()
+            .next()
+            .expect("a bus")
+            .uuid()
+            .to_string();
         app.production_buses
             .get_mut(&bus)
             .expect("its bus")
@@ -352,7 +367,12 @@ mod tests {
         };
         created(app.cmd_create_led_output(None, layout));
         app.set_render_resolution(3840, 2160);
-        let fit = app.output.pending_output_creates[0].led.as_ref().expect("its layout").screens[0].fit;
+        let fit = app.output.pending_output_creates[0]
+            .led
+            .as_ref()
+            .expect("its layout")
+            .screens[0]
+            .fit;
         assert_eq!(
             fit,
             LedFit::Part {

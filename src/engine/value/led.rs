@@ -240,7 +240,8 @@ impl LedLayout {
                 continue;
             };
             let at = |v: i64| i32::try_from(v).unwrap_or(if v < 0 { i32::MIN } else { i32::MAX });
-            let size = |v: i64| u32::try_from(v.max(1)).map_or(MAX_LED_PIXELS, |v| v.min(MAX_LED_PIXELS));
+            let size =
+                |v: i64| u32::try_from(v.max(1)).map_or(MAX_LED_PIXELS, |v| v.min(MAX_LED_PIXELS));
             screen.fit = LedFit::Part {
                 x: at(scale(i64::from(x), from.0, to.0)),
                 y: at(scale(i64::from(y), from.1, to.1)),
@@ -579,7 +580,12 @@ mod tests {
                 screen([300, 300], [0, 700], part(-100, 20, 600, 600)),
                 LedScreen {
                     fit: part(10, 10, 100, 100),
-                    ..LedScreen::new("B", [100, 100], [500, 700], OutputSource::BusProgram("b1".into()))
+                    ..LedScreen::new(
+                        "B",
+                        [100, 100],
+                        [500, 700],
+                        OutputSource::BusProgram("b1".into()),
+                    )
                 },
                 screen([400, 300], [800, 700], LedFit::Fit),
             ],
@@ -593,7 +599,10 @@ mod tests {
         assert!(layout.rescale_parts(down));
         assert_eq!(layout.screens[0].fit, part(0, 368, 1920, 688));
         assert_eq!(layout.screens[1].fit, part(-50, 10, 300, 300));
-        assert_eq!(layout.screens[2].fit, at.screens[2].fit, "its bus kept its size");
+        assert_eq!(
+            layout.screens[2].fit, at.screens[2].fit,
+            "its bus kept its size"
+        );
         assert_eq!(layout.screens[3].fit, LedFit::Fit);
         let up = |source: &OutputSource| match source {
             OutputSource::Master => Some(((1920, 1080), (3840, 2160))),
@@ -601,9 +610,16 @@ mod tests {
             _ => None,
         };
         assert!(layout.rescale_parts(up));
-        assert_eq!(layout.screens[0].fit, at.screens[0].fit, "back where it was");
+        assert_eq!(
+            layout.screens[0].fit, at.screens[0].fit,
+            "back where it was"
+        );
         assert_eq!(layout.screens[1].fit, at.screens[1].fit);
-        assert_eq!(layout.screens[2].fit, part(20, 20, 200, 200), "by its bus's own sizes");
+        assert_eq!(
+            layout.screens[2].fit,
+            part(20, 20, 200, 200),
+            "by its bus's own sizes"
+        );
         assert!(!layout.rescale_parts(|_| None), "nothing changed size");
     }
 }

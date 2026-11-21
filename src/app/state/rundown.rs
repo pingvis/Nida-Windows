@@ -112,7 +112,9 @@ const QUIET_AFTER_SECS: f64 = 0.4;
 fn till_next(step: &Step) -> Vec<String> {
     step.plays
         .iter()
-        .filter(|play| play.until_next && matches!(play.action, PlayAction::Start | PlayAction::Resume))
+        .filter(|play| {
+            play.until_next && matches!(play.action, PlayAction::Start | PlayAction::Resume)
+        })
         .map(|play| play.deck.clone())
         .collect()
 }
@@ -195,7 +197,10 @@ impl VardaApp {
         }
         let playlist = deck.playlist().is_some();
         if !playlist && deck.playback_snapshot().is_none() {
-            return Err(format!("'{}' is not a clip, a playlist or a timer", deck.source_name()));
+            return Err(format!(
+                "'{}' is not a clip, a playlist or a timer",
+                deck.source_name()
+            ));
         }
         // A clip or a playlist on the timeline is the timeline's. A clip
         // following it, a seek or a pause here would be undone on the next
@@ -320,7 +325,10 @@ impl VardaApp {
         let main = self.mixer.main();
         step.sets_picture()
             && (sets.is_empty() || self.production_buses.shows_together(&sets))
-            && step.main.as_ref().is_none_or(|source| main.program == *source)
+            && step
+                .main
+                .as_ref()
+                .is_none_or(|source| main.program == *source)
             && step
                 .overlays
                 .iter()
@@ -352,7 +360,9 @@ impl VardaApp {
             next: rundown.next().map(|step| step.uuid.clone()),
             wait: rundown.follow().map(|follow| {
                 let left = match &follow.until {
-                    Some(deck) if follow.due.is_infinite() => self.left_to_play(deck).unwrap_or(0.0),
+                    Some(deck) if follow.due.is_infinite() => {
+                        self.left_to_play(deck).unwrap_or(0.0)
+                    }
                     _ => (follow.due - now).max(0.0),
                 };
                 RundownWaitSnapshot {
@@ -407,12 +417,10 @@ impl VardaApp {
             Together::Cut
         };
         let known = self.known_source_uuids();
-        let buses = match self.production_buses.take_together(
-            &step.screen_sets(),
-            how,
-            now,
-            &known,
-        ) {
+        let buses = match self
+            .production_buses
+            .take_together(&step.screen_sets(), how, now, &known)
+        {
             Ok(buses) => buses,
             Err(why) => return refused(why.to_string()),
         };
@@ -495,7 +503,9 @@ impl VardaApp {
             .filter(|play| matches!(play.action, PlayAction::Pause | PlayAction::Stop))
             .filter_map(|play| {
                 let (ch, dk) = self.resolve_deck(&play.deck).ok()?;
-                let identity = self.mixer.channels()[ch].decks[dk].deck.playback_identity()?;
+                let identity = self.mixer.channels()[ch].decks[dk]
+                    .deck
+                    .playback_identity()?;
                 Some((play.deck.clone(), identity, HELD_FOR_UPDATES))
             })
             .collect()
@@ -522,7 +532,9 @@ impl VardaApp {
     /// on-air updates, as a step that stops it holds it.
     fn held_entry(&self, deck: &str) -> Option<(String, usize, u8)> {
         let (ch, dk) = self.resolve_deck(deck).ok()?;
-        let identity = self.mixer.channels()[ch].decks[dk].deck.playback_identity()?;
+        let identity = self.mixer.channels()[ch].decks[dk]
+            .deck
+            .playback_identity()?;
         Some((deck.to_string(), identity, HELD_FOR_UPDATES))
     }
 
@@ -551,7 +563,9 @@ impl VardaApp {
             }
         }
         let deck = &self.mixer.channels()[ch].decks[dk].deck;
-        let playlist = deck.playlist().map(crate::deck::playlist::Playlist::is_playing);
+        let playlist = deck
+            .playlist()
+            .map(crate::deck::playlist::Playlist::is_playing);
         let clip = deck.playback_snapshot().map(|snap| snap.playing);
         let Some(playing) = playlist.or(clip) else {
             return CommandResult::Err {
@@ -567,8 +581,7 @@ impl VardaApp {
             // take this pass — so a Stop on an idle clip leaves no curve to
             // hold it paused later.
             let key = format!("deck_{deck_uuid}:{}", crate::video::modulation::PLAY);
-            let pending =
-                self.mixer.modulation().has_modulation(&key) || self.recording_take(&key);
+            let pending = self.mixer.modulation().has_modulation(&key) || self.recording_take(&key);
             self.pause_now(deck_uuid, is_playlist, pending);
             return CommandResult::Ok;
         }
@@ -606,7 +619,10 @@ impl VardaApp {
     /// pass, as its own pause button's is. A playlist has no such curve.
     fn note_hand_stop(&mut self, deck: &str) {
         let clip = self.resolve_deck(deck).is_ok_and(|(ch, dk)| {
-            self.mixer.channels()[ch].decks[dk].deck.playlist().is_none()
+            self.mixer.channels()[ch].decks[dk]
+                .deck
+                .playlist()
+                .is_none()
         });
         if clip {
             self.note_live_video_write(deck, crate::video::modulation::PLAY, 0.0);
@@ -722,7 +738,8 @@ impl VardaApp {
         // heard at full level.
         self.update_audio_mix();
         self.rundown_fades.clear();
-        self.audio_mix.set_step_fades(std::collections::HashMap::new());
+        self.audio_mix
+            .set_step_fades(std::collections::HashMap::new());
     }
 
     /// Once a frame: the sounds being faded out turned down as far as their
@@ -914,7 +931,9 @@ impl VardaApp {
                 });
             if let Some((uuid, name, always)) = due {
                 if always {
-                    log::info!("Rundown: '{name}' is due at its time of day, wherever the rundown is");
+                    log::info!(
+                        "Rundown: '{name}' is due at its time of day, wherever the rundown is"
+                    );
                 } else {
                     log::info!("Rundown: '{name}' is due at its time of day");
                 }
@@ -1169,7 +1188,10 @@ impl VardaApp {
             if !self.mixer.main_source_exists(source) {
                 return CommandResult::Err {
                     code: ErrorCode::NotFound,
-                    message: format!("nothing in the show with uuid {}", source.uuid().unwrap_or_default()),
+                    message: format!(
+                        "nothing in the show with uuid {}",
+                        source.uuid().unwrap_or_default()
+                    ),
                 };
             }
             if let MainSource::Channel(channel) = source {
@@ -1195,7 +1217,9 @@ impl VardaApp {
             match self.overlay_channel(channel) {
                 Some((true, _)) => {}
                 Some((false, _)) => {
-                    return invalid("That channel is not an overlay — a step takes it to Main instead")
+                    return invalid(
+                        "That channel is not an overlay — a step takes it to Main instead",
+                    )
                 }
                 None => {
                     return CommandResult::Err {
@@ -1232,7 +1256,12 @@ impl VardaApp {
 
     /// Whether a clip or playlist a step starts or carries on is faded out
     /// and stopped when another step is taken.
-    pub fn cmd_set_rundown_until_next(&mut self, uuid: &str, deck: &str, on: bool) -> CommandResult {
+    pub fn cmd_set_rundown_until_next(
+        &mut self,
+        uuid: &str,
+        deck: &str,
+        on: bool,
+    ) -> CommandResult {
         if self.rundown.step(uuid).is_none() {
             return no_such_step(uuid);
         }
@@ -1294,11 +1323,17 @@ impl VardaApp {
         when_ends: Option<&str>,
     ) -> CommandResult {
         if let Some(deck) = when_ends {
-            if self.rundown.step(uuid).is_some_and(|step| !step.plays_on(deck)) {
+            if self
+                .rundown
+                .step(uuid)
+                .is_some_and(|step| !step.plays_on(deck))
+            {
                 return invalid("The step does not start or carry on that clip or playlist");
             }
             if !matches!(self.runs(deck), Ok(Runs::Clip | Runs::Playlist)) {
-                return invalid("Only a clip or a playlist ends: a timer or anything else does not");
+                return invalid(
+                    "Only a clip or a playlist ends: a timer or anything else does not",
+                );
             }
             return self.edited(uuid, |rundown| rundown.set_then_ends(uuid, Some(deck)));
         }
@@ -1356,7 +1391,9 @@ impl VardaApp {
         if self.rundown.set_fade_secs(secs) {
             CommandResult::Ok
         } else {
-            invalid(format!("the fade time must be finite and positive, got {secs}"))
+            invalid(format!(
+                "the fade time must be finite and positive, got {secs}"
+            ))
         }
     }
 
@@ -1504,10 +1541,15 @@ mod tests {
         let _ = app.apply_engine_actions(&mut actions);
         let said = notices(&app);
         assert!(
-            said.iter().any(|m| m.starts_with("Step not changed: A step cannot start or stop that")),
+            said.iter()
+                .any(|m| m.starts_with("Step not changed: A step cannot start or stop that")),
             "{said:?}"
         );
-        assert!(said.iter().any(|m| m == "Step not added: a step needs a name"), "{said:?}");
+        assert!(
+            said.iter()
+                .any(|m| m == "Step not added: a step needs a name"),
+            "{said:?}"
+        );
     }
 
     /// An input deleted from under the rundown: the steps that used it are
@@ -1535,7 +1577,8 @@ mod tests {
         ));
         let said = notices(&app);
         assert!(
-            said.iter().any(|m| m == "Rundown: B no longer uses what was deleted"),
+            said.iter()
+                .any(|m| m == "Rundown: B no longer uses what was deleted"),
             "{said:?}"
         );
     }
@@ -1620,7 +1663,11 @@ mod tests {
         for i in 0..20 {
             app.advance_rundown_by(now + 1.0 + f64::from(i) * 0.1, f64::from(quarter) + 0.3);
         }
-        assert_eq!(app.rundown.last(), Some(d.as_str()), "taken at 9:15, B and C left out");
+        assert_eq!(
+            app.rundown.last(),
+            Some(d.as_str()),
+            "taken at 9:15, B and C left out"
+        );
         let _ = c;
     }
 
@@ -1642,14 +1689,36 @@ mod tests {
             ended,
             clip: Some(ClipAt { seeks }),
         };
-        assert!(!seen_playing(&follow(true, Some(3)), &clip(true, false, 3)), "the run before");
-        assert!(seen_playing(&follow(true, Some(3)), &clip(true, false, 4)), "sent back");
+        assert!(
+            !seen_playing(&follow(true, Some(3)), &clip(true, false, 3)),
+            "the run before"
+        );
+        assert!(
+            seen_playing(&follow(true, Some(3)), &clip(true, false, 4)),
+            "sent back"
+        );
         // The app busy through the whole new run: played out already.
-        assert!(seen_playing(&follow(true, Some(3)), &clip(false, true, 4)), "its own end");
-        assert!(!seen_playing(&follow(true, None), &clip(false, true, 0)), "not seen at all");
-        assert!(seen_playing(&follow(true, None), &clip(true, false, 0)), "not open before");
-        assert!(seen_playing(&follow(false, Some(3)), &clip(false, true, 3)), "carried on");
-        let list = |running: bool| PlayState { running, ended: !running, clip: None };
+        assert!(
+            seen_playing(&follow(true, Some(3)), &clip(false, true, 4)),
+            "its own end"
+        );
+        assert!(
+            !seen_playing(&follow(true, None), &clip(false, true, 0)),
+            "not seen at all"
+        );
+        assert!(
+            seen_playing(&follow(true, None), &clip(true, false, 0)),
+            "not open before"
+        );
+        assert!(
+            seen_playing(&follow(false, Some(3)), &clip(false, true, 3)),
+            "carried on"
+        );
+        let list = |running: bool| PlayState {
+            running,
+            ended: !running,
+            clip: None,
+        };
         assert!(seen_playing(&follow(false, None), &list(true)));
         assert!(!seen_playing(&follow(false, None), &list(false)));
     }
@@ -1670,7 +1739,10 @@ mod tests {
         snap.playing = true;
         snap.reached_end = true;
         let state = super::clip_state(&snap);
-        assert!(!state.ended && state.running, "back at its start: the old flag says nothing");
+        assert!(
+            !state.ended && state.running,
+            "back at its start: the old flag says nothing"
+        );
         snap.loop_mode = LoopMode::Loop;
         snap.position = 10.0;
         assert!(!super::clip_state(&snap).ended, "a loop never ends");
@@ -1802,7 +1874,10 @@ mod tests {
         app.advance_rundown_by(now + 2.0, f64::from(nine + 239));
         app.advance_rundown_by(now + 2.5, f64::from(nine + 241));
         assert_eq!(app.rundown.last(), Some(c.as_str()), "held");
-        assert_eq!(app.rundown.next().map(|s| s.uuid.as_str()), Some(e.as_str()));
+        assert_eq!(
+            app.rundown.next().map(|s| s.uuid.as_str()),
+            Some(e.as_str())
+        );
     }
     /// A playlist in the show, for the fades to fade.
     fn playlist(app: &mut App) -> String {
@@ -1861,7 +1936,11 @@ mod tests {
         ));
         let fade = app.rundown_fades.iter().find(|f| f.deck == music).unwrap();
         assert!((fade.secs - crate::audio_mix::DEFAULT_STOP_FADE_SECS).abs() < 1e-6);
-        assert_eq!(fade.then, PlayAction::Pause, "paused where it is, not rewound");
+        assert_eq!(
+            fade.then,
+            PlayAction::Pause,
+            "paused where it is, not rewound"
+        );
         let from = fade.from;
         assert_eq!(app.sounds_stopping(), vec![music.clone()]);
         assert!(list_playing(&app, &music), "still playing while it fades");
@@ -1937,7 +2016,10 @@ mod tests {
                 CommandResult::Err { .. }
             ));
         }
-        assert!((app.audio_mix.stop_fade_secs() - 2.0).abs() < 1e-6, "unchanged");
+        assert!(
+            (app.audio_mix.stop_fade_secs() - 2.0).abs() < 1e-6,
+            "unchanged"
+        );
         assert!(matches!(
             app.execute_command(EngineCommand::SetStopFade { secs: 3.0 }),
             CommandResult::Ok
@@ -1946,7 +2028,10 @@ mod tests {
         let loaded: crate::audio_mix::AudioMixConfig = serde_json::from_str(&saved).unwrap();
         assert_eq!(loaded.stop_fade_secs, Some(3.0), "{saved}");
         let older: crate::audio_mix::AudioMixConfig = serde_json::from_str("{}").unwrap();
-        assert_eq!(older.stop_fade_secs, None, "a show from before: the default");
+        assert_eq!(
+            older.stop_fade_secs, None,
+            "a show from before: the default"
+        );
         assert!((build_engine_state_stop(&app) - 3.0).abs() < 1e-6);
 
         let (_, channel, _) = step(&mut app);
@@ -1974,7 +2059,12 @@ mod tests {
         let made = std::process::Command::new("ffmpeg")
             .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i"])
             .arg("color=c=red:s=64x36:r=25:d=6")
-            .args(["-f", "lavfi", "-i", "sine=frequency=1000:sample_rate=44100:duration=6"])
+            .args([
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=1000:sample_rate=44100:duration=6",
+            ])
             .args(["-c:v", "mpeg4", "-c:a", "aac", "-shortest"])
             .arg(&path)
             .status()
@@ -1995,7 +2085,10 @@ mod tests {
         let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
         while std::time::Instant::now() < until {
             app.render_mixer_frame();
-            if app.video_playback_snapshot(&deck).is_some_and(|s| s.playing) {
+            if app
+                .video_playback_snapshot(&deck)
+                .is_some_and(|s| s.playing)
+            {
                 return Some(deck);
             }
             std::thread::sleep(std::time::Duration::from_millis(10));
@@ -2072,7 +2165,11 @@ mod tests {
         app.transport.tick(1.0);
         app.tick_recorder();
         let key = format!("deck_{deck}:{}", crate::video::modulation::PLAY);
-        assert!(app.mixer_ref().modulation().assignments_for(&key).is_empty());
+        assert!(app
+            .mixer_ref()
+            .modulation()
+            .assignments_for(&key)
+            .is_empty());
         assert!(matches!(
             app.execute_command(EngineCommand::StopWithFade {
                 deck_uuid: deck.clone(),
@@ -2092,7 +2189,10 @@ mod tests {
         app.tick_recorder();
         app.set_record_armed(false);
         assert!(
-            !app.mixer_ref().modulation().assignments_for(&key).is_empty(),
+            !app.mixer_ref()
+                .modulation()
+                .assignments_for(&key)
+                .is_empty(),
             "the stop is on a curve for {key}"
         );
     }
@@ -2113,14 +2213,20 @@ mod tests {
 
     fn play_curve(app: &App, deck: &str) -> bool {
         let key = format!("deck_{deck}:{}", crate::video::modulation::PLAY);
-        !app.mixer_ref().modulation().assignments_for(&key).is_empty()
+        !app.mixer_ref()
+            .modulation()
+            .assignments_for(&key)
+            .is_empty()
     }
 
     /// The PLAY curve recorded for a clip, as (position, value) points.
     fn play_points(app: &App, deck: &str) -> Vec<f32> {
         let key = format!("deck_{deck}:{}", crate::video::modulation::PLAY);
         let modulation = app.mixer_ref().modulation();
-        let Some(source) = modulation.assignments_for(&key).first().map(|m| m.source_id.clone())
+        let Some(source) = modulation
+            .assignments_for(&key)
+            .first()
+            .map(|m| m.source_id.clone())
         else {
             return Vec::new();
         };
@@ -2204,7 +2310,9 @@ mod tests {
     }
 
     fn build_engine_state_stop(app: &App) -> f32 {
-        crate::app::snapshot::build_engine_state(app).audio_mix.stop_fade_secs
+        crate::app::snapshot::build_engine_state(app)
+            .audio_mix
+            .stop_fade_secs
     }
 
     /// A sound faded out goes down with its fade, is stopped at its end and
@@ -2266,7 +2374,10 @@ mod tests {
             }),
             CommandResult::Ok
         ));
-        assert!(app.rundown_fades.is_empty(), "let go with its deck, at once");
+        assert!(
+            app.rundown_fades.is_empty(),
+            "let go with its deck, at once"
+        );
         app.run_sound_fades(11.5);
         assert_eq!(app.audio_mix.step_fade(&music), None);
 
@@ -2286,14 +2397,22 @@ mod tests {
         ));
         let running = |app: &App| {
             let (ch, dk) = app.resolve_deck(&timer).unwrap();
-            app.mixer.channels()[ch].decks[dk].deck.timer().unwrap().running()
+            app.mixer.channels()[ch].decks[dk]
+                .deck
+                .timer()
+                .unwrap()
+                .running()
         };
         assert!(running(&app));
         app.rundown_fades.push(fade(&timer, 10.0, 5.0));
         app.run_sound_fades(11.0);
         app.forget_rundown_live();
         assert!(!running(&app), "stopped as its fade would have");
-        assert_eq!(app.audio_mix.step_fade(&timer), Some(0.0), "kept down a moment");
+        assert_eq!(
+            app.audio_mix.step_fade(&timer),
+            Some(0.0),
+            "kept down a moment"
+        );
         assert!(app.rundown_fades.iter().all(|f| f.done_at.is_some()));
         let later = app.frame_stats.now_secs() + super::QUIET_AFTER_SECS + 0.01;
         app.run_sound_fades(later);
@@ -2308,7 +2427,11 @@ mod tests {
         app.run_sound_fades(11.0);
         let _ = app.load_workspace();
         assert!(app.rundown_fades.is_empty(), "let go with its show");
-        assert_eq!(app.audio_mix.step_fade(&timer), None, "the new decks not kept down");
+        assert_eq!(
+            app.audio_mix.step_fade(&timer),
+            None,
+            "the new decks not kept down"
+        );
     }
 
     /// A step made next after the clock read its time — by GO takes this

@@ -910,7 +910,10 @@ fn a_frame_whose_shader_is_not_there_gives_way_keeping_its_choices() {
         panic!("no frame");
     };
     // Changed on it: a square window, filled.
-    for (name, value) in [("shape", ParamValue::Long(3)), ("fill", ParamValue::Bool(true))] {
+    for (name, value) in [
+        ("shape", ParamValue::Long(3)),
+        ("fill", ParamValue::Bool(true)),
+    ] {
         fire(
             &mut app,
             EngineCommand::SetEffectParam {
@@ -965,7 +968,11 @@ fn a_frame_whose_shader_is_not_there_gives_way_keeping_its_choices() {
     let state = app.build_engine_state();
     let effects = &state.mixer.channels[0].decks[0].effects;
     let names: Vec<&str> = effects.iter().map(|e| e.name.as_str()).collect();
-    assert_eq!(names, ["crop", "frame_neon_two", "transform"], "the one without its shader gone");
+    assert_eq!(
+        names,
+        ["crop", "frame_neon_two", "transform"],
+        "the one without its shader gone"
+    );
     let setting = |name: &str| {
         effects
             .iter()
@@ -979,9 +986,15 @@ fn a_frame_whose_shader_is_not_there_gives_way_keeping_its_choices() {
             .value
     };
     let shape = setting("shape");
-    assert!(matches!(shape, ParamValue::Long(3)), "the Shape saved: {shape:?}");
+    assert!(
+        matches!(shape, ParamValue::Long(3)),
+        "the Shape saved: {shape:?}"
+    );
     let fill = setting("fill");
-    assert!(matches!(fill, ParamValue::Bool(true)), "Fill the frame, saved: {fill:?}");
+    assert!(
+        matches!(fill, ParamValue::Bool(true)),
+        "Fill the frame, saved: {fill:?}"
+    );
 }
 
 /// An offline effect duplicated, or the channel it is on, comes along

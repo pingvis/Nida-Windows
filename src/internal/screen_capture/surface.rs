@@ -293,7 +293,11 @@ mod tests {
             }
         }
         let _ = context.device.poll(wgpu::PollType::wait_indefinitely());
-        assert_eq!(buffer.retain_count(), held, "given back once the GPU was done");
+        assert_eq!(
+            buffer.retain_count(),
+            held,
+            "given back once the GPU was done"
+        );
     }
 
     /// A frame of another size than the texture is not copied.
@@ -302,7 +306,8 @@ mod tests {
         let Ok(context) = GpuContext::new_headless() else {
             return;
         };
-        let frame = SurfaceFrame::new(surface_buffer(64, 32, |_, _| [0, 0, 0, 255])).expect("surface");
+        let frame =
+            SurfaceFrame::new(surface_buffer(64, 32, |_, _| [0, 0, 0, 255])).expect("surface");
         let target = texture(&context, 32, 32);
         assert!(copy_into(&context, frame, &target).is_err());
     }

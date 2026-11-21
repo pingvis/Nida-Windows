@@ -69,10 +69,11 @@ impl Bus {
     /// Where the bus is going: what its running take ends on, else its
     /// Program — and whether that resolves against the loaded scene.
     pub fn heading(&self) -> (&BusInputRef, bool) {
-        self.transition.as_ref().map_or(
-            (&self.program, self.program_resolved),
-            |t| (&t.to, t.to_resolved),
-        )
+        self.transition
+            .as_ref()
+            .map_or((&self.program, self.program_resolved), |t| {
+                (&t.to, t.to_resolved)
+            })
     }
 }
 
@@ -278,7 +279,10 @@ mod tests {
     fn buses_taken_together_fade_in_step_and_land_together() {
         let (mut bank, ids) = wall();
         let want = sets(&ids, ["slides", "logo", "slides"]);
-        assert_eq!(bank.check_together(&want, Together::Fade(2.0), &all()), Ok(()));
+        assert_eq!(
+            bank.check_together(&want, Together::Fade(2.0), &all()),
+            Ok(())
+        );
         let taken = bank
             .take_together(&want, Together::Fade(2.0), T0, &all())
             .expect("taken");
@@ -335,7 +339,10 @@ mod tests {
             assert_eq!(middle.preview(), &ch("camera"));
             assert!(bank.shows_together(&want));
         }
-        assert!(bank.iter().all(|b| !b.is_transitioning()), "the cut landed the two fading");
+        assert!(
+            bank.iter().all(|b| !b.is_transitioning()),
+            "the cut landed the two fading"
+        );
     }
 
     /// Taken again while its fade runs, the same picture is nothing to do —
@@ -375,7 +382,10 @@ mod tests {
             .take_together(&two, Together::Fade(2.0), T0 + 0.5, &all())
             .expect("nothing to do");
         assert_eq!((taken.taken).len(), 0);
-        assert_eq!(taken.settle_secs, 3.5, "Left's, the longer — not Right's 8.5");
+        assert_eq!(
+            taken.settle_secs, 3.5,
+            "Left's, the longer — not Right's 8.5"
+        );
     }
 
     /// A fade one bus cannot join is not started on the others: the parts
@@ -393,7 +403,10 @@ mod tests {
         // Heading elsewhere.
         let elsewhere = sets(&ids, ["slides", "logo", "slides"]);
         let refused = Err(TogetherRejected::Fading(vec!["Right".into()]));
-        assert_eq!(bank.check_together(&elsewhere, Together::Fade(1.0), &all()), refused);
+        assert_eq!(
+            bank.check_together(&elsewhere, Together::Fade(1.0), &all()),
+            refused
+        );
         assert_eq!(
             bank.take_together(&elsewhere, Together::Fade(1.0), T0 + 1.0, &all()),
             Err(TogetherRejected::Fading(vec!["Right".into()]))
@@ -502,7 +515,10 @@ mod tests {
         assert_eq!(refused, Err(TogetherRejected::Held));
         assert!(bank.iter().all(|b| b.program() == &ch("intro")));
 
-        let black: Vec<_> = ids.iter().map(|id| (id.clone(), BusInputRef::Black)).collect();
+        let black: Vec<_> = ids
+            .iter()
+            .map(|id| (id.clone(), BusInputRef::Black))
+            .collect();
         let taken = bank
             .take_together(&black, Together::Cut, T0, &all())
             .expect("black is always allowed");
@@ -533,6 +549,9 @@ mod tests {
             .take_together(&twice, Together::Fade(1.0), T0, &all())
             .expect("taken");
         assert_eq!(taken.taken, [ids[0].clone()]);
-        assert_eq!(bank.get(&ids[0]).unwrap().transition().unwrap().to, ch("slides"));
+        assert_eq!(
+            bank.get(&ids[0]).unwrap().transition().unwrap().to,
+            ch("slides")
+        );
     }
 }

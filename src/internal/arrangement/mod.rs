@@ -505,7 +505,10 @@ mod tests {
     fn degenerate_regions_are_dropped() {
         assert_eq!((compile_regions(&[RegionConfig::new(5.0, 5.0)])).len(), 0);
         assert_eq!((compile_regions(&[RegionConfig::new(9.0, 1.0)])).len(), 0);
-        assert_eq!((compile_regions(&[RegionConfig::new(f64::NAN, 1.0)])).len(), 0);
+        assert_eq!(
+            (compile_regions(&[RegionConfig::new(f64::NAN, 1.0)])).len(),
+            0
+        );
     }
 
     /// The property automation is built on: how you reached a position cannot

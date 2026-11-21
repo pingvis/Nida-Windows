@@ -840,8 +840,12 @@ mod tests {
         while app.mixer_snapshot().channels.len() < 2 {
             app.execute_command(C::AddChannel);
         }
-        let channels: Vec<String> =
-            app.mixer_snapshot().channels.iter().map(|c| c.uuid.clone()).collect();
+        let channels: Vec<String> = app
+            .mixer_snapshot()
+            .channels
+            .iter()
+            .map(|c| c.uuid.clone())
+            .collect();
         let added = |app: &mut VardaApp, command: C| match app.execute_command(command) {
             CommandResult::OkWithId { uuid } => uuid,
             other => panic!("nothing made: {other:?}"),
@@ -887,7 +891,10 @@ mod tests {
             )
         };
         let original = drawn(&app, &tap);
-        assert_eq!(original, (true, DeckRenderFps::Fixed(25), DeckRenderScale::Half, true));
+        assert_eq!(
+            original,
+            (true, DeckRenderFps::Fixed(25), DeckRenderScale::Half, true)
+        );
 
         let copy = added(
             &mut app,
@@ -904,10 +911,19 @@ mod tests {
             },
         );
         let snapshot = app.mixer_snapshot();
-        let layers = &snapshot.channels.iter().find(|c| c.uuid == input).unwrap().decks;
+        let layers = &snapshot
+            .channels
+            .iter()
+            .find(|c| c.uuid == input)
+            .unwrap()
+            .decks;
         assert_eq!(layers.len(), 2);
         for layer in layers {
-            assert_eq!(drawn(&app, &layer.uuid), original, "a layer of the duplicated input");
+            assert_eq!(
+                drawn(&app, &layer.uuid),
+                original,
+                "a layer of the duplicated input"
+            );
         }
 
         app.execute_command(C::SetDeckTransparent {

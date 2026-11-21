@@ -125,8 +125,11 @@ impl InteractiveWindow {
     /// The window may be smaller than the source; interaction must use the
     /// same scaling as its displayed texture, without resizing the webpage.
     fn pointer_position(&self) -> (f32, f32) {
-        input::displayed_point(self.cursor,
-            (self.surface_config.width, self.surface_config.height), self.webview_size())
+        input::displayed_point(
+            self.cursor,
+            (self.surface_config.width, self.surface_config.height),
+            self.webview_size(),
+        )
     }
 
     pub(crate) fn resize(&mut self, context: &GpuContext, size: winit::dpi::PhysicalSize<u32>) {

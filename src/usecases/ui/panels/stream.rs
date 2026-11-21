@@ -5,12 +5,11 @@
 //! destinations and Start / Stop.
 
 use super::super::{UIActions, UIData};
+use super::monitoring::{BAD, GOOD, WARN};
 use crate::engine::value::render::OutputSource;
 use crate::engine::EngineCommand;
-use super::monitoring::{BAD, GOOD, WARN};
 use crate::streaming::{
-    DestinationState, DestinationStatus, StreamDestination, StreamOptions, StreamStatus,
-    VideoCodec,
+    DestinationState, DestinationStatus, StreamDestination, StreamOptions, StreamStatus, VideoCodec,
 };
 
 pub(super) const LIVE_RED: egui::Color32 = egui::Color32::from_rgb(200, 30, 30);
@@ -208,15 +207,17 @@ pub(super) fn pieces_width(ui: &egui::Ui, pieces: &[Piece]) -> f32 {
         .iter()
         .map(|piece| match piece {
             Piece::Bars(..) => BARS_WIDTH,
-            Piece::Text(text, colour) => egui::WidgetText::from(piece_text(text.clone(), *colour))
-                .into_galley(
-                    ui,
-                    Some(egui::TextWrapMode::Extend),
-                    f32::INFINITY,
-                    egui::FontSelection::Default,
-                )
-                .size()
-                .x,
+            Piece::Text(text, colour) => {
+                egui::WidgetText::from(piece_text(text.clone(), *colour))
+                    .into_galley(
+                        ui,
+                        Some(egui::TextWrapMode::Extend),
+                        f32::INFINITY,
+                        egui::FontSelection::Default,
+                    )
+                    .size()
+                    .x
+            }
         })
         .sum::<f32>()
 }
@@ -226,9 +227,11 @@ fn needed_kbps(data: &UIData) -> u32 {
     let options = &data.stream_settings.options;
     let status = &data.stream_status;
     // Held Variable or Average, what the picture asks for, as measured.
-    let measured = status
-        .stream_kbps
-        .filter(|_| status.rate_mode.is_some_and(|m| m != crate::streaming::RateMode::Constant));
+    let measured = status.stream_kbps.filter(|_| {
+        status
+            .rate_mode
+            .is_some_and(|m| m != crate::streaming::RateMode::Constant)
+    });
     if let Some(kbps) = measured {
         return kbps;
     }
@@ -249,7 +252,10 @@ fn stats_pieces(data: &UIData, tier: u8) -> Vec<Piece> {
     let mut pieces = vec![Piece::Bars(bars, colour)];
     if tier < 2 {
         let (kbps, rate_colour) = sending_rate(data);
-        pieces.push(Piece::Text(format!("{:.1} Mbps", kbps / 1000.0), rate_colour));
+        pieces.push(Piece::Text(
+            format!("{:.1} Mbps", kbps / 1000.0),
+            rate_colour,
+        ));
     }
     let down = down_count(data);
     if down > 0 {
@@ -332,13 +338,16 @@ fn enabled(data: &UIData) -> impl Iterator<Item = (usize, &DestinationStatus)> {
 /// sending, nothing, yellow while one connects, red otherwise.
 fn sending_rate(data: &UIData) -> (f32, egui::Color32) {
     let slowest = enabled(data)
-        .filter(|(_, s)| matches!(s.state, DestinationState::Live | DestinationState::Struggling))
+        .filter(|(_, s)| {
+            matches!(
+                s.state,
+                DestinationState::Live | DestinationState::Struggling
+            )
+        })
         .min_by(|(_, a), (_, b)| a.kbps.total_cmp(&b.kbps));
     match slowest {
         Some((_, s)) => (s.kbps, health_of(s.state).1),
-        None if enabled(data).any(|(_, s)| s.state == DestinationState::Connecting) => {
-            (0.0, WARN)
-        }
+        None if enabled(data).any(|(_, s)| s.state == DestinationState::Connecting) => (0.0, WARN),
         None => (0.0, BAD),
     }
 }
@@ -1127,7 +1136,10 @@ fn platform_notes(options: &StreamOptions, destinations: &[StreamDestination]) -
             asks.push("H.264".to_string());
         }
         if !(2000..=14_000).contains(&total) {
-            asks.push(format!("2–14 Mbps with the sound (set: {:.1})", f64::from(total) / 1000.0));
+            asks.push(format!(
+                "2–14 Mbps with the sound (set: {:.1})",
+                f64::from(total) / 1000.0
+            ));
         }
         if !asks.is_empty() {
             notes.push(format!("Cloudflare Stream asks for {}", asks.join(", ")));
@@ -1140,7 +1152,9 @@ fn platform_notes(options: &StreamOptions, destinations: &[StreamDestination]) -
             (false, false) => None,
         };
         if let Some(how) = under.filter(|_| total >= 2000) {
-            notes.push(format!("Cloudflare Stream asks for 2 Mbps at least: {how} it can go under"));
+            notes.push(format!(
+                "Cloudflare Stream asks for 2 Mbps at least: {how} it can go under"
+            ));
         }
     }
     notes
@@ -1686,7 +1700,11 @@ mod tests {
             reconnects: 1,
             ..DestinationStatus::off()
         };
-        assert_eq!(rate_text(&s, 2660), "  3.1 Mbps", "catching up: no need shown");
+        assert_eq!(
+            rate_text(&s, 2660),
+            "  3.1 Mbps",
+            "catching up: no need shown"
+        );
         s.kbps = 2500.0;
         assert_eq!(rate_text(&s, 2660), "  2.5 of 2.7 Mbps");
         s.kbps = 2650.0;
@@ -1742,7 +1760,10 @@ mod tests {
         let data = two_destinations_one_struggling();
         let worst = worst_destination(&data).map(|(i, _)| i);
         assert_eq!(worst, Some(1), "the struggling one");
-        let (bars, colour) = health(&data.stream_status, worst_destination(&data).map(|(_, s)| s));
+        let (bars, colour) = health(
+            &data.stream_status,
+            worst_destination(&data).map(|(_, s)| s),
+        );
         assert_eq!((bars, colour), (2, WARN));
         assert_eq!(
             stream_dropped(&data),
@@ -1838,7 +1859,11 @@ mod tests {
         data.stream_status.encoder_fps = 60;
         data.stream_status.stream_fps = 60;
         data.target_fps = 30;
-        assert_eq!(stream_dropped(&data).frames, 1800, "30 s at the stream's 60");
+        assert_eq!(
+            stream_dropped(&data).frames,
+            1800,
+            "30 s at the stream's 60"
+        );
         // And 600 frames the encoder missed are ten seconds at its 60.
         data.stream_status.encoder_dropped = 600;
         assert_eq!(stream_dropped(&data).frames, 2400, "40 s at 60");
@@ -1926,7 +1951,10 @@ mod tests {
         assert_eq!(texts(0), ["1.6 Mbps", "Dropped ~900 (5.0%)"]);
         assert_eq!(texts(1), ["1.6 Mbps", "5.0%"]);
         assert!(texts(2).is_empty(), "bars only");
-        assert!(stats_pieces(&UIData::test_fixture(), 0).is_empty(), "not live: nothing");
+        assert!(
+            stats_pieces(&UIData::test_fixture(), 0).is_empty(),
+            "not live: nothing"
+        );
     }
 
     /// One destination live, one still without its key: the stats give the
@@ -1960,7 +1988,11 @@ mod tests {
             h.get_by_label("Presets").click();
             h.run_steps(2);
             let preset = h.query_by_label_contains("2500 kbps");
-            assert_eq!(preset.is_some(), rate_live, "presets open while live: {rate_live}");
+            assert_eq!(
+                preset.is_some(),
+                rate_live,
+                "presets open while live: {rate_live}"
+            );
             let Some(preset) = preset else { continue };
             preset.click();
             h.run_steps(2);
@@ -2050,11 +2082,20 @@ mod tests {
             ..StreamOptions::default()
         };
         let youtube = [dest("rtmp://a.rtmp.youtube.com/live2")];
-        assert!(platform_notes(&options, &youtube).is_empty(), "Constant: nothing to say");
+        assert!(
+            platform_notes(&options, &youtube).is_empty(),
+            "Constant: nothing to say"
+        );
         options.rate_mode = RateMode::Variable;
-        assert_eq!(platform_notes(&options, &youtube), ["YouTube asks for Constant (CBR)"]);
+        assert_eq!(
+            platform_notes(&options, &youtube),
+            ["YouTube asks for Constant (CBR)"]
+        );
         let elsewhere = [dest("rtmp://example.com/youtube.com/live")];
-        assert!(platform_notes(&options, &elsewhere).is_empty(), "the host, not the path");
+        assert!(
+            platform_notes(&options, &elsewhere).is_empty(),
+            "the host, not the path"
+        );
 
         let cloudflare = [dest("rtmps://user:pw@live.cloudflare.com:443/live/")];
         options.rate_mode = RateMode::Constant;
@@ -2063,12 +2104,18 @@ mod tests {
         options.video_kbps = 1500;
         options.audio_kbps = 160;
         let said = platform_notes(&options, &cloudflare);
-        assert!(said.len() == 1 && said[0].contains("2–14 Mbps") && said[0].contains("1.7"), "{said:?}");
+        assert!(
+            said.len() == 1 && said[0].contains("2–14 Mbps") && said[0].contains("1.7"),
+            "{said:?}"
+        );
         options.video_kbps = 6000;
         options.rate_mode = RateMode::Variable;
         let said = platform_notes(&options, &cloudflare);
         assert!(said[0].contains("Constant (CBR)"), "{said:?}");
-        assert!(said[1].contains("Variable on slides, it can go under"), "{said:?}");
+        assert!(
+            said[1].contains("Variable on slides, it can go under"),
+            "{said:?}"
+        );
         options.rate_mode = RateMode::Constant;
         options.adaptive = true;
         let said = platform_notes(&options, &cloudflare);
@@ -2077,7 +2124,10 @@ mod tests {
             enabled: false,
             ..cloudflare[0].clone()
         }];
-        assert!(platform_notes(&options, &off).is_empty(), "only those switched on");
+        assert!(
+            platform_notes(&options, &off).is_empty(),
+            "only those switched on"
+        );
     }
 
     #[test]

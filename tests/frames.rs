@@ -78,7 +78,8 @@ fn f16(bits: u16) -> f32 {
 /// Every pixel of an `Rgba16Float` texture, row by row.
 fn frame_pixels(gpu: &GpuContext, texture: &wgpu::Texture) -> Vec<[f32; 4]> {
     let (w, h) = (texture.width(), texture.height());
-    let row = (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let row =
+        (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: u64::from(row * h),
@@ -153,7 +154,9 @@ fn blue_under_red(app: &mut VardaApp) -> (String, String) {
             },
         ));
     }
-    let red = app.build_engine_state().mixer.channels[0].decks[1].uuid.clone();
+    let red = app.build_engine_state().mixer.channels[0].decks[1]
+        .uuid
+        .clone();
     send_cmd(
         app,
         EngineCommand::TakeToMain {
@@ -259,7 +262,11 @@ fn save(pixels: &[[f32; 4]], wide: u32, high: u32, name: &str) {
     let mut img = image::RgbImage::new(wide, high);
     for (i, px) in pixels.iter().enumerate() {
         let (x, y) = (i as u32 % wide, i as u32 / wide);
-        let under = if (x / 24 + y / 24) % 2 == 0 { 0.18 } else { 0.10 };
+        let under = if (x / 24 + y / 24) % 2 == 0 {
+            0.18
+        } else {
+            0.10
+        };
         let alpha = px[3].clamp(0.0, 1.0);
         let to8 = |c: f32| (srgb(c * alpha + under * (1.0 - alpha)) * 255.0).round() as u8;
         img.put_pixel(x, y, image::Rgb([to8(px[0]), to8(px[1]), to8(px[2])]));
@@ -309,7 +316,10 @@ fn at(pixels: &[[f32; 4]], w: u32, h: u32, x: f32, y: f32) -> [f32; 4] {
 /// out for a 16:9 one.
 fn aspect_of(wide: u32, high: u32) -> f32 {
     let aspect = wide as f32 / high as f32;
-    assert!((1.7..1.8).contains(&aspect), "a 16:9 picture: {wide}x{high}");
+    assert!(
+        (1.7..1.8).contains(&aspect),
+        "a 16:9 picture: {wide}x{high}"
+    );
     aspect
 }
 
@@ -563,7 +573,11 @@ fn the_library_has_the_frames() {
         assert!(names.iter().any(|n| n == *name), "{name} among {names:?}");
     }
     // One more is to be named above, to be tested with its kind.
-    assert_eq!(names.len(), LINE_FRAMES.len() + 1, "these and no other: {names:?}");
+    assert_eq!(
+        names.len(),
+        LINE_FRAMES.len() + 1,
+        "these and no other: {names:?}"
+    );
 }
 
 /// Every frame, as it comes, has the picture in the middle of the layer to
@@ -587,7 +601,10 @@ fn every_frame_as_it_comes_keeps_the_picture_whole() {
         save(&pixels, wide, high, &format!("{name}-as-it-comes"));
         for (x, y) in [(0.5, 0.5), (0.4, 0.4), (0.6, 0.6)] {
             let middle = at(&pixels, wide, high, x, y);
-            assert!(just_red(middle), "{name}: the picture at {x}, {y}: {middle:?}");
+            assert!(
+                just_red(middle),
+                "{name}: the picture at {x}, {y}: {middle:?}"
+            );
         }
         let cut_out = has(&app, &effect, "backing")
             && matches!(setting(&app, &effect, "inside"), ParamValue::Bool(true))
@@ -595,7 +612,10 @@ fn every_frame_as_it_comes_keeps_the_picture_whole() {
         if cut_out {
             for (x, y) in [(0.02, 0.03), (0.98, 0.03), (0.02, 0.97), (0.98, 0.97)] {
                 let corner = at(&pixels, wide, high, x, y);
-                assert!(clear(corner), "{name}: cut to its shape, clear at {x}, {y}: {corner:?}");
+                assert!(
+                    clear(corner),
+                    "{name}: cut to its shape, clear at {x}, {y}: {corner:?}"
+                );
             }
             continue;
         }
@@ -615,9 +635,16 @@ fn every_frame_as_it_comes_keeps_the_picture_whole() {
         // And what is under the layer shows nowhere.
         let (pixels, ..) = picture(&mut app);
         let under = share(&pixels, blue);
-        assert!(under <= 0.0, "{name}: what is under shows through {under} of it");
+        assert!(
+            under <= 0.0,
+            "{name}: what is under shows through {under} of it"
+        );
     }
-    assert_eq!(app.gpu_context().errors.fault_count(), 0, "no GPU error drawing them");
+    assert_eq!(
+        app.gpu_context().errors.fault_count(),
+        0,
+        "no GPU error drawing them"
+    );
 }
 
 /// The picture under a frame — not inside it — is drawn exactly as it
@@ -633,7 +660,12 @@ fn the_picture_under_a_frame_is_as_without_one() {
     let mut app = VardaApp::new(gpu, &varda::testing::headless_config()).unwrap();
     let (_, layer) = blue_under_red(&mut app);
     let crop = effect_named(&app, &layer, "crop");
-    for (name, edge) in [("crop_left", 0.4), ("crop_right", 0.6), ("crop_bottom", 0.4), ("crop_top", 0.6)] {
+    for (name, edge) in [
+        ("crop_left", 0.4),
+        ("crop_right", 0.6),
+        ("crop_bottom", 0.4),
+        ("crop_top", 0.6),
+    ] {
         set(&mut app, &crop, name, ParamValue::Float(edge));
     }
     set(&mut app, &crop, "invert_crop", ParamValue::Float(1.0));
@@ -648,19 +680,29 @@ fn the_picture_under_a_frame_is_as_without_one() {
         let mut differ = 0_usize;
         let mut looked = 0_usize;
         for (i, (with, without)) in pixels.iter().zip(&bare).enumerate() {
-            let (x, y) = ((i as u32 % wide) as f32 / wide as f32, (i as u32 / wide) as f32 / high as f32);
+            let (x, y) = (
+                (i as u32 % wide) as f32 / wide as f32,
+                (i as u32 / wide) as f32 / high as f32,
+            );
             if !((0.3..0.7).contains(&x) && (0.3..0.7).contains(&y)) {
                 continue;
             }
             looked += 1;
             // As they show: what is clear has no colour to compare.
             let shown = |px: &[f32; 4]| [px[0] * px[3], px[1] * px[3], px[2] * px[3], px[3]];
-            if shown(with).iter().zip(shown(without)).any(|(now, was)| (now - was).abs() > 0.004) {
+            if shown(with)
+                .iter()
+                .zip(shown(without))
+                .any(|(now, was)| (now - was).abs() > 0.004)
+            {
                 differ += 1;
             }
         }
         assert!(looked > 1000, "{name}: looked at {looked} pixels");
-        assert_eq!(differ, 0, "{name}: {differ} of {looked} pixels are not as without a frame");
+        assert_eq!(
+            differ, 0,
+            "{name}: {differ} of {looked} pixels are not as without a frame"
+        );
     }
 }
 
@@ -712,7 +754,10 @@ fn a_frame_sits_round_what_crop_keeps() {
         let (pixels, wide, high) = own(&mut app, &layer);
         save(&pixels, wide, high, &format!("{name}-cropped"));
         let stray = left_of(&pixels, wide, 0.29);
-        assert_eq!(stray, 0, "{name}: {stray} pixels left of what Crop keeps are not clear");
+        assert_eq!(
+            stray, 0,
+            "{name}: {stray} pixels left of what Crop keeps are not clear"
+        );
         // What is kept is from 0.3 to 1 across: its middle is at 0.65.
         let (across, down) = frame_middle(&pixels, wide, high);
         assert!(
@@ -720,7 +765,10 @@ fn a_frame_sits_round_what_crop_keeps() {
             "{name}: the frame's middle is at {across}, {down}"
         );
         let middle = at(&pixels, wide, high, 0.65, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the kept part's middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the kept part's middle: {middle:?}"
+        );
     }
 
     // The art frame's band and the HUD lines' side are at the kept part's
@@ -728,13 +776,19 @@ fn a_frame_sits_round_what_crop_keeps() {
     plain(&mut app, &layer, ART_FRAME);
     let (pixels, wide, high) = own(&mut app, &layer);
     let band = at(&pixels, wide, high, 0.312, 0.5);
-    assert!(solid(band) && !red(band), "the art's band at the kept part's edge: {band:?}");
+    assert!(
+        solid(band) && !red(band),
+        "the art's band at the kept part's edge: {band:?}"
+    );
     plain_lines(&mut app, &layer, "frame_hud_lines", GREEN);
     let (pixels, wide, high) = own(&mut app, &layer);
     let layer_aspect = aspect_of(wide, high);
     let flank = hud_lines::side(layer_aspect * 0.7);
     let on_line = at(&pixels, wide, high, 0.65 - flank / layer_aspect, 0.5 + 0.28);
-    assert!(green(on_line) && solid(on_line), "the HUD lines' side at the kept part's edge: {on_line:?}");
+    assert!(
+        green(on_line) && solid(on_line),
+        "the HUD lines' side at the kept part's edge: {on_line:?}"
+    );
 }
 
 /// A show on Main with two inputs: the first a red layer; the second a
@@ -808,21 +862,33 @@ fn a_frame_sits_round_what_shows_of_a_repeated_input() {
     // Over the second input's blue (a layer that only repeats an input is
     // drawn straight from it, with no picture of its own to look at).
     let (bare, wide, high) = picture_after(&mut app, 1, 2);
-    let (cut_away, kept) = (at(&bare, wide, high, 0.15, 0.5), at(&bare, wide, high, 0.65, 0.5));
-    assert!(blue(cut_away) && red(kept), "the repeated input: {cut_away:?}, {kept:?}");
+    let (cut_away, kept) = (
+        at(&bare, wide, high, 0.15, 0.5),
+        at(&bare, wide, high, 0.65, 0.5),
+    );
+    assert!(
+        blue(cut_away) && red(kept),
+        "the repeated input: {cut_away:?}, {kept:?}"
+    );
     for name in &frame_names(&app) {
         plain_lines(&mut app, &layer, name, GREEN);
         let (pixels, wide, high) = own(&mut app, &layer);
         save(&pixels, wide, high, &format!("{name}-repeated"));
         let stray = left_of(&pixels, wide, 0.29);
-        assert_eq!(stray, 0, "{name}: {stray} pixels left of what shows are not clear");
+        assert_eq!(
+            stray, 0,
+            "{name}: {stray} pixels left of what shows are not clear"
+        );
         let (across, down) = frame_middle(&pixels, wide, high);
         assert!(
             (across - 0.65).abs() < 0.02 && (down - 0.5).abs() < 0.02,
             "{name}: the frame's middle is at {across}, {down}"
         );
         let middle = at(&pixels, wide, high, 0.65, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle of what shows: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle of what shows: {middle:?}"
+        );
     }
 }
 
@@ -859,11 +925,20 @@ fn cropping_after_the_frame_was_set_moves_it_the_same_frame() {
             "{name}: round what Crop keeps, the frame's middle is at {across}, {down}"
         );
         let stray = left_of(&pixels, wide, 0.29);
-        assert_eq!(stray, 0, "{name}: {stray} pixels left of what Crop keeps are not clear");
+        assert_eq!(
+            stray, 0,
+            "{name}: {stray} pixels left of what Crop keeps are not clear"
+        );
         let below = at(&pixels, wide, high, 0.65, 0.9);
-        assert!(clear(below), "{name}: clear below what Crop keeps: {below:?}");
+        assert!(
+            clear(below),
+            "{name}: clear below what Crop keeps: {below:?}"
+        );
         let middle = at(&pixels, wide, high, 0.65, 0.4);
-        assert!(just_red(middle), "{name}: the picture in the kept part's middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the kept part's middle: {middle:?}"
+        );
     }
 }
 
@@ -882,7 +957,10 @@ fn crop_turned_off_gives_the_frame_the_whole_layer() {
         plain_lines(&mut app, &layer, name, GREEN);
         let (pixels, wide, high) = own(&mut app, &layer);
         let (across, _) = frame_middle(&pixels, wide, high);
-        assert!((across - 0.65).abs() < 0.02, "{name}: round what Crop keeps: {across}");
+        assert!(
+            (across - 0.65).abs() < 0.02,
+            "{name}: round what Crop keeps: {across}"
+        );
 
         send_cmd(
             &mut app,
@@ -892,9 +970,15 @@ fn crop_turned_off_gives_the_frame_the_whole_layer() {
         );
         let (pixels, wide, high) = own(&mut app, &layer);
         let (across, _) = frame_middle(&pixels, wide, high);
-        assert!((across - 0.5).abs() < 0.02, "{name}: Crop off, round the whole layer: {across}");
+        assert!(
+            (across - 0.5).abs() < 0.02,
+            "{name}: Crop off, round the whole layer: {across}"
+        );
         let thin = share(&pixels, |px| !solid(px));
-        assert!(thin <= 0.0, "{name}: Crop off, {thin} of the layer is not all there");
+        assert!(
+            thin <= 0.0,
+            "{name}: Crop off, {thin} of the layer is not all there"
+        );
 
         send_cmd(
             &mut app,
@@ -904,7 +988,10 @@ fn crop_turned_off_gives_the_frame_the_whole_layer() {
         );
         let (pixels, wide, high) = own(&mut app, &layer);
         let (across, _) = frame_middle(&pixels, wide, high);
-        assert!((across - 0.65).abs() < 0.02, "{name}: Crop on again, round what it keeps: {across}");
+        assert!(
+            (across - 0.65).abs() < 0.02,
+            "{name}: Crop on again, round what it keeps: {across}"
+        );
     }
 }
 
@@ -922,13 +1009,19 @@ fn a_frame_round_a_clear_picture_draws_nothing() {
     set(&mut app, &crop, "crop_right", ParamValue::Float(0.4));
     let (bare, ..) = own(&mut app, &layer);
     let showing = share(&bare, |px| !clear(px));
-    assert!(showing <= 0.0, "nothing kept, and {showing} of the picture shows");
+    assert!(
+        showing <= 0.0,
+        "nothing kept, and {showing} of the picture shows"
+    );
     for name in &frame_names(&app) {
         framed(&mut app, &layer, name);
         let (pixels, wide, high) = own(&mut app, &layer);
         save(&pixels, wide, high, &format!("{name}-nothing"));
         let drawn = share(&pixels, |px| !clear(px));
-        assert!(drawn <= 0.0, "{name}: round nothing, {drawn} of the layer is drawn on");
+        assert!(
+            drawn <= 0.0,
+            "{name}: round nothing, {drawn} of the layer is drawn on"
+        );
     }
 }
 
@@ -961,7 +1054,10 @@ fn backing_is_a_dark_plate_outside_a_line_frames_outline() {
             "{name}: inside the frame, {backed} of the layer is the plate ({bare} without), {left_clear} clear ({gone} without)"
         );
         let middle = at(&pixels, wide, high, 0.5, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle: {middle:?}"
+        );
 
         set(&mut app, &effect, "inside", ParamValue::Bool(false));
         let (pixels, wide, high) = own(&mut app, &layer);
@@ -975,13 +1071,19 @@ fn backing_is_a_dark_plate_outside_a_line_frames_outline() {
         let thin = share(&pixels, |px| !solid(px));
         assert!(thin <= 0.0, "{name}: {thin} of the layer is not all there");
         let middle = at(&pixels, wide, high, 0.5, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle: {middle:?}"
+        );
 
         set(&mut app, &effect, "window", ParamValue::Float(0.6));
         let (pixels, wide, high) = own(&mut app, &layer);
         for (x, y) in [(0.08, 0.5), (0.5, 0.92)] {
             let beyond = at(&pixels, wide, high, x, y);
-            assert!(clear(beyond), "{name}: no plate outside the window at {x}, {y}: {beyond:?}");
+            assert!(
+                clear(beyond),
+                "{name}: no plate outside the window at {x}, {y}: {beyond:?}"
+            );
         }
     }
 }
@@ -1002,20 +1104,39 @@ fn size_makes_the_window_smaller_and_clear_outside() {
         let (pixels, wide, high) = own(&mut app, &layer);
         save(&pixels, wide, high, &format!("{name}-size-0.6"));
         let middle = at(&pixels, wide, high, 0.5, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle: {middle:?}"
+        );
         // The window is 0.6 of the layer each way: from 0.2 to 0.8.
-        for (x, y) in [(0.08, 0.5), (0.92, 0.5), (0.5, 0.08), (0.5, 0.92), (0.1, 0.1), (0.9, 0.9)] {
+        for (x, y) in [
+            (0.08, 0.5),
+            (0.92, 0.5),
+            (0.5, 0.08),
+            (0.5, 0.92),
+            (0.1, 0.1),
+            (0.9, 0.9),
+        ] {
             let outside = at(&pixels, wide, high, x, y);
-            assert!(clear(outside), "{name}: clear outside the window at {x}, {y}: {outside:?}");
+            assert!(
+                clear(outside),
+                "{name}: clear outside the window at {x}, {y}: {outside:?}"
+            );
         }
         for (x, y) in [(0.24, 0.5), (0.76, 0.5), (0.5, 0.24), (0.5, 0.76)] {
             let inside = at(&pixels, wide, high, x, y);
-            assert!(solid(inside), "{name}: all there inside the window at {x}, {y}: {inside:?}");
+            assert!(
+                solid(inside),
+                "{name}: all there inside the window at {x}, {y}: {inside:?}"
+            );
         }
         // What is under the layer shows outside the window.
         let (pixels, wide, high) = picture(&mut app);
         let under = at(&pixels, wide, high, 0.08, 0.5);
-        assert!(blue(under), "{name}: what is under, outside the window: {under:?}");
+        assert!(
+            blue(under),
+            "{name}: what is under, outside the window: {under:?}"
+        );
     }
 }
 
@@ -1036,10 +1157,16 @@ fn a_frame_is_drawn_over_the_pictures_edge() {
     save(&pixels, wide, high, "frame_hud-plain");
     for (x, y) in [(0.5, 0.015), (0.5, 0.985), (0.012, 0.5), (0.988, 0.5)] {
         let band = at(&pixels, wide, high, x, y);
-        assert!(solid(band) && !red(band), "the art over the picture at {x}, {y}: {band:?}");
+        assert!(
+            solid(band) && !red(band),
+            "the art over the picture at {x}, {y}: {band:?}"
+        );
     }
     let opening = at(&pixels, wide, high, 0.5, 0.07);
-    assert!(just_red(opening), "the picture in the art's opening: {opening:?}");
+    assert!(
+        just_red(opening),
+        "the picture in the art's opening: {opening:?}"
+    );
 
     for name in LINE_FRAMES {
         plain_lines(&mut app, &layer, name, GREEN);
@@ -1052,7 +1179,10 @@ fn a_frame_is_drawn_over_the_pictures_edge() {
                 continue;
             }
             lines += 1;
-            let (x, y) = ((i as u32 % wide) as f32 / wide as f32, (i as u32 / wide) as f32 / high as f32);
+            let (x, y) = (
+                (i as u32 % wide) as f32 / wide as f32,
+                (i as u32 / wide) as f32 / high as f32,
+            );
             assert!(
                 !((0.3..0.7).contains(&x) && (0.3..0.7).contains(&y)),
                 "{name}: a line in the middle at {x}, {y}"
@@ -1073,9 +1203,16 @@ fn a_frame_is_drawn_over_the_pictures_edge() {
     let along = 0.6 * hud_lines::side(aspect_of(wide, high));
     for (x, y) in [(along, -hud_lines::TOP), (-along, hud_lines::TOP)] {
         let on_line = from_middle(&pixels, wide, high, x, y);
-        assert!(green(on_line) && solid(on_line), "the HUD lines' line at {x}, {y}: {on_line:?}");
+        assert!(
+            green(on_line) && solid(on_line),
+            "the HUD lines' line at {x}, {y}: {on_line:?}"
+        );
         let beside = from_middle(&pixels, wide, high, x, y * 0.9);
-        assert!(just_red(beside), "the picture inside it at {x}, {}: {beside:?}", y * 0.9);
+        assert!(
+            just_red(beside),
+            "the picture inside it at {x}, {}: {beside:?}",
+            y * 0.9
+        );
     }
 }
 
@@ -1096,10 +1233,21 @@ fn shape_makes_the_window_square() {
         // The window is as wide as the layer is high, in the middle.
         let left = 0.5 - 0.5 / aspect_of(wide, high);
         let middle = at(&pixels, wide, high, 0.5, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle: {middle:?}");
-        for (x, y) in [(left / 2.0, 0.5), (1.0 - left / 2.0, 0.5), (left - 0.03, 0.1), (1.03 - left, 0.9)] {
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle: {middle:?}"
+        );
+        for (x, y) in [
+            (left / 2.0, 0.5),
+            (1.0 - left / 2.0, 0.5),
+            (left - 0.03, 0.1),
+            (1.03 - left, 0.9),
+        ] {
             let beside = at(&pixels, wide, high, x, y);
-            assert!(clear(beside), "{name}: clear beside a square window at {x}, {y}: {beside:?}");
+            assert!(
+                clear(beside),
+                "{name}: clear beside a square window at {x}, {y}: {beside:?}"
+            );
         }
         for x in [left + 0.02, 0.98 - left] {
             let within = at(&pixels, wide, high, x, 0.5);
@@ -1130,14 +1278,23 @@ fn fill_has_the_picture_cover_the_window() {
         let left = 0.5 - 0.5 / aspect_of(wide, high);
         for y in [0.25, 0.75] {
             let whole = at(&pixels, wide, high, 0.5, y);
-            assert!(just_red(whole), "{name}: the whole picture at 0.5, {y}: {whole:?}");
+            assert!(
+                just_red(whole),
+                "{name}: the whole picture at 0.5, {y}: {whole:?}"
+            );
         }
         for y in [0.12, 0.16, 0.84, 0.88] {
             let room = at(&pixels, wide, high, 0.5, y);
             if name == ART_FRAME {
-                assert!(black(room) && solid(room), "{name}: backed with black at 0.5, {y}: {room:?}");
+                assert!(
+                    black(room) && solid(room),
+                    "{name}: backed with black at 0.5, {y}: {room:?}"
+                );
             } else {
-                assert!(clear(room), "{name}: clear above and below the picture at 0.5, {y}: {room:?}");
+                assert!(
+                    clear(room),
+                    "{name}: clear above and below the picture at 0.5, {y}: {room:?}"
+                );
             }
         }
 
@@ -1146,11 +1303,17 @@ fn fill_has_the_picture_cover_the_window() {
         save(&pixels, wide, high, &format!("{name}-square-filled"));
         for y in [0.12, 0.16, 0.5, 0.84, 0.88] {
             let filled = at(&pixels, wide, high, 0.5, y);
-            assert!(just_red(filled), "{name}: the picture fills the window at 0.5, {y}: {filled:?}");
+            assert!(
+                just_red(filled),
+                "{name}: the picture fills the window at 0.5, {y}: {filled:?}"
+            );
         }
         for x in [left / 2.0, 1.0 - left / 2.0] {
             let beside = at(&pixels, wide, high, x, 0.5);
-            assert!(clear(beside), "{name}: and is cut to it at {x}, 0.5: {beside:?}");
+            assert!(
+                clear(beside),
+                "{name}: and is cut to it at {x}, 0.5: {beside:?}"
+            );
         }
     }
 }
@@ -1175,7 +1338,10 @@ fn picture_inside_the_art_frame_is_scaled_into_its_opening() {
     let effect = plain(&mut app, &layer, ART_FRAME);
     let (pixels, ..) = own(&mut app, &layer);
     let showing = share(&pixels, green);
-    assert!(showing <= 0.0, "the picture's border under the band: {showing} of it shows");
+    assert!(
+        showing <= 0.0,
+        "the picture's border under the band: {showing} of it shows"
+    );
 
     set(&mut app, &effect, "inside", ParamValue::Bool(true));
     let (pixels, wide, high) = own(&mut app, &layer);
@@ -1184,11 +1350,17 @@ fn picture_inside_the_art_frame_is_scaled_into_its_opening() {
     // has its border from there to 6.2%, and the art's glow ends at 5.8%.
     for y in [0.057, 0.943] {
         let inside = at(&pixels, wide, high, 0.5, y);
-        assert!(green(inside) && solid(inside), "the picture's border in the opening at 0.5, {y}: {inside:?}");
+        assert!(
+            green(inside) && solid(inside),
+            "the picture's border in the opening at 0.5, {y}: {inside:?}"
+        );
     }
     for (x, y) in [(0.5, 0.015), (0.5, 0.985), (0.012, 0.5), (0.988, 0.5)] {
         let band = at(&pixels, wide, high, x, y);
-        assert!(solid(band) && !green(band) && !red(band), "the band at {x}, {y}: {band:?}");
+        assert!(
+            solid(band) && !green(band) && !red(band),
+            "the band at {x}, {y}: {band:?}"
+        );
     }
     let middle = at(&pixels, wide, high, 0.5, 0.5);
     assert!(just_red(middle), "the picture in the middle: {middle:?}");
@@ -1209,21 +1381,36 @@ fn a_line_frame_dims_the_picture_outside_its_outline_or_cuts_it() {
         let effect = plain_lines(&mut app, &layer, name, GREEN);
         let (outside, wide, high) = own(&mut app, &layer);
         let dim = share(&outside, dimmed);
-        assert!(dim > 0.01, "{name}: {dim} of the picture is dimmed, outside the outline");
+        assert!(
+            dim > 0.01,
+            "{name}: {dim} of the picture is dimmed, outside the outline"
+        );
         let thin = share(&outside, |px| !solid(px));
         assert!(thin <= 0.0, "{name}: {thin} of the layer is not all there");
         let middle = at(&outside, wide, high, 0.5, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle: {middle:?}"
+        );
 
         set(&mut app, &effect, "inside", ParamValue::Bool(true));
         let (pixels, wide, high) = own(&mut app, &layer);
         save(&pixels, wide, high, &format!("{name}-inside"));
         let dim = share(&pixels, dimmed);
-        assert!(dim < 0.001, "{name}: {dim} of the picture is dimmed with it inside the frame");
+        assert!(
+            dim < 0.001,
+            "{name}: {dim} of the picture is dimmed with it inside the frame"
+        );
         let gone = share(&pixels, clear);
-        assert!(gone > 0.01, "{name}: {gone} of the layer is clear, outside the outline");
+        assert!(
+            gone > 0.01,
+            "{name}: {gone} of the layer is clear, outside the outline"
+        );
         let middle = at(&pixels, wide, high, 0.5, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle: {middle:?}"
+        );
 
         // Filling the frame the picture reaches past the outline, which is
         // where it was before: none of it shows where it was dimmed.
@@ -1235,9 +1422,15 @@ fn a_line_frame_dims_the_picture_outside_its_outline_or_cuts_it() {
             .zip(&outside)
             .filter(|(now, before)| dimmed(**before) && red(**now) && now[3] > 0.5)
             .count();
-        assert_eq!(past, 0, "{name}: {past} pixels of the picture show outside the outline");
+        assert_eq!(
+            past, 0,
+            "{name}: {past} pixels of the picture show outside the outline"
+        );
         let middle = at(&pixels, wide, high, 0.5, 0.5);
-        assert!(just_red(middle), "{name}: the picture in the middle: {middle:?}");
+        assert!(
+            just_red(middle),
+            "{name}: the picture in the middle: {middle:?}"
+        );
     }
 
     // The HUD lines, in the band of marks above and below its outline: the
@@ -1247,7 +1440,10 @@ fn a_line_frame_dims_the_picture_outside_its_outline_or_cuts_it() {
     let (pixels, wide, high) = own(&mut app, &layer);
     for y in [-hud_lines::MARKS, hud_lines::MARKS] {
         let beyond = from_middle(&pixels, wide, high, 0.0, y);
-        assert!(dimmed(beyond), "dimmed outside the outline at 0, {y}: {beyond:?}");
+        assert!(
+            dimmed(beyond),
+            "dimmed outside the outline at 0, {y}: {beyond:?}"
+        );
     }
     set(&mut app, &effect, "inside", ParamValue::Bool(true));
     set(&mut app, &effect, "fill", ParamValue::Bool(true));
@@ -1325,22 +1521,39 @@ fn picture_inside_the_hud_lines_is_fitted_into_its_outline() {
     let on_side = [(flank, 0.28), (-flank, -0.28)];
     for (x, y) in under_line.into_iter().chain(on_side) {
         let whole = from_middle(&pixels, wide, high, x, y);
-        assert!(just_red(whole), "not inside, the picture's middle at {x}, {y}: {whole:?}");
+        assert!(
+            just_red(whole),
+            "not inside, the picture's middle at {x}, {y}: {whole:?}"
+        );
     }
 
     set(&mut app, &effect, "inside", ParamValue::Bool(true));
     let (pixels, wide, high) = own(&mut app, &layer);
     for (x, y) in under_line {
         let border = from_middle(&pixels, wide, high, x, y);
-        assert!(green(border) && solid(border), "the picture's border inside the outline at {x}, {y}: {border:?}");
+        assert!(
+            green(border) && solid(border),
+            "the picture's border inside the outline at {x}, {y}: {border:?}"
+        );
     }
     for (x, y) in on_side {
         let on_line = from_middle(&pixels, wide, high, x, y);
-        assert!(bluish(on_line) && solid(on_line), "the outline's side at the picture's, {x}, {y}: {on_line:?}");
+        assert!(
+            bluish(on_line) && solid(on_line),
+            "the outline's side at the picture's, {x}, {y}: {on_line:?}"
+        );
         let beyond = from_middle(&pixels, wide, high, x * 1.08, y);
-        assert!(clear(beyond), "clear beyond it at {}, {y}: {beyond:?}", x * 1.08);
+        assert!(
+            clear(beyond),
+            "clear beyond it at {}, {y}: {beyond:?}",
+            x * 1.08
+        );
         let within = from_middle(&pixels, wide, high, x * 0.9, y);
-        assert!(red(within) && solid(within), "the picture within it at {}, {y}: {within:?}", x * 0.9);
+        assert!(
+            red(within) && solid(within),
+            "the picture within it at {}, {y}: {within:?}",
+            x * 0.9
+        );
     }
 }
 
@@ -1364,7 +1577,10 @@ fn the_stream_overlay_is_a_band_with_a_tab() {
         assert!(green(band) && solid(band), "the band at {x}, {y}: {band:?}");
     }
     let under_top = from_middle(&pixels, wide, high, -0.5, -0.47);
-    assert!(just_red(under_top), "as far in from the top, the picture: {under_top:?}");
+    assert!(
+        just_red(under_top),
+        "as far in from the top, the picture: {under_top:?}"
+    );
     // The tab: from 0.427 to the band, 0.28 to each side of the middle.
     let tab = from_middle(&pixels, wide, high, 0.0, 0.4444);
     assert!(dark(tab) && solid(tab), "the tab's dark plate: {tab:?}");
@@ -1385,20 +1601,44 @@ fn the_neon_ring_cuts_the_picture_to_a_circle() {
     let effect = framed(&mut app, &layer, "frame_ring");
     for name in ["inside", "fill"] {
         let starts = setting(&app, &effect, name);
-        assert!(matches!(starts, ParamValue::Bool(true)), "it starts with {name} on: {starts:?}");
+        assert!(
+            matches!(starts, ParamValue::Bool(true)),
+            "it starts with {name} on: {starts:?}"
+        );
     }
     set(&mut app, &effect, "anim", ParamValue::Long(5));
     set(&mut app, &effect, "glow", ParamValue::Float(0.0));
     let (pixels, wide, high) = own(&mut app, &layer);
     save(&pixels, wide, high, "frame_ring-plain");
     // The rings are 0.465 of the layer's height from the middle.
-    for (x, y) in [(0.0, 0.0), (0.42, 0.0), (-0.42, 0.0), (0.0, -0.42), (0.0, 0.42), (0.3, 0.3), (-0.3, -0.3)] {
+    for (x, y) in [
+        (0.0, 0.0),
+        (0.42, 0.0),
+        (-0.42, 0.0),
+        (0.0, -0.42),
+        (0.0, 0.42),
+        (0.3, 0.3),
+        (-0.3, -0.3),
+    ] {
         let within = from_middle(&pixels, wide, high, x, y);
-        assert!(just_red(within), "the picture in the circle at {x}, {y}: {within:?}");
+        assert!(
+            just_red(within),
+            "the picture in the circle at {x}, {y}: {within:?}"
+        );
     }
-    for (x, y) in [(0.51, 0.0), (-0.51, 0.0), (0.37, 0.37), (-0.37, 0.37), (0.37, -0.37), (0.8, 0.45)] {
+    for (x, y) in [
+        (0.51, 0.0),
+        (-0.51, 0.0),
+        (0.37, 0.37),
+        (-0.37, 0.37),
+        (0.37, -0.37),
+        (0.8, 0.45),
+    ] {
         let beyond = from_middle(&pixels, wide, high, x, y);
-        assert!(clear(beyond), "clear outside the circle at {x}, {y}: {beyond:?}");
+        assert!(
+            clear(beyond),
+            "clear outside the circle at {x}, {y}: {beyond:?}"
+        );
     }
 }
 
@@ -1428,7 +1668,8 @@ impl<'a> Framed<'a> {
         crop: impl FnOnce(&mut ShaderParams),
     ) -> Self {
         let load = |path: &Path| {
-            let shader = ISFShader::from_file(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            let shader =
+                ISFShader::from_file(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
             Effect::new(ctx, shader).unwrap_or_else(|e| panic!("{}: {e:#}", path.display()))
         };
         let mut deck = Deck::new_solid_color(ctx, [1.0, 0.0, 0.0, 1.0], wide, high).expect("deck");
@@ -1438,7 +1679,11 @@ impl<'a> Framed<'a> {
         deck.add_effect(load(path));
         let mut mixer = Mixer::new(ctx, wide, high).expect("mixer");
         mixer.channel_mut(0).expect("a channel").add_deck(deck);
-        Self { ctx, mixer, drawn: 0 }
+        Self {
+            ctx,
+            mixer,
+            drawn: 0,
+        }
     }
 
     /// The frame's effect: the second, after Crop.
@@ -1468,7 +1713,9 @@ impl<'a> Framed<'a> {
             transport: None,
             free_run_time: Some(self.drawn as f32 / 60.0),
         };
-        self.mixer.render(self.ctx, &inputs, 60, &[]).expect("render");
+        self.mixer
+            .render(self.ctx, &inputs, 60, &[])
+            .expect("render");
         self.drawn += 1;
     }
 
@@ -1510,7 +1757,9 @@ fn shader_file(name: &str) -> PathBuf {
 }
 
 fn stem(path: &Path) -> &str {
-    path.file_stem().and_then(|name| name.to_str()).unwrap_or_default()
+    path.file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
 }
 
 /// How many pixels of two pictures are not the same.
@@ -1523,7 +1772,12 @@ fn differ_by(one: &[[f32; 4]], other: &[[f32; 4]], by: f32) -> usize {
     let shown = |px: &[f32; 4]| [px[0] * px[3], px[1] * px[3], px[2] * px[3], px[3]];
     one.iter()
         .zip(other)
-        .filter(|(was, now)| shown(was).iter().zip(shown(now)).any(|(p, q)| (p - q).abs() > by))
+        .filter(|(was, now)| {
+            shown(was)
+                .iter()
+                .zip(shown(now))
+                .any(|(p, q)| (p - q).abs() > by)
+        })
         .count()
 }
 
@@ -1551,14 +1805,20 @@ fn a_frame_finds_what_shows_in_a_layer_of_any_size() {
             settings.set_float("speed", 0.0);
             let pixels = framed.draw();
             let stray = left_of(&pixels, wide, 0.29);
-            assert_eq!(stray, 0, "{name} at {wide}x{high}: {stray} pixels left of what Crop keeps are not clear");
+            assert_eq!(
+                stray, 0,
+                "{name} at {wide}x{high}: {stray} pixels left of what Crop keeps are not clear"
+            );
             let (across, down) = frame_middle(&pixels, wide, high);
             assert!(
                 (across - 0.65).abs() < 0.02 && (down - 0.4).abs() < 0.02,
                 "{name} at {wide}x{high}: the frame's middle is at {across}, {down}"
             );
             let middle = at(&pixels, wide, high, 0.65, 0.4);
-            assert!(just_red(middle), "{name} at {wide}x{high}: the picture in the kept part's middle: {middle:?}");
+            assert!(
+                just_red(middle),
+                "{name} at {wide}x{high}: the picture in the kept part's middle: {middle:?}"
+            );
             // The first column with anything in it, half way down what is kept.
             let row = (0.4 * high as f32) as u32 * wide;
             let first = (0..wide)
@@ -1621,7 +1881,12 @@ fn the_way_out_deep_inside_the_picture_changes_nothing() {
         for filled in [false, true] {
             let draw = |file: &Path| {
                 let mut framed = Framed::sized(&ctx, file, W, H, |crop| {
-                    for (edge, to) in [("crop_left", 0.4), ("crop_right", 0.6), ("crop_bottom", 0.4), ("crop_top", 0.6)] {
+                    for (edge, to) in [
+                        ("crop_left", 0.4),
+                        ("crop_right", 0.6),
+                        ("crop_bottom", 0.4),
+                        ("crop_top", 0.6),
+                    ] {
                         crop.set_float(edge, to);
                     }
                     crop.set_float("invert_crop", 1.0);
@@ -1635,9 +1900,15 @@ fn the_way_out_deep_inside_the_picture_changes_nothing() {
             };
             let (short_way, long_way) = (draw(path), draw(&long));
             let hole = at(&short_way, W, H, 0.5, 0.5);
-            assert!(clear(hole), "{name}: the hole in the picture's middle: {hole:?}");
+            assert!(
+                clear(hole),
+                "{name}: the hole in the picture's middle: {hole:?}"
+            );
             let differ = differ_by(&short_way, &long_way, 0.002);
-            assert_eq!(differ, 0, "{name}, filled {filled}: {differ} pixels are not as drawn the long way");
+            assert_eq!(
+                differ, 0,
+                "{name}, filled {filled}: {differ} pixels are not as drawn the long way"
+            );
         }
     }
     assert!(compared >= 11, "the frames with a way out: {compared}");
@@ -1662,7 +1933,10 @@ fn every_frame_moves_and_at_speed_zero_stands_still() {
         }
         let later = framed.draw();
         let moved = changed(&first, &later);
-        assert!(moved > 200, "{name}: hardly moved in half a second ({moved} pixels)");
+        assert!(
+            moved > 200,
+            "{name}: hardly moved in half a second ({moved} pixels)"
+        );
         framed.settings().set_float("speed", 0.0);
         for _ in 0..29 {
             framed.step();
@@ -1714,8 +1988,16 @@ fn where_the_light_is_a_line_is_the_lights_colour() {
     };
     // The light's head just past each place in turn, its tail on it.
     for (turn, lit, unlit) in [
-        (top + 0.01, (along, -hud_lines::TOP), (-along, hud_lines::TOP)),
-        (bottom + 0.01, (-along, hud_lines::TOP), (along, -hud_lines::TOP)),
+        (
+            top + 0.01,
+            (along, -hud_lines::TOP),
+            (-along, hud_lines::TOP),
+        ),
+        (
+            bottom + 0.01,
+            (-along, hud_lines::TOP),
+            (along, -hud_lines::TOP),
+        ),
     ] {
         let pixels = draw(turn);
         save(&pixels, W, H, &format!("frame_hud_lines-light-{turn:.2}"));
@@ -1725,7 +2007,10 @@ fn where_the_light_is_a_line_is_the_lights_colour() {
             "the light {turn} round, on the line at {lit:?}: {bright:?}"
         );
         let calm = from_middle(&pixels, W, H, unlit.0, unlit.1);
-        assert!(green(calm), "the light {turn} round, the line at {unlit:?} the frame's colour: {calm:?}");
+        assert!(
+            green(calm),
+            "the light {turn} round, the line at {unlit:?} the frame's colour: {calm:?}"
+        );
     }
 }
 
@@ -1756,7 +2041,10 @@ fn the_light_goes_round_every_frame() {
             sum += f64::from(differs);
             across += f64::from(differs) * f64::from(i as u32 % W) / f64::from(W);
         }
-        assert!(sum > 100.0, "{name}: the light {turn} round shows its colour ({sum})");
+        assert!(
+            sum > 100.0,
+            "{name}: the light {turn} round shows its colour ({sum})"
+        );
         across / sum
     };
     for path in &frame_files() {
@@ -1764,9 +2052,15 @@ fn the_light_goes_round_every_frame() {
         // Just past half way down the right side; just past half way up
         // the left.
         let on_right = light_is_at(name, 0.42);
-        assert!(on_right > 0.6, "{name}: the light on the right side is {on_right} across");
+        assert!(
+            on_right > 0.6,
+            "{name}: the light on the right side is {on_right} across"
+        );
         let on_left = light_is_at(name, 0.92);
-        assert!(on_left < 0.4, "{name}: the light on the left side is {on_left} across");
+        assert!(
+            on_left < 0.4,
+            "{name}: the light on the left side is {on_left} across"
+        );
     }
 }
 
@@ -1788,9 +2082,15 @@ fn still_takes_the_light_away() {
             framed.draw()
         };
         let lit = changed(&draw(0, [1.0, 1.0, 1.0, 1.0]), &draw(0, BLUE));
-        assert!(lit > 200, "{name}: a light going round shows its colour ({lit} pixels)");
+        assert!(
+            lit > 200,
+            "{name}: a light going round shows its colour ({lit} pixels)"
+        );
         let still = changed(&draw(5, [1.0, 1.0, 1.0, 1.0]), &draw(5, BLUE));
-        assert_eq!(still, 0, "{name}: Still, and the light's colour shows ({still} pixels)");
+        assert_eq!(
+            still, 0,
+            "{name}: Still, and the light's colour shows ({still} pixels)"
+        );
     }
 }
 
@@ -1819,12 +2119,24 @@ fn frame_colour_colours_a_line_frames_lines() {
         let pixels = draw(GREEN);
         save(&pixels, W, H, &format!("{name}-glow-green"));
         let (of_green, of_blue) = (share(&pixels, greener), share(&pixels, bluer));
-        assert!(of_green > 0.002, "{name}: green lines: {of_green} of the picture");
-        assert!(of_blue <= 0.0, "{name}: green lines, and {of_blue} of the picture is bluer");
+        assert!(
+            of_green > 0.002,
+            "{name}: green lines: {of_green} of the picture"
+        );
+        assert!(
+            of_blue <= 0.0,
+            "{name}: green lines, and {of_blue} of the picture is bluer"
+        );
         let pixels = draw(BLUE);
         let (of_green, of_blue) = (share(&pixels, greener), share(&pixels, bluer));
-        assert!(of_blue > 0.002, "{name}: blue lines: {of_blue} of the picture");
-        assert!(of_green <= 0.0, "{name}: blue lines, and {of_green} of the picture is greener");
+        assert!(
+            of_blue > 0.002,
+            "{name}: blue lines: {of_blue} of the picture"
+        );
+        assert!(
+            of_green <= 0.0,
+            "{name}: blue lines, and {of_green} of the picture is greener"
+        );
     }
 }
 
@@ -1851,13 +2163,25 @@ fn frame_colour_colours_the_art_frames_lights() {
     let pixels = draw(None);
     save(&pixels, W, H, "frame_hud-lights");
     let (of_cyan, of_magenta) = (share(&pixels, cyan), share(&pixels, magenta));
-    assert!(of_cyan > 0.001, "as it comes, cyan lights: {of_cyan} of the picture");
-    assert!(of_magenta <= 0.0, "as it comes, {of_magenta} of the picture is magenta");
+    assert!(
+        of_cyan > 0.001,
+        "as it comes, cyan lights: {of_cyan} of the picture"
+    );
+    assert!(
+        of_magenta <= 0.0,
+        "as it comes, {of_magenta} of the picture is magenta"
+    );
     let pixels = draw(Some([1.0, 0.0, 1.0, 1.0]));
     save(&pixels, W, H, "frame_hud-lights-magenta");
     let (of_cyan, of_magenta) = (share(&pixels, cyan), share(&pixels, magenta));
-    assert!(of_magenta > 0.001, "magenta lights: {of_magenta} of the picture");
-    assert!(of_cyan <= 0.0, "magenta lights, and {of_cyan} of the picture is cyan");
+    assert!(
+        of_magenta > 0.001,
+        "magenta lights: {of_magenta} of the picture"
+    );
+    assert!(
+        of_cyan <= 0.0,
+        "magenta lights, and {of_cyan} of the picture is cyan"
+    );
 }
 
 /// Where the layer shows over the blue under it, in the channel's
@@ -1893,7 +2217,10 @@ fn a_frame_goes_where_its_layer_goes() {
     let mut app = VardaApp::new(gpu, &varda::testing::headless_config()).unwrap();
     let (_, layer) = blue_under_red(&mut app);
     plain_lines(&mut app, &layer, "frame_hud_lines", GREEN);
-    assert_eq!(chain(&app, &layer), ["crop", "frame_hud_lines", "transform"]);
+    assert_eq!(
+        chain(&app, &layer),
+        ["crop", "frame_hud_lines", "transform"]
+    );
     let transform = effect_named(&app, &layer, "transform");
     set(&mut app, &transform, "scale", ParamValue::Float(0.5));
     let (pixels, wide, high) = picture(&mut app);
@@ -1907,7 +2234,10 @@ fn a_frame_goes_where_its_layer_goes() {
             continue;
         }
         lines += 1;
-        let (x, y) = ((i as u32 % wide) as f32 / wide as f32, (i as u32 / wide) as f32 / high as f32);
+        let (x, y) = (
+            (i as u32 % wide) as f32 / wide as f32,
+            (i as u32 / wide) as f32 / high as f32,
+        );
         assert!(
             (0.24..0.76).contains(&x) && (0.24..0.76).contains(&y),
             "a line outside the layer's place, at {x}, {y}"
@@ -1932,7 +2262,12 @@ fn a_frame_stays_where_its_layer_is_frame_after_frame() {
     // Neither what is under the layer, nor the layer's picture, nor that
     // dimmed: the frame itself.
     let of_frame = |px: [f32; 4]| !blue(px) && !red(px) && !dimmed(px);
-    let near = |reach: [f32; 4], place: [f32; 4]| reach.iter().zip(place).all(|(at, to)| (at - to).abs() < 0.01);
+    let near = |reach: [f32; 4], place: [f32; 4]| {
+        reach
+            .iter()
+            .zip(place)
+            .all(|(at, to)| (at - to).abs() < 0.01)
+    };
     for name in &frame_names(&app) {
         set(&mut app, &transform, "scale", ParamValue::Float(1.0));
         set(&mut app, &transform, "pos_x", ParamValue::Float(0.0));
@@ -1951,7 +2286,12 @@ fn a_frame_stays_where_its_layer_is_frame_after_frame() {
         set(&mut app, &transform, "pos_x", ParamValue::Float(0.1));
         for frames in [1, 12] {
             let (pixels, wide, high) = picture_after(&mut app, 0, frames);
-            save(&pixels, wide, high, &format!("{name}-scaled-and-moved-{frames}"));
+            save(
+                &pixels,
+                wide,
+                high,
+                &format!("{name}-scaled-and-moved-{frames}"),
+            );
             let reach = layer_reaches(&pixels, wide, high);
             let drawn = share(&pixels, of_frame);
             assert!(
@@ -1959,7 +2299,10 @@ fn a_frame_stays_where_its_layer_is_frame_after_frame() {
                 "{name}: scaled and moved, {frames} more drawn, the layer reaches {reach:?}, {drawn} of the picture the frame"
             );
             let middle = at(&pixels, wide, high, 0.6, 0.5);
-            assert!(red(middle), "{name}: the picture in the layer's middle: {middle:?}");
+            assert!(
+                red(middle),
+                "{name}: the picture in the layer's middle: {middle:?}"
+            );
         }
     }
 }
@@ -2002,7 +2345,10 @@ fn a_frame_is_set_before_transform_and_taken_away() {
 
     let gone = id(frame(&mut app, &layer, None));
     assert!(gone.is_empty(), "no frame, no effect to name: {gone}");
-    assert_eq!(chain(&app, &layer), ["crop", "transform", LAYER_MASK_EFFECT]);
+    assert_eq!(
+        chain(&app, &layer),
+        ["crop", "transform", LAYER_MASK_EFFECT]
+    );
     send_cmd(&mut app, EngineCommand::Undo);
     assert_eq!(
         chain(&app, &layer),
@@ -2043,7 +2389,10 @@ fn another_frame_takes_its_own_for_what_was_left_as_it_came() {
     let (_, layer) = blue_under_red(&mut app);
     let hud = id(frame(&mut app, &layer, Some("frame_hud")));
     let first = setting(&app, &hud, "anim");
-    assert!(matches!(first, ParamValue::Long(0)), "the HUD frame's animation: {first:?}");
+    assert!(
+        matches!(first, ParamValue::Long(0)),
+        "the HUD frame's animation: {first:?}"
+    );
     let cyan = setting(&app, &hud, "frame_colour");
     assert!(
         matches!(cyan, ParamValue::Color(c) if c[1] > 0.9 && c[0] < 0.1),
@@ -2051,7 +2400,10 @@ fn another_frame_takes_its_own_for_what_was_left_as_it_came() {
     );
     let neon = id(frame(&mut app, &layer, Some("frame_neon_two")));
     let animation = setting(&app, &neon, "anim");
-    assert!(matches!(animation, ParamValue::Long(1)), "the neon's own animation: {animation:?}");
+    assert!(
+        matches!(animation, ParamValue::Long(1)),
+        "the neon's own animation: {animation:?}"
+    );
     let colour = setting(&app, &neon, "frame_colour");
     assert!(
         matches!(colour, ParamValue::Color(c) if c[1] < 0.5 && c[2] > 0.9),
@@ -2072,7 +2424,10 @@ fn a_name_that_is_no_frame_is_refused() {
     let before = chain(&app, &layer);
     for name in ["transform", "no_such_frame"] {
         let refused = frame(&mut app, &layer, Some(name));
-        assert!(matches!(refused, CommandResult::Err { .. }), "{name}: {refused:?}");
+        assert!(
+            matches!(refused, CommandResult::Err { .. }),
+            "{name}: {refused:?}"
+        );
         assert_eq!(chain(&app, &layer), before, "{name}: left as it was");
     }
 }
@@ -2141,7 +2496,8 @@ fn cost_of_each_frame_at_4k() {
     time(None);
     let alone = time(None);
     println!("the picture alone: {alone:.2} ms a frame");
-    let frames = std::env::var_os("NIDA_COST_FRAMES").map_or_else(frame_files, |dir| frames_in(Path::new(&dir)));
+    let frames = std::env::var_os("NIDA_COST_FRAMES")
+        .map_or_else(frame_files, |dir| frames_in(Path::new(&dir)));
     for path in &frames {
         let started = std::time::Instant::now();
         let shader = ISFShader::from_file(path).expect("shader");

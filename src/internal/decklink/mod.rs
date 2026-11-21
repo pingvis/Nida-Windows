@@ -455,8 +455,7 @@ impl DeckLinkSender {
         full_range: bool,
         audio: Option<AudioInput>,
     ) -> anyhow::Result<Self> {
-        let find =
-            |devices: Vec<DeckLinkDevice>| devices.into_iter().find(|d| d.name == device);
+        let find = |devices: Vec<DeckLinkDevice>| devices.into_iter().find(|d| d.name == device);
         // As last copied, at once; else as discovery has it this moment — a
         // box that has just arrived.
         let found = find(known_devices())
@@ -470,7 +469,8 @@ impl DeckLinkSender {
             .clone();
         let arrival = found.arrival;
         let (code, width, height) = (format.code, format.width, format.height);
-        let frame = (format.fps > 0.0).then(|| std::time::Duration::from_secs_f64(1.0 / format.fps));
+        let frame =
+            (format.fps > 0.0).then(|| std::time::Duration::from_secs_f64(1.0 / format.fps));
         let device = device.to_string();
         let claim: ClaimSlot = Arc::default();
         let ours = Arc::clone(&claim);
@@ -1320,7 +1320,9 @@ mod sdk {
             nida_dl_open_with_audio(
                 arrival,
                 code,
-                audio.as_ref().map(|_| read_audio as extern "C" fn(*mut c_void, i64, u32, *mut i32)),
+                audio
+                    .as_ref()
+                    .map(|_| read_audio as extern "C" fn(*mut c_void, i64, u32, *mut i32)),
                 context,
                 err.as_mut_ptr(),
                 256,
@@ -1490,14 +1492,9 @@ mod tests {
     const FRAME: Duration = Duration::from_micros(16_667);
 
     fn start(screen: Recorder) -> DeckLinkSender {
-        DeckLinkSender::start_with(
-            "Test",
-            4,
-            2,
-            false,
-            Some(FRAME),
-            move || Ok(Box::new(screen) as Box<dyn Screen>),
-        )
+        DeckLinkSender::start_with("Test", 4, 2, false, Some(FRAME), move || {
+            Ok(Box::new(screen) as Box<dyn Screen>)
+        })
         .expect("started")
     }
 
@@ -1708,13 +1705,25 @@ mod tests {
         let (screen, ends) = recorder(false);
         let sender = start(screen);
         sender.send(&rgba(255));
-        assert_eq!(ends.shown.recv_timeout(WAIT).expect("shown")[1], 235, "video");
+        assert_eq!(
+            ends.shown.recv_timeout(WAIT).expect("shown")[1],
+            235,
+            "video"
+        );
         sender.set_full_range(true);
         sender.send(&rgba(255));
-        assert_eq!(ends.shown.recv_timeout(WAIT).expect("shown")[1], 254, "full");
+        assert_eq!(
+            ends.shown.recv_timeout(WAIT).expect("shown")[1],
+            254,
+            "full"
+        );
         sender.set_full_range(false);
         sender.send(&rgba(255));
-        assert_eq!(ends.shown.recv_timeout(WAIT).expect("shown")[1], 235, "video again");
+        assert_eq!(
+            ends.shown.recv_timeout(WAIT).expect("shown")[1],
+            235,
+            "video again"
+        );
     }
 
     /// How long a 1080p conversion takes: about a millisecond, against the
@@ -1799,11 +1808,20 @@ mod tests {
     #[test]
     fn bigger_pictures_get_more_of_a_cpu() {
         let ms = |ms: u64| Duration::from_millis(ms);
-        assert_eq!(budget_for(CONVERT_BUDGET, FRAME, 1920, 1080), (ms(3), ms(6)));
+        assert_eq!(
+            budget_for(CONVERT_BUDGET, FRAME, 1920, 1080),
+            (ms(3), ms(6))
+        );
         assert_eq!(budget_for(DEVICE_BUDGET, FRAME, 1280, 720), (ms(2), ms(4)));
         let at_30 = Duration::from_micros(33_333);
-        assert_eq!(budget_for(CONVERT_BUDGET, at_30, 3840, 2160), (ms(12), ms(24)));
-        assert_eq!(budget_for(CONVERT_BUDGET, FRAME, 3840, 2160), (ms(12), FRAME));
+        assert_eq!(
+            budget_for(CONVERT_BUDGET, at_30, 3840, 2160),
+            (ms(12), ms(24))
+        );
+        assert_eq!(
+            budget_for(CONVERT_BUDGET, FRAME, 3840, 2160),
+            (ms(12), FRAME)
+        );
     }
 
     /// Every [`REPORT_EVERY`] the log is told how the output fares: pictures
@@ -1828,7 +1846,11 @@ mod tests {
             assert_eq!(slot.between.count, 2, "two times between three pictures");
             assert!(slot.between.most >= Duration::from_millis(2));
             assert_eq!(
-                (slot.age.count, slot.convert_cpu.count, slot.device_cpu.count),
+                (
+                    slot.age.count,
+                    slot.convert_cpu.count,
+                    slot.device_cpu.count
+                ),
                 (3, 3, 3)
             );
             assert!(slot.convert_cpu.most <= slot.convert.most);
@@ -1865,7 +1887,11 @@ mod tests {
         let mut spares = Vec::new();
         assert!(keep(&mut spares, vec![1]).is_none());
         assert!(keep(&mut spares, vec![2]).is_none());
-        assert_eq!(keep(&mut spares, vec![3]), Some(vec![3]), "no room for a third");
+        assert_eq!(
+            keep(&mut spares, vec![3]),
+            Some(vec![3]),
+            "no room for a third"
+        );
         assert_eq!(spares.len(), SPARE_PICTURES);
 
         let (screen, ends) = recorder(true);
@@ -1884,11 +1910,10 @@ mod tests {
     /// A device that will not open says why — the output's frames not waiting.
     #[test]
     fn a_device_that_will_not_open_says_why() {
-        let sender =
-            DeckLinkSender::start_with("Test", 4, 2, false, None, || {
-                Err("in use by another app".into())
-            })
-            .expect("started");
+        let sender = DeckLinkSender::start_with("Test", 4, 2, false, None, || {
+            Err("in use by another app".into())
+        })
+        .expect("started");
         let until = std::time::Instant::now() + WAIT;
         while sender.failed().is_none() && std::time::Instant::now() < until {
             std::thread::sleep(Duration::from_millis(5));
@@ -2008,4 +2033,3 @@ mod tests {
         assert!(DeckLinkSender::start("Test", "UltraStudio Monitor 3G", "1080p60", false).is_err());
     }
 }
-

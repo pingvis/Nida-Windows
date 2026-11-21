@@ -3350,7 +3350,13 @@ mod tests {
             (Air::In { since: None }, true),
             (Air::In { since: Some(now) }, false),
             (Air::On { since: now }, false),
-            (Air::Out { since: now, then: None }, false),
+            (
+                Air::Out {
+                    since: now,
+                    then: None,
+                },
+                false,
+            ),
             (
                 Air::Out {
                     since: now,
@@ -3388,7 +3394,10 @@ mod tests {
         let now = Instant::now();
         lower.air = Air::In { since: Some(now) };
         assert_eq!(lower.still(), None, "coming in");
-        lower.air = Air::Out { since: now, then: None };
+        lower.air = Air::Out {
+            since: now,
+            then: None,
+        };
         assert_eq!(lower.still(), None, "going out");
         lower.air = Air::On { since: now };
         let stands = lower.still();
@@ -3406,7 +3415,10 @@ mod tests {
         let again = lower.wanted().first().cloned().expect("wanted");
         lower.came_back(again.clone(), draw(&again, &fonts));
         let redrawn = lower.still();
-        assert!(matches!(redrawn, Some(Stand::Drawing { .. })), "{redrawn:?}");
+        assert!(
+            matches!(redrawn, Some(Stand::Drawing { .. })),
+            "{redrawn:?}"
+        );
         assert_ne!(redrawn, placed, "its drawing for the new place");
         let once_more = draw(&again, &fonts);
         lower.put(again, once_more);

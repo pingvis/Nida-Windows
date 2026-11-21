@@ -88,7 +88,9 @@ const HEADROOM: f64 = 0.9;
 /// 300 kbit/s. A 1080p50 stream goes down to 414, a 4K60 one to 1990.
 pub fn floor_kbps(width: u32, height: u32, fps: u32) -> u32 {
     let pixels = u64::from(width) * u64::from(height) * u64::from(fps.max(1));
-    u32::try_from(pixels * 4 / 1_000_000).unwrap_or(u32::MAX).max(300)
+    u32::try_from(pixels * 4 / 1_000_000)
+        .unwrap_or(u32::MAX)
+        .max(300)
 }
 
 /// One destination's figures between looks.
@@ -274,10 +276,7 @@ impl RateControl {
         for ((s, known), waits) in seen.iter().zip(&mut self.known).zip(&mut waiting) {
             // A new connection: what was known of the one before is not its.
             // Made after the network changed, it goes out a new way.
-            if known
-                .as_ref()
-                .is_none_or(|k| k.generation != s.generation)
-            {
+            if known.as_ref().is_none_or(|k| k.generation != s.generation) {
                 // Its first connection — switched on, or the stream just
                 // started — went out no new way.
                 new_way |= known
@@ -519,7 +518,9 @@ mod tests {
     fn a_queue_draining_after_a_cut_is_left_to_drain() {
         let mut rate = control();
         let at_cut = secs_of(2.0, 6160);
-        let now = looks(&mut rate, Instant::now(), 2.5, |_| vec![sending(at_cut, 0, 0.0)]);
+        let now = looks(&mut rate, Instant::now(), 2.5, |_| {
+            vec![sending(at_cut, 0, 0.0)]
+        });
         assert_eq!(rate.target(), 4200);
         let draining = |t: f64| vec![sending(at_cut - bytes(t * 40_000.0), 0, 0.0)];
         let now = looks(&mut rate, now, 10.0, draining);
@@ -527,7 +528,11 @@ mod tests {
         let low = at_cut - 400_000;
         let growing = |t: f64| vec![sending(low + bytes(t * 100_000.0), 0, 0.0)];
         looks(&mut rate, now, 6.0, growing);
-        assert!(rate.target() <= 2940, "growing again past where it was cut: {}", rate.target());
+        assert!(
+            rate.target() <= 2940,
+            "growing again past where it was cut: {}",
+            rate.target()
+        );
     }
 
     /// A cut after which the waiting does not drain at all — the upload read
@@ -536,7 +541,9 @@ mod tests {
     fn a_cut_that_does_not_drain_is_followed_by_another() {
         let mut rate = control();
         let stuck = secs_of(2.0, 6160);
-        let now = looks(&mut rate, Instant::now(), 2.5, |_| vec![sending(stuck, 0, 0.0)]);
+        let now = looks(&mut rate, Instant::now(), 2.5, |_| {
+            vec![sending(stuck, 0, 0.0)]
+        });
         assert_eq!(rate.target(), 4200);
         let now = looks(&mut rate, now, 3.0, |_| vec![sending(stuck, 0, 0.0)]);
         assert_eq!(rate.target(), 4200, "given time to drain");
@@ -549,7 +556,9 @@ mod tests {
     fn a_queue_that_stops_draining_is_cut_again() {
         let mut rate = control();
         let at_cut = secs_of(2.0, 6160);
-        let now = looks(&mut rate, Instant::now(), 2.5, |_| vec![sending(at_cut, 0, 0.0)]);
+        let now = looks(&mut rate, Instant::now(), 2.5, |_| {
+            vec![sending(at_cut, 0, 0.0)]
+        });
         assert_eq!(rate.target(), 4200);
         let held = at_cut - 400_000;
         let part_way = |t: f64| {
@@ -585,15 +594,25 @@ mod tests {
     fn a_piece_lost_cuts_the_rate() {
         let mut rate = control();
         let now = Instant::now();
-        assert_eq!(rate.look(now, &[sending(0, 3, 0.0)]), 6000, "counted, not new");
-        assert_eq!(rate.look(now + Duration::from_secs(1), &[sending(0, 4, 0.0)]), 4200);
+        assert_eq!(
+            rate.look(now, &[sending(0, 3, 0.0)]),
+            6000,
+            "counted, not new"
+        );
+        assert_eq!(
+            rate.look(now + Duration::from_secs(1), &[sending(0, 4, 0.0)]),
+            4200
+        );
     }
 
     /// Half the bytes a destination may hold waiting: cut at once.
     #[test]
     fn a_queue_near_overflow_cuts_the_rate() {
         let mut rate = control();
-        assert_eq!(rate.look(Instant::now(), &[sending(LIMIT / 2, 0, 0.0)]), 4200);
+        assert_eq!(
+            rate.look(Instant::now(), &[sending(LIMIT / 2, 0, 0.0)]),
+            4200
+        );
     }
 
     /// A cut goes to what the slowest destination gets out, less the sound,
@@ -601,7 +620,10 @@ mod tests {
     #[test]
     fn a_cut_follows_what_the_slowest_gets_out() {
         let mut rate = control();
-        let seen = vec![sending(0, 0, 6100.0), sending(secs_of(1.0, 6160), 0, 2160.0)];
+        let seen = vec![
+            sending(0, 0, 6100.0),
+            sending(secs_of(1.0, 6160), 0, 2160.0),
+        ];
         looks(&mut rate, Instant::now(), 2.5, |_| seen.clone());
         assert_eq!(rate.target(), 1800);
     }
@@ -618,13 +640,21 @@ mod tests {
         let room = |_| vec![sending(0, 0, 2000.0)];
         // Two seconds to see the room, then six to raise a full step.
         let now = looks(&mut rate, now, 8.5, room);
-        assert_eq!(rate.target(), 2400, "a full step, well under where it was too much");
+        assert_eq!(
+            rate.target(),
+            2400,
+            "a full step, well under where it was too much"
+        );
         let now = looks(&mut rate, now, 6.5, room);
         assert_eq!(rate.target(), 2400, "near it: not yet");
         let now = looks(&mut rate, now, 6.0, room);
         assert_eq!(rate.target(), 2500, "a small step, after twice as long");
         looks(&mut rate, now, 200.0, room);
-        assert_eq!(rate.target(), 3000, "up to the rate asked for and no further");
+        assert_eq!(
+            rate.target(),
+            3000,
+            "up to the rate asked for and no further"
+        );
     }
 
     /// With no destination to go by — none sending, or each only just
@@ -667,7 +697,11 @@ mod tests {
             generation: 2,
             ..sending(0, 3, 6100.0)
         };
-        assert_eq!(rate.look(now + Duration::from_secs(2), &[more]), 4200, "a loss on it now");
+        assert_eq!(
+            rate.look(now + Duration::from_secs(2), &[more]),
+            4200,
+            "a loss on it now"
+        );
     }
 
     /// A rate set while live: at the rate set before, the rate follows it at
@@ -691,7 +725,11 @@ mod tests {
         let room = |_| vec![sending(0, 0, 9000.0)];
         // The room is judged over a window, then held six seconds.
         let now = looks(&mut rate, now, 10.0, room);
-        assert_eq!(rate.target(), 5000, "climbing in steps of the new rate's tenth");
+        assert_eq!(
+            rate.target(),
+            5000,
+            "climbing in steps of the new rate's tenth"
+        );
         looks(&mut rate, now, 120.0, room);
         assert_eq!(rate.target(), 8000, "to the new rate");
         rate.set_asked(2000, LIMIT);
@@ -700,7 +738,11 @@ mod tests {
         rate.set_asked(250, LIMIT);
         assert_eq!((rate.floor(), rate.target()), (250, 250), "its own floor");
         rate.set_asked(6000, LIMIT);
-        assert_eq!((rate.floor(), rate.target()), (415, 6000), "the picture's floor again");
+        assert_eq!(
+            (rate.floor(), rate.target()),
+            (415, 6000),
+            "the picture's floor again"
+        );
     }
 
     /// The operator's Wi-Fi switched to another network: the connection
@@ -711,7 +753,9 @@ mod tests {
     #[test]
     fn a_reconnect_over_a_new_network_takes_back_the_rate_cut_for_the_old() {
         let mut rate = control();
-        let now = looks(&mut rate, Instant::now(), 3.0, |_| vec![sending(0, 0, 6100.0)]);
+        let now = looks(&mut rate, Instant::now(), 3.0, |_| {
+            vec![sending(0, 0, 6100.0)]
+        });
         assert_eq!(rate.target(), 6000);
         // The old way dies: what waits grows on, slowly enough that between
         // cuts it is held — no rate the upload carried.
@@ -733,7 +777,11 @@ mod tests {
             ..sending(0, 0, 0.0)
         };
         looks(&mut rate, now, 1.0, |_| vec![new_way]);
-        assert_eq!(rate.target(), 6000, "back to what the upload carried before");
+        assert_eq!(
+            rate.target(),
+            6000,
+            "back to what the upload carried before"
+        );
     }
 
     /// Two destinations: one's way dies and is cut for, then it reconnects
@@ -744,7 +792,9 @@ mod tests {
     fn a_destination_reconnecting_keeps_the_rate_to_take_back() {
         let mut rate = control();
         let healthy = || sending(0, 0, 9000.0);
-        let now = looks(&mut rate, Instant::now(), 3.0, |_| vec![sending(0, 0, 6100.0), healthy()]);
+        let now = looks(&mut rate, Instant::now(), 3.0, |_| {
+            vec![sending(0, 0, 6100.0), healthy()]
+        });
         assert_eq!(rate.target(), 6000);
         let dying = |t: f64| vec![sending(secs_of(1.0 + t * 0.1, 6160), 0, 0.0), healthy()];
         let now = looks(&mut rate, now, 30.0, dying);
@@ -799,15 +849,14 @@ mod tests {
     #[test]
     fn a_destination_keeping_up_says_nothing_of_its_upload() {
         let mut rate = control();
-        let seen = |_| {
-            vec![
-                sending(secs_of(2.0, 6160), 0, 1500.0),
-                sending(0, 0, 300.0),
-            ]
-        };
+        let seen = |_| vec![sending(secs_of(2.0, 6160), 0, 1500.0), sending(0, 0, 300.0)];
         looks(&mut rate, Instant::now(), 2.5, seen);
         let target = rate.target();
-        assert_eq!(target, ((1500.0 - 160.0) * HEADROOM) as u32, "by the one behind: {target}");
+        assert_eq!(
+            target,
+            ((1500.0 - 160.0) * HEADROOM) as u32,
+            "by the one behind: {target}"
+        );
     }
 
     /// The box switched on mid-stream, a destination's first look already

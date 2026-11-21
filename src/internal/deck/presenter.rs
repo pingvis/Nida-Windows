@@ -646,7 +646,15 @@ fn panel_svg(
     if !spec.words.banner.is_empty() {
         // Two lines and their strip within the slide, however narrow.
         let size = (0.045 * high).min(slide.h / 3.2);
-        let lines = wrap_at_most(&spec.words.banner, size, slide.w * 0.9, true, 2, widths, fonts);
+        let lines = wrap_at_most(
+            &spec.words.banner,
+            size,
+            slide.w * 0.9,
+            true,
+            2,
+            widths,
+            fonts,
+        );
         #[allow(clippy::cast_precision_loss)]
         let strip_h = size * (1.3 * lines.len().max(1) as f32 + 0.5);
         let strip = Rect {
@@ -1177,10 +1185,7 @@ impl Presenter {
         if shown {
             return;
         }
-        let Some((_, _, image)) = next
-            .drawn
-            .iter()
-            .find(|(p, s, _)| *p == page && *s == size)
+        let Some((_, _, image)) = next.drawn.iter().find(|(p, s, _)| *p == page && *s == size)
         else {
             return;
         };
@@ -1581,7 +1586,11 @@ mod tests {
         assert_eq!(new.clocks_at, ClocksAt::Bottom);
         let at = layout_for((1920, 1080), 16.0 / 9.0, &new, true);
         let next = at.next.expect("room for the picture");
-        assert!((next.w - at.notes.w).abs() < 0.5, "{next:?} in {:?}", at.notes);
+        assert!(
+            (next.w - at.notes.w).abs() < 0.5,
+            "{next:?} in {:?}",
+            at.notes
+        );
     }
 
     /// With the next slide's picture: it heads the right column, as wide as
@@ -1600,13 +1609,25 @@ mod tests {
             let settings = PresenterLayout::default();
             let at = layout_for(frame, aspect, &settings, true);
             let next = at.next.expect("room for the picture");
-            assert!(next.x > at.slide.x + at.slide.w, "{frame:?}: beside the slide");
+            assert!(
+                next.x > at.slide.x + at.slide.w,
+                "{frame:?}: beside the slide"
+            );
             assert!(next.x + next.w <= w + 0.5 && (next.y - at.slide.y).abs() < 0.5);
-            assert!((next.w / next.h - aspect).abs() < 0.01, "{frame:?}: its shape");
+            assert!(
+                (next.w / next.h - aspect).abs() < 0.01,
+                "{frame:?}: its shape"
+            );
             assert!(at.next_baseline > next.y + next.h && at.notes.y > at.next_baseline);
-            assert!(at.notes.y + at.notes.h <= h && at.notes.h > 0.0, "{frame:?}");
+            assert!(
+                at.notes.y + at.notes.h <= h && at.notes.h > 0.0,
+                "{frame:?}"
+            );
             let line = layout(frame, aspect, &settings);
-            assert!(at.slide.h >= line.slide.h, "{frame:?}: the line's room the slide's");
+            assert!(
+                at.slide.h >= line.slide.h,
+                "{frame:?}: the line's room the slide's"
+            );
             assert!(line.next.is_none());
             // As wide as the column, or as tall as half the room under the
             // bar at the foot — and no bigger asked bigger; smaller asked so.
@@ -1639,7 +1660,10 @@ mod tests {
                 },
                 true,
             );
-            assert!(off.next.is_none(), "{frame:?}: what comes next switched off");
+            assert!(
+                off.next.is_none(),
+                "{frame:?}: what comes next switched off"
+            );
         }
     }
 
@@ -1721,7 +1745,10 @@ mod tests {
         let lines = wrap_at_most(title, 40.0, column, true, 3, &mut widths, &fonts);
         assert_eq!(lines.len(), 3);
         for line in &lines {
-            assert!(widths.of(line, 40.0, true, &fonts) <= column + 0.5, "{line}");
+            assert!(
+                widths.of(line, 40.0, true, &fonts) <= column + 0.5,
+                "{line}"
+            );
         }
         assert!(lines[2].ends_with('…'), "{:?}", lines[2]);
         let short = wrap_at_most("Results", 40.0, column, true, 3, &mut widths, &fonts);

@@ -40,11 +40,11 @@ thread_local! {
 use anyhow::{Context, Result};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::{mpsc, Arc, Mutex};
 
 extern crate ffmpeg_next as ffmpeg;
 
-use ffmpeg::format::{Pixel, input};
+use ffmpeg::format::{input, Pixel};
 use ffmpeg::media::Type;
 use ffmpeg::software::scaling::context::Context as Scaler;
 use ffmpeg::util::frame::video::Video;
@@ -57,7 +57,7 @@ pub use chase::{ChaseInbox, VideoChaseBroadcast};
 pub use modulation::{
     PlaybackModulation, PlaybackModulationInbox, PositionTarget as ModulatedPosition,
 };
-pub use sound_only::{SOUND_PICTURE_SIZE, SoundOnlyPlayer, is_sound_only};
+pub use sound_only::{is_sound_only, SoundOnlyPlayer, SOUND_PICTURE_SIZE};
 
 /// Result of advancing playback state.
 pub struct AdvanceResult {
@@ -2800,11 +2800,9 @@ mod tests {
         handle.send(VideoCommand::SetLoopMode(LoopMode::HoldLast));
         assert!(handle.take_ready_frame(false).is_none());
         let mut readiness = FrameReadiness::new(60, false);
-        assert!(
-            handle
-                .take_ready_frame_with_readiness(false, &mut readiness)
-                .is_none()
-        );
+        assert!(handle
+            .take_ready_frame_with_readiness(false, &mut readiness)
+            .is_none());
         let frame = handle
             .take_ready_frame_with_readiness(true, &mut readiness)
             .expect("paused picture was lost");
@@ -2872,7 +2870,9 @@ mod tests {
     fn play_excludes_paused_work_and_repeated_play_keeps_elapsed_time() {
         let mut state = PlaybackState::new(10.0, 60.0);
         state.set_playing(false);
-        state.last_advance = std::time::Instant::now().checked_sub(std::time::Duration::from_secs(1)).unwrap();
+        state.last_advance = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_secs(1))
+            .unwrap();
         let before_play = std::time::Instant::now();
         apply_command(&mut state, &VideoCommand::Play);
         assert!(state.last_advance >= before_play);
@@ -2881,7 +2881,9 @@ mod tests {
         assert_eq!(state.last_advance, epoch);
         assert_eq!(state.position, 0.0);
         apply_command(&mut state, &VideoCommand::Pause);
-        state.last_advance = before_play.checked_sub(std::time::Duration::from_secs(1)).unwrap();
+        state.last_advance = before_play
+            .checked_sub(std::time::Duration::from_secs(1))
+            .unwrap();
         apply_command(&mut state, &VideoCommand::Play);
         assert!(state.last_advance >= before_play);
     }
@@ -2901,8 +2903,9 @@ mod tests {
             .unwrap()
             .expect("prepared first picture");
         player.set_playing(true);
-        player.playback.last_advance =
-            std::time::Instant::now().checked_sub(std::time::Duration::from_secs(1)).unwrap();
+        player.playback.last_advance = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_secs(1))
+            .unwrap();
         let deadline = player.next_picture_deadline().expect("prepared lookahead");
         assert!(deadline < std::time::Instant::now());
         player.gpu_retry = true;
@@ -4023,7 +4026,7 @@ mod tests {
     fn test_playback_state_loop_restart() {
         let mut ps = PlaybackState::new(1.0, 30.0);
         ps.position = 1.1; // already past out-point
-        // Ensure some dt elapses
+                           // Ensure some dt elapses
         std::thread::sleep(std::time::Duration::from_millis(5));
         let result = ps.advance_frame();
         assert!(result.needs_seek);

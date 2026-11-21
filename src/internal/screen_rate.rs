@@ -55,7 +55,12 @@ pub fn mode_for(current: &Mode, modes: &[Mode], fps: u32) -> Option<usize> {
     }
     modes.iter().position(|m| {
         (m.width, m.height, m.pixel_width, m.pixel_height)
-            == (current.width, current.height, current.pixel_width, current.pixel_height)
+            == (
+                current.width,
+                current.height,
+                current.pixel_width,
+                current.pixel_height,
+            )
             && (m.refresh - fps).abs() < 0.01
     })
 }
@@ -178,7 +183,9 @@ impl ScreenRate {
                     None
                 }
                 Err(e) => {
-                    log::warn!("The control window's screen could not be set to {fps} Hz again: {e}");
+                    log::warn!(
+                        "The control window's screen could not be set to {fps} Hz again: {e}"
+                    );
                     self.tried.push((display, fps, now));
                     None
                 }
@@ -245,9 +252,9 @@ fn set_rate(display: u32, fps: u32) -> Result<Option<(f64, f64)>, String> {
     use objc2_core_foundation::{CFArray, CFBoolean, CFDictionary, CFString, CFType};
     use objc2_core_graphics::{
         kCGDisplayShowDuplicateLowResolutionModes, CGBeginDisplayConfiguration,
-        CGCancelDisplayConfiguration, CGCompleteDisplayConfiguration, CGConfigureDisplayWithDisplayMode,
-        CGConfigureOption, CGDisplayConfigRef, CGDisplayCopyAllDisplayModes, CGDisplayCopyDisplayMode,
-        CGDisplayMode,
+        CGCancelDisplayConfiguration, CGCompleteDisplayConfiguration,
+        CGConfigureDisplayWithDisplayMode, CGConfigureOption, CGDisplayConfigRef,
+        CGDisplayCopyAllDisplayModes, CGDisplayCopyDisplayMode, CGDisplayMode,
     };
 
     let describe = |mode: &CGDisplayMode| Mode {
@@ -291,7 +298,8 @@ fn set_rate(display: u32, fps: u32) -> Result<Option<(f64, f64)>, String> {
     }
     // For this app only: macOS undoes it when Nida quits, or crashes.
     // SAFETY: the configuration begun above.
-    let completed = unsafe { CGCompleteDisplayConfiguration(config, CGConfigureOption::ForAppOnly) };
+    let completed =
+        unsafe { CGCompleteDisplayConfiguration(config, CGConfigureOption::ForAppOnly) };
     if completed.0 != 0 {
         return Err(format!("the change was refused ({})", completed.0));
     }
@@ -350,17 +358,25 @@ fn give_back(display: u32) -> bool {
         return false;
     }
     // SAFETY: the configuration just begun, a display id and the mode it had.
-    let configured = unsafe { CGConfigureDisplayWithDisplayMode(config, display, Some(&own), None) };
+    let configured =
+        unsafe { CGConfigureDisplayWithDisplayMode(config, display, Some(&own), None) };
     if configured.0 != 0 {
         // SAFETY: the configuration begun above, not completed.
         unsafe { CGCancelDisplayConfiguration(config) };
-        log::warn!("Screen {display} not given back its own mode ({})", configured.0);
+        log::warn!(
+            "Screen {display} not given back its own mode ({})",
+            configured.0
+        );
         return false;
     }
     // SAFETY: the configuration begun above.
-    let completed = unsafe { CGCompleteDisplayConfiguration(config, CGConfigureOption::ForAppOnly) };
+    let completed =
+        unsafe { CGCompleteDisplayConfiguration(config, CGConfigureOption::ForAppOnly) };
     if completed.0 != 0 {
-        log::warn!("Screen {display} not given back its own mode ({})", completed.0);
+        log::warn!(
+            "Screen {display} not given back its own mode ({})",
+            completed.0
+        );
         return false;
     }
     OWN_MODES.with(|modes| modes.borrow_mut().remove(&display));
@@ -411,11 +427,18 @@ mod tests {
             rate.keep(|| Some(3), || Some(Vec::new()), 60, true),
             Some(Kept::Set { to, .. }) if to == 60.0
         ));
-        assert_eq!(rate.keep(|| Some(3), || Some(Vec::new()), 60, true), None, "looked at just now");
-        assert!(matches!(
-            rate.keep(|| Some(3), || Some(Vec::new()), 30, true),
-            Some(Kept::Set { to, .. }) if to == 30.0
-        ), "a new rate: at once");
+        assert_eq!(
+            rate.keep(|| Some(3), || Some(Vec::new()), 60, true),
+            None,
+            "looked at just now"
+        );
+        assert!(
+            matches!(
+                rate.keep(|| Some(3), || Some(Vec::new()), 30, true),
+                Some(Kept::Set { to, .. }) if to == 30.0
+            ),
+            "a new rate: at once"
+        );
     }
 
     /// The control window's screen is set once, left alone while nothing
@@ -437,33 +460,55 @@ mod tests {
         };
         assert_eq!(
             look(&mut rate, Some(1), true),
-            Some(Kept::Set { display: 1, from: 120.0, to: 60.0 })
+            Some(Kept::Set {
+                display: 1,
+                from: 120.0,
+                to: 60.0
+            })
         );
         assert_eq!(look(&mut rate, Some(1), true), None, "left alone");
         assert_eq!(SET.load(Ordering::SeqCst), 1);
         assert_eq!(
-            rate.keep(|| panic!("asked within two seconds"), || Some(Vec::new()), 60, true),
+            rate.keep(
+                || panic!("asked within two seconds"),
+                || Some(Vec::new()),
+                60,
+                true
+            ),
             None
         );
 
         assert_eq!(
             look(&mut rate, Some(1), false),
-            Some(Kept::GivenBack { display: 1, rate: None })
+            Some(Kept::GivenBack {
+                display: 1,
+                rate: None
+            })
         );
         assert_eq!(GIVEN_BACK.load(Ordering::SeqCst), 1);
         assert_eq!(look(&mut rate, Some(1), false), None);
 
-        assert!(matches!(look(&mut rate, Some(1), true), Some(Kept::Set { .. })));
+        assert!(matches!(
+            look(&mut rate, Some(1), true),
+            Some(Kept::Set { .. })
+        ));
         assert!(matches!(
             look(&mut rate, Some(2), true),
             Some(Kept::Set { display: 2, .. })
         ));
         assert_eq!(GIVEN_BACK.load(Ordering::SeqCst), 2, "the first given back");
-        assert_eq!(GIVEN_BACK_SCREEN.load(Ordering::SeqCst), 1 + 1, "screen 1 only");
+        assert_eq!(
+            GIVEN_BACK_SCREEN.load(Ordering::SeqCst),
+            1 + 1,
+            "screen 1 only"
+        );
 
         assert_eq!(
             look(&mut rate, Some(9), true),
-            Some(Kept::GivenBack { display: 2, rate: None }),
+            Some(Kept::GivenBack {
+                display: 2,
+                rate: None
+            }),
             "screen 2 given back; 9 has no mode"
         );
         let tries = SET.load(Ordering::SeqCst);
@@ -474,7 +519,11 @@ mod tests {
             tried.2 -= super::TRY_AGAIN;
         }
         assert_eq!(look(&mut rate, Some(9), true), None);
-        assert_eq!(SET.load(Ordering::SeqCst), tries + 1, "tried again after a minute");
+        assert_eq!(
+            SET.load(Ordering::SeqCst),
+            tries + 1,
+            "tried again after a minute"
+        );
     }
 
     /// Held at 60 and then asked for 50, a screen whose own rate is 50 is at
@@ -493,11 +542,18 @@ mod tests {
         };
         assert_eq!(
             look(&mut rate, 60),
-            Some(Kept::Set { display: 1, from: 50.0, to: 60.0 })
+            Some(Kept::Set {
+                display: 1,
+                from: 50.0,
+                to: 60.0
+            })
         );
         assert_eq!(
             look(&mut rate, 50),
-            Some(Kept::GivenBack { display: 1, rate: Some(50.0) })
+            Some(Kept::GivenBack {
+                display: 1,
+                rate: Some(50.0)
+            })
         );
         assert_eq!(look(&mut rate, 50), None, "then left alone");
     }
@@ -519,7 +575,10 @@ mod tests {
         assert!(matches!(look(&mut rate, true), Some(Kept::Set { .. })));
         assert_eq!(
             look(&mut rate, false),
-            Some(Kept::GivenBack { display: 1, rate: None })
+            Some(Kept::GivenBack {
+                display: 1,
+                rate: None
+            })
         );
     }
 
@@ -554,10 +613,21 @@ mod tests {
         assert_eq!(look(&mut rate, Some(vec![5, 6])), None, "an output on it");
         assert_eq!(look(&mut rate, None), None, "an output's screen not known");
         assert_eq!(SET_HERE.load(Ordering::SeqCst), 0);
-        assert!(matches!(look(&mut rate, Some(vec![6])), Some(Kept::Set { display: 5, .. })));
+        assert!(matches!(
+            look(&mut rate, Some(vec![6])),
+            Some(Kept::Set { display: 5, .. })
+        ));
         assert_eq!(look(&mut rate, None), None, "not known: left as it is");
-        assert_eq!(look(&mut rate, Some(vec![6, 5])), None, "an output came: not changed under it");
-        assert_eq!(BACK_HERE.load(Ordering::SeqCst), 0, "nothing given back under an output");
+        assert_eq!(
+            look(&mut rate, Some(vec![6, 5])),
+            None,
+            "an output came: not changed under it"
+        );
+        assert_eq!(
+            BACK_HERE.load(Ordering::SeqCst),
+            0,
+            "nothing given back under an output"
+        );
         // Turned off, it still waits for the output to go.
         rate.checked = None;
         assert_eq!(rate.keep(|| Some(5), || Some(vec![5]), 60, false), None);
@@ -567,7 +637,11 @@ mod tests {
             rate.keep(|| Some(5), || Some(vec![6]), 60, false),
             Some(Kept::GivenBack { display: 5, .. })
         ));
-        assert_eq!(BACK_HERE.load(Ordering::SeqCst), 5 + 1, "given back once the output left");
+        assert_eq!(
+            BACK_HERE.load(Ordering::SeqCst),
+            5 + 1,
+            "given back once the output left"
+        );
     }
 
     /// A screen held at the show's rate that macOS gives back its own mode —
@@ -599,12 +673,19 @@ mod tests {
             rate.checked = None;
             rate.keep(|| Some(1), || Some(Vec::new()), 60, true)
         };
-        assert!(matches!(look(&mut rate), Some(Kept::Set { display: 1, .. })));
+        assert!(matches!(
+            look(&mut rate),
+            Some(Kept::Set { display: 1, .. })
+        ));
         assert_eq!(look(&mut rate), None, "held, at the rate");
         RATE_NOW.store(120, Ordering::SeqCst);
         assert_eq!(
             look(&mut rate),
-            Some(Kept::SetAgain { display: 1, found: 120.0, to: 60.0 })
+            Some(Kept::SetAgain {
+                display: 1,
+                found: 120.0,
+                to: 60.0
+            })
         );
         assert_eq!(look(&mut rate), None);
         assert_eq!(SETS.load(Ordering::SeqCst), 2);
@@ -615,7 +696,10 @@ mod tests {
         rate.again_at = rate
             .again_at
             .and_then(|at| at.checked_sub(super::AGAIN_AFTER));
-        assert!(matches!(look(&mut rate), Some(Kept::SetAgain { .. })), "later, yes");
+        assert!(
+            matches!(look(&mut rate), Some(Kept::SetAgain { .. })),
+            "later, yes"
+        );
     }
 
     /// A screen found already at the show's rate — a Nida just quit left it
@@ -652,7 +736,10 @@ mod tests {
         assert_eq!(look(&mut rate), None, "already at the rate");
         assert!(rate.tried.is_empty(), "not put aside for a minute");
         RATE_THERE.store(120, Ordering::SeqCst);
-        assert!(matches!(look(&mut rate), Some(Kept::Set { display: 1, .. })));
+        assert!(matches!(
+            look(&mut rate),
+            Some(Kept::Set { display: 1, .. })
+        ));
     }
 
     /// A screen whose own mode could not be given back is tried again at the
@@ -683,12 +770,19 @@ mod tests {
         };
         assert!(matches!(look(&mut rate, 1, true), Some(Kept::Set { .. })));
         assert_eq!(look(&mut rate, 1, false), None, "refused");
-        assert_eq!(look(&mut rate, 2, true), None, "still holding screen 1: nothing else set");
+        assert_eq!(
+            look(&mut rate, 2, true),
+            None,
+            "still holding screen 1: nothing else set"
+        );
         assert_eq!(TRIES.load(Ordering::SeqCst), 2);
         REFUSE.store(false, Ordering::SeqCst);
         assert_eq!(
             look(&mut rate, 1, false),
-            Some(Kept::GivenBack { display: 1, rate: None })
+            Some(Kept::GivenBack {
+                display: 1,
+                rate: None
+            })
         );
     }
 

@@ -13,7 +13,9 @@ use crate::streaming::{RateMode, RatePlan, StreamEncoder, StreamOptions, VideoCo
 pub(super) type Opened = NvEncoder;
 
 // Windows recordings retain the existing FFmpeg encoder path.
-pub(super) fn open_for_record(_: VideoCodec, _: (u32, u32), _: u32, _: u32) -> Option<Opened> { None }
+pub(super) fn open_for_record(_: VideoCodec, _: (u32, u32), _: u32, _: u32) -> Option<Opened> {
+    None
+}
 
 pub(super) fn open(
     options: &StreamOptions,

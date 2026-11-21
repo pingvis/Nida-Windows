@@ -54,7 +54,10 @@ pub(crate) fn suggest(master: (u32, u32), need: f32) -> Option<(u32, u32)> {
     let area = |(w, h): (u32, u32)| u64::from(w) * u64::from(h);
     // The same shape, within half a percent.
     let same_shape = |(w, h): (u32, u32)| {
-        let (a, b) = (u64::from(w) * u64::from(master.1), u64::from(h) * u64::from(master.0));
+        let (a, b) = (
+            u64::from(w) * u64::from(master.1),
+            u64::from(h) * u64::from(master.0),
+        );
         a.abs_diff(b) * 200 <= a
     };
     #[allow(clippy::cast_precision_loss)]
@@ -80,13 +83,15 @@ impl super::VardaApp {
         // A source's picture in the show's pixels: a bus's region of it.
         #[allow(clippy::cast_precision_loss)]
         let picture = |source: &OutputSource| match source {
-            OutputSource::BusProgram(uuid) => self.production_buses.get(uuid).map_or(whole, |bus| {
-                let canvas = bus.canvas();
-                (
-                    canvas.width.clamp(1, master.0.max(1)) as f32,
-                    canvas.height.clamp(1, master.1.max(1)) as f32,
-                )
-            }),
+            OutputSource::BusProgram(uuid) => {
+                self.production_buses.get(uuid).map_or(whole, |bus| {
+                    let canvas = bus.canvas();
+                    (
+                        canvas.width.clamp(1, master.0.max(1)) as f32,
+                        canvas.height.clamp(1, master.1.max(1)) as f32,
+                    )
+                })
+            }
             _ => whole,
         };
         // An LED feed drawn over an output area of `out` pixels: each screen
@@ -104,7 +109,9 @@ impl super::VardaApp {
                     let size = (screen.size[0] as f32 * k.0, screen.size[1] as f32 * k.1);
                     match screen.fit {
                         // A part is in its picture's pixels, the show's.
-                        LedFit::Part { width, height, .. } => share(size, (width as f32, height as f32)),
+                        LedFit::Part { width, height, .. } => {
+                            share(size, (width as f32, height as f32))
+                        }
                         _ => share(size, picture(&screen.source)),
                     }
                 })
@@ -114,31 +121,35 @@ impl super::VardaApp {
         // An output area of `out` pixels showing its surfaces `assigned` —
         // all of them when none is (as it draws them). None for a warped
         // surface, which may magnify any part of its picture (Codex).
-        let surfaces_need = |out: (f32, f32), assigned: &[crate::renderer::context::SurfaceAssignment]| {
-            if surfaces.is_empty() {
-                // The whole show, fitted.
-                return Some(share(out, whole));
-            }
-            let mut need = 0.0_f32;
-            for surface in surfaces.iter().filter(|surface| {
-                assigned.is_empty() || assigned.iter().any(|a| a.enabled && a.surface_uuid == surface.uuid)
-            }) {
-                // A warp, a path, or a warp made from its shape (Codex).
-                if surface.warp.is_some() || surface.path.is_some() || surface.warp_bound {
-                    return None;
+        let surfaces_need =
+            |out: (f32, f32), assigned: &[crate::renderer::context::SurfaceAssignment]| {
+                if surfaces.is_empty() {
+                    // The whole show, fitted.
+                    return Some(share(out, whole));
                 }
-                let source = picture(&surface.source);
-                need = need.max(match surface.content_mapping {
-                    // Its place on the output is its part of the source.
-                    ContentMapping::Mapped => share(out, source),
-                    ContentMapping::Fill => {
-                        let bb = surface.bounding_box();
-                        share((bb.width * out.0, bb.height * out.1), source)
+                let mut need = 0.0_f32;
+                for surface in surfaces.iter().filter(|surface| {
+                    assigned.is_empty()
+                        || assigned
+                            .iter()
+                            .any(|a| a.enabled && a.surface_uuid == surface.uuid)
+                }) {
+                    // A warp, a path, or a warp made from its shape (Codex).
+                    if surface.warp.is_some() || surface.path.is_some() || surface.warp_bound {
+                        return None;
                     }
-                });
-            }
-            Some(need)
-        };
+                    let source = picture(&surface.source);
+                    need = need.max(match surface.content_mapping {
+                        // Its place on the output is its part of the source.
+                        ContentMapping::Mapped => share(out, source),
+                        ContentMapping::Fill => {
+                            let bb = surface.bounding_box();
+                            share((bb.width * out.0, bb.height * out.1), source)
+                        }
+                    });
+                }
+                Some(need)
+            };
         #[allow(clippy::cast_precision_loss)]
         let area = |(w, h): (u32, u32)| (w as f32, h as f32);
         // The dome's picture is the show projected — turned, curved — so
@@ -146,8 +157,15 @@ impl super::VardaApp {
         let domed = |source: &OutputSource| matches!(source, OutputSource::Domemaster);
         let leds = self.output.outputs.iter().filter_map(UnifiedOutput::led);
         if surfaces.iter().any(|surface| domed(&surface.source))
-            || self.output.outputs.iter().filter_map(UnifiedOutput::source).any(domed)
-            || leds.flat_map(|led| &led.screens).any(|screen| domed(&screen.source))
+            || self
+                .output
+                .outputs
+                .iter()
+                .filter_map(UnifiedOutput::source)
+                .any(domed)
+            || leds
+                .flat_map(|led| &led.screens)
+                .any(|screen| domed(&screen.source))
             || domed(&self.recording.settings.options.source)
             || domed(&self.streaming.settings.options.source)
         {
@@ -213,7 +231,10 @@ impl super::VardaApp {
         match (recording, record.size) {
             (Some(UnifiedOutput::Headless(h)), _) => {
                 shown = true;
-                need = need.max(share((h.width as f32, h.height as f32), picture(&record.source)));
+                need = need.max(share(
+                    (h.width as f32, h.height as f32),
+                    picture(&record.source),
+                ));
             }
             (_, Some((w, h))) => {
                 shown = true;
@@ -226,7 +247,10 @@ impl super::VardaApp {
         #[allow(clippy::cast_precision_loss)]
         if let Some(UnifiedOutput::Headless(h)) = self.streaming.output.first() {
             shown = true;
-            need = need.max(share((h.width as f32, h.height as f32), picture(&options.source)));
+            need = need.max(share(
+                (h.width as f32, h.height as f32),
+                picture(&options.source),
+            ));
         } else if stream.destinations.iter().any(|d| d.enabled) {
             shown = true;
             let out = (options.width as f32, options.height as f32);
@@ -285,13 +309,33 @@ mod tests {
         assert_eq!(suggest(uhd, 0.5), Some((1920, 1080)));
         assert_eq!(suggest(uhd, 0.3), Some((1280, 720)));
         assert_eq!(suggest(uhd, 0.55), Some((2560, 1440)));
-        assert_eq!(suggest((1920, 1080), 0.9), None, "1080p for 1080p: nothing to save");
-        assert_eq!(suggest((2560, 1440), 0.75), Some((1920, 1080)), "56% of the pixels");
+        assert_eq!(
+            suggest((1920, 1080), 0.9),
+            None,
+            "1080p for 1080p: nothing to save"
+        );
+        assert_eq!(
+            suggest((2560, 1440), 0.75),
+            Some((1920, 1080)),
+            "56% of the pixels"
+        );
         assert_eq!(suggest((2560, 1440), 0.8), None, "no smaller size enough");
-        assert_eq!(suggest((1920, 1080), 0.6), Some((1280, 720)), "1152 wide: 720p is enough");
-        assert_eq!(suggest((1920, 1080), 0.7), None, "1344 wide: only 1080p is enough");
+        assert_eq!(
+            suggest((1920, 1080), 0.6),
+            Some((1280, 720)),
+            "1152 wide: 720p is enough"
+        );
+        assert_eq!(
+            suggest((1920, 1080), 0.7),
+            None,
+            "1344 wide: only 1080p is enough"
+        );
         assert_eq!(suggest((2160, 3840), 0.5), Some((1080, 1920)));
-        assert_eq!(suggest((3000, 2000), 0.4), None, "no size of its shape offered");
+        assert_eq!(
+            suggest((3000, 2000), 0.4),
+            None,
+            "no size of its shape offered"
+        );
     }
 
     fn app_at_4k() -> Option<crate::app::VardaApp> {
@@ -377,7 +421,12 @@ mod tests {
             crate::engine::CommandResult::Ok
         ));
         let hint = app.render_hint().expect("still a hint");
-        assert_eq!(hint.following.len(), 2, "the send follows too: {:?}", hint.following);
+        assert_eq!(
+            hint.following.len(),
+            2,
+            "the send follows too: {:?}",
+            hint.following
+        );
 
         // A layer drawn at half the show's size: at 1080p it would be half
         // of that, below what the wall shows.
@@ -397,7 +446,11 @@ mod tests {
             }),
             crate::engine::CommandResult::Ok
         ));
-        assert_eq!(app.render_hint(), None, "a half-size layer needs the 4K show");
+        assert_eq!(
+            app.render_hint(),
+            None,
+            "a half-size layer needs the 4K show"
+        );
         assert!(matches!(
             app.execute_command(crate::engine::EngineCommand::SetDeckRenderScale {
                 deck_uuid: deck.clone(),
@@ -443,7 +496,9 @@ mod tests {
         assert_eq!(app.render_hint(), None, "a 4K stream needs 4K");
         app.streaming.settings.destinations[0].enabled = false;
 
-        app.output.pending_output_creates.push(crate::scene::OutputConfig::default_windowed());
+        app.output
+            .pending_output_creates
+            .push(crate::scene::OutputConfig::default_windowed());
         assert_eq!(app.render_hint(), None, "a window's screen not known yet");
     }
 

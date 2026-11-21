@@ -243,7 +243,10 @@ mod tests {
     /// port.
     #[test]
     fn a_change_made_for_a_port_is_seen_there_only() {
-        let (here, elsewhere) = ("rtmp://127.0.0.1:47123/live/k", "rtmp://127.0.0.1:47124/live/k");
+        let (here, elsewhere) = (
+            "rtmp://127.0.0.1:47123/live/k",
+            "rtmp://127.0.0.1:47124/live/k",
+        );
         let before = (epoch_for(here), epoch_for(elsewhere));
         change_for_test(47123);
         assert_eq!(epoch_for(here), before.0 + 1);
@@ -259,7 +262,10 @@ mod tests {
         assert!(found.iter().all(|a| !a.is_loopback()), "{found:?}");
         let now = look();
         if let Some(v4) = now.default_v4 {
-            assert!(found.contains(&v4), "the address it sends from is its own: {v4} in {found:?}");
+            assert!(
+                found.contains(&v4),
+                "the address it sends from is its own: {v4} in {found:?}"
+            );
         }
     }
 }

@@ -4,9 +4,9 @@
 //! Input follows the `CameraManager` pattern: background receive thread →
 //! reusable packed-frame slot → main-thread GPU upload/conversion.
 
+mod color;
 #[allow(non_camel_case_types, non_snake_case, dead_code)]
 pub mod ffi;
-mod color;
 mod p216;
 mod receive;
 pub mod sdk;
@@ -1140,12 +1140,7 @@ fn submit_uyvy_with(
 }
 
 /// Whether `len` bytes at `stride` are a whole P216 picture of this size.
-fn p216_contract(
-    len: usize,
-    width: u32,
-    height: u32,
-    stride: u32,
-) -> Result<(), p216::P216Error> {
+fn p216_contract(len: usize, width: u32, height: u32, stride: u32) -> Result<(), p216::P216Error> {
     let layout = p216::P216Layout::new(width, height)?;
     if stride != layout.stride || len as u64 != layout.byte_len {
         return Err(p216::P216Error::InvalidBuffer {

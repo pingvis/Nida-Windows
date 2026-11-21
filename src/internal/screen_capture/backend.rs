@@ -80,8 +80,14 @@ impl CaptureTargetInfo {
 pub enum TargetIdentity {
     /// A display: by its own identity where one is known (see
     /// [`CaptureTargetInfo::uuid`]), else by the name it was listed under.
-    Display { label: String, uuid: Option<String> },
-    Window { app: String, title: String },
+    Display {
+        label: String,
+        uuid: Option<String>,
+    },
+    Window {
+        app: String,
+        title: String,
+    },
 }
 
 impl TargetIdentity {
@@ -150,14 +156,17 @@ pub fn find_display<'a>(
         return named();
     };
     let same = || displays().filter(|t| t.uuid.as_deref() == Some(uuid));
-    same().find(|t| t.label == label).or_else(|| same().next()).or_else(|| {
-        let stand_in = named()?;
-        log::warn!(
-            "Screen capture: the screen kept as '{label}' is not plugged in — \
+    same()
+        .find(|t| t.label == label)
+        .or_else(|| same().next())
+        .or_else(|| {
+            let stand_in = named()?;
+            log::warn!(
+                "Screen capture: the screen kept as '{label}' is not plugged in — \
              the one now listed as '{label}' is captured in its place"
-        );
-        Some(stand_in)
-    })
+            );
+            Some(stand_in)
+        })
 }
 
 /// A normalized crop rectangle within the captured target (0.0–1.0).
@@ -329,7 +338,11 @@ impl Drawn {
     /// within bounds, as [`Self::sanitized`].
     #[must_use]
     pub fn with_room(self, times: f32) -> Self {
-        let times = if times.is_finite() { times.max(1.0) } else { 1.0 };
+        let times = if times.is_finite() {
+            times.max(1.0)
+        } else {
+            1.0
+        };
         let drawn = self.sanitized();
         Self {
             fitted: drawn.fitted * times,
@@ -852,21 +865,41 @@ mod tests {
         let (window, other_window) = (&targets[2], &targets[3]);
         let shown = CaptureConfig {
             rate: 24.0,
-            crop: CropRect { x: 0.25, y: 0.0, w: 0.5, h: 1.0 },
+            crop: CropRect {
+                x: 0.25,
+                y: 0.0,
+                w: 0.5,
+                h: 1.0,
+            },
             show_cursor: true,
             exclude_varda: false,
             scale_to: Some((1920, 1080)),
             drawn: Drawn::default(),
         };
-        let left_out = CaptureConfig { exclude_varda: true, ..shown.clone() };
+        let left_out = CaptureConfig {
+            exclude_varda: true,
+            ..shown.clone()
+        };
         // A screen to another screen: Nida's windows shown, as it was set.
-        assert_eq!(shown.clone().repointed(&screen.identity(), other_screen), shown);
+        assert_eq!(
+            shown.clone().repointed(&screen.identity(), other_screen),
+            shown
+        );
         // A window to another window: left out, as it was set.
-        assert_eq!(left_out.clone().repointed(&window.identity(), other_window), left_out);
+        assert_eq!(
+            left_out.clone().repointed(&window.identity(), other_window),
+            left_out
+        );
         // A window to a screen: Nida's own windows left out, the rest kept.
-        assert_eq!(shown.clone().repointed(&window.identity(), screen), left_out);
+        assert_eq!(
+            shown.clone().repointed(&window.identity(), screen),
+            left_out
+        );
         // A screen to a window: not left out, as a window added is not.
-        assert_eq!(left_out.clone().repointed(&screen.identity(), window), shown);
+        assert_eq!(
+            left_out.clone().repointed(&screen.identity(), window),
+            shown
+        );
     }
 
     /// A setting given is set as its parameter sets it — a rate across its
@@ -905,7 +938,10 @@ mod tests {
         let rate = given(&base, CaptureSetting::Rate, 0.5).rate;
         assert!((rate - 60.5).abs() < 1e-4, "halfway from 1 to 120: {rate}");
         let rate = given(&base, CaptureSetting::Rate, 7.0).rate;
-        assert!((rate - MAX_CAPTURE_RATE).abs() < 1e-4, "all the way: {rate}");
+        assert!(
+            (rate - MAX_CAPTURE_RATE).abs() < 1e-4,
+            "all the way: {rate}"
+        );
         assert_eq!(
             given(&base, CaptureSetting::CropX, 0.25),
             crop(0.25, 0.0, 0.75, 1.0),
@@ -931,7 +967,11 @@ mod tests {
                 ..base.clone()
             }
         );
-        assert_eq!(given(&shown, CaptureSetting::Cursor, 0.4), base, "hidden again");
+        assert_eq!(
+            given(&shown, CaptureSetting::Cursor, 0.4),
+            base,
+            "hidden again"
+        );
         let seen = given(&base, CaptureSetting::ExcludeVarda, 0.4);
         assert_eq!(
             seen,
@@ -1049,9 +1089,7 @@ mod tests {
             },
             ..Default::default()
         };
-        let sized = |scale_to| {
-            MockBackend::new("Mock", 1920, 1080, quarter(scale_to)).resolution()
-        };
+        let sized = |scale_to| MockBackend::new("Mock", 1920, 1080, quarter(scale_to)).resolution();
         assert_eq!(sized(Some((960, 540))), (960, 540));
         assert_eq!(sized(Some((1920, 1080))), (960, 540), "never enlarged");
         assert_eq!(sized(Some((480, 270))), (480, 270));
@@ -1130,8 +1168,16 @@ mod tests {
     fn a_captures_format_has_one_that_reads_it_as_coded() {
         use wgpu::TextureFormat::{Bgra8Unorm, Bgra8UnormSrgb, Rgba8Unorm, Rgba8UnormSrgb};
         for (format, light, coded) in [
-            (CapturePixelFormat::Rgba8UnormSrgb, Rgba8UnormSrgb, Rgba8Unorm),
-            (CapturePixelFormat::Bgra8UnormSrgb, Bgra8UnormSrgb, Bgra8Unorm),
+            (
+                CapturePixelFormat::Rgba8UnormSrgb,
+                Rgba8UnormSrgb,
+                Rgba8Unorm,
+            ),
+            (
+                CapturePixelFormat::Bgra8UnormSrgb,
+                Bgra8UnormSrgb,
+                Bgra8Unorm,
+            ),
         ] {
             assert_eq!(format.wgpu_format(), light);
             assert_eq!(format.coded_format(), coded);
@@ -1156,7 +1202,11 @@ mod tests {
         };
         assert_eq!(Drawn::default(), drawn(1.0, 0.0));
         assert_eq!(drawn(2.0, 0.5).sanitized(), drawn(2.0, 0.5));
-        assert_eq!(drawn(0.0, 1.5).sanitized(), drawn(0.0, 1.5), "filling alone");
+        assert_eq!(
+            drawn(0.0, 1.5).sanitized(),
+            drawn(0.0, 1.5),
+            "filling alone"
+        );
         assert_eq!(drawn(100.0, -3.0).sanitized(), drawn(Drawn::MOST, 0.0));
         assert_eq!(drawn(f32::NAN, 2.0).sanitized(), drawn(0.0, 2.0));
         assert_eq!(drawn(f32::INFINITY, 2.0).sanitized(), drawn(0.0, 2.0));
@@ -1171,9 +1221,21 @@ mod tests {
             apart(1.0, 99.0, -1.0).sanitized(),
             apart(1.0, Drawn::MOST, 0.0)
         );
-        assert_eq!(apart(0.0, 0.0, 0.5).sanitized(), apart(0.0, 0.0, 0.5), "its height alone");
-        assert_eq!(apart(0.0, 0.5, 0.0).sanitized(), apart(0.0, 0.5, 0.0), "its width alone");
-        for none in [drawn(0.0, 0.0), drawn(-1.0, f32::NAN), drawn(f32::NAN, f32::NAN)] {
+        assert_eq!(
+            apart(0.0, 0.0, 0.5).sanitized(),
+            apart(0.0, 0.0, 0.5),
+            "its height alone"
+        );
+        assert_eq!(
+            apart(0.0, 0.5, 0.0).sanitized(),
+            apart(0.0, 0.5, 0.0),
+            "its width alone"
+        );
+        for none in [
+            drawn(0.0, 0.0),
+            drawn(-1.0, f32::NAN),
+            drawn(f32::NAN, f32::NAN),
+        ] {
             assert_eq!(none.sanitized(), Drawn::default(), "{none:?}");
         }
         assert_eq!(drawn(2.0, 0.0).or(drawn(1.0, 1.5)), drawn(2.0, 1.5));

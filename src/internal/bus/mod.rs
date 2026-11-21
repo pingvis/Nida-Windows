@@ -981,7 +981,10 @@ impl BusBank {
     /// Each bus's picture size on a `master`, by its id: its region of the
     /// master as an output samples it — no larger than the master (see
     /// [`BusCanvas::uv`]).
-    pub fn picture_sizes(&self, master: (u32, u32)) -> std::collections::HashMap<String, (u32, u32)> {
+    pub fn picture_sizes(
+        &self,
+        master: (u32, u32),
+    ) -> std::collections::HashMap<String, (u32, u32)> {
         self.buses
             .iter()
             .map(|bus| {

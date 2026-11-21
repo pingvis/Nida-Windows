@@ -1261,9 +1261,7 @@ impl VardaApp {
             EngineCommand::SetNextTalk { deck_uuid, talk_id } => {
                 wire(self.set_next_talk(&deck_uuid, talk_id))
             }
-            EngineCommand::CheckTalks { deck_uuid } => {
-                wire(self.check_talks(deck_uuid.as_deref()))
-            }
+            EngineCommand::CheckTalks { deck_uuid } => wire(self.check_talks(deck_uuid.as_deref())),
             EngineCommand::MakeSlidePictures { deck_uuid } => {
                 wire(self.make_slide_pictures(deck_uuid.as_deref()))
             }
@@ -1474,11 +1472,17 @@ impl VardaApp {
                 self.cmd_add_html_deck(&channel_uuid, &url)
             }
             EngineCommand::OpenHtmlInteractive { deck_uuid } => {
-                #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+                #[cfg(any(
+                    feature = "html",
+                    all(target_os = "windows", feature = "windows-browser")
+                ))]
                 {
                     self.cmd_open_html_interactive(&deck_uuid)
                 }
-                #[cfg(not(any(feature = "html", all(target_os = "windows", feature = "windows-browser"))))]
+                #[cfg(not(any(
+                    feature = "html",
+                    all(target_os = "windows", feature = "windows-browser")
+                )))]
                 {
                     let _ = deck_uuid;
                     crate::engine::CommandResult::Err {
@@ -1488,11 +1492,17 @@ impl VardaApp {
                 }
             }
             EngineCommand::CloseHtmlInteractive => {
-                #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+                #[cfg(any(
+                    feature = "html",
+                    all(target_os = "windows", feature = "windows-browser")
+                ))]
                 {
                     self.cmd_close_html_interactive()
                 }
-                #[cfg(not(any(feature = "html", all(target_os = "windows", feature = "windows-browser"))))]
+                #[cfg(not(any(
+                    feature = "html",
+                    all(target_os = "windows", feature = "windows-browser")
+                )))]
                 {
                     crate::engine::CommandResult::Ok
                 }
@@ -2297,7 +2307,8 @@ impl VardaApp {
                 CommandResult::Ok
             }
             EngineCommand::SetAudioTempoRange { min, max } => {
-                self.audio_manager.set_tempo_range(crate::audio::TempoRange::new(min, max));
+                self.audio_manager
+                    .set_tempo_range(crate::audio::TempoRange::new(min, max));
                 CommandResult::Ok
             }
 

@@ -1007,11 +1007,9 @@ mod tests {
             });
         std::thread::sleep(std::time::Duration::from_millis(10));
         signal.stop();
-        assert!(
-            !done_rx
-                .recv_timeout(std::time::Duration::from_secs(1))
-                .unwrap()
-        );
+        assert!(!done_rx
+            .recv_timeout(std::time::Duration::from_secs(1))
+            .unwrap());
         worker.join().unwrap();
     }
     use super::*;

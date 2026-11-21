@@ -630,9 +630,9 @@ fn turned_on_every_service(read: &str, pairs: &[(u32, u32)]) -> bool {
     !services.is_empty()
         && services.iter().all(|service| {
             let turned = turned(service);
-            pairs
-                .iter()
-                .all(|&(key, spare)| turned.contains(&(PAGE | u64::from(key), PAGE | u64::from(spare))))
+            pairs.iter().all(|&(key, spare)| {
+                turned.contains(&(PAGE | u64::from(key), PAGE | u64::from(spare)))
+            })
         })
 }
 
@@ -980,7 +980,10 @@ mod tests {
             remapper: Some(FAKE),
             ..State::default()
         });
-        REMAPS.lock().unwrap_or_else(PoisonError::into_inner).clear();
+        REMAPS
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clear();
         REMAP_READ_BACK.store(true, std::sync::atomic::Ordering::SeqCst);
         rx
     }
@@ -1012,7 +1015,8 @@ mod tests {
     static REMAPS: Mutex<Vec<Asked>> = Mutex::new(Vec::new());
 
     /// Whether a test's macOS reads a remap back in place.
-    static REMAP_READ_BACK: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+    static REMAP_READ_BACK: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(true);
 
     /// A test's macOS clock: on by one each time it is read.
     static CLOCK: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1000);
@@ -1021,10 +1025,11 @@ mod tests {
     /// says, its clock `CLOCK`.
     const FAKE: Remapper = Remapper {
         set: |vendor, product, pairs| {
-            REMAPS
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .push((vendor, product, pairs.to_vec()));
+            REMAPS.lock().unwrap_or_else(PoisonError::into_inner).push((
+                vendor,
+                product,
+                pairs.to_vec(),
+            ));
             true
         },
         in_place: |_, _, _| REMAP_READ_BACK.load(std::sync::atomic::Ordering::SeqCst),
@@ -1057,8 +1062,14 @@ mod tests {
         let file = dir.path().join("clicker.json");
         let mut rx = fresh(Some(file.clone()));
         ask(ClickerAsk::Learn);
-        assert_eq!(press(&mac_keyboard(), 1, PAGE_DOWN, true, true), Heard::Nothing);
-        assert!(status().mac_keyboard && status().learning, "the Mac's keyboard not taken");
+        assert_eq!(
+            press(&mac_keyboard(), 1, PAGE_DOWN, true, true),
+            Heard::Nothing
+        );
+        assert!(
+            status().mac_keyboard && status().learning,
+            "the Mac's keyboard not taken"
+        );
         assert_eq!(press(&clicker(), 2, PAGE_DOWN, true, true), Heard::Learned);
         assert!(status().just_learned, "the teaching press not the show's");
         let learned = status().device.expect("learned");
@@ -1086,7 +1097,10 @@ mod tests {
             ))
         ));
         // Let go: nothing.
-        assert_eq!(press(&clicker(), 2, PAGE_DOWN, false, false), Heard::Nothing);
+        assert_eq!(
+            press(&clicker(), 2, PAGE_DOWN, false, false),
+            Heard::Nothing
+        );
         // Nida in front, its keys not turned by macOS: the control window
         // gets them as a keyboard's — its.
         assert_eq!(press(&clicker(), 2, PAGE_DOWN, true, true), Heard::Nothing);
@@ -1162,7 +1176,10 @@ mod tests {
             s.learned_at = std::time::Instant::now().checked_sub(std::time::Duration::from_secs(5));
             s.reading = Some(Reading::Clicker(device.clone()));
         });
-        assert!(status().just_learned, "no frame since: still the teaching press's");
+        assert!(
+            status().just_learned,
+            "no frame since: still the teaching press's"
+        );
         assert_eq!(press(&clicker(), 2, PAGE_DOWN, true, false), Heard::Nothing);
         let bindings: HashMap<KeyCombo, KeyTarget> = crate::keymap::KeymapStore::defaults();
         for _ in 0..LEARNING_FRAMES {
@@ -1238,11 +1255,17 @@ mod tests {
         assert_eq!(remaps().len(), 1);
 
         // Pressed before macOS took it: it reached the window — its.
-        assert_eq!(on_key(&clicker(), 2, PAGE_DOWN, true, true, before), Heard::Nothing);
+        assert_eq!(
+            on_key(&clicker(), 2, PAGE_DOWN, true, true, before),
+            Heard::Nothing
+        );
         assert!(rx.try_recv().is_err());
         // Pressed after: taken here, Nida in front or not.
         for active in [true, false] {
-            assert_eq!(on_key(&clicker(), 2, PAGE_DOWN, true, active, taken + 1), Heard::Sent);
+            assert_eq!(
+                on_key(&clicker(), 2, PAGE_DOWN, true, active, taken + 1),
+                Heard::Sent
+            );
             assert!(rx.try_recv().is_ok());
         }
         // B, never turned: the window's with Nida in front, here else.
@@ -1279,15 +1302,27 @@ mod tests {
         assert_eq!(remaps().len(), 2, "asked again for the device come");
         assert!(between <= again);
         // The first device's press while it was asked again: still turned.
-        assert_eq!(on_key(&clicker(), 2, PAGE_DOWN, true, true, between), Heard::Sent);
+        assert_eq!(
+            on_key(&clicker(), 2, PAGE_DOWN, true, true, between),
+            Heard::Sent
+        );
         assert!(rx.try_recv().is_ok());
         // The one come: the window's before macOS took it, here after.
-        assert_eq!(on_key(&clicker(), 3, PAGE_DOWN, true, true, between), Heard::Nothing);
-        assert_eq!(on_key(&clicker(), 3, PAGE_DOWN, true, true, again + 1), Heard::Sent);
+        assert_eq!(
+            on_key(&clicker(), 3, PAGE_DOWN, true, true, between),
+            Heard::Nothing
+        );
+        assert_eq!(
+            on_key(&clicker(), 3, PAGE_DOWN, true, true, again + 1),
+            Heard::Sent
+        );
         assert!(rx.try_recv().is_ok());
         // Gone: its keys no longer taken as turned.
         on_device(3, false);
-        assert_eq!(on_key(&clicker(), 3, PAGE_DOWN, true, true, u64::MAX), Heard::Nothing);
+        assert_eq!(
+            on_key(&clicker(), 3, PAGE_DOWN, true, true, u64::MAX),
+            Heard::Nothing
+        );
         assert!(rx.try_recv().is_err());
     }
 
@@ -1314,11 +1349,17 @@ mod tests {
             ..WindowKeys::default()
         };
         frame(&bindings, learning);
-        assert!(with_state(|s| s.placed.is_empty()), "none turned from the lift's ask on");
+        assert!(
+            with_state(|s| s.placed.is_empty()),
+            "none turned from the lift's ask on"
+        );
         let back = clock();
         frame(&bindings, WindowKeys::default());
         assert_eq!(remaps().len(), 3, "put, lifted, put back");
-        assert_eq!(on_key(&clicker(), 2, PAGE_DOWN, true, true, back), Heard::Nothing);
+        assert_eq!(
+            on_key(&clicker(), 2, PAGE_DOWN, true, true, back),
+            Heard::Nothing
+        );
         assert_eq!(press(&clicker(), 2, PAGE_DOWN, true, true), Heard::Sent);
         assert!(rx.try_recv().is_ok());
 
@@ -1365,7 +1406,10 @@ mod tests {
         let pairs = [(0x4B, 0x72), (0x4E, 0x73)];
         assert!(turned_on_every_service(both, &pairs));
         let one_without = format!("{both}10009f740   UserKeyMapping   (null)\n");
-        assert!(!turned_on_every_service(&one_without, &pairs), "a service without");
+        assert!(
+            !turned_on_every_service(&one_without, &pairs),
+            "a service without"
+        );
         let split = "10009f73d   UserKeyMapping   (
         {
         HIDKeyboardModifierMappingDst = 30064771186;
@@ -1379,10 +1423,19 @@ mod tests {
     }
 )
 ";
-        assert!(!turned_on_every_service(split, &pairs), "one key on each service");
+        assert!(
+            !turned_on_every_service(split, &pairs),
+            "one key on each service"
+        );
         let crossed = both.replace("30064771186", "30064771185");
-        assert!(!turned_on_every_service(&crossed, &pairs), "into another spare");
-        assert!(!turned_on_every_service("RegistryID  Key  Value\n", &pairs), "no service");
+        assert!(
+            !turned_on_every_service(&crossed, &pairs),
+            "into another spare"
+        );
+        assert!(
+            !turned_on_every_service("RegistryID  Key  Value\n", &pairs),
+            "no service"
+        );
     }
 
     /// What a press heard while macOS read a remap back did.
@@ -1404,16 +1457,23 @@ mod tests {
             s.remapper = Some(Remapper {
                 in_place: |_, _, _| {
                     let heard = on_key(&clicker(), 2, PAGE_DOWN, true, true, u64::MAX);
-                    *HEARD_WHILE_READ.lock().unwrap_or_else(PoisonError::into_inner) = Some(heard);
+                    *HEARD_WHILE_READ
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner) = Some(heard);
                     false
                 },
                 ..FAKE
             });
         });
         on_device(2, true);
-        frame(&crate::keymap::KeymapStore::defaults(), WindowKeys::default());
+        frame(
+            &crate::keymap::KeymapStore::defaults(),
+            WindowKeys::default(),
+        );
         assert_eq!(
-            *HEARD_WHILE_READ.lock().unwrap_or_else(PoisonError::into_inner),
+            *HEARD_WHILE_READ
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
             Some(Heard::Nothing)
         );
         assert!(rx.try_recv().is_err(), "the window's alone");
@@ -1499,7 +1559,11 @@ mod tests {
         frame(&bindings, WindowKeys::default());
         assert!(remaps().is_empty(), "asked once");
         on_device(2, true);
-        assert_eq!(remaps(), vec![(0x046d, 0xc538, asked.clone())], "a device come");
+        assert_eq!(
+            remaps(),
+            vec![(0x046d, 0xc538, asked.clone())],
+            "a device come"
+        );
 
         // The spare key read as its key, whatever app is in front.
         for active in [true, false] {
@@ -1535,7 +1599,11 @@ mod tests {
         assert_eq!(press(&clicker(), 2, PAGE_DOWN, true, true), Heard::Nothing);
         // Nida quitting gives it back all the same.
         stop();
-        assert_eq!(remaps(), vec![(0x046d, 0xc538, vec![])], "given back at quit");
+        assert_eq!(
+            remaps(),
+            vec![(0x046d, 0xc538, vec![])],
+            "given back at quit"
+        );
     }
 
     /// The remap waits for macOS to let Nida read the clicker: unread, its
@@ -1574,12 +1642,21 @@ mod tests {
             (combo("B"), ActionId::PresentationBlack),
         ];
         let first = remap_for(&defaults, &Vec::new());
-        assert_eq!(first, vec![(0x4B, 0x72, "PageUp"), (0x4E, 0x73, "PageDown")]);
+        assert_eq!(
+            first,
+            vec![(0x4B, 0x72, "PageUp"), (0x4E, 0x73, "PageDown")]
+        );
         let mut more = defaults.clone();
         more.push((combo("ArrowLeft"), ActionId::PresentationPrevious));
         let second = remap_for(&more, &first);
-        assert!(second.contains(&(0x4E, 0x73, "PageDown")), "kept: {second:?}");
-        assert!(second.contains(&(0x50, 0x71, "ArrowLeft")), "a free one: {second:?}");
+        assert!(
+            second.contains(&(0x4E, 0x73, "PageDown")),
+            "kept: {second:?}"
+        );
+        assert!(
+            second.contains(&(0x50, 0x71, "ArrowLeft")),
+            "a free one: {second:?}"
+        );
         let fewer = vec![(combo("ArrowLeft"), ActionId::PresentationPrevious)];
         let third = remap_for(&fewer, &second);
         assert_eq!(third, vec![(0x50, 0x71, "ArrowLeft")]);
@@ -1592,7 +1669,10 @@ mod tests {
     fn the_spare_keys_are_ones_macos_makes_no_press_of() {
         for spare in SPARE_KEYS {
             assert!(!(0x68..=0x6F).contains(&spare), "{spare:#x}: F13 to F20");
-            assert!((0x70..=0x74).contains(&spare), "{spare:#x}: F21 to F24, Execute");
+            assert!(
+                (0x70..=0x74).contains(&spare),
+                "{spare:#x}: F21 to F24, Execute"
+            );
             assert_eq!(key_name(spare), None, "{spare:#x}: a key the keymap names");
         }
     }
@@ -1606,7 +1686,11 @@ mod tests {
         assert_eq!(key_name(0x3E), Some("F5"));
         assert_eq!(key_name(0x4B), Some("PageUp"));
         assert_eq!(key_name(0x4E), Some("PageDown"));
-        assert_eq!(key_name(0x37), None, "a full stop: not a key the keymap names");
+        assert_eq!(
+            key_name(0x37),
+            None,
+            "a full stop: not a key the keymap names"
+        );
         assert_eq!(key_name(0x59), Some("Num1"), "the keypad's 1, as the row's");
         assert_eq!(key_name(0x62), Some("Num0"));
         assert_eq!(key_name(0x56), Some("Minus"));

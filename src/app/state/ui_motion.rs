@@ -67,7 +67,11 @@ impl VardaApp {
         if self.mixer.main().fade.is_some() {
             return Some("Main is fading".into());
         }
-        if let Some(bus) = self.production_buses.iter().find(|b| b.transition().is_some()) {
+        if let Some(bus) = self
+            .production_buses
+            .iter()
+            .find(|b| b.transition().is_some())
+        {
             return Some(format!("bus '{}' is taking", bus.name));
         }
         let main = self.mixer.main();
@@ -181,7 +185,13 @@ mod tests {
         assert_eq!(app.ui_motion(), UiMotion::Still);
 
         // A take on a bus, running.
-        let bus = app.production_buses().iter().next().unwrap().uuid().to_string();
+        let bus = app
+            .production_buses()
+            .iter()
+            .next()
+            .unwrap()
+            .uuid()
+            .to_string();
         app.execute_command(EngineCommand::SetBusPreview {
             uuid: bus.clone(),
             input: crate::bus::BusInputRef::Channel(channel),
@@ -207,7 +217,10 @@ mod tests {
         for still in ["crop", "transform", "color_correction", "blur", "levels"] {
             assert!(!animates(still), "{still} stands still");
         }
-        assert!(animates("aurora_borealis"), "a generator reading TIME moves");
+        assert!(
+            animates("aurora_borealis"),
+            "a generator reading TIME moves"
+        );
     }
 
     /// A live input moves only while new pictures come: a camera not plugged
@@ -239,25 +252,53 @@ mod tests {
         assert_eq!(app.ui_motion(), UiMotion::Still, "a camera with no device");
         // A picture in its slot, but none new from a device: still.
         let picture = app.mixer_ref().channels()[1].composite_view.clone();
-        app.mixer.channel_mut(ch).unwrap().decks.last_mut().unwrap().deck.external_source_view =
-            Some(picture.clone());
-        assert_eq!(app.ui_motion(), UiMotion::Still, "a camera sending nothing new");
+        app.mixer
+            .channel_mut(ch)
+            .unwrap()
+            .decks
+            .last_mut()
+            .unwrap()
+            .deck
+            .external_source_view = Some(picture.clone());
+        assert_eq!(
+            app.ui_motion(),
+            UiMotion::Still,
+            "a camera sending nothing new"
+        );
 
         // An NDI source with a texture but no sender sending: still.
         let mut ndi = live(&app, crate::deck::ExternalSourceKind::Ndi(0), "Stage NDI");
         ndi.external_source_view = Some(picture.clone());
         app.mixer.channel_mut(ch).unwrap().add_deck(ndi);
-        assert_eq!(app.ui_motion(), UiMotion::Still, "an NDI sender not sending");
+        assert_eq!(
+            app.ui_motion(),
+            UiMotion::Still,
+            "an NDI sender not sending"
+        );
 
         // A web page with its picture: live, and named.
-        let mut page = live(&app, crate::deck::ExternalSourceKind::Html(0), "Lower third page");
+        let mut page = live(
+            &app,
+            crate::deck::ExternalSourceKind::Html(0),
+            "Lower third page",
+        );
         page.external_source_view = Some(picture);
         app.mixer.channel_mut(ch).unwrap().add_deck(page);
         let (motion, why) = app.ui_motion_why();
         assert_eq!(motion, UiMotion::Pictures, "an input with its picture");
-        assert!(why.as_deref().is_some_and(|w| w.contains("'Lower third page'")), "{why:?}");
-        app.mixer.channel_mut(ch).unwrap().decks.last_mut().unwrap().deck.external_source_view =
-            None;
+        assert!(
+            why.as_deref()
+                .is_some_and(|w| w.contains("'Lower third page'")),
+            "{why:?}"
+        );
+        app.mixer
+            .channel_mut(ch)
+            .unwrap()
+            .decks
+            .last_mut()
+            .unwrap()
+            .deck
+            .external_source_view = None;
         assert_eq!(app.ui_motion(), UiMotion::Still, "its picture gone");
 
         // The master shown as a layer of the other channel: still with it.
@@ -266,7 +307,11 @@ mod tests {
             channel_uuid: other,
             source: crate::scene::TapSourceConfig::MasterProgram,
         }));
-        assert_eq!(app.ui_motion_why(), (UiMotion::Still, None), "a tap of a still show");
+        assert_eq!(
+            app.ui_motion_why(),
+            (UiMotion::Still, None),
+            "a tap of a still show"
+        );
     }
 
     /// The performance figures say how often the control window is drawn and
@@ -277,9 +322,16 @@ mod tests {
             return;
         };
         app.set_control_rate(60.0, false, None);
-        let rate = |app: &VardaApp| crate::app::snapshot::build_engine_state(app).pacing.control_rate;
+        let rate = |app: &VardaApp| {
+            crate::app::snapshot::build_engine_state(app)
+                .pacing
+                .control_rate
+        };
         let now = rate(&app);
-        assert_eq!((now.motion.as_str(), now.why.as_deref(), now.period_ms), ("still", None, 60.0));
+        assert_eq!(
+            (now.motion.as_str(), now.why.as_deref(), now.period_ms),
+            ("still", None, 60.0)
+        );
         let channel = app.mixer_ref().channels()[0].uuid().to_string();
         let list = id(app.execute_command(EngineCommand::AddPlaylistDeck {
             channel_uuid: channel,
@@ -293,7 +345,11 @@ mod tests {
         app.set_control_rate(0.0, true, Some(40.0));
         let now = rate(&app);
         assert_eq!(now.motion, "pictures");
-        assert!(now.why.as_deref().is_some_and(|w| w.ends_with("moves")), "{:?}", now.why);
+        assert!(
+            now.why.as_deref().is_some_and(|w| w.ends_with("moves")),
+            "{:?}",
+            now.why
+        );
         assert!(now.hands_on);
         assert_eq!(now.widgets_ms, Some(40.0));
     }
@@ -326,7 +382,10 @@ mod tests {
             "/*{\"INPUTS\":[]}*/\n#define CAT(a, b) a ## b\nvoid main() { gl_FragColor = vec4(CAT(TI, ME)); }",
         )
         .unwrap();
-        assert!(glued.animates(), "a name pasted together is taken as moving");
+        assert!(
+            glued.animates(),
+            "a name pasted together is taken as moving"
+        );
         // A compute simulation keeping its storage from frame to frame.
         let simulation = crate::isf::ISFShader::from_string(
             "/*{\"TYPE\":\"compute\",\"COMPUTE\":{\"WORKGROUP_SIZE\":[16,16,1],\"DISPATCH\":\"resolution\"},\"BUFFERS\":[{\"NAME\":\"cells\",\"TYPE\":\"storage\",\"STRUCT\":\"Cell\",\"COUNT\":64,\"STRIDE\":16,\"PERSISTENT\":true}]}*/\nvoid main() {}",
@@ -360,10 +419,7 @@ mod tests {
         }
         id(app.execute_command(EngineCommand::AddTalks {
             deck_uuid: None,
-            paths: vec![
-                picture.display().to_string(),
-                clip.display().to_string(),
-            ],
+            paths: vec![picture.display().to_string(), clip.display().to_string()],
             at: None,
         }));
         let slides_moving = |app: &VardaApp| {

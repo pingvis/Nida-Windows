@@ -89,10 +89,16 @@ fn body(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions) {
 
 /// The screen's own name, typed in place: kept when Enter is pressed or
 /// the field is left; emptied, the name is taken away.
-fn name_field(ui: &mut egui::Ui, monitor: &crate::usecases::ui::MonitorInfo, actions: &mut UIActions) {
+fn name_field(
+    ui: &mut egui::Ui,
+    monitor: &crate::usecases::ui::MonitorInfo,
+    actions: &mut UIActions,
+) {
     let id = draft_id(&monitor.name);
     let given = monitor.given_name.clone().unwrap_or_default();
-    let mut text = ui.data(|d| d.get_temp::<String>(id)).unwrap_or_else(|| given.clone());
+    let mut text = ui
+        .data(|d| d.get_temp::<String>(id))
+        .unwrap_or_else(|| given.clone());
     let response = ui.add(
         egui::TextEdit::singleline(&mut text)
             .hint_text("Name it…")
@@ -119,18 +125,19 @@ mod tests {
 
     fn screens() -> UIData {
         let mut data = UIData::test_fixture();
-        let screen = |name: &str, model: &str, given: Option<&str>| crate::usecases::ui::MonitorInfo {
-            name: name.into(),
-            index: 0,
-            width: 1920,
-            height: 1080,
-            is_control: false,
-            label: format!("{} (1920×1080)", given.unwrap_or(model)),
-            model: Some(model.into()),
-            given_name: given.map(str::to_string),
-            identity: name.into(),
-            main: false,
-        };
+        let screen =
+            |name: &str, model: &str, given: Option<&str>| crate::usecases::ui::MonitorInfo {
+                name: name.into(),
+                index: 0,
+                width: 1920,
+                height: 1080,
+                is_control: false,
+                label: format!("{} (1920×1080)", given.unwrap_or(model)),
+                model: Some(model.into()),
+                given_name: given.map(str::to_string),
+                identity: name.into(),
+                main: false,
+            };
         data.available_monitors = vec![
             screen("Monitor #0 @ 1728,0", "BMD HDMI", None),
             screen("Monitor #0 @ -1920,0", "BMD HDMI", Some("ATEM in 2")),

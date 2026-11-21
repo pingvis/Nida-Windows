@@ -114,7 +114,9 @@ impl TsScan {
             return;
         };
         // Programs follow the 8-byte header, 4 bytes each, before the CRC.
-        let programs = section.get(8..section.len().saturating_sub(4)).unwrap_or(&[]);
+        let programs = section
+            .get(8..section.len().saturating_sub(4))
+            .unwrap_or(&[]);
         for entry in programs.as_chunks::<4>().0 {
             let number = u16::from_be_bytes([entry[0], entry[1]]);
             if number != 0 {
@@ -276,7 +278,14 @@ pub(crate) mod tests {
         ]
         .concat();
         let kept = finish_units(&piece, &mut open);
-        assert_eq!(kept, [packet(0x100, false, false, &[1]), packet(0x100, false, false, &[4])].concat());
+        assert_eq!(
+            kept,
+            [
+                packet(0x100, false, false, &[1]),
+                packet(0x100, false, false, &[4])
+            ]
+            .concat()
+        );
         assert!(open.is_empty(), "both closed");
     }
 

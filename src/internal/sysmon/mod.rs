@@ -235,9 +235,8 @@ fn own_footprint() -> Option<u64> {
     #[allow(clippy::cast_possible_wrap)]
     let pid = std::process::id() as libc::c_int;
     // SAFETY: our own pid; the buffer is a rusage_info_v2, as the flavour asks.
-    let done = unsafe {
-        libc::proc_pid_rusage(pid, libc::RUSAGE_INFO_V2, info.as_mut_ptr().cast())
-    };
+    let done =
+        unsafe { libc::proc_pid_rusage(pid, libc::RUSAGE_INFO_V2, info.as_mut_ptr().cast()) };
     // SAFETY: filled in on success.
     (done == 0).then(|| unsafe { info.assume_init() }.ri_phys_footprint)
 }
@@ -258,7 +257,11 @@ mod iokit {
     #[link(name = "IOKit", kind = "framework")]
     extern "C" {
         fn IOServiceMatching(name: *const c_char) -> *mut c_void;
-        fn IOServiceGetMatchingServices(main_port: u32, matching: *mut c_void, iter: *mut u32) -> i32;
+        fn IOServiceGetMatchingServices(
+            main_port: u32,
+            matching: *mut c_void,
+            iter: *mut u32,
+        ) -> i32;
         fn IOIteratorNext(iter: u32) -> u32;
         fn IORegistryEntryCreateCFProperty(
             entry: u32,
@@ -271,7 +274,11 @@ mod iokit {
 
     #[link(name = "CoreFoundation", kind = "framework")]
     extern "C" {
-        fn CFStringCreateWithCString(alloc: CFTypeRef, s: *const c_char, encoding: u32) -> CFTypeRef;
+        fn CFStringCreateWithCString(
+            alloc: CFTypeRef,
+            s: *const c_char,
+            encoding: u32,
+        ) -> CFTypeRef;
         fn CFDictionaryGetValue(dict: CFTypeRef, key: CFTypeRef) -> CFTypeRef;
         fn CFNumberGetValue(number: CFTypeRef, kind: isize, value: *mut c_void) -> bool;
         fn CFGetTypeID(cf: CFTypeRef) -> usize;
@@ -302,14 +309,19 @@ mod iokit {
                 if service == 0 {
                     break;
                 }
-                let stats = IORegistryEntryCreateCFProperty(service, stats_key, std::ptr::null(), 0);
+                let stats =
+                    IORegistryEntryCreateCFProperty(service, stats_key, std::ptr::null(), 0);
                 if !stats.is_null() {
                     if CFGetTypeID(stats) == CFDictionaryGetTypeID() {
                         let busy = CFDictionaryGetValue(stats, busy_key);
                         let mut value: i64 = 0;
                         if !busy.is_null()
                             && CFGetTypeID(busy) == CFNumberGetTypeID()
-                            && CFNumberGetValue(busy, K_CF_NUMBER_SINT64_TYPE, (&raw mut value).cast())
+                            && CFNumberGetValue(
+                                busy,
+                                K_CF_NUMBER_SINT64_TYPE,
+                                (&raw mut value).cast(),
+                            )
                         {
                             #[allow(clippy::cast_precision_loss)]
                             let pct = (value as f32).clamp(0.0, 100.0);
@@ -329,13 +341,19 @@ mod iokit {
 
     #[link(name = "IOKit", kind = "framework")]
     extern "C" {
-        fn IORegistryEntryGetChildIterator(entry: u32, plane: *const c_char, iter: *mut u32) -> i32;
+        fn IORegistryEntryGetChildIterator(entry: u32, plane: *const c_char, iter: *mut u32)
+            -> i32;
         fn IORegistryEntryGetRegistryEntryID(entry: u32, id: *mut u64) -> i32;
     }
 
     #[link(name = "CoreFoundation", kind = "framework")]
     extern "C" {
-        fn CFStringGetCString(s: CFTypeRef, buffer: *mut c_char, size: isize, encoding: u32) -> bool;
+        fn CFStringGetCString(
+            s: CFTypeRef,
+            buffer: *mut c_char,
+            size: isize,
+            encoding: u32,
+        ) -> bool;
         fn CFStringGetTypeID() -> usize;
         fn CFArrayGetTypeID() -> usize;
         fn CFArrayGetCount(array: CFTypeRef) -> isize;
@@ -370,44 +388,70 @@ mod iokit {
                     break;
                 }
                 let mut clients = 0;
-                if IORegistryEntryGetChildIterator(accelerator, c"IOService".as_ptr(), &raw mut clients) == 0 {
+                if IORegistryEntryGetChildIterator(
+                    accelerator,
+                    c"IOService".as_ptr(),
+                    &raw mut clients,
+                ) == 0
+                {
                     loop {
                         let client = IOIteratorNext(clients);
                         if client == 0 {
                             break;
                         }
-                        let creator = IORegistryEntryCreateCFProperty(client, creator_key, std::ptr::null(), 0);
-                        let ours = !creator.is_null()
-                            && CFGetTypeID(creator) == CFStringGetTypeID()
-                            && {
+                        let creator = IORegistryEntryCreateCFProperty(
+                            client,
+                            creator_key,
+                            std::ptr::null(),
+                            0,
+                        );
+                        let ours =
+                            !creator.is_null() && CFGetTypeID(creator) == CFStringGetTypeID() && {
                                 let mut buffer = [0 as c_char; 256];
-                                CFStringGetCString(creator, buffer.as_mut_ptr(), 256, K_CF_STRING_ENCODING_UTF8)
-                                    && std::ffi::CStr::from_ptr(buffer.as_ptr())
-                                        .to_string_lossy()
-                                        .starts_with(&mine)
+                                CFStringGetCString(
+                                    creator,
+                                    buffer.as_mut_ptr(),
+                                    256,
+                                    K_CF_STRING_ENCODING_UTF8,
+                                ) && std::ffi::CStr::from_ptr(buffer.as_ptr())
+                                    .to_string_lossy()
+                                    .starts_with(&mine)
                             };
                         if !creator.is_null() {
                             CFRelease(creator);
                         }
                         let mut entry_id = 0_u64;
-                        if ours && IORegistryEntryGetRegistryEntryID(client, &raw mut entry_id) == 0 {
-                            let usage = IORegistryEntryCreateCFProperty(client, usage_key, std::ptr::null(), 0);
+                        if ours && IORegistryEntryGetRegistryEntryID(client, &raw mut entry_id) == 0
+                        {
+                            let usage = IORegistryEntryCreateCFProperty(
+                                client,
+                                usage_key,
+                                std::ptr::null(),
+                                0,
+                            );
                             if !usage.is_null() {
                                 if CFGetTypeID(usage) == CFArrayGetTypeID() {
                                     for at in 0..CFArrayGetCount(usage) {
                                         let entry = CFArrayGetValueAtIndex(usage, at);
-                                        if entry.is_null() || CFGetTypeID(entry) != CFDictionaryGetTypeID() {
+                                        if entry.is_null()
+                                            || CFGetTypeID(entry) != CFDictionaryGetTypeID()
+                                        {
                                             continue;
                                         }
                                         let time = CFDictionaryGetValue(entry, time_key);
                                         let mut value: i64 = 0;
                                         if !time.is_null()
                                             && CFGetTypeID(time) == CFNumberGetTypeID()
-                                            && CFNumberGetValue(time, K_CF_NUMBER_SINT64_TYPE, (&raw mut value).cast())
+                                            && CFNumberGetValue(
+                                                time,
+                                                K_CF_NUMBER_SINT64_TYPE,
+                                                (&raw mut value).cast(),
+                                            )
                                         {
-                                            total
-                                                .get_or_insert_with(Default::default)
-                                                .insert((entry_id, at), u64::try_from(value).unwrap_or(0));
+                                            total.get_or_insert_with(Default::default).insert(
+                                                (entry_id, at),
+                                                u64::try_from(value).unwrap_or(0),
+                                            );
                                         }
                                     }
                                 }
@@ -430,7 +474,9 @@ mod iokit {
 
     unsafe fn cf_string(s: &std::ffi::CStr) -> CFTypeRef {
         // SAFETY: a NUL-terminated UTF-8 string; the caller releases it.
-        unsafe { CFStringCreateWithCString(std::ptr::null(), s.as_ptr(), K_CF_STRING_ENCODING_UTF8) }
+        unsafe {
+            CFStringCreateWithCString(std::ptr::null(), s.as_ptr(), K_CF_STRING_ENCODING_UTF8)
+        }
     }
 }
 
@@ -445,11 +491,23 @@ mod tests {
         let before: super::GpuTimes = [((1, 0), 20 * s), ((2, 0), 100 * s)].into();
         let now: super::GpuTimes = [((2, 0), 100 * s + s / 5)].into();
         assert_eq!(super::gpu_time_spent(&before, &now), s / 5, "one gone");
-        let now: super::GpuTimes =
-            [((1, 0), 20 * s + s / 10), ((2, 0), 100 * s), ((3, 0), 30 * s)].into();
-        assert_eq!(super::gpu_time_spent(&before, &now), s / 10, "a new one: from the next");
+        let now: super::GpuTimes = [
+            ((1, 0), 20 * s + s / 10),
+            ((2, 0), 100 * s),
+            ((3, 0), 30 * s),
+        ]
+        .into();
+        assert_eq!(
+            super::gpu_time_spent(&before, &now),
+            s / 10,
+            "a new one: from the next"
+        );
         let now: super::GpuTimes = [((1, 0), s / 4), ((2, 0), 100 * s)].into();
-        assert_eq!(super::gpu_time_spent(&before, &now), 0, "started again: from the next");
+        assert_eq!(
+            super::gpu_time_spent(&before, &now),
+            0,
+            "started again: from the next"
+        );
         // A counter missing from one reading, back in the next: not its
         // whole 20 s.
         let partial: super::GpuTimes = [((2, 0), 100 * s + s / 5)].into();
@@ -472,7 +530,11 @@ mod tests {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
             label: None,
-            size: wgpu::Extent3d { width: 1024, height: 1024, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 1024,
+                height: 1024,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,

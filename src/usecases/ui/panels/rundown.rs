@@ -11,11 +11,11 @@ use super::super::{widgets, BusUI, UIActions, UIData};
 use super::switcher::{seconds, AUTO_DURATIONS, PREVIEW_GREEN, PROGRAM_RED};
 use crate::bus::BusInputRef;
 use crate::engine::value::render::OutputSource;
-use crate::engine::{EngineCommand, RundownStepSnapshot};
-use crate::mixer::MainSource;
 use crate::engine::value::timer::{
     parse_span, parse_time_of_day, span_text, target_text, TimeFormat, MAX_DURATION_SECS,
 };
+use crate::engine::{EngineCommand, RundownStepSnapshot};
+use crate::mixer::MainSource;
 use crate::rundown::{PlayAction, PlaySet, Step, TimerSet, DAY_SECS, MAX_THEN_SECS};
 
 const WARN: egui::Color32 = egui::Color32::from_rgb(230, 180, 60);
@@ -138,7 +138,11 @@ fn summary(data: &UIData, step: &Step) -> String {
         parts.push(format!("then the next after {}", seconds(secs)));
     }
     if let Some(at) = step.at_secs {
-        let always = if step.at_always { ", even if not next" } else { "" };
+        let always = if step.at_always {
+            ", even if not next"
+        } else {
+            ""
+        };
         parts.insert(0, format!("at {}{always}", target_text(at)));
     }
     if parts.is_empty() {
@@ -222,11 +226,14 @@ fn render_due_at(
             {
                 actions.commands.push(EngineCommand::RundownHold);
             }
-            ui.ctx().request_repaint_after(std::time::Duration::from_millis(500));
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(500));
         } else {
             ui.label(
-                egui::RichText::new(format!("{name} at {when} — that time has gone: GO takes it"))
-                    .weak(),
+                egui::RichText::new(format!(
+                    "{name} at {when} — that time has gone: GO takes it"
+                ))
+                .weak(),
             );
         }
     });
@@ -292,7 +299,8 @@ pub(super) fn render_rundown(ui: &mut egui::Ui, data: &UIData, actions: &mut UIA
     ) {
         let off_next = coming.at_always && data.rundown.next.as_deref() != Some(&coming.uuid);
         if data.rundown.wait.is_none() || off_next {
-            if let (Some(at), Some(step)) = (coming.at_secs, step_called(data, Some(&coming.uuid))) {
+            if let (Some(at), Some(step)) = (coming.at_secs, step_called(data, Some(&coming.uuid)))
+            {
                 render_due_at(ui, data, step, at, actions);
             }
         }
@@ -349,9 +357,7 @@ fn render_top(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions) {
         );
         let go = match next {
             Some(step) if !step.missing.is_empty() => go.on_disabled_hover_text(why_not(step)),
-            Some(step) if !step.fading.is_empty() => {
-                go.on_disabled_hover_text(why_not_faded(step))
-            }
+            Some(step) if !step.fading.is_empty() => go.on_disabled_hover_text(why_not_faded(step)),
             Some(_) => go.on_hover_text(format!(
                 "Fade to the next step over {}",
                 seconds(rundown.fade_secs)
@@ -535,8 +541,18 @@ fn step_menu(
             true,
             EngineCommand::DuplicateRundownStep { uuid: uuid.clone() },
         ),
-        ("Move earlier", "One place up the rundown", at > 0, move_step(false)),
-        ("Move later", "One place down the rundown", !last, move_step(true)),
+        (
+            "Move earlier",
+            "One place up the rundown",
+            at > 0,
+            move_step(false),
+        ),
+        (
+            "Move later",
+            "One place down the rundown",
+            !last,
+            move_step(true),
+        ),
         (
             "Remove",
             "Undo brings it back",
@@ -800,7 +816,9 @@ fn render_editor(ctx: &egui::Context, data: &UIData, actions: &mut UIActions) {
     // The first time, the window takes the size of what it has; from then
     // on it is sized by hand — wider for long names, or shorter, its
     // contents then scrolled — and opens again at that size.
-    let fitted = ctx.data(|d| d.get_temp::<bool>(editor_fitted_id())).unwrap_or(false);
+    let fitted = ctx
+        .data(|d| d.get_temp::<bool>(editor_fitted_id()))
+        .unwrap_or(false);
     egui::Window::new(format!("Step: {}", step.name))
         .id(editor_window_id())
         .default_pos(state.at)
@@ -882,9 +900,7 @@ fn edit_step(
     ui.horizontal(|ui| {
         if ui
             .button("Update from what is on now")
-            .on_hover_text(
-                "The screens it sets, and Main if it sets it, become what is on now",
-            )
+            .on_hover_text("The screens it sets, and Main if it sets it, become what is on now")
             .clicked()
         {
             actions
@@ -920,11 +936,19 @@ fn edit_screens(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIA
         .show(ui, |ui| {
             for bus in &data.buses {
                 let bus_uuid = &bus.bus.uuid;
-                let now = step.screens.iter().find(|s| &s.bus == bus_uuid).map(|s| &s.input);
+                let now = step
+                    .screens
+                    .iter()
+                    .find(|s| &s.bus == bus_uuid)
+                    .map(|s| &s.input);
                 ui.label(&bus.bus.name);
                 let mut choices = vec![(LEAVE.to_string(), now.is_none(), set(bus_uuid, None))];
                 let mut inputs = vec![BusInputRef::Black, BusInputRef::Master];
-                inputs.extend(data.channels.iter().map(|ch| BusInputRef::Channel(ch.uuid.clone())));
+                inputs.extend(
+                    data.channels
+                        .iter()
+                        .map(|ch| BusInputRef::Channel(ch.uuid.clone())),
+                );
                 // One layer alone, set from what was on: kept on the list.
                 if let Some(deck @ BusInputRef::Deck(_)) = now {
                     inputs.push(deck.clone());
@@ -986,7 +1010,11 @@ fn edit_main(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIActi
             ui.end_row();
 
             for ch in data.channels.iter().filter(|ch| ch.overlay) {
-                let now = step.overlays.iter().find(|o| o.channel == ch.uuid).map(|o| o.on);
+                let now = step
+                    .overlays
+                    .iter()
+                    .find(|o| o.channel == ch.uuid)
+                    .map(|o| o.on);
                 let set = |on: Option<bool>| EngineCommand::SetRundownOverlay {
                     uuid: step.uuid.clone(),
                     channel_uuid: ch.uuid.clone(),
@@ -1029,17 +1057,20 @@ fn edit_main(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIActi
             }
         });
     ui.label(
-        egui::RichText::new("Main is taken as its own Cut and Fade take it, with its own fade time.")
-            .small(),
+        egui::RichText::new(
+            "Main is taken as its own Cut and Fade take it, with its own fade time.",
+        )
+        .small(),
     );
 }
 
 /// Why a clip a step starts may not be heard, if so.
 fn unheard(data: &UIData, deck: &str) -> Option<&'static str> {
     use crate::audio_mix::AudioSourceKind;
-    let strip = data.audio_mix.sources.iter().find(
-        |s| matches!(&s.kind, AudioSourceKind::Clip { deck_uuid } if deck_uuid == deck),
-    )?;
+    let strip =
+        data.audio_mix.sources.iter().find(
+            |s| matches!(&s.kind, AudioSourceKind::Clip { deck_uuid } if deck_uuid == deck),
+        )?;
     if strip.muted {
         Some("Its sound is off in the Audio Mixer")
     } else if strip.auto {
@@ -1089,7 +1120,8 @@ fn short_label(ui: &mut egui::Ui, text: &str, width: f32) {
         egui::Layout::left_to_right(egui::Align::Center),
         |ui| {
             ui.set_max_width(width);
-            ui.add(egui::Label::new(text).truncate()).on_hover_text(text);
+            ui.add(egui::Label::new(text).truncate())
+                .on_hover_text(text);
         },
     );
 }
@@ -1219,16 +1251,21 @@ fn edit_plays(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIAct
                     .is_some_and(|t| t.settings.mode.has_transport())
         })
         .filter(|(_, d)| !step.plays.iter().any(|p| p.deck == d.uuid))
-        .map(|(ch, d)| (ch.numbered(), d.name.as_str(), d.uuid.as_str(), !on_timeline(d)))
+        .map(|(ch, d)| {
+            (
+                ch.numbered(),
+                d.name.as_str(),
+                d.uuid.as_str(),
+                !on_timeline(d),
+            )
+        })
         .collect();
     ui.add_enabled_ui(!runnable.is_empty(), |ui| {
         ui.menu_button("+ Clip, playlist or timer", |ui| {
             for (channel, name, deck, startable) in &runnable {
                 if ui
                     .add_enabled(*startable, egui::Button::new(format!("{channel} ▸ {name}")))
-                    .on_disabled_hover_text(
-                        "It follows the timeline, which starts and stops it",
-                    )
+                    .on_disabled_hover_text("It follows the timeline, which starts and stops it")
                     .clicked()
                 {
                     actions.commands.push(set(deck, Some(PlayAction::Start)));
@@ -1278,7 +1315,11 @@ fn edit_timer_set(
             .selected_text(named(play.timer))
             .width(150.0)
             .show_ui(ui, |ui| {
-                for set in [None, Some(TimerSet::Down { secs: length }), Some(TimerSet::Up)] {
+                for set in [
+                    None,
+                    Some(TimerSet::Down { secs: length }),
+                    Some(TimerSet::Up),
+                ] {
                     let current = named(set) == named(play.timer);
                     if ui.selectable_label(current, named(set)).clicked() && !current {
                         actions.commands.push(send(set));
@@ -1309,7 +1350,9 @@ fn edit_timer_set(
                 actions.session.gesture_active = true;
             }
             if drag.changed() && now != secs {
-                actions.commands.push(send(Some(TimerSet::Down { secs: now })));
+                actions
+                    .commands
+                    .push(send(Some(TimerSet::Down { secs: now })));
             }
         }
     });
@@ -1320,7 +1363,10 @@ fn as_set(settings: Option<&crate::engine::value::timer::TimerSettings>) -> Stri
     use crate::engine::value::timer::TimerMode;
     match settings {
         Some(t) if t.mode == TimerMode::Countdown => {
-            format!("As set: {} down", span_text(u64::from(t.duration_secs), TimeFormat::Auto))
+            format!(
+                "As set: {} down",
+                span_text(u64::from(t.duration_secs), TimeFormat::Auto)
+            )
         }
         Some(t) if t.mode == TimerMode::CountUp => "As set: up".to_string(),
         _ => "As set".to_string(),
@@ -1410,7 +1456,10 @@ fn edit_then(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIActi
         .map(|p| p.deck.as_str())
         .collect();
     let ends_name = |deck: &str| {
-        format!("when {} ends", deck_name(data, deck).unwrap_or_else(|| MISSING.into()))
+        format!(
+            "when {} ends",
+            deck_name(data, deck).unwrap_or_else(|| MISSING.into())
+        )
     };
     ui.horizontal(|ui| {
         let mut on = step.then_secs.is_some() || step.then_ends.is_some();
@@ -1424,10 +1473,17 @@ fn edit_then(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIActi
         if !on {
             return;
         }
-        let shown = step.then_ends.as_deref().map_or_else(|| "after".to_string(), ends_name);
+        let shown = step
+            .then_ends
+            .as_deref()
+            .map_or_else(|| "after".to_string(), ends_name);
         egui::ComboBox::from_id_salt(("rundown_then", &step.uuid))
             .selected_text(shown)
-            .width(if step.then_ends.is_some() { 260.0 } else { 70.0 })
+            .width(if step.then_ends.is_some() {
+                260.0
+            } else {
+                70.0
+            })
             .show_ui(ui, |ui| {
                 let after = step.then_ends.is_none();
                 if ui.selectable_label(after, "after a time").clicked() && !after {
@@ -1461,7 +1517,10 @@ fn edit_then(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIActi
             }
         }
     });
-    if step.then_secs.is_some_and(|secs| secs < data.rundown.fade_secs) {
+    if step
+        .then_secs
+        .is_some_and(|secs| secs < data.rundown.fade_secs)
+    {
         ui.label(
             egui::RichText::new(format!(
                 "Faded to, it goes on when its fade is done ({}).",
@@ -1491,7 +1550,12 @@ fn edit_then(ui: &mut egui::Ui, step: &Step, data: &UIData, actions: &mut UIActi
 /// never ends.
 fn loops(data: &UIData, deck: &str) -> bool {
     use crate::video::LoopMode;
-    let Some(deck) = data.channels.iter().flat_map(|ch| &ch.decks).find(|d| d.uuid == deck) else {
+    let Some(deck) = data
+        .channels
+        .iter()
+        .flat_map(|ch| &ch.decks)
+        .find(|d| d.uuid == deck)
+    else {
         return false;
     };
     if let Some(list) = &deck.playlist {
@@ -1529,7 +1593,6 @@ pub(super) fn render_windows(ctx: &egui::Context, data: &UIData, actions: &mut U
     render_new_step(ctx, data, actions);
     render_editor(ctx, data, actions);
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -1629,10 +1692,19 @@ mod tests {
         data.rundown.next = Some("s2".into());
         let harness = self::harness(&data);
         harness.get_by_label("GO ▸ B");
-        let (now, next) = (harness.get_by_label(" NOW "), harness.get_by_label(" NEXT "));
+        let (now, next) = (
+            harness.get_by_label(" NOW "),
+            harness.get_by_label(" NEXT "),
+        );
         let (a, b) = (harness.get_by_label("A"), harness.get_by_label("B"));
-        assert!((now.rect().center().y - a.rect().center().y).abs() < 8.0, "NOW is on A's row");
-        assert!((next.rect().center().y - b.rect().center().y).abs() < 8.0, "NEXT is on B's");
+        assert!(
+            (now.rect().center().y - a.rect().center().y).abs() < 8.0,
+            "NOW is on A's row"
+        );
+        assert!(
+            (next.rect().center().y - b.rect().center().y).abs() < 8.0,
+            "NEXT is on B's"
+        );
     }
 
     /// Each step has a Cut and a Fade of its own, for a step out of order.
@@ -1666,9 +1738,20 @@ mod tests {
                 .map(|b| b.accesskit_node().is_disabled())
                 .collect()
         };
-        assert_eq!(disabled(&harness, "Fade"), [true, true, false], "A fading, B missing");
-        assert_eq!(disabled(&harness, "Cut"), [false, false, true, false], "GO's cut, then A, B, C");
-        assert!(harness.get_by_label("GO ▸ A").accesskit_node().is_disabled());
+        assert_eq!(
+            disabled(&harness, "Fade"),
+            [true, true, false],
+            "A fading, B missing"
+        );
+        assert_eq!(
+            disabled(&harness, "Cut"),
+            [false, false, true, false],
+            "GO's cut, then A, B, C"
+        );
+        assert!(harness
+            .get_by_label("GO ▸ A")
+            .accesskit_node()
+            .is_disabled());
         harness.get_by_label("⚠");
         // Pressed all the same, nothing is sent.
         harness.get_by_label("GO ▸ A").click();
@@ -1681,7 +1764,10 @@ mod tests {
         // The next step with something missing: GO and its cut both wait.
         data.rundown.next = Some("s2".into());
         let harness = self::harness(&data);
-        assert!(harness.get_by_label("GO ▸ B").accesskit_node().is_disabled());
+        assert!(harness
+            .get_by_label("GO ▸ B")
+            .accesskit_node()
+            .is_disabled());
         assert!(disabled(&harness, "Cut")[0]);
     }
 
@@ -1748,7 +1834,9 @@ mod tests {
         harness.get_by_label("+ Step").click();
         settle(&mut harness);
         harness.get_by_label("TV — 1  Ch A");
-        harness.get_by_label("Main, and every overlay on or off").click();
+        harness
+            .get_by_label("Main, and every overlay on or off")
+            .click();
         settle(&mut harness);
         harness.get_by_label("Add step").click();
         settle(&mut harness);
@@ -1756,7 +1844,10 @@ mod tests {
             sent(&harness),
             r#"[AddRundownStep { name: "D", buses: Some(["bus00001"]), main: true }]"#
         );
-        assert!(harness.query_by_label("Add step").is_none(), "the window closed");
+        assert!(
+            harness.query_by_label("Add step").is_none(),
+            "the window closed"
+        );
         drop(harness);
 
         // The bus the stream takes: there, unticked, and said why.
@@ -1779,10 +1870,19 @@ mod tests {
     fn a_steps_menu_changes_the_list() {
         let data = show();
         let mut harness = harness(&data);
-        for item in ["Update from what is on now", "GO takes this next", "Duplicate", "Move later", "Remove"] {
+        for item in [
+            "Update from what is on now",
+            "GO takes this next",
+            "Duplicate",
+            "Move later",
+            "Remove",
+        ] {
             harness.get_by_label("A").click_secondary();
             settle(&mut harness);
-            assert!(harness.get_by_label("Move earlier").accesskit_node().is_disabled());
+            assert!(harness
+                .get_by_label("Move earlier")
+                .accesskit_node()
+                .is_disabled());
             harness.get_by_label(item).click();
             settle(&mut harness);
         }
@@ -1792,7 +1892,10 @@ mod tests {
         );
         harness.get_by_label("C").click_secondary();
         settle(&mut harness);
-        assert!(harness.get_by_label("Move later").accesskit_node().is_disabled());
+        assert!(harness
+            .get_by_label("Move later")
+            .accesskit_node()
+            .is_disabled());
         harness.get_by_label("Move earlier").click();
         settle(&mut harness);
         assert!(sent(&harness).ends_with(r#"MoveRundownStep { uuid: "s3", later: false }]"#));
@@ -1805,11 +1908,20 @@ mod tests {
         data.channels[1].overlay = true;
         let step = &mut data.rundown.steps[0].step;
         step.screens = vec![
-            ScreenSet { bus: TV.into(), input: BusInputRef::Channel(CH_B.into()) },
-            ScreenSet { bus: "gone".into(), input: BusInputRef::Black },
+            ScreenSet {
+                bus: TV.into(),
+                input: BusInputRef::Channel(CH_B.into()),
+            },
+            ScreenSet {
+                bus: "gone".into(),
+                input: BusInputRef::Black,
+            },
         ];
         step.main = Some(MainSource::Channel(CH_A.into()));
-        step.overlays = vec![OverlaySet { channel: CH_B.into(), on: false }];
+        step.overlays = vec![OverlaySet {
+            channel: CH_B.into(),
+            on: false,
+        }];
         step.plays = vec![PlaySet::new("a0000001", PlayAction::Start)];
         step.then_secs = Some(5.0);
         let harness = harness(&data);
@@ -1817,7 +1929,13 @@ mod tests {
             "TV: 2  Ch B  ·  ⚠ a bus that is gone: Black  ·  Main: 1  Ch A  ·  2  Ch B off  ·  \
              ▶ 1  test_generator_a  ·  then the next after 5 s",
         );
-        assert_eq!(harness.query_all_by_label_contains("Sets nothing yet").count(), 2, "B and C");
+        assert_eq!(
+            harness
+                .query_all_by_label_contains("Sets nothing yet")
+                .count(),
+            2,
+            "B and C"
+        );
     }
 
     /// The fixture's first layer made a count down, so there is something
@@ -1882,7 +2000,11 @@ mod tests {
         menus.sort_by(|a, b| a.rect().top().total_cmp(&b.rect().top()));
         menus[1].click();
         settle(&mut harness);
-        assert_eq!(harness.query_all_by_label("2  Ch B").count(), 1, "its own row only");
+        assert_eq!(
+            harness.query_all_by_label("2  Ch B").count(),
+            1,
+            "its own row only"
+        );
     }
 
     /// Set, each thing reads as it is set and is put back to "Leave as it
@@ -1892,8 +2014,14 @@ mod tests {
         let mut data = with_timer(show());
         let step = &mut data.rundown.steps[1].step;
         step.screens = vec![
-            ScreenSet { bus: TV.into(), input: BusInputRef::Channel(CH_B.into()) },
-            ScreenSet { bus: "gone".into(), input: BusInputRef::Black },
+            ScreenSet {
+                bus: TV.into(),
+                input: BusInputRef::Channel(CH_B.into()),
+            },
+            ScreenSet {
+                bus: "gone".into(),
+                input: BusInputRef::Black,
+            },
         ];
         step.plays = vec![PlaySet::new("a0000001", PlayAction::Start)];
         step.then_secs = Some(2.0);
@@ -1929,8 +2057,14 @@ mod tests {
     fn an_overlay_that_is_one_no_longer_is_shown_and_taken_out() {
         let mut data = show();
         data.rundown.steps[1].step.overlays = vec![
-            OverlaySet { channel: CH_B.into(), on: true },
-            OverlaySet { channel: "gone".into(), on: false },
+            OverlaySet {
+                channel: CH_B.into(),
+                on: true,
+            },
+            OverlaySet {
+                channel: "gone".into(),
+                on: false,
+            },
         ];
         let mut harness = harness(&data);
         open_editor_of(&mut harness, "B");
@@ -1954,7 +2088,9 @@ mod tests {
         data.rundown.steps[1].step.overlays.truncate(1);
         let mut harness = self::harness(&data);
         open_editor_of(&mut harness, "B");
-        assert!(harness.query_by_label_contains("not an overlay now").is_none());
+        assert!(harness
+            .query_by_label_contains("not an overlay now")
+            .is_none());
         harness.get_by_value("On");
     }
 
@@ -1998,13 +2134,20 @@ mod tests {
         settle(&mut harness);
         assert_eq!(sent(&harness), "[]");
         // (The press closed the menu.)
-        if harness.query_by_label(&format!("2  Ch B ▸ {free}")).is_none() {
+        if harness
+            .query_by_label(&format!("2  Ch B ▸ {free}"))
+            .is_none()
+        {
             harness.get_by_label("+ Clip, playlist or timer").click();
             settle(&mut harness);
         }
         harness.get_by_label(&format!("2  Ch B ▸ {free}")).click();
         settle(&mut harness);
-        assert!(sent(&harness).contains("action: Some(Start)"), "{}", sent(&harness));
+        assert!(
+            sent(&harness).contains("action: Some(Start)"),
+            "{}",
+            sent(&harness)
+        );
         drop(harness);
 
         // With a row on the timeline, a clip is the timeline's whatever it
@@ -2063,7 +2206,9 @@ mod tests {
             dynamics: crate::audio_mix::DynamicsSnapshot::default(),
             uuid: "strip001".into(),
             name: "Sting".into(),
-            kind: AudioSourceKind::Clip { deck_uuid: "a0000001".into() },
+            kind: AudioSourceKind::Clip {
+                deck_uuid: "a0000001".into(),
+            },
             gain_db: 0.0,
             muted,
             sends: vec![],
@@ -2077,19 +2222,22 @@ mod tests {
             live: true,
             meter_db: [-96.0, -96.0],
             signal_db: [-96.0, -96.0],
-            peak_db: [-96.0;2],
-            equalizer:crate::audio_mix::EqualizerSnapshot::default(),
+            peak_db: [-96.0; 2],
+            equalizer: crate::audio_mix::EqualizerSnapshot::default(),
             refused: None,
             echo: Vec::new(),
             send_settings: std::collections::BTreeMap::default(),
             sent_before: Vec::new(),
         };
         let mut data = show();
-        data.rundown.steps[1].step.plays =
-            vec![PlaySet::new("a0000001", PlayAction::Start)];
+        data.rundown.steps[1].step.plays = vec![PlaySet::new("a0000001", PlayAction::Start)];
         for (muted, auto, said) in [
             (true, true, Some("Its sound is off in the Audio Mixer")),
-            (false, true, Some("Heard only while its input is on Main or a screen")),
+            (
+                false,
+                true,
+                Some("Heard only while its input is on Main or a screen"),
+            ),
             (false, false, None),
         ] {
             data.audio_mix.sources = vec![strip(muted, auto)];
@@ -2121,15 +2269,24 @@ mod tests {
         field.focus();
         settle(&mut harness);
         harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
-        harness.get_by_role(egui::accesskit::Role::TextInput).type_text("B Walk-on");
+        harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .type_text("B Walk-on");
         settle(&mut harness);
         harness.key_press(egui::Key::Tab);
         settle(&mut harness);
         // Said once a pass of the frame the field is left on; the window
         // keeps the last pass's (see `runner::run_ui`).
-        let mut renames = harness.state().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>();
+        let mut renames = harness
+            .state()
+            .iter()
+            .map(|c| format!("{c:?}"))
+            .collect::<Vec<_>>();
         renames.dedup();
-        assert_eq!(renames, [r#"RenameRundownStep { uuid: "s2", name: "B Walk-on" }"#]);
+        assert_eq!(
+            renames,
+            [r#"RenameRundownStep { uuid: "s2", name: "B Walk-on" }"#]
+        );
     }
 
     /// Renamed from elsewhere while its window is open, a step's name field
@@ -2139,11 +2296,16 @@ mod tests {
         let mut data = show();
         let mut harness = harness(&data);
         open_editor_of(&mut harness, "B");
-        let editing = harness.ctx.data(|d| d.get_temp::<Editing>(editing_id())).expect("open");
+        let editing = harness
+            .ctx
+            .data(|d| d.get_temp::<Editing>(editing_id()))
+            .expect("open");
         drop(harness);
         data.rundown.steps[1].step.name = "B Walk-on".into();
         let mut harness = self::harness(&data);
-        harness.ctx.data_mut(|d| d.insert_temp(editing_id(), editing));
+        harness
+            .ctx
+            .data_mut(|d| d.insert_temp(editing_id(), editing));
         settle(&mut harness);
         let field = harness.get_by_role(egui::accesskit::Role::TextInput);
         assert_eq!(field.accesskit_node().value().as_deref(), Some("B Walk-on"));
@@ -2151,7 +2313,11 @@ mod tests {
         settle(&mut harness);
         harness.key_press(egui::Key::Tab);
         settle(&mut harness);
-        assert!(!sent(&harness).contains("RenameRundownStep"), "{}", sent(&harness));
+        assert!(
+            !sent(&harness).contains("RenameRundownStep"),
+            "{}",
+            sent(&harness)
+        );
     }
 
     /// The step the show is on, made the one GO takes next, shows both.
@@ -2167,7 +2333,10 @@ mod tests {
             harness.get_by_label("B"),
         );
         for tag in [now, next] {
-            assert!((tag.rect().center().y - b.rect().center().y).abs() < 8.0, "on B's row");
+            assert!(
+                (tag.rect().center().y - b.rect().center().y).abs() < 8.0,
+                "on B's row"
+            );
         }
     }
 
@@ -2179,20 +2348,31 @@ mod tests {
         use crate::keymap::{ActionId, KeyCombo, KeyTarget};
         let mut data = show();
         data.keymap_bindings.insert(
-            KeyCombo { key: "G".into(), command: false, shift: false, alt: false },
+            KeyCombo {
+                key: "G".into(),
+                command: false,
+                shift: false,
+                alt: false,
+            },
             KeyTarget::Action(ActionId::RundownGo),
         );
         let mut harness = harness(&data);
         harness.key_press(egui::Key::G);
         settle(&mut harness);
-        assert_eq!(sent(&harness), r#"[RundownGo { fade: true, expect: Some("s1") }]"#);
+        assert_eq!(
+            sent(&harness),
+            r#"[RundownGo { fade: true, expect: Some("s1") }]"#
+        );
 
         // Typing a step's name, G is a letter.
         harness.get_by_label("+ Step").click();
         settle(&mut harness);
         harness.key_press(egui::Key::G);
         settle(&mut harness);
-        assert_eq!(sent(&harness), r#"[RundownGo { fade: true, expect: Some("s1") }]"#);
+        assert_eq!(
+            sent(&harness),
+            r#"[RundownGo { fade: true, expect: Some("s1") }]"#
+        );
         drop(harness);
 
         data.keyboard_learn_active = true;
@@ -2204,7 +2384,10 @@ mod tests {
                     let mut actions = UIActions::new();
                     render_rundown(ui, &data, &mut actions);
                     go_shortcut(ui, &data, &mut actions);
-                    assert!(actions.commands.is_empty(), "nothing is taken while learning");
+                    assert!(
+                        actions.commands.is_empty(),
+                        "nothing is taken while learning"
+                    );
                     if let Some(target) = actions.session.keyboard_learn_select.take() {
                         picked = Some(target.to_string());
                     }
@@ -2262,14 +2445,20 @@ mod tests {
         open_editor_of(&mut harness, "B");
         let bin = harness.get_all_by_label("×").next().unwrap().rect();
         let name = harness.get_by_label(&format!("2  {long}")).rect();
-        assert!(bin.right() <= name.left(), "× {bin:?} before the name {name:?}");
+        assert!(
+            bin.right() <= name.left(),
+            "× {bin:?} before the name {name:?}"
+        );
         assert!(name.width() <= PLAY_NAME_WIDTH + 0.5, "cut short: {name:?}");
 
         harness.get_by_label("Fade out at the next step").click();
         settle(&mut harness);
         // What the timer's own setting is, said; this step's own chosen.
         harness.get_by_label("Time for this step");
-        let as_set = format!("As set: {} down", span_text(u64::from(length), TimeFormat::Auto));
+        let as_set = format!(
+            "As set: {} down",
+            span_text(u64::from(length), TimeFormat::Auto)
+        );
         harness.get_by_value(&as_set).click();
         settle(&mut harness);
         harness.get_by_label("Count down from").click();
@@ -2289,7 +2478,10 @@ mod tests {
             )),
             "{sent}"
         );
-        assert!(sent.contains(r#"SetRundownAt { uuid: "s2", at_secs: Some("#), "{sent}");
+        assert!(
+            sent.contains(r#"SetRundownAt { uuid: "s2", at_secs: Some("#),
+            "{sent}"
+        );
     }
 
     /// A step started by itself at a time says so on its row; next and held,
@@ -2329,9 +2521,15 @@ mod tests {
         let before = window(&harness);
         // At first, as tall as what it has: no empty space under its last row.
         let last = harness.get_by_label("Remove step").rect();
-        assert!(before.bottom() - last.bottom() < 24.0, "fits: {last:?} in {before:?}");
+        assert!(
+            before.bottom() - last.bottom() < 24.0,
+            "fits: {last:?} in {before:?}"
+        );
         let narrow = harness.get_by_label(&format!("2  {long}")).rect().width();
-        assert!(narrow <= PLAY_NAME_WIDTH + 0.5, "cut short at first: {narrow}");
+        assert!(
+            narrow <= PLAY_NAME_WIDTH + 0.5,
+            "cut short at first: {narrow}"
+        );
 
         let drag = |h: &mut Harness<'_>, by: egui::Vec2| {
             let corner = window(h).right_bottom() - egui::vec2(3.0, 3.0);
@@ -2349,19 +2547,34 @@ mod tests {
         };
         drag(&mut harness, egui::vec2(400.0, 0.0));
         let wider = window(&harness);
-        assert!(wider.width() >= before.width() + 300.0, "wider: {before:?} → {wider:?}");
+        assert!(
+            wider.width() >= before.width() + 300.0,
+            "wider: {before:?} → {wider:?}"
+        );
         let name = harness.get_by_label(&format!("2  {long}")).rect().width();
-        assert!(name > narrow + 200.0, "the name shows more: {narrow} → {name}");
+        assert!(
+            name > narrow + 200.0,
+            "the name shows more: {narrow} → {name}"
+        );
         harness.run_steps(10);
         let later = window(&harness);
-        assert!((later.width() - wider.width()).abs() < 1.0, "it stays: {wider:?} → {later:?}");
+        assert!(
+            (later.width() - wider.width()).abs() < 1.0,
+            "it stays: {wider:?} → {later:?}"
+        );
 
         drag(&mut harness, egui::vec2(0.0, -300.0));
         let shorter = window(&harness);
-        assert!(shorter.height() <= wider.height() - 200.0, "shorter: {wider:?} → {shorter:?}");
+        assert!(
+            shorter.height() <= wider.height() - 200.0,
+            "shorter: {wider:?} → {shorter:?}"
+        );
         harness.run_steps(10);
         let later = window(&harness);
-        assert!((later.height() - shorter.height()).abs() < 1.0, "it stays: {shorter:?} → {later:?}");
+        assert!(
+            (later.height() - shorter.height()).abs() < 1.0,
+            "it stays: {shorter:?} → {later:?}"
+        );
 
         // Closed and opened again: at the size it was made, though what it
         // has is taller.
@@ -2388,7 +2601,9 @@ mod tests {
             dynamics: crate::audio_mix::DynamicsSnapshot::default(),
             uuid: "strip001".into(),
             name: "Music".into(),
-            kind: AudioSourceKind::Clip { deck_uuid: clip.clone() },
+            kind: AudioSourceKind::Clip {
+                deck_uuid: clip.clone(),
+            },
             gain_db: 0.0,
             muted: false,
             sends: vec![],
@@ -2422,8 +2637,14 @@ mod tests {
         removes.sort_by(|a, b| a.top().total_cmp(&b.top()));
         let next_row = removes[1];
         assert!(note.height() > 15.0, "two lines: {note:?}");
-        assert!(note.top() >= fade.bottom(), "under the fade {fade:?}: {note:?}");
-        assert!(note.bottom() <= next_row.top(), "above the next row {next_row:?}: {note:?}");
+        assert!(
+            note.top() >= fade.bottom(),
+            "under the fade {fade:?}: {note:?}"
+        );
+        assert!(
+            note.bottom() <= next_row.top(),
+            "above the next row {next_row:?}: {note:?}"
+        );
     }
 
     /// The step's window removes the step itself.
@@ -2434,7 +2655,11 @@ mod tests {
         open_editor_of(&mut harness, "B");
         harness.get_by_label("Remove step").click();
         settle(&mut harness);
-        assert!(sent(&harness).contains(r#"RemoveRundownStep { uuid: "s2" }"#), "{}", sent(&harness));
+        assert!(
+            sent(&harness).contains(r#"RemoveRundownStep { uuid: "s2" }"#),
+            "{}",
+            sent(&harness)
+        );
     }
     /// A step at a time of day can be taken at it even when not next: a tick
     /// in its window, there only with a time; its row says so; with another
@@ -2459,7 +2684,10 @@ mod tests {
             );
             assert!(sent(&harness).contains(&want), "{}", sent(&harness));
             let timeless = harness_of_step_without_time(&data);
-            assert!(timeless.query_by_label("Even if it is not next").is_none(), "only with a time");
+            assert!(
+                timeless.query_by_label("Even if it is not next").is_none(),
+                "only with a time"
+            );
         }
 
         data.rundown.steps[2].step.at_always = true;
@@ -2538,7 +2766,10 @@ mod tests {
                 r#"SetRundownThen {{ uuid: "s2", secs: None, when_ends: Some({deck:?}) }}"#
             );
             assert!(sent(&harness).contains(&want), "{}", sent(&harness));
-            assert!(harness.query_by_label_contains("It loops").is_none(), "plays once");
+            assert!(
+                harness.query_by_label_contains("It loops").is_none(),
+                "plays once"
+            );
         }
         // Set so, and looping: said. Its row says what it waits for.
         data.rundown.steps[1].step.then_secs = None;

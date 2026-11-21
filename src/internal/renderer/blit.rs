@@ -2757,12 +2757,14 @@ mod tests {
         let Ok(ctx) = GpuContext::new_headless() else {
             return;
         };
-        let columns: Vec<[f32; 4]> = stripes(130)
-            .iter()
-            .map(|&g| [g, g, g, 1.0])
-            .collect();
+        let columns: Vec<[f32; 4]> = stripes(130).iter().map(|&g| [g, g, g, 1.0]).collect();
         // 128 texels from 0.5 in: two a pixel, the grid half a texel off.
-        let drawn = blit_columns(&ctx, &columns, 64, Some(([128.0 / 130.0, 1.0], [0.5 / 130.0, 0.0])));
+        let drawn = blit_columns(
+            &ctx,
+            &columns,
+            64,
+            Some(([128.0 / 130.0, 1.0], [0.5 / 130.0, 0.0])),
+        );
         for (x, c) in drawn[2..62].iter().enumerate() {
             assert!((c[0] - 0.5).abs() < 0.08, "column {x}: {:.3}", c[0]);
         }
@@ -2835,7 +2837,10 @@ mod tests {
         };
         run(50);
         let took = run(1000);
-        println!("4K at a quarter: {:.3} ms a draw", took.as_secs_f64() * 1000.0 / 1000.0);
+        println!(
+            "4K at a quarter: {:.3} ms a draw",
+            took.as_secs_f64() * 1000.0 / 1000.0
+        );
     }
 
     /// A hard edge drawn bigger gets no halo: bicubic's overshoot either
@@ -3611,21 +3616,50 @@ mod tests {
             return;
         };
         let red8 = |linear: f32, video: bool| {
-            blit_constant_to(&ctx, &eight, 4, linear, false, wgpu::TextureFormat::Rgba8UnormSrgb, video)
-                [0]
-                & 0xff
+            blit_constant_to(
+                &ctx,
+                &eight,
+                4,
+                linear,
+                false,
+                wgpu::TextureFormat::Rgba8UnormSrgb,
+                video,
+            )[0] & 0xff
         };
         let red10 = |linear: f32, video: bool| {
-            blit_constant_to(&ctx, &ten, 4, linear, false, wgpu::TextureFormat::Rgb10a2Unorm, video)[0]
-                & 0x3ff
+            blit_constant_to(
+                &ctx,
+                &ten,
+                4,
+                linear,
+                false,
+                wgpu::TextureFormat::Rgb10a2Unorm,
+                video,
+            )[0] & 0x3ff
         };
-        assert_eq!((red8(0.0, false), red8(1.0, false)), (0, 255), "full levels");
-        assert_eq!((red8(0.0, true), red8(1.0, true)), (16, 235), "video levels");
+        assert_eq!(
+            (red8(0.0, false), red8(1.0, false)),
+            (0, 255),
+            "full levels"
+        );
+        assert_eq!(
+            (red8(0.0, true), red8(1.0, true)),
+            (16, 235),
+            "video levels"
+        );
         // sRGB mid grey, code 128 at full levels: 16 + 128 · 219/255 ≈ 126.
         let grey = red8(0.215_861, true);
         assert!((125..=127).contains(&grey), "grey at {grey}");
-        assert_eq!((red10(0.0, false), red10(1.0, false)), (0, 1023), "full, ten bits");
-        assert_eq!((red10(0.0, true), red10(1.0, true)), (64, 940), "video, ten bits");
+        assert_eq!(
+            (red10(0.0, false), red10(1.0, false)),
+            (0, 1023),
+            "full, ten bits"
+        );
+        assert_eq!(
+            (red10(0.0, true), red10(1.0, true)),
+            (64, 940),
+            "video, ten bits"
+        );
     }
 
     #[test]

@@ -1013,14 +1013,22 @@ mod tests {
         long.extend([16.7_f32; 299]);
         long.extend([24.9, 25.1, 16.7, 100.0, 16.7]);
         let long: VecDeque<f32> = long.into();
-        assert_eq!(super::late_frames(&long, 60), 2, "the last five seconds' alone");
+        assert_eq!(
+            super::late_frames(&long, 60),
+            2,
+            "the last five seconds' alone"
+        );
         assert_eq!(super::late_frames(&long, 30), 1, "100 ms alone, at 30");
         assert_eq!(super::late_frames(&long, 0), 0, "uncapped");
         // 150 frames at 120 fps are a second and a quarter: two late ones
         // there are eight in five seconds.
         let mut short = vec![8.33_f32; 148];
         short.extend([20.0, 20.0]);
-        assert_eq!(super::late_frames(&short.into(), 120), 8, "as if it went on for five");
+        assert_eq!(
+            super::late_frames(&short.into(), 120),
+            8,
+            "as if it went on for five"
+        );
         // The gap after a pause is not a late frame.
         let paused: VecDeque<f32> = [16.7, 2500.0, 1000.0, 16.7].into();
         assert_eq!(super::late_frames(&paused, 60), 0, "a pause");
@@ -1035,7 +1043,10 @@ mod tests {
     fn a_channel_never_named_is_called_by_its_number() {
         assert_eq!(shown_channel_name("Ch 25", 7), "Input 8");
         assert_eq!(shown_channel_name("Ch 0", 0), "Input 1");
-        assert_eq!(shown_channel_name("1_Forward_Momentum", 8), "1_Forward_Momentum");
+        assert_eq!(
+            shown_channel_name("1_Forward_Momentum", 8),
+            "1_Forward_Momentum"
+        );
         assert_eq!(shown_channel_name("Ch A", 0), "Ch A");
     }
 
@@ -1047,8 +1058,7 @@ mod tests {
         let Some(gpu) = crate::renderer::context::GpuContext::new_headless().ok() else {
             return;
         };
-        let Ok(mut app) = crate::app::VardaApp::new(gpu, &crate::testing::headless_config())
-        else {
+        let Ok(mut app) = crate::app::VardaApp::new(gpu, &crate::testing::headless_config()) else {
             return;
         };
         app.add_channel().unwrap();
@@ -1059,7 +1069,11 @@ mod tests {
             .enumerate()
             .map(|(i, ch)| (i, ch.name.clone()))
             .collect();
-        assert!(made.iter().any(|(_, n)| crate::mixer::is_default_channel_name(n)), "{made:?}");
+        assert!(
+            made.iter()
+                .any(|(_, n)| crate::mixer::is_default_channel_name(n)),
+            "{made:?}"
+        );
         let none = std::collections::HashMap::new();
         let data = super::build_ui_data(
             &app,
@@ -1076,14 +1090,20 @@ mod tests {
                 name.clone()
             };
             assert_eq!(ch.name, want, "{name} at {i}");
-            assert_eq!(ch.unnamed, crate::mixer::is_default_channel_name(name), "{name}");
+            assert_eq!(
+                ch.unnamed,
+                crate::mixer::is_default_channel_name(name),
+                "{name}"
+            );
         }
     }
 
     /// Number and name, as a tile shows them; one never named, its number.
     #[test]
     fn an_input_is_numbered_as_its_tile() {
-        let mut ch = crate::usecases::ui::UIData::test_fixture().channels.remove(0);
+        let mut ch = crate::usecases::ui::UIData::test_fixture()
+            .channels
+            .remove(0);
         ch.ch_idx = 8;
         ch.name = "1_Forward_Momentum_pertrauka".into();
         assert_eq!(ch.number(), 9);

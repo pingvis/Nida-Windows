@@ -1833,7 +1833,8 @@ mod tests {
     fn recording_encoder_picker_preserves_codec_path_and_audio() {
         use crate::renderer::context::{RecordingCodec, RecordingEncoder};
         let mut data = UIData::test_fixture();
-        let mut output = sample_output(crate::engine::value::render::ResolvedPresentation::default());
+        let mut output =
+            sample_output(crate::engine::value::render::ResolvedPresentation::default());
         output.is_windowed = false;
         output.is_active = false;
         output.target = OutputTarget::Recording {
@@ -1999,9 +2000,7 @@ mod tests {
                 "runtime {available}"
             );
             assert_eq!(
-                harness
-                    .query_by_label_contains("Delivering")
-                    .is_some(),
+                harness.query_by_label_contains("Delivering").is_some(),
                 available,
                 "runtime {available}"
             );

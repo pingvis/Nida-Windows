@@ -126,7 +126,12 @@ impl VardaApp {
             .outputs
             .iter()
             .filter_map(|output| match output {
-                UnifiedOutput::Window(window) => Some(window.window.get().and_then(winit::window::Window::current_monitor)),
+                UnifiedOutput::Window(window) => Some(
+                    window
+                        .window
+                        .get()
+                        .and_then(winit::window::Window::current_monitor),
+                ),
                 UnifiedOutput::Headless(_) => None,
             })
             .collect()
@@ -455,9 +460,7 @@ impl VardaApp {
         let source = match &config.source {
             OutputSource::Master | OutputSource::BusProgram(_) => config.source.clone(),
             other => {
-                log::warn!(
-                    "Output '{name}': source {other} cannot be restored, sending Master"
-                );
+                log::warn!("Output '{name}': source {other} cannot be restored, sending Master");
                 OutputSource::Master
             }
         };
@@ -500,7 +503,10 @@ impl VardaApp {
         // with it; its device not there, it starts once the device appears
         // (`poll_blackmagic_outputs`), and is saved running meanwhile.
         if config.running
-            && matches!(config.target, crate::scene::OutputTargetConfig::DeckLink { .. })
+            && matches!(
+                config.target,
+                crate::scene::OutputTargetConfig::DeckLink { .. }
+            )
         {
             if let Some(UnifiedOutput::Headless(h)) = self.output.outputs.last_mut() {
                 h.keep_running = true;
@@ -964,19 +970,40 @@ mod tests {
         use super::{unshown_action, Reopened, UnshownAction};
         let secs = std::time::Duration::from_secs;
         let now = std::time::Instant::now();
-        assert_eq!(unshown_action(None, false, now), UnshownAction::MakeAgain, "the first time");
+        assert_eq!(
+            unshown_action(None, false, now),
+            UnshownAction::MakeAgain,
+            "the first time"
+        );
         assert_eq!(unshown_action(None, true, now), UnshownAction::MakeAgain);
         let once = Reopened::after(None, now);
         let soon = now + std::time::Duration::from_millis(500);
-        assert_eq!(unshown_action(Some(once), true, soon), UnshownAction::Wait, "it showed: wait");
+        assert_eq!(
+            unshown_action(Some(once), true, soon),
+            UnshownAction::Wait,
+            "it showed: wait"
+        );
         let later = now + secs(5);
-        assert_eq!(unshown_action(Some(once), true, later), UnshownAction::MakeAgain);
-        assert_eq!(unshown_action(Some(once), false, soon), UnshownAction::GiveUp, "none shown");
-        assert_eq!(unshown_action(Some(once), false, later), UnshownAction::GiveUp);
+        assert_eq!(
+            unshown_action(Some(once), true, later),
+            UnshownAction::MakeAgain
+        );
+        assert_eq!(
+            unshown_action(Some(once), false, soon),
+            UnshownAction::GiveUp,
+            "none shown"
+        );
+        assert_eq!(
+            unshown_action(Some(once), false, later),
+            UnshownAction::GiveUp
+        );
         // A remake long ago, or before the output moved, tells nothing of
         // this window: made again (once more).
         let long_ago = now + secs(3600);
-        assert_eq!(unshown_action(Some(once), false, long_ago), UnshownAction::MakeAgain);
+        assert_eq!(
+            unshown_action(Some(once), false, long_ago),
+            UnshownAction::MakeAgain
+        );
     }
 
     /// A screen that says what it shows only now and then — a second's
@@ -1017,9 +1044,21 @@ mod tests {
     fn an_output_goes_back_to_the_screen_it_lost() {
         use super::awaited_index;
         let monitors = [("Monitor #0".to_string(), 7), ("Monitor #1".to_string(), 9)];
-        assert_eq!(awaited_index(&monitors, Some(&9), || Some(0)), Some(1), "its own");
-        assert_eq!(awaited_index(&monitors, Some(&5), || Some(0)), None, "not another");
-        assert_eq!(awaited_index(&monitors, None, || Some(0)), Some(0), "by name");
+        assert_eq!(
+            awaited_index(&monitors, Some(&9), || Some(0)),
+            Some(1),
+            "its own"
+        );
+        assert_eq!(
+            awaited_index(&monitors, Some(&5), || Some(0)),
+            None,
+            "not another"
+        );
+        assert_eq!(
+            awaited_index(&monitors, None, || Some(0)),
+            Some(0),
+            "by name"
+        );
     }
 
     /// A screen an output covers is gone once it has been missing a second:
@@ -1032,8 +1071,15 @@ mod tests {
         assert_eq!(screen_gone(true, None, start), ScreenGone::Here);
         assert_eq!(screen_gone(false, None, start), ScreenGone::Missing(start));
         let soon = start + SCREEN_GONE_AFTER / 2;
-        assert_eq!(screen_gone(false, Some(start), soon), ScreenGone::Missing(start));
-        assert_eq!(screen_gone(true, Some(start), soon), ScreenGone::Here, "back");
+        assert_eq!(
+            screen_gone(false, Some(start), soon),
+            ScreenGone::Missing(start)
+        );
+        assert_eq!(
+            screen_gone(true, Some(start), soon),
+            ScreenGone::Here,
+            "back"
+        );
         assert_eq!(
             screen_gone(false, Some(start), start + SCREEN_GONE_AFTER),
             ScreenGone::Gone

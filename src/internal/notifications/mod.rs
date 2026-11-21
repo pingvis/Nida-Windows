@@ -260,7 +260,11 @@ mod tests {
         assert_eq!(left, ["C", "A"], "B, by its id");
         ns.info("D");
         ns.dismiss(b);
-        assert_eq!(ns.visible().len(), 3, "an id put away once is gone, not reused");
+        assert_eq!(
+            ns.visible().len(),
+            3,
+            "an id put away once is gone, not reused"
+        );
     }
 
     #[test]
@@ -383,7 +387,11 @@ mod tests {
         ns.error("x".repeat(1000));
         assert_eq!(ns.visible()[0].duration, Duration::from_secs(20), "at most");
         ns.warn("x".repeat(40));
-        assert_eq!(ns.visible()[0].duration, Duration::from_secs(5), "short: by severity");
+        assert_eq!(
+            ns.visible()[0].duration,
+            Duration::from_secs(5),
+            "short: by severity"
+        );
     }
 
     // ── Offensive: history must be capped at 1000 ────────────────────

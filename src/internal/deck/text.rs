@@ -1437,7 +1437,10 @@ mod tests {
         let green = image::RgbaImage::from_pixel(8, 4, image::Rgba([0, 255, 0, 255]));
         text.put(spec, Ok(Some(green)));
         let redrawn = text.still();
-        assert!(matches!(redrawn, Some(Stand::Drawing { .. })), "{redrawn:?}");
+        assert!(
+            matches!(redrawn, Some(Stand::Drawing { .. })),
+            "{redrawn:?}"
+        );
         assert_ne!(redrawn, stands, "drawn again, where it was");
         text.settings.look.anchor = crate::engine::value::timer::Anchor::TopLeft;
         let placed = text.still();
@@ -1452,6 +1455,10 @@ mod tests {
         assert_eq!(text.still(), Some(Stand::Clear), "hidden and faded out");
         text.settings.fade_secs = 0.0;
         text.since = begins;
-        assert_eq!(text.still(), Some(Stand::Clear), "hidden, with no fade time");
+        assert_eq!(
+            text.still(),
+            Some(Stand::Clear),
+            "hidden, with no fade time"
+        );
     }
 }

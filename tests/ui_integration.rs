@@ -2656,14 +2656,20 @@ fn double_clicking_a_deck_card_opens_its_layer_in_input_settings() {
 fn double_clicking_browser_settings_does_not_expand_the_window_or_open_interactive() {
     let mut data = UIData::test_fixture();
     let deck = &mut data.channels[0].decks[0];
-    let name = format!("🌐 data:text/html,{}", "%3Ch1%3Etest%3C%2Fh1%3E".repeat(1000));
+    let name = format!(
+        "🌐 data:text/html,{}",
+        "%3Ch1%3Etest%3C%2Fh1%3E".repeat(1000)
+    );
     deck.name = name.clone();
     deck.is_html = true;
     let mut harness = make_harness_stepping(data, 1.0 / 60.0);
     let card = harness.get_by_label(&format!("{name} deck card")).rect();
     double_click(&mut harness, card.center());
     let window = harness.get_by_label("Ch A — Input Settings").rect();
-    assert!(window.width() <= 1280.0, "browser title expanded settings: {window:?}");
+    assert!(
+        window.width() <= 1280.0,
+        "browser title expanded settings: {window:?}"
+    );
     assert_eq!(harness.state().select_deck, Some((0, 0)));
     assert!(!harness.state().open_html_interactive);
 }

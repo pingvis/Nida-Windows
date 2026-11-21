@@ -237,7 +237,12 @@ fn adjust(ui: &mut egui::Ui, deck_uuid: &str, timer: &TimerSnapshot, actions: &m
     if !timer.settings.mode.has_transport() {
         return;
     }
-    for (text, secs) in [("−1 min", -60), ("+1 min", 60), ("−10 s", -10), ("+10 s", 10)] {
+    for (text, secs) in [
+        ("−1 min", -60),
+        ("+1 min", 60),
+        ("−10 s", -10),
+        ("+10 s", 10),
+    ] {
         if ui
             .add(egui::Button::new(text).min_size(egui::vec2(54.0, 24.0)))
             .on_hover_text(if secs > 0 {
@@ -253,11 +258,7 @@ fn adjust(ui: &mut egui::Ui, deck_uuid: &str, timer: &TimerSnapshot, actions: &m
 }
 
 /// A length, dragged or typed as 5, 5:00 or 1:30:00.
-fn length_value(
-    ui: &mut egui::Ui,
-    secs: &mut u32,
-    actions: &mut UIActions,
-) -> egui::Response {
+fn length_value(ui: &mut egui::Ui, secs: &mut u32, actions: &mut UIActions) -> egui::Response {
     let response = ui.add(
         egui::DragValue::new(secs)
             .range(1..=MAX_DURATION_SECS)
@@ -457,7 +458,12 @@ pub(super) fn render_deck_column(
 }
 
 /// "Control panel": the timer's panel in the dock, or not.
-fn panel_checkbox(ui: &mut egui::Ui, data: &UIData, timer: &TimerSnapshot, actions: &mut UIActions) {
+fn panel_checkbox(
+    ui: &mut egui::Ui,
+    data: &UIData,
+    timer: &TimerSnapshot,
+    actions: &mut UIActions,
+) {
     let pane = Pane::Timer(timer.panel);
     let mut open = data.screen.has(pane);
     if ui
@@ -725,7 +731,8 @@ fn look(ui: &mut egui::Ui, next: &mut TimerSettings, actions: &mut UIActions) {
                 if response.changed() {
                     look.outline = width / 100.0;
                 }
-                response.on_hover_text("Round the numbers, to read them over a picture; 0 for none");
+                response
+                    .on_hover_text("Round the numbers, to read them over a picture; 0 for none");
                 colour(ui, &mut look.outline_color, "The outline");
             });
             ui.end_row();
@@ -745,13 +752,20 @@ fn look(ui: &mut egui::Ui, next: &mut TimerSettings, actions: &mut UIActions) {
                 if response.changed() {
                     look.box_opacity = opacity / 100.0;
                 }
-                response.on_hover_text("Behind the numbers; at 0 % none, and the background is see-through");
+                response.on_hover_text(
+                    "Behind the numbers; at 0 % none, and the background is see-through",
+                );
                 colour(ui, &mut look.box_color, "The box");
             });
             ui.end_row();
 
             ui.label("Caption");
-            let response = typed(ui, "caption", &mut look.caption, "a line above, e.g. Back in");
+            let response = typed(
+                ui,
+                "caption",
+                &mut look.caption,
+                "a line above, e.g. Back in",
+            );
             if response.has_focus() {
                 actions.session.gesture_active = true;
             }
@@ -803,8 +817,10 @@ fn font_filter_id() -> egui::Id {
 pub(super) fn font_picker(ui: &mut egui::Ui, font: &mut String) {
     let Some(families) = crate::deck::svg::font_families() else {
         // Still being read: typed by name meanwhile.
-        typed(ui, "font", font, "a font's name").on_hover_text("A font installed on this computer, by name");
-        ui.ctx().request_repaint_after(std::time::Duration::from_millis(250));
+        typed(ui, "font", font, "a font's name")
+            .on_hover_text("A font installed on this computer, by name");
+        ui.ctx()
+            .request_repaint_after(std::time::Duration::from_millis(250));
         return;
     };
     let mut filter: String = ui
@@ -831,7 +847,8 @@ pub(super) fn font_picker(ui: &mut egui::Ui, font: &mut String) {
                 }
             }
         });
-    ui.ctx().data_mut(|d| d.insert_temp(font_filter_id(), filter));
+    ui.ctx()
+        .data_mut(|d| d.insert_temp(font_filter_id(), filter));
 }
 
 /// A little frame with its nine places: the one clicked is where the
@@ -855,10 +872,19 @@ pub(super) fn anchor_picker(ui: &mut egui::Ui, anchor: &mut Anchor) {
         );
         let hit = egui::Rect::from_center_size(at, egui::vec2(20.0, 14.0));
         let response = ui
-            .interact(hit, ui.id().with(("timer_anchor", spot.label())), egui::Sense::click())
+            .interact(
+                hit,
+                ui.id().with(("timer_anchor", spot.label())),
+                egui::Sense::click(),
+            )
             .on_hover_text(spot.label());
         response.widget_info(|| {
-            egui::WidgetInfo::selected(egui::WidgetType::RadioButton, true, *anchor == spot, spot.label())
+            egui::WidgetInfo::selected(
+                egui::WidgetType::RadioButton,
+                true,
+                *anchor == spot,
+                spot.label(),
+            )
         });
         if response.clicked() {
             *anchor = spot;
@@ -872,7 +898,11 @@ pub(super) fn anchor_picker(ui: &mut egui::Ui, anchor: &mut Anchor) {
             visuals.weak_text_color()
         };
         if chosen {
-            painter.rect_filled(egui::Rect::from_center_size(at, egui::vec2(14.0, 8.0)), 2.0, color);
+            painter.rect_filled(
+                egui::Rect::from_center_size(at, egui::vec2(14.0, 8.0)),
+                2.0,
+                color,
+            );
         } else {
             painter.circle_filled(at, 2.5, color);
         }
@@ -902,7 +932,10 @@ fn open_new_timer_panel(ctx: &egui::Context, data: &UIData, actions: &mut UIActi
         Some(panel) => {
             ctx.data_mut(|d| d.remove::<(Vec<u64>, u32)>(awaiting_new_id()));
             if !data.screen.locked {
-                actions.session.panel_requests.push((Pane::Timer(panel), true));
+                actions
+                    .session
+                    .panel_requests
+                    .push((Pane::Timer(panel), true));
             }
         }
         None if frames > 120 => {
@@ -990,7 +1023,10 @@ mod tests {
         let uuid = deck_uuid(&data);
         let mut harness = panel_harness(data);
         harness.run();
-        assert!(harness.get_by_label("▶ Start").accesskit_node().is_disabled());
+        assert!(harness
+            .get_by_label("▶ Start")
+            .accesskit_node()
+            .is_disabled());
         harness.get_by_label("⏸ Pause").click();
         harness.run();
         harness.get_by_label("−1 min").click();

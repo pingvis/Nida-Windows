@@ -849,9 +849,8 @@ fn frame_sized(ctx: &egui::Context, path: &str, frame: (u32, u32)) -> bool {
     #[allow(clippy::cast_precision_loss)]
     let shape = frame.0 as f32 / frame.1.max(1) as f32;
     #[allow(clippy::cast_precision_loss)]
-    let sized = image::image_dimensions(path).is_ok_and(|(w, h)| {
-        w >= 1920 && h > 0 && ((w as f32 / h as f32) - shape).abs() < 0.05
-    });
+    let sized = image::image_dimensions(path)
+        .is_ok_and(|(w, h)| w >= 1920 && h > 0 && ((w as f32 / h as f32) - shape).abs() < 0.05);
     ctx.data_mut(|d| d.insert_temp(id, sized));
     sized
 }

@@ -402,7 +402,9 @@ fn render_processing_settings(
                     .audio_mix
                     .buses
                     .iter()
-                    .filter(|b| b.config.echo_room.as_deref() == Some(uuid.as_str()) && !b.config.live)
+                    .filter(|b| {
+                        b.config.echo_room.as_deref() == Some(uuid.as_str()) && !b.config.live
+                    })
                     .map(|b| b.config.name.as_str())
                     .collect();
                 bus_processing(ui, uuid, bus, &cleaned, actions);
@@ -1314,7 +1316,9 @@ fn echo_setting(ui: &mut egui::Ui, bus: &AudioBusSnapshot, data: &UIData, action
                 .selected_text(room.map_or("Off", |b| b.config.name.as_str()))
                 .width(110.0)
                 .show_ui(ui, |ui| {
-                    if ui.selectable_label(room.is_none(), "Off").clicked() && cfg.echo_room.is_some() {
+                    if ui.selectable_label(room.is_none(), "Off").clicked()
+                        && cfg.echo_room.is_some()
+                    {
                         actions.commands.push(EngineCommand::SetAudioBusEchoRoom {
                             uuid: cfg.uuid.clone(),
                             room: None,
@@ -1378,7 +1382,10 @@ fn echo_setting(ui: &mut egui::Ui, bus: &AudioBusSnapshot, data: &UIData, action
     for (source, echo) in mics {
         let how = match (echo.removed_db, echo.delay_ms) {
             (Some(db), Some(ms)) if db >= 1.0 => {
-                format!("{}: {db:.0} dB of the echo out, {ms} ms behind", source.name)
+                format!(
+                    "{}: {db:.0} dB of the echo out, {ms} ms behind",
+                    source.name
+                )
             }
             _ => format!("{}: listening for {}", source.name, room.config.name),
         };

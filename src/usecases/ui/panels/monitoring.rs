@@ -291,17 +291,49 @@ mod tests {
     #[test]
     fn the_gpu_figure_is_coloured_by_whether_the_show_keeps_up() {
         assert_eq!(gpu_color(82.0, true, 60.0, 0, 60), GOOD, "busy, on time");
-        assert_eq!(gpu_color(100.0, true, 59.0, 0, 60), GOOD, "flat out, on time");
-        assert_eq!(gpu_color(82.0, true, 54.0, 0, 60), WARN, "busy, a little behind");
+        assert_eq!(
+            gpu_color(100.0, true, 59.0, 0, 60),
+            GOOD,
+            "flat out, on time"
+        );
+        assert_eq!(
+            gpu_color(82.0, true, 54.0, 0, 60),
+            WARN,
+            "busy, a little behind"
+        );
         assert_eq!(gpu_color(95.0, true, 41.0, 0, 60), BAD, "busy, well behind");
-        assert_eq!(gpu_color(79.0, true, 41.0, 40, 60), GOOD, "behind, the GPU not busy");
-        assert_eq!(gpu_color(100.0, true, 143.0, 0, 0), GOOD, "uncapped: meant to be flat out");
+        assert_eq!(
+            gpu_color(79.0, true, 41.0, 40, 60),
+            GOOD,
+            "behind, the GPU not busy"
+        );
+        assert_eq!(
+            gpu_color(100.0, true, 143.0, 0, 0),
+            GOOD,
+            "uncapped: meant to be flat out"
+        );
         assert_eq!(gpu_color(100.0, true, 20.0, 40, 0), GOOD, "uncapped");
         // A hitch now and then: the frame rate, a mean, still reads 59.
-        assert_eq!(gpu_color(82.0, true, 59.2, 5, 60), WARN, "busy, a hitch a second");
-        assert_eq!(gpu_color(82.0, true, 59.2, 15, 60), WARN, "busy, three a second");
-        assert_eq!(gpu_color(82.0, true, 58.5, 16, 60), BAD, "busy, more than three a second");
-        assert_eq!(gpu_color(82.0, true, 41.0, 3, 60), BAD, "the worse of the two");
+        assert_eq!(
+            gpu_color(82.0, true, 59.2, 5, 60),
+            WARN,
+            "busy, a hitch a second"
+        );
+        assert_eq!(
+            gpu_color(82.0, true, 59.2, 15, 60),
+            WARN,
+            "busy, three a second"
+        );
+        assert_eq!(
+            gpu_color(82.0, true, 58.5, 16, 60),
+            BAD,
+            "busy, more than three a second"
+        );
+        assert_eq!(
+            gpu_color(82.0, true, 41.0, 3, 60),
+            BAD,
+            "the worse of the two"
+        );
         // Estimated from the layers' costs: a share of the frame's time.
         assert_eq!(gpu_color(60.0, false, 60.0, 0, 60), WARN, "estimated");
         assert_eq!(gpu_color(95.0, false, 60.0, 0, 60), BAD, "estimated");

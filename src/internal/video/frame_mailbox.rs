@@ -1,7 +1,7 @@
 //! Latest-frame ownership with a seek/reconfiguration generation barrier.
 use std::sync::{
-    LockResult, Mutex, MutexGuard,
     atomic::{AtomicU64, Ordering},
+    LockResult, Mutex, MutexGuard,
 };
 
 pub(crate) struct Mailbox<T> {

@@ -72,9 +72,13 @@ fn f16(bits: u16) -> f32 {
 }
 
 /// Every pixel of an `Rgba16Float` texture, row by row.
-fn frame_pixels(gpu: &varda::renderer::context::GpuContext, texture: &wgpu::Texture) -> Vec<[f32; 4]> {
+fn frame_pixels(
+    gpu: &varda::renderer::context::GpuContext,
+    texture: &wgpu::Texture,
+) -> Vec<[f32; 4]> {
     let (w, h) = (texture.width(), texture.height());
-    let row = (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let row =
+        (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: u64::from(row * h),
@@ -242,7 +246,10 @@ fn taken_from_at(
         fade.duration = 1.0e9;
         app.render_mixer_frame();
     }
-    assert!(app.mixer_ref().main().fade.is_some(), "still taking when read");
+    assert!(
+        app.mixer_ref().main().fade.is_some(),
+        "still taking when read"
+    );
     let texture = app.mixer_ref().composite_texture();
     let (w, h) = (texture.width(), texture.height());
     (frame_pixels(app.gpu_context(), texture), w, h)
@@ -291,15 +298,28 @@ fn a_merge_moves_and_resizes_what_both_inputs_show() {
     let (small, whole, _) = small_then_whole(&mut app, dir.path());
     let (pixels, w, h) = taken_at(&mut app, &small, &whole, MainTransition::Merge, 0.5);
     // Halfway: the top-left three quarters of the frame each way.
-    assert!(cyan(at(&pixels, w, h, 0.6, 0.6)), "its last quarter, whole: {:?}", at(&pixels, w, h, 0.6, 0.6));
+    assert!(
+        cyan(at(&pixels, w, h, 0.6, 0.6)),
+        "its last quarter, whole: {:?}",
+        at(&pixels, w, h, 0.6, 0.6)
+    );
     let within = at(&pixels, w, h, 0.3, 0.3);
-    assert!(within[3] > 0.98, "opaque, not two halves over each other: {within:?}");
+    assert!(
+        within[3] > 0.98,
+        "opaque, not two halves over each other: {within:?}"
+    );
     let outside = at(&pixels, w, h, 0.85, 0.85);
-    assert!(outside[3] < 0.02 && outside[1] < 0.02, "nothing outside it: {outside:?}");
+    assert!(
+        outside[3] < 0.02 && outside[1] < 0.02,
+        "nothing outside it: {outside:?}"
+    );
 
     let (pixels, w, h) = taken_at(&mut app, &small, &whole, MainTransition::Fade, 0.5);
     let faint = at(&pixels, w, h, 0.85, 0.85);
-    assert!(faint[1] > 0.3 && faint[1] < 0.7, "a dissolve, by contrast: {faint:?}");
+    assert!(
+        faint[1] > 0.3 && faint[1] < 0.7,
+        "a dissolve, by contrast: {faint:?}"
+    );
 }
 
 /// Two inputs each showing the same channel through a tap, at two places —
@@ -472,7 +492,12 @@ fn a_merge_moves_an_animated_generator_over_time() {
             fade: false,
         },
     );
-    send_cmd(&mut app, EngineCommand::SetMainTransition { transition: MainTransition::Merge });
+    send_cmd(
+        &mut app,
+        EngineCommand::SetMainTransition {
+            transition: MainTransition::Merge,
+        },
+    );
     send_cmd(&mut app, EngineCommand::SetMainFadeTime { secs: 10.0 });
     for _ in 0..10 {
         app.render_mixer_frame();
@@ -511,7 +536,15 @@ fn a_merge_moves_a_tapped_clip_channel_between_its_places() {
     let dir = tempfile::tempdir().unwrap();
     let clip = dir.path().join("clip.mp4");
     let made = std::process::Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=s=64x36:r=25:d=4"])
+        .args([
+            "-y",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=s=64x36:r=25:d=4",
+        ])
         .args(["-c:v", "mpeg4", clip.to_str().unwrap()])
         .status()
         .is_ok_and(|s| s.success());
@@ -595,7 +628,13 @@ fn a_merge_keeps_the_part_only_one_copy_holds_whole() {
         app.render_mixer_frame();
     }
     add(&mut app, &channels[1], -0.661);
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     let deck_pixel = |app: &VardaApp, channel: usize, x: f32, y: f32| {
         let deck = &app.mixer_ref().channels()[channel].decks[0].deck;
         let texture = &deck.texture;
@@ -608,8 +647,16 @@ fn a_merge_keeps_the_part_only_one_copy_holds_whole() {
     // the first copy's alone.
     let merged = at(&pixels, w, h, 0.0374, 0.5);
     let old = deck_pixel(&app, 0, 0.3682, 0.5);
-    let off = |p: [f32; 4], q: [f32; 4]| p.iter().zip(&q).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-    assert!(off(merged, old) < 0.03, "the first copy's, whole: {merged:?} vs {old:?}");
+    let off = |p: [f32; 4], q: [f32; 4]| {
+        p.iter()
+            .zip(&q)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0, f32::max)
+    };
+    assert!(
+        off(merged, old) < 0.03,
+        "the first copy's, whole: {merged:?} vs {old:?}"
+    );
 }
 
 /// The operator's case exactly: a picture whole in one input, small and
@@ -639,11 +686,20 @@ fn a_merge_slides_a_picture_off_the_edge_as_one_picture() {
     set(&mut app, &transform, "scale", Float(0.6489));
     set(&mut app, &transform, "pos_x", Float(-0.7313));
     set(&mut app, &transform, "pos_y", Float(0.0));
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     // Halfway the picture spans -0.28..0.55 across, 0.09..0.91 down. At
     // 0.2 across it is the part bound for outside the frame.
     let leaving = at(&pixels, w, h, 0.2, 0.5);
-    assert!(leaving[3] > 0.98, "solid where it leaves the frame: {leaving:?}");
+    assert!(
+        leaving[3] > 0.98,
+        "solid where it leaves the frame: {leaving:?}"
+    );
     let ahead = at(&pixels, w, h, 0.5, 0.5);
     assert!(ahead[3] > 0.98, "and where it stays: {ahead:?}");
     let behind = at(&pixels, w, h, 0.75, 0.5);
@@ -673,12 +729,21 @@ fn a_merge_puts_together_a_picture_each_side_holds_half_of() {
         let transform = effect(&app, &layer, "transform");
         set(&mut app, &transform, "pos_x", Float(pos_x));
     }
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     for x in [0.25, 0.75] {
         let p = at(&pixels, w, h, x, 0.75);
         assert!(p[3] > 0.98, "solid at {x} across: {p:?}");
     }
-    assert!(cyan(at(&pixels, w, h, 0.75, 0.75)), "its own bottom-right quarter where it belongs");
+    assert!(
+        cyan(at(&pixels, w, h, 0.75, 0.75)),
+        "its own bottom-right quarter where it belongs"
+    );
 }
 
 /// Layers at half strength, the picture sliding off the edge: halfway it is
@@ -714,10 +779,19 @@ fn a_merge_at_half_strength_stays_at_half_strength() {
     let transform = effect(&app, &layers[1], "transform");
     set(&mut app, &transform, "scale", Float(0.6489));
     set(&mut app, &transform, "pos_x", Float(-0.7313));
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     for x in [0.2, 0.5] {
         let p = at(&pixels, w, h, x, 0.5);
-        assert!((p[3] - 0.5).abs() < 0.03, "half strength at {x} across: {p:?}");
+        assert!(
+            (p[3] - 0.5).abs() < 0.03,
+            "half strength at {x} across: {p:?}"
+        );
     }
 }
 
@@ -746,12 +820,39 @@ fn a_merge_of_turned_copies_ends_on_the_new_picture() {
         set(&mut app, &transform, "rotation", Float(0.2));
         set(&mut app, &transform, "pos_x", Float(pos_x));
     }
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.999);
-    let channel = app.mixer_ref().channels().iter().position(|c| c.uuid() == channels[1]).unwrap();
-    let new = frame_pixels(app.gpu_context(), &app.mixer_ref().channels()[channel].composite_texture);
-    let off = |p: &[f32; 4], q: &[f32; 4]| p.iter().zip(q).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-    let differing = pixels.iter().zip(&new).filter(|(p, q)| off(p, q) > 0.03).count();
-    assert!(differing * 200 < pixels.len(), "{differing} of {} pixels differ", w * h);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.999,
+    );
+    let channel = app
+        .mixer_ref()
+        .channels()
+        .iter()
+        .position(|c| c.uuid() == channels[1])
+        .unwrap();
+    let new = frame_pixels(
+        app.gpu_context(),
+        &app.mixer_ref().channels()[channel].composite_texture,
+    );
+    let off = |p: &[f32; 4], q: &[f32; 4]| {
+        p.iter()
+            .zip(q)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0, f32::max)
+    };
+    let differing = pixels
+        .iter()
+        .zip(&new)
+        .filter(|(p, q)| off(p, q) > 0.03)
+        .count();
+    assert!(
+        differing * 200 < pixels.len(),
+        "{differing} of {} pixels differ",
+        w * h
+    );
 }
 
 /// Copies coloured apart are two pictures: one's gap is not filled with the
@@ -787,9 +888,18 @@ fn a_merge_does_not_fill_from_a_copy_coloured_apart() {
     let transform = effect(&app, &layers[1], "transform");
     set(&mut app, &transform, "scale", Float(0.6489));
     set(&mut app, &transform, "pos_x", Float(-0.7313));
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     let leaving = at(&pixels, w, h, 0.2, 0.5);
-    assert!((leaving[3] - 0.5).abs() < 0.05, "half there, from the first alone: {leaving:?}");
+    assert!(
+        (leaving[3] - 0.5).abs() < 0.05,
+        "half there, from the first alone: {leaving:?}"
+    );
 }
 
 /// Identical copies wholly in frame at half strength: nothing is filled —
@@ -822,13 +932,26 @@ fn copies_wholly_in_frame_keep_their_edges_at_half_strength() {
         let transform = effect(&app, &layer, "transform");
         set(&mut app, &transform, "scale", Float(0.659));
     }
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     // The first column whose centre is inside the picture (its left edge at
     // 0.1705 of the width).
-    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss
+    )]
     let column = (0.1705 * w as f32 - 0.5).ceil() as u32;
     let edge = pixels[((h / 2) * w + column) as usize];
-    assert!((edge[3] - 0.5).abs() < 0.03, "half strength at its edge: {edge:?}");
+    assert!(
+        (edge[3] - 0.5).abs() < 0.03,
+        "half strength at its edge: {edge:?}"
+    );
 }
 
 /// A channel taken into a plain tap of it — small, mostly off the left
@@ -867,7 +990,10 @@ fn a_channel_slid_off_the_edge_into_a_tap_of_it_stays_whole() {
     }
     let (pixels, w, h) = taken_at(&mut app, source, tapping, MainTransition::Merge, 0.5);
     let leaving = at(&pixels, w, h, 0.2, 0.5);
-    assert!(leaving[3] > 0.98, "solid where it leaves the frame: {leaving:?}");
+    assert!(
+        leaving[3] > 0.98,
+        "solid where it leaves the frame: {leaving:?}"
+    );
 }
 
 /// The `n`th (from 0) effect named `name` of the layer `deck`.
@@ -926,7 +1052,13 @@ fn copies_cropped_after_their_placement_are_not_filled_from_each_other() {
         set(&mut app, &second_crop, "crop_left", Float(0.5));
         set(&mut app, &last_transform, "pos_x", Float(last));
     }
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     // Halfway the half spans 0.125..0.625; the second has nothing of its
     // left half (off the left edge in its own frame): at 0.25, the first's
     // alone, fading.
@@ -965,13 +1097,22 @@ fn a_pixel_on_the_edge_of_a_gap_is_drawn_once() {
         let transform = effect(&app, &layer, "transform");
         set(&mut app, &transform, "pos_x", Float(pos_x));
     }
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     if w != 1920 {
         eprintln!("frame {w} wide, not 1920 — the edge falls elsewhere; skipping");
         return;
     }
     let edge = pixels[((h / 2) * w + 1447) as usize];
-    assert!((edge[3] - 0.5).abs() < 0.03, "half strength on the edge: {edge:?}");
+    assert!(
+        (edge[3] - 0.5).abs() < 0.03,
+        "half strength on the edge: {edge:?}"
+    );
 }
 
 /// A picture wholly off the left edge in one input: its gap is all of it,
@@ -1005,13 +1146,22 @@ fn a_picture_wholly_off_the_edge_is_filled_to_its_own_edge() {
         set(&mut app, &transform, "scale", Float(scale));
         set(&mut app, &transform, "pos_x", Float(pos_x));
     }
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     if w != 1920 {
         eprintln!("frame {w} wide, not 1920 — the edge falls elsewhere; skipping");
         return;
     }
     let edge = pixels[((h / 2) * w + 727) as usize];
-    assert!((edge[3] - 0.5).abs() < 0.03, "half strength on its edge: {edge:?}");
+    assert!(
+        (edge[3] - 0.5).abs() < 0.03,
+        "half strength on its edge: {edge:?}"
+    );
 }
 
 /// A tap with two Transforms is not the channel's own picture: the first
@@ -1087,12 +1237,39 @@ fn a_merge_between_copies_cropped_apart_ends_on_the_new_picture() {
     }
     let crop = effect(&app, &layers[1], "crop");
     set(&mut app, &crop, "crop_left", Float(0.5));
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.999);
-    let channel = app.mixer_ref().channels().iter().position(|c| c.uuid() == channels[1]).unwrap();
-    let new = frame_pixels(app.gpu_context(), &app.mixer_ref().channels()[channel].composite_texture);
-    let off = |p: &[f32; 4], q: &[f32; 4]| p.iter().zip(q).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-    let differing = pixels.iter().zip(&new).filter(|(p, q)| off(p, q) > 0.03).count();
-    assert!(differing * 200 < pixels.len(), "{differing} of {} pixels differ", w * h);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.999,
+    );
+    let channel = app
+        .mixer_ref()
+        .channels()
+        .iter()
+        .position(|c| c.uuid() == channels[1])
+        .unwrap();
+    let new = frame_pixels(
+        app.gpu_context(),
+        &app.mixer_ref().channels()[channel].composite_texture,
+    );
+    let off = |p: &[f32; 4], q: &[f32; 4]| {
+        p.iter()
+            .zip(q)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0, f32::max)
+    };
+    let differing = pixels
+        .iter()
+        .zip(&new)
+        .filter(|(p, q)| off(p, q) > 0.03)
+        .count();
+    assert!(
+        differing * 200 < pixels.len(),
+        "{differing} of {} pixels differ",
+        w * h
+    );
 }
 
 #[test]
@@ -1103,7 +1280,15 @@ fn a_merge_moves_a_clip_between_its_places() {
     let dir = tempfile::tempdir().unwrap();
     let clip = dir.path().join("clip.mp4");
     let made = std::process::Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=s=64x36:r=25:d=4"])
+        .args([
+            "-y",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=s=64x36:r=25:d=4",
+        ])
         .args(["-c:v", "mpeg4", clip.to_str().unwrap()])
         .status()
         .is_ok_and(|s| s.success());
@@ -1175,11 +1360,20 @@ fn copies_of_a_picture_flagged_apart_slide_off_the_edge_as_one() {
     let transform = effect(&app, &layers[1], "transform");
     set(&mut app, &transform, "scale", Float(0.6489));
     set(&mut app, &transform, "pos_x", Float(-0.7313));
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     // Halfway the picture spans -0.28..0.55 across, 0.09..0.91 down: at 0.2
     // across, its right half, bound for outside the frame.
     let solid = at(&pixels, w, h, 0.2, 0.7);
-    assert!(solid[3] > 0.98 && cyan(solid), "whole where it leaves the frame: {solid:?}");
+    assert!(
+        solid[3] > 0.98 && cyan(solid),
+        "whole where it leaves the frame: {solid:?}"
+    );
     let clear = at(&pixels, w, h, 0.2, 0.3);
     assert!(clear[3] < 0.02, "and clear where it is clear: {clear:?}");
 }
@@ -1238,9 +1432,19 @@ fn a_tap_flattening_its_channel_is_filled_flattened_too() {
     // Halfway the picture spans -0.28..0.55 across: at 0.2 the part leaving
     // the frame, at 0.5 the part the tap holds — both its bottom right.
     let (leaving, held) = (at(&pixels, w, h, 0.2, 0.7), at(&pixels, w, h, 0.5, 0.7));
-    let off = leaving.iter().zip(&held).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-    assert!(off < 0.03, "the same where it leaves as where it stays: {leaving:?}, {held:?}");
-    assert!((held[3] - 0.75).abs() < 0.03, "half the channel's, half the tap's: {held:?}");
+    let off = leaving
+        .iter()
+        .zip(&held)
+        .map(|(a, b)| (a - b).abs())
+        .fold(0.0, f32::max);
+    assert!(
+        off < 0.03,
+        "the same where it leaves as where it stays: {leaving:?}, {held:?}"
+    );
+    assert!(
+        (held[3] - 0.75).abs() < 0.03,
+        "half the channel's, half the tap's: {held:?}"
+    );
 }
 
 /// A channel whose own picture is half transparent, and two inputs tapping
@@ -1309,9 +1513,19 @@ fn taps_of_a_channel_flagged_apart_move_whole_either_way() {
         let Some((at_edge, held)) = taps_flagged(whole, leaving) else {
             return;
         };
-        let off = at_edge.iter().zip(&held).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-        assert!(off < 0.03, "{whole}/{leaving}: the same where it leaves as where it stays: {at_edge:?}, {held:?}");
-        assert!((held[3] - 0.75).abs() < 0.03, "{whole}/{leaving}: half from each tap: {held:?}");
+        let off = at_edge
+            .iter()
+            .zip(&held)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0, f32::max);
+        assert!(
+            off < 0.03,
+            "{whole}/{leaving}: the same where it leaves as where it stays: {at_edge:?}, {held:?}"
+        );
+        assert!(
+            (held[3] - 0.75).abs() < 0.03,
+            "{whole}/{leaving}: half from each tap: {held:?}"
+        );
     }
 }
 
@@ -1359,13 +1573,21 @@ fn tap_showing_the_frame_before(transparent: bool, faint: bool) {
             source: varda::scene::TapSourceConfig::Channel { uuid: late.clone() },
         },
     ));
-    send_cmd(&mut app, EngineCommand::SetDeckMute { deck_uuid: back, mute: true });
+    send_cmd(
+        &mut app,
+        EngineCommand::SetDeckMute {
+            deck_uuid: back,
+            mute: true,
+        },
+    );
     for (channel, slid) in [(late, true), (whole, false)] {
         let tap = id(send_cmd(
             &mut app,
             EngineCommand::AddTapDeck {
                 channel_uuid: channel.clone(),
-                source: varda::scene::TapSourceConfig::Channel { uuid: source.clone() },
+                source: varda::scene::TapSourceConfig::Channel {
+                    uuid: source.clone(),
+                },
             },
         ));
         send_cmd(
@@ -1397,7 +1619,12 @@ fn tap_showing_the_frame_before(transparent: bool, faint: bool) {
             fade: false,
         },
     );
-    send_cmd(&mut app, EngineCommand::SetMainTransition { transition: MainTransition::Merge });
+    send_cmd(
+        &mut app,
+        EngineCommand::SetMainTransition {
+            transition: MainTransition::Merge,
+        },
+    );
     send_cmd(&mut app, EngineCommand::SetMainFadeTime { secs: 10.0 });
     app.render_mixer_frame();
     send_cmd(
@@ -1431,7 +1658,11 @@ fn tap_showing_the_frame_before(transparent: bool, faint: bool) {
     // Halfway the first's picture spans -0.28..0.55 across: at 0.2 the part
     // leaving the frame, at 0.5 the part it holds.
     let (leaving, held) = (at(&pixels, w, h, 0.2, 0.5), at(&pixels, w, h, 0.5, 0.5));
-    let off = leaving.iter().zip(&held).map(|(p, q)| (p - q).abs()).fold(0.0, f32::max);
+    let off = leaving
+        .iter()
+        .zip(&held)
+        .map(|(p, q)| (p - q).abs())
+        .fold(0.0, f32::max);
     assert!(
         off < 0.03,
         "transparent {transparent}, faint {faint}: the same where it leaves as where it stays: {leaving:?}, {held:?}"
@@ -1481,9 +1712,18 @@ fn copies_with_a_soft_or_bordered_crop_are_not_filled_from_each_other() {
         let transform = effect(&app, &layers[1], "transform");
         set(&mut app, &transform, "scale", Float(0.6489));
         set(&mut app, &transform, "pos_x", Float(-0.7313));
-        let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+        let (pixels, w, h) = taken_at(
+            &mut app,
+            &channels[0],
+            &channels[1],
+            MainTransition::Merge,
+            0.5,
+        );
         let leaving = at(&pixels, w, h, 0.2, 0.7);
-        assert!((leaving[3] - 0.5).abs() < 0.05, "{setting}: half there, from the first alone: {leaving:?}");
+        assert!(
+            (leaving[3] - 0.5).abs() < 0.05,
+            "{setting}: half there, from the first alone: {leaving:?}"
+        );
     }
 }
 
@@ -1514,7 +1754,10 @@ fn framed_taps_of(
             path: picture,
         },
     );
-    for (channel, frame) in [(&channels[1], &first as &dyn Fn(&mut VardaApp, &str, &str)), (&channels[2], &second)] {
+    for (channel, frame) in [
+        (&channels[1], &first as &dyn Fn(&mut VardaApp, &str, &str)),
+        (&channels[2], &second),
+    ] {
         let tap = id(send_cmd(
             app,
             EngineCommand::AddTapDeck {
@@ -1530,7 +1773,11 @@ fn framed_taps_of(
     for _ in 0..3 {
         app.render_mixer_frame();
     }
-    (channels[0].clone(), channels[1].clone(), channels[2].clone())
+    (
+        channels[0].clone(),
+        channels[1].clone(),
+        channels[2].clone(),
+    )
 }
 
 /// Whether the tap `channel` shows keeps its input's transparency — as a
@@ -1538,7 +1785,13 @@ fn framed_taps_of(
 /// before Duplicate kept the flag does.
 fn keep_transparency(app: &mut VardaApp, channel: &str, keep: bool) {
     let state = app.build_engine_state();
-    let tap = state.mixer.channels.iter().find(|c| c.uuid == channel).unwrap().decks[0]
+    let tap = state
+        .mixer
+        .channels
+        .iter()
+        .find(|c| c.uuid == channel)
+        .unwrap()
+        .decks[0]
         .uuid
         .clone();
     send_cmd(
@@ -1570,7 +1823,10 @@ fn a_crop_travels_with_its_picture() {
     let (pixels, w, h) = taken_at(&mut app, &half, &whole, MainTransition::Merge, 0.5);
     // At 0.3 across, in the top-left quarter: red, the source at its place.
     let kept = at(&pixels, w, h, 0.3, 0.25);
-    assert!(kept[0] > 0.9 && kept[1] < 0.1 && kept[3] > 0.98, "the source where it belongs: {kept:?}");
+    assert!(
+        kept[0] > 0.9 && kept[1] < 0.1 && kept[3] > 0.98,
+        "the source where it belongs: {kept:?}"
+    );
     let left_out = at(&pixels, w, h, 0.1, 0.25);
     assert!(left_out[3] < 0.02, "not yet kept: {left_out:?}");
 }
@@ -1615,16 +1871,43 @@ fn a_round_picture_in_picture_opens_into_the_whole_picture() {
         // Halfway the picture spans 0.04..0.56 across, 0.33..0.99 down, its
         // corners rounded off by a third of its height.
         let corner = at(&pixels, w, h, 0.045, 0.34);
-        assert!(corner[3] < 0.05, "{case}: nothing in the corner: {corner:?}");
+        assert!(
+            corner[3] < 0.05,
+            "{case}: nothing in the corner: {corner:?}"
+        );
         let middle = at(&pixels, w, h, 0.3, 0.66);
-        assert!(middle[3] > 0.95, "{case}: the picture whole inside: {middle:?}");
+        assert!(
+            middle[3] > 0.95,
+            "{case}: the picture whole inside: {middle:?}"
+        );
 
         let (pixels, w, h) = taken_at(&mut app, from, to, MainTransition::Merge, 0.999);
-        let channel = app.mixer_ref().channels().iter().position(|c| c.uuid() == *to).unwrap();
-        let end = frame_pixels(app.gpu_context(), &app.mixer_ref().channels()[channel].composite_texture);
-        let off = |p: &[f32; 4], q: &[f32; 4]| p.iter().zip(q).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-        let differing = pixels.iter().zip(&end).filter(|(p, q)| off(p, q) > 0.03).count();
-        assert!(differing * 200 < pixels.len(), "{case}: {differing} of {} pixels differ at the end", w * h);
+        let channel = app
+            .mixer_ref()
+            .channels()
+            .iter()
+            .position(|c| c.uuid() == *to)
+            .unwrap();
+        let end = frame_pixels(
+            app.gpu_context(),
+            &app.mixer_ref().channels()[channel].composite_texture,
+        );
+        let off = |p: &[f32; 4], q: &[f32; 4]| {
+            p.iter()
+                .zip(q)
+                .map(|(a, b)| (a - b).abs())
+                .fold(0.0, f32::max)
+        };
+        let differing = pixels
+            .iter()
+            .zip(&end)
+            .filter(|(p, q)| off(p, q) > 0.03)
+            .count();
+        assert!(
+            differing * 200 < pixels.len(),
+            "{case}: {differing} of {} pixels differ at the end",
+            w * h
+        );
     }
 }
 
@@ -1633,10 +1916,20 @@ fn a_round_picture_in_picture_opens_into_the_whole_picture() {
 fn bubble(app: &mut VardaApp, crop: &str, transform: &str) {
     set(app, crop, "crop_left", Float(0.18));
     set(app, crop, "crop_right", Float(0.79));
-    set(app, crop, "border_mode", varda::params::ParamValue::Bool(true));
+    set(
+        app,
+        crop,
+        "border_mode",
+        varda::params::ParamValue::Bool(true),
+    );
     set(app, crop, "border_width", Float(17.0));
     set(app, crop, "border_radius", Float(360.0));
-    set(app, crop, "border_circle", varda::params::ParamValue::Bool(true));
+    set(
+        app,
+        crop,
+        "border_circle",
+        varda::params::ParamValue::Bool(true),
+    );
     set(app, transform, "pos_x", Float(-0.387));
     set(app, transform, "pos_y", Float(0.320));
     set(app, transform, "scale", Float(0.303));
@@ -1673,7 +1966,10 @@ fn a_tap_flattened_on_one_side_darkens_where_its_input_is_clear() {
     // point (0.7, 0.7), clear.
     let half = at(&pixels, w, h, 0.437, 0.53);
     assert!(
-        (half[1] - 0.502).abs() < 0.02 && (half[3] - 0.751).abs() < 0.02 && half[0] < 0.02 && half[2] < 0.02,
+        (half[1] - 0.502).abs() < 0.02
+            && (half[3] - 0.751).abs() < 0.02
+            && half[0] < 0.02
+            && half[2] < 0.02,
         "half see-through, its green as over black: {half:?}"
     );
     let clear = at(&pixels, w, h, 0.437, 0.79);
@@ -1683,7 +1979,10 @@ fn a_tap_flattened_on_one_side_darkens_where_its_input_is_clear() {
     );
     // At (0.2, 0.8), its point (0.34, 0.71): yellow, whole.
     let yellow = at(&pixels, w, h, 0.2, 0.8);
-    assert!(yellow[0] > 0.9 && yellow[1] > 0.9 && yellow[3] > 0.98, "the picture whole: {yellow:?}");
+    assert!(
+        yellow[0] > 0.9 && yellow[1] > 0.9 && yellow[3] > 0.98,
+        "the picture whole: {yellow:?}"
+    );
 }
 
 /// A picture of one-pixel black and white squares the master's size: any
@@ -1719,16 +2018,31 @@ fn a_merge_starts_on_each_input_exactly() {
     let soft_bordered: Frame = |app, crop, _| {
         set(app, crop, "crop_left", Float(0.2513));
         set(app, crop, "feather", Float(0.1));
-        set(app, crop, "border_mode", varda::params::ParamValue::Bool(true));
+        set(
+            app,
+            crop,
+            "border_mode",
+            varda::params::ParamValue::Bool(true),
+        );
         set(app, crop, "border_width", Float(12.0));
     };
     let moved: Frame = |app, _, transform| set(app, transform, "scale", Float(0.659));
     let round: Frame = |app, crop, transform| {
         set(app, crop, "crop_left", Float(0.18));
         set(app, crop, "crop_right", Float(0.79));
-        set(app, crop, "border_mode", varda::params::ParamValue::Bool(true));
+        set(
+            app,
+            crop,
+            "border_mode",
+            varda::params::ParamValue::Bool(true),
+        );
         set(app, crop, "border_width", Float(17.0));
-        set(app, crop, "border_circle", varda::params::ParamValue::Bool(true));
+        set(
+            app,
+            crop,
+            "border_circle",
+            varda::params::ParamValue::Bool(true),
+        );
         set(app, transform, "scale", Float(0.303));
     };
     let cropped: Frame = |app, crop, _| set(app, crop, "crop_left", Float(0.25));
@@ -1740,9 +2054,27 @@ fn a_merge_starts_on_each_input_exactly() {
         ("moved into cropped", moved, cropped, false, [true; 2]),
         ("whole into round", whole, round, false, [true; 2]),
         ("at half size", cropped, whole, true, [true; 2]),
-        ("flattened, round into moved", round, moved, false, [false; 2]),
-        ("round kept into whole flattened", round, whole, false, [true, false]),
-        ("flattened, soft into bordered", soft, soft_bordered, false, [false; 2]),
+        (
+            "flattened, round into moved",
+            round,
+            moved,
+            false,
+            [false; 2],
+        ),
+        (
+            "round kept into whole flattened",
+            round,
+            whole,
+            false,
+            [true, false],
+        ),
+        (
+            "flattened, soft into bordered",
+            soft,
+            soft_bordered,
+            false,
+            [false; 2],
+        ),
         ("flattened at half size", cropped, whole, true, [false; 2]),
     ];
     for (case, first, second, half, keeps) in cases {
@@ -1771,7 +2103,13 @@ fn a_merge_starts_on_each_input_exactly() {
                 ));
                 let state = app.build_engine_state();
                 for channel in [&a, &b] {
-                    let tap = state.mixer.channels.iter().find(|c| c.uuid == *channel).unwrap().decks[0]
+                    let tap = state
+                        .mixer
+                        .channels
+                        .iter()
+                        .find(|c| c.uuid == *channel)
+                        .unwrap()
+                        .decks[0]
                         .uuid
                         .clone();
                     send_cmd(
@@ -1785,10 +2123,27 @@ fn a_merge_starts_on_each_input_exactly() {
             }
             let (from, to) = if reverse { (&b, &a) } else { (&a, &b) };
             let (pixels, w, h) = taken_at(&mut app, from, to, MainTransition::Merge, 0.0);
-            let channel = app.mixer_ref().channels().iter().position(|c| c.uuid() == *from).unwrap();
-            let own = frame_pixels(app.gpu_context(), &app.mixer_ref().channels()[channel].composite_texture);
-            let off = |p: &[f32; 4], q: &[f32; 4]| p.iter().zip(q).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-            let differing = pixels.iter().zip(&own).filter(|(p, q)| off(p, q) > 0.02).count();
+            let channel = app
+                .mixer_ref()
+                .channels()
+                .iter()
+                .position(|c| c.uuid() == *from)
+                .unwrap();
+            let own = frame_pixels(
+                app.gpu_context(),
+                &app.mixer_ref().channels()[channel].composite_texture,
+            );
+            let off = |p: &[f32; 4], q: &[f32; 4]| {
+                p.iter()
+                    .zip(q)
+                    .map(|(a, b)| (a - b).abs())
+                    .fold(0.0, f32::max)
+            };
+            let differing = pixels
+                .iter()
+                .zip(&own)
+                .filter(|(p, q)| off(p, q) > 0.02)
+                .count();
             let worst = pixels
                 .iter()
                 .zip(&own)
@@ -1809,7 +2164,10 @@ fn a_merge_starts_on_each_input_exactly() {
                 .max_by(|(_, x), (_, y)| off(x.0, x.1).total_cmp(&off(y.0, y.1)))
                 .map(|(i, (p, q))| (off(p, q), i as u32 % w, i as u32 / w, *p, *q))
                 .unwrap();
-            assert!(jump.0 < 0.02, "{case}, reverse {reverse}: a jump just after the start: {jump:?}");
+            assert!(
+                jump.0 < 0.02,
+                "{case}, reverse {reverse}: a jump just after the start: {jump:?}"
+            );
         }
     }
 }
@@ -1825,11 +2183,32 @@ fn a_merge_ends_on_the_new_input_exactly() {
     let mut app = VardaApp::new(gpu, &varda::testing::headless_config()).unwrap();
     let (small, whole, _) = small_then_whole(&mut app, dir.path());
     let (pixels, w, h) = taken_at(&mut app, &small, &whole, MainTransition::Merge, 0.999);
-    let channel = app.mixer_ref().channels().iter().position(|c| c.uuid() == whole).unwrap();
-    let new = frame_pixels(app.gpu_context(), &app.mixer_ref().channels()[channel].composite_texture);
-    let off = |p: &[f32; 4], q: &[f32; 4]| p.iter().zip(q).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
-    let differing = pixels.iter().zip(&new).filter(|(p, q)| off(p, q) > 0.03).count();
-    assert!(differing * 200 < pixels.len(), "{differing} of {} pixels differ", w * h);
+    let channel = app
+        .mixer_ref()
+        .channels()
+        .iter()
+        .position(|c| c.uuid() == whole)
+        .unwrap();
+    let new = frame_pixels(
+        app.gpu_context(),
+        &app.mixer_ref().channels()[channel].composite_texture,
+    );
+    let off = |p: &[f32; 4], q: &[f32; 4]| {
+        p.iter()
+            .zip(q)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0, f32::max)
+    };
+    let differing = pixels
+        .iter()
+        .zip(&new)
+        .filter(|(p, q)| off(p, q) > 0.03)
+        .count();
+    assert!(
+        differing * 200 < pixels.len(),
+        "{differing} of {} pixels differ",
+        w * h
+    );
 }
 
 /// An input a merge cannot take apart — with an effect of its own, or a
@@ -1853,7 +2232,9 @@ fn an_input_a_merge_cannot_take_apart_dissolves_instead() {
                 },
             ));
         } else {
-            let layer = app.build_engine_state().mixer.channels[1].decks[0].uuid.clone();
+            let layer = app.build_engine_state().mixer.channels[1].decks[0]
+                .uuid
+                .clone();
             send_cmd(
                 &mut app,
                 EngineCommand::SetAutoTransitionEnabled {
@@ -1864,7 +2245,10 @@ fn an_input_a_merge_cannot_take_apart_dissolves_instead() {
         }
         let (pixels, w, h) = taken_at(&mut app, &small, &whole, MainTransition::Merge, 0.5);
         let faint = at(&pixels, w, h, 0.85, 0.85);
-        assert!(faint[3] > 0.3 && faint[3] < 0.7, "{case}: dissolved: {faint:?}");
+        assert!(
+            faint[3] > 0.3 && faint[3] < 0.7,
+            "{case}: dissolved: {faint:?}"
+        );
     }
 }
 
@@ -1878,7 +2262,9 @@ fn a_layer_alone_ends_a_merge_at_full_strength() {
     let dir = tempfile::tempdir().unwrap();
     let mut app = VardaApp::new(gpu, &varda::testing::headless_config()).unwrap();
     let (small, _, _) = small_then_whole(&mut app, dir.path());
-    let alone = app.build_engine_state().mixer.channels[1].decks[0].uuid.clone();
+    let alone = app.build_engine_state().mixer.channels[1].decks[0]
+        .uuid
+        .clone();
     send_cmd(
         &mut app,
         EngineCommand::SetDeckOpacity {
@@ -1927,7 +2313,10 @@ fn a_merge_draws_what_a_moving_layer_uncovers() {
     app.render_mixer_frame();
     let (pixels, w, h) = taken_at(&mut app, &small, &whole, MainTransition::Merge, 0.5);
     let uncovered = at(&pixels, w, h, 0.85, 0.85);
-    assert!(uncovered[0] > 0.4 && uncovered[0] < 0.6, "red, half in: {uncovered:?}");
+    assert!(
+        uncovered[0] > 0.4 && uncovered[0] < 0.6,
+        "red, half in: {uncovered:?}"
+    );
 }
 
 /// An input shown small in the next one as a layer of its own grows into,
@@ -1963,9 +2352,18 @@ fn an_input_shown_in_the_next_shrinks_into_its_place() {
     set(&mut app, &transform, "pos_y", Float(0.25));
     // Whole, to the bottom-right quarter: halfway, from a quarter of the
     // way in each way to the far corner.
-    let (pixels, w, h) = taken_at(&mut app, &channels[0], &channels[1], MainTransition::Merge, 0.5);
+    let (pixels, w, h) = taken_at(
+        &mut app,
+        &channels[0],
+        &channels[1],
+        MainTransition::Merge,
+        0.5,
+    );
     let red = at(&pixels, w, h, 0.3, 0.3);
-    assert!(red[0] > 0.9 && red[1] < 0.05, "its first quarter there: {red:?}");
+    assert!(
+        red[0] > 0.9 && red[1] < 0.05,
+        "its first quarter there: {red:?}"
+    );
     let before = at(&pixels, w, h, 0.15, 0.15);
     assert!(before[3] < 0.02, "nothing before it: {before:?}");
 }
@@ -1979,7 +2377,10 @@ fn wipe_slide_and_iris_show_the_new_picture_where_they_say() {
     };
     let mut app = VardaApp::new(gpu, &varda::testing::headless_config()).unwrap();
     let channels = empty_show(&mut app, 2);
-    for (channel, color) in channels.iter().zip([[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]) {
+    for (channel, color) in channels
+        .iter()
+        .zip([[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]])
+    {
         id(send_cmd(
             &mut app,
             EngineCommand::AddSolidColorDeck {
@@ -1993,35 +2394,56 @@ fn wipe_slide_and_iris_show_the_new_picture_where_they_say() {
     let red = |p: [f32; 4]| p[0] > 0.9 && p[2] < 0.05;
 
     let (pixels, w, h) = taken_at(&mut app, old, new, MainTransition::Wipe, 0.5);
-    assert!(blue(at(&pixels, w, h, 0.2, 0.5)) && red(at(&pixels, w, h, 0.8, 0.5)), "wipe");
+    assert!(
+        blue(at(&pixels, w, h, 0.2, 0.5)) && red(at(&pixels, w, h, 0.8, 0.5)),
+        "wipe"
+    );
 
     let (pixels, w, h) = taken_at(&mut app, old, new, MainTransition::Slide, 0.5);
-    assert!(red(at(&pixels, w, h, 0.2, 0.5)) && blue(at(&pixels, w, h, 0.8, 0.5)), "slide");
+    assert!(
+        red(at(&pixels, w, h, 0.2, 0.5)) && blue(at(&pixels, w, h, 0.8, 0.5)),
+        "slide"
+    );
 
     let (pixels, w, h) = taken_at(&mut app, old, new, MainTransition::Iris, 0.3);
-    assert!(blue(at(&pixels, w, h, 0.5, 0.5)) && red(at(&pixels, w, h, 0.02, 0.02)), "iris");
+    assert!(
+        blue(at(&pixels, w, h, 0.5, 0.5)) && red(at(&pixels, w, h, 0.02, 0.02)),
+        "iris"
+    );
 
     // Each starts with none of the new picture and ends with none of the
     // old — not a strip of it at the edge, nor its corners.
     for transition in [MainTransition::Wipe, MainTransition::Iris] {
         let (pixels, w, h) = taken_at(&mut app, old, new, transition, 0.0);
-        assert!(red(at(&pixels, w, h, 0.01, 0.5)) && red(at(&pixels, w, h, 0.5, 0.5)), "{transition:?} starts old");
+        assert!(
+            red(at(&pixels, w, h, 0.01, 0.5)) && red(at(&pixels, w, h, 0.5, 0.5)),
+            "{transition:?} starts old"
+        );
         // At 1 the take is done; a hair before it, the transition's end.
         let (pixels, w, h) = taken_at(&mut app, old, new, transition, 0.9999);
         for (x, y) in [(0.995, 0.5), (0.995, 0.995), (0.005, 0.005)] {
-            assert!(blue(at(&pixels, w, h, x, y)), "{transition:?} ends new at {x},{y}: {:?}", at(&pixels, w, h, x, y));
+            assert!(
+                blue(at(&pixels, w, h, x, y)),
+                "{transition:?} ends new at {x},{y}: {:?}",
+                at(&pixels, w, h, x, y)
+            );
         }
     }
 
     // A fade halfway between two opaque pictures: opaque, half each.
     let (pixels, w, h) = taken_at(&mut app, old, new, MainTransition::Fade, 0.5);
     let mid = at(&pixels, w, h, 0.5, 0.5);
-    assert!(mid[3] > 0.98 && (mid[0] - 0.5).abs() < 0.05 && (mid[2] - 0.5).abs() < 0.05, "fade: {mid:?}");
+    assert!(
+        mid[3] > 0.98 && (mid[0] - 0.5).abs() < 0.05 && (mid[2] - 0.5).abs() < 0.05,
+        "fade: {mid:?}"
+    );
 
     // Zoom halfway: a valid picture, opaque, not light with no coverage.
     let (pixels, ..) = taken_at(&mut app, old, new, MainTransition::Zoom, 0.5);
     assert!(
-        pixels.iter().all(|p| p[3] > 0.98 && p[0] <= p[3] + 1e-3 && p[2] <= p[3] + 1e-3),
+        pixels
+            .iter()
+            .all(|p| p[3] > 0.98 && p[0] <= p[3] + 1e-3 && p[2] <= p[3] + 1e-3),
         "zoom keeps its coverage"
     );
 }
@@ -2035,7 +2457,10 @@ fn a_take_keeps_its_transition_when_another_is_chosen() {
     };
     let mut app = VardaApp::new(gpu, &varda::testing::headless_config()).unwrap();
     let channels = empty_show(&mut app, 2);
-    for (channel, color) in channels.iter().zip([[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]]) {
+    for (channel, color) in channels
+        .iter()
+        .zip([[1.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]])
+    {
         id(send_cmd(
             &mut app,
             EngineCommand::AddSolidColorDeck {
@@ -2079,7 +2504,10 @@ fn a_take_keeps_its_transition_when_another_is_chosen() {
     let (w, h) = (texture.width(), texture.height());
     let pixels = frame_pixels(app.gpu_context(), texture);
     let left = at(&pixels, w, h, 0.2, 0.5);
-    assert!(left[2] > 0.9 && left[0] < 0.05, "wiped, not dissolved: {left:?}");
+    assert!(
+        left[2] > 0.9 && left[0] < 0.05,
+        "wiped, not dissolved: {left:?}"
+    );
 }
 
 /// A fade weighs the two pictures: where the new one leaves the frame
@@ -2095,7 +2523,10 @@ fn a_fade_to_a_picture_in_picture_fades_the_old_one_out_everywhere() {
     let (small, whole, _) = small_then_whole(&mut app, dir.path());
     let (pixels, w, h) = taken_at(&mut app, &whole, &small, MainTransition::Fade, 0.5);
     let outside = at(&pixels, w, h, 0.85, 0.85);
-    assert!(outside[3] > 0.4 && outside[3] < 0.6, "the old one half there: {outside:?}");
+    assert!(
+        outside[3] > 0.4 && outside[3] < 0.6,
+        "the old one half there: {outside:?}"
+    );
     let (pixels, w, h) = taken_at(&mut app, &whole, &small, MainTransition::Fade, 0.9999);
     let outside = at(&pixels, w, h, 0.85, 0.85);
     assert!(outside[3] < 0.01, "and gone by the end: {outside:?}");
@@ -2111,7 +2542,9 @@ fn a_muted_layer_alone_on_main_still_shows() {
     let dir = tempfile::tempdir().unwrap();
     let mut app = VardaApp::new(gpu, &varda::testing::headless_config()).unwrap();
     let (_, _, _) = small_then_whole(&mut app, dir.path());
-    let alone = app.build_engine_state().mixer.channels[1].decks[0].uuid.clone();
+    let alone = app.build_engine_state().mixer.channels[1].decks[0]
+        .uuid
+        .clone();
     send_cmd(
         &mut app,
         EngineCommand::SetDeckMute {
@@ -2132,7 +2565,11 @@ fn a_muted_layer_alone_on_main_still_shows() {
     let texture = app.mixer_ref().composite_texture();
     let (w, h) = (texture.width(), texture.height());
     let pixels = frame_pixels(app.gpu_context(), texture);
-    assert!(cyan(at(&pixels, w, h, 0.85, 0.85)), "{:?}", at(&pixels, w, h, 0.85, 0.85));
+    assert!(
+        cyan(at(&pixels, w, h, 0.85, 0.85)),
+        "{:?}",
+        at(&pixels, w, h, 0.85, 0.85)
+    );
 }
 
 /// A merge that dissolves instead leaves its inputs drawn as ever: every
@@ -2183,6 +2620,10 @@ fn a_layer_with_a_colour_effect_still_moves() {
         },
     ));
     let (pixels, w, h) = taken_at(&mut app, &small, &whole, MainTransition::Merge, 0.5);
-    assert!(cyan(at(&pixels, w, h, 0.6, 0.6)), "{:?}", at(&pixels, w, h, 0.6, 0.6));
+    assert!(
+        cyan(at(&pixels, w, h, 0.6, 0.6)),
+        "{:?}",
+        at(&pixels, w, h, 0.6, 0.6)
+    );
     assert!(at(&pixels, w, h, 0.85, 0.85)[3] < 0.02);
 }

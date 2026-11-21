@@ -183,7 +183,10 @@ impl PanelWindows {
                 if let egui::epaint::Primitive::Mesh(mesh) = &job.primitive {
                     let size = mesh.calc_bounds().size() * drawn.pixels_per_point;
                     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                    f(mesh.texture_id, [size.x.ceil() as u32, size.y.ceil() as u32]);
+                    f(
+                        mesh.texture_id,
+                        [size.x.ceil() as u32, size.y.ceil() as u32],
+                    );
                 }
             }
         }
@@ -217,7 +220,10 @@ impl PanelWindows {
     /// Close the windows the dock did not show this frame: their panels put
     /// back, or closed.
     pub fn close_unshown(&self) {
-        self.shared.borrow_mut().windows.retain(|_, window| window.shown);
+        self.shared
+            .borrow_mut()
+            .windows
+            .retain(|_, window| window.shown);
     }
 
     /// Put the window `id`, if it is open, at `rect` — its frame's corner and
@@ -232,8 +238,12 @@ impl PanelWindows {
         };
         let screens = screens_of(panel.window.available_monitors());
         if let Some([x, y, w, h]) = placed_at(rect, zoom, &screens) {
-            panel.window.set_outer_position(winit::dpi::LogicalPosition::new(x, y));
-            let _ = panel.window.request_inner_size(winit::dpi::LogicalSize::new(w, h));
+            panel
+                .window
+                .set_outer_position(winit::dpi::LogicalPosition::new(x, y));
+            let _ = panel
+                .window
+                .request_inner_size(winit::dpi::LogicalSize::new(w, h));
         }
     }
 
@@ -271,7 +281,12 @@ impl PanelWindows {
     /// An event of window `id`, taken when it is a panel's window: into its
     /// egui input — its keys too: the dock runs the show's shortcuts in its
     /// pass, on them. Returns whether it was a panel's window's.
-    pub fn window_event(&self, id: WindowId, event: &WindowEvent, gpu: Option<&GpuContext>) -> bool {
+    pub fn window_event(
+        &self,
+        id: WindowId,
+        event: &WindowEvent,
+        gpu: Option<&GpuContext>,
+    ) -> bool {
         let mut s = self.shared.borrow_mut();
         let Some(window) = s.windows.values_mut().find(|w| w.window.id() == id) else {
             return false;
@@ -351,7 +366,11 @@ fn run_viewport(
 
 /// The input of a viewport with no window yet: its size as asked, the
 /// control window's scale, nothing done.
-fn unseen_input(id: egui::ViewportId, builder: &egui::ViewportBuilder, scale: f32) -> egui::RawInput {
+fn unseen_input(
+    id: egui::ViewportId,
+    builder: &egui::ViewportBuilder,
+    scale: f32,
+) -> egui::RawInput {
     let size = builder.inner_size.unwrap_or(egui::vec2(480.0, 320.0));
     let info = egui::ViewportInfo {
         native_pixels_per_point: Some(scale),
@@ -425,12 +444,17 @@ fn make(
     use anyhow::Context as _;
     let mut attrs = egui_winit::create_winit_window_attributes(ctx, builder.clone());
     let zoom = f64::from(ctx.zoom_factor());
-    let kept = builder.position.map(|p| (f64::from(p.x) * zoom, f64::from(p.y) * zoom));
+    let kept = builder
+        .position
+        .map(|p| (f64::from(p.x) * zoom, f64::from(p.y) * zoom));
     let screens = screens_of(event_loop.available_monitors());
     let kept = kept.filter(|at| on_a_screen(*at, &screens));
     if kept.is_none() {
         attrs.position = beside.and_then(|main| {
-            let at = main.outer_position().ok()?.to_logical::<f64>(main.scale_factor());
+            let at = main
+                .outer_position()
+                .ok()?
+                .to_logical::<f64>(main.scale_factor());
             #[allow(clippy::cast_precision_loss)]
             let step = 40.0 + 28.0 * (made % 8) as f64;
             Some(winit::dpi::LogicalPosition::new(at.x + step, at.y + step).into())
@@ -603,7 +627,10 @@ mod tests {
     fn a_window_opens_where_it_was_only_while_a_screen_is_there() {
         let screens = [[0.0, 0.0, 1512.0, 982.0], [1512.0, -200.0, 1920.0, 1080.0]];
         assert!(on_a_screen((100.0, 50.0), &screens), "this Mac's");
-        assert!(on_a_screen((2000.0, 300.0), &screens), "the screen beside it");
+        assert!(
+            on_a_screen((2000.0, 300.0), &screens),
+            "the screen beside it"
+        );
         assert!(!on_a_screen((3600.0, 300.0), &screens), "past them");
         assert!(!on_a_screen((100.0, -500.0), &screens), "above them");
         assert!(!on_a_screen((100.0, 50.0), &[]), "no screens known");
@@ -640,17 +667,29 @@ mod tests {
         use winit::keyboard::{KeyCode, PhysicalKey};
         let page = PhysicalKey::Code(KeyCode::PageDown);
         let mut held = HeldKeys::default();
-        assert!(!held.key(page, true, true, false), "held elsewhere: unheard");
-        assert!(held.key(page, false, false, false), "its release does no harm");
+        assert!(
+            !held.key(page, true, true, false),
+            "held elsewhere: unheard"
+        );
+        assert!(
+            held.key(page, false, false, false),
+            "its release does no harm"
+        );
         assert!(held.key(page, true, false, false), "pressed here");
         assert!(held.key(page, true, true, false), "its repeats are");
         assert!(held.key(page, false, false, false));
         assert!(!held.key(page, true, true, false), "let go: no more");
-        assert!(held.key(page, true, false, true), "a synthetic press passes (egui drops it)");
+        assert!(
+            held.key(page, true, false, true),
+            "a synthetic press passes (egui drops it)"
+        );
         assert!(!held.key(page, true, true, false), "but holds nothing");
         assert!(held.key(page, true, false, false));
         assert!(held.takes(&WindowEvent::Focused(false)));
-        assert!(!held.key(page, true, true, false), "lost the keyboard: holds none");
+        assert!(
+            !held.key(page, true, true, false),
+            "lost the keyboard: holds none"
+        );
     }
 
     /// A pass with no window yet is laid out at its size asked and the
@@ -662,7 +701,10 @@ mod tests {
         let builder = egui::ViewportBuilder::default().with_inner_size([300.0, 200.0]);
         let input = unseen_input(id, &builder, 2.0);
         assert_eq!(input.viewport_id, id);
-        assert_eq!(input.screen_rect.map(|r| r.size()), Some(egui::vec2(300.0, 200.0)));
+        assert_eq!(
+            input.screen_rect.map(|r| r.size()),
+            Some(egui::vec2(300.0, 200.0))
+        );
         assert_eq!(input.viewports[&id].native_pixels_per_point, Some(2.0));
     }
 }

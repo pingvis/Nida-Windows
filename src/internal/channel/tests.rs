@@ -888,7 +888,10 @@ fn skipped_deck_keeps_old_fps() {
 fn a_deck_over_its_share_is_drawn_every_frame_while_the_frame_keeps_its_time() {
     let share = 1_000_000.0 / 60.0 / 12.0;
     for frame in 0..12 {
-        assert!(super::auto_draws(2000.0, share, false, frame), "frame {frame}");
+        assert!(
+            super::auto_draws(2000.0, share, false, frame),
+            "frame {frame}"
+        );
     }
 }
 
@@ -911,7 +914,10 @@ fn an_expensive_deck_is_drawn_less_often_only_when_the_frame_runs_over() {
 fn decks_run_over_a_frames_time_only_together() {
     assert!(!super::decks_over_budget([1500.0; 10], 60), "15 ms of 16.7");
     assert!(super::decks_over_budget([1500.0; 12], 60), "18 ms of 16.7");
-    assert!(!super::decks_over_budget([50_000.0], 0), "uncapped: no budget");
+    assert!(
+        !super::decks_over_budget([50_000.0], 0),
+        "uncapped: no budget"
+    );
 }
 
 // ── One render pass for the blend unit's decks (merge_layer_passes) ──────
@@ -955,7 +961,10 @@ fn composite_bits(gpu: &GpuContext, ch: &Channel) -> Vec<u16> {
         .flat_map(|y| {
             let at = y * row as usize;
             let (words, _) = data[at..at + w as usize * 8].as_chunks::<2>();
-            words.iter().map(|b| u16::from_le_bytes(*b)).collect::<Vec<_>>()
+            words
+                .iter()
+                .map(|b| u16::from_le_bytes(*b))
+                .collect::<Vec<_>>()
         })
         .collect()
 }
@@ -1057,7 +1066,8 @@ fn twenty_decks_in_one_pass_keep_their_own_params() {
             add_layer(ch, gpu, [0.05, 0.05, 0.05, 1.0], BlendMode::Normal, 1.0);
             for n in 0..19_u8 {
                 let v = f32::from(n) / 19.0;
-                let blend = [BlendMode::Normal, BlendMode::Add, BlendMode::Screen][usize::from(n % 3)];
+                let blend =
+                    [BlendMode::Normal, BlendMode::Add, BlendMode::Screen][usize::from(n % 3)];
                 add_layer(ch, gpu, [v, 1.0 - v, 0.5 * v, 0.3], blend, 0.2 + 0.04 * v);
             }
         });

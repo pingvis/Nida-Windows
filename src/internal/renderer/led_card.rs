@@ -129,8 +129,20 @@ pub fn output_card(name: &str, size: [u32; 2], index: usize) -> Vec<u8> {
         );
     }
     let arm = cell / 2;
-    card.fill(cx.saturating_sub(arm), cy.saturating_sub(thick / 2), arm * 2, thick, [255; 3]);
-    card.fill(cx.saturating_sub(thick / 2), cy.saturating_sub(arm), thick, arm * 2, [255; 3]);
+    card.fill(
+        cx.saturating_sub(arm),
+        cy.saturating_sub(thick / 2),
+        arm * 2,
+        thick,
+        [255; 3],
+    );
+    card.fill(
+        cx.saturating_sub(thick / 2),
+        cy.saturating_sub(arm),
+        thick,
+        arm * 2,
+        [255; 3],
+    );
     // Bars and patches sit inside the cells of one row each, apart.
     let row_h = cell * 3 / 5;
     let gap = (cell / 8).max(2);
@@ -169,7 +181,13 @@ pub fn output_card(name: &str, size: [u32; 2], index: usize) -> Vec<u8> {
         let text_w = text.len() as u32 * 6 * unit;
         let x0 = levels_x + patch_w * i as u32 + patch_w.saturating_sub(gap + text_w) / 2;
         for (j, &c) in text.iter().enumerate() {
-            card.glyph(c, x0 + j as u32 * 6 * unit, foot + row_h + unit * 2, unit, [220; 3]);
+            card.glyph(
+                c,
+                x0 + j as u32 * 6 * unit,
+                foot + row_h + unit * 2,
+                unit,
+                [220; 3],
+            );
         }
     }
     card.text_block(&[name.to_string(), format!("{w} x {h}")], [255; 3]);
@@ -216,7 +234,13 @@ impl Card {
 
     /// `colours` side by side across `width` from `left`, each a block of its
     /// own with `gap` between — bars apart, not a gradient.
-    fn apart(&mut self, (left, top): (u32, u32), (width, height): (u32, u32), gap: u32, colours: &[[u8; 3]]) {
+    fn apart(
+        &mut self,
+        (left, top): (u32, u32),
+        (width, height): (u32, u32),
+        gap: u32,
+        colours: &[[u8; 3]],
+    ) {
         let count = u32::try_from(colours.len()).unwrap_or(1).max(1);
         let each = (width.saturating_sub(gap * (count - 1)) / count).max(1);
         for (at, &rgb) in colours.iter().enumerate() {
@@ -619,8 +643,16 @@ mod tests {
             // Grid lines whole cells from the centre, across and down, where
             // nothing is drawn over them: right of the name, above it.
             let open_y = cy - cell - cell / 2;
-            assert_eq!(pixel(&card, w, cx + 3 * cell, open_y), grid, "{w}×{h} a column");
-            assert_eq!(pixel(&card, w, cx + 4 * cell + cell / 2, cy - cell), grid, "{w}×{h} a row");
+            assert_eq!(
+                pixel(&card, w, cx + 3 * cell, open_y),
+                grid,
+                "{w}×{h} a column"
+            );
+            assert_eq!(
+                pixel(&card, w, cx + 4 * cell + cell / 2, cy - cell),
+                grid,
+                "{w}×{h} a row"
+            );
             assert_eq!(
                 pixel(&card, w, cx + 3 * cell + cell / 2, open_y),
                 [32, 32, 32],
@@ -646,9 +678,21 @@ mod tests {
         let band_x = (w - band_w) / 2;
         let top = h / 2 - cell * 3 + (cell - row_h) / 2 + row_h / 2;
         let each = (band_w - gap * 7) / 8;
-        assert_eq!(pixel(&card, w, band_x + each / 2, top), [255, 255, 255], "white bar");
-        assert_eq!(pixel(&card, w, band_x + each + gap / 2, top), [32, 32, 32], "a gap");
-        assert_eq!(pixel(&card, w, band_x + each + gap + each / 2, top), [255, 255, 0], "yellow");
+        assert_eq!(
+            pixel(&card, w, band_x + each / 2, top),
+            [255, 255, 255],
+            "white bar"
+        );
+        assert_eq!(
+            pixel(&card, w, band_x + each + gap / 2, top),
+            [32, 32, 32],
+            "a gap"
+        );
+        assert_eq!(
+            pixel(&card, w, band_x + each + gap + each / 2, top),
+            [255, 255, 0],
+            "yellow"
+        );
         let foot = h / 2 + cell * 2 + (cell - row_h) / 2 + row_h / 2;
         let steps_w = band_w * 11 / 16;
         let levels_x = band_x + steps_w + gap * 3;

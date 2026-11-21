@@ -369,7 +369,10 @@ fn screen_list(ui: &mut egui::Ui, data: &UIData, layout: &mut LedLayout, editor:
                     ..Default::default()
                 },
             );
-            if ui.add(egui::Button::selectable(chosen, label).wrap()).clicked() {
+            if ui
+                .add(egui::Button::selectable(chosen, label).wrap())
+                .clicked()
+            {
                 editor.selected = Some(screen.uuid.clone());
             }
         });
@@ -1076,9 +1079,12 @@ mod tests {
     #[test]
     fn a_long_screen_name_wraps_within_the_column() {
         let mut layout = wall_and_cube();
-        layout.screens[1].name = "Main stage backdrop, left wing, upper half, behind the lectern".into();
+        layout.screens[1].name =
+            "Main stage backdrop, left wing, upper half, behind the lectern".into();
         let harness = harness(data_with(Some(layout)));
-        let row = harness.get_by_label_contains("the lectern\nat 1500,0").rect();
+        let row = harness
+            .get_by_label_contains("the lectern\nat 1500,0")
+            .rect();
         assert!(row.width() <= COLUMN, "{row:?}");
     }
 

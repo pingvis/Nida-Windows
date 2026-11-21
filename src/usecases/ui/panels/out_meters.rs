@@ -106,7 +106,10 @@ pub(super) fn feeds(data: &UIData) -> Vec<Feed<'_>> {
         let hover = if playing {
             format!("{} plays on {device}", bus.config.name)
         } else {
-            format!("{} is set to play on {device}, which is not playing", bus.config.name)
+            format!(
+                "{} is set to play on {device}, which is not playing",
+                bus.config.name
+            )
         };
         out.push(Feed {
             label: bus.config.name.clone(),
@@ -180,11 +183,7 @@ fn feed_meter(ui: &mut egui::Ui, rect: egui::Rect, feed: &Feed<'_>) {
         OFF
     };
     let name = fitted(painter, &feed.label, 10.0, name_colour, badge.width() - 2.0);
-    painter.galley(
-        badge.center() - name.size() / 2.0,
-        name,
-        name_colour,
-    );
+    painter.galley(badge.center() - name.size() / 2.0, name, name_colour);
 
     // Left and right, dimmed when it is not going out.
     let track = egui::Rect::from_min_max(

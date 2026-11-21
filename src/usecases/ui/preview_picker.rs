@@ -172,9 +172,10 @@ mod tests {
         };
         let linear = [64.0 / 255.0, 128.0 / 255.0, 192.0 / 255.0];
         let param_rgb = linear.map(srgb_from_linear);
-        effect
-            .params
-            .set_color("target_color", [param_rgb[0], param_rgb[1], param_rgb[2], 0.37]);
+        effect.params.set_color(
+            "target_color",
+            [param_rgb[0], param_rgb[1], param_rgb[2], 0.37],
+        );
         effect.params.set_float("tolerance", 0.001);
         effect.params.set_float("softness", 0.001);
         gpu.colour_pick.request(Some(effect.uuid()));
@@ -307,7 +308,12 @@ mod tests {
         );
         let mut bytes = vec![];
         value.write_bytes(&mut bytes);
-        for (actual, expected) in bytes.as_chunks::<4>().0.iter().zip([0.12, 0.34, 0.56, 0.37]) {
+        for (actual, expected) in bytes
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip([0.12, 0.34, 0.56, 0.37])
+        {
             let actual = f32::from_le_bytes(*actual);
             assert!(
                 (actual - expected).abs() < 1e-6,

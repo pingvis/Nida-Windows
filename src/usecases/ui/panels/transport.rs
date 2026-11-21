@@ -370,113 +370,116 @@ pub(super) fn render_transport(
                 seek(actions, secs);
             }
             ui.add_space(4.0);
-            needs = ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 3.0;
-                if button(ui, "⏮", "To the in-point", "Back to the in-point") {
-                    seek(actions, vp.in_point);
-                }
-                if button(ui, "⏪", "Back 5 seconds", "Back 5 seconds") {
-                    seek(actions, vp.position - JUMP_SECS);
-                }
-                let (glyph, name) = if vp.playing {
-                    ("⏸", "Pause")
-                } else {
-                    ("▶", "Play")
-                };
-                if button(ui, glyph, name, name) {
-                    actions.commands.push(EngineCommand::VideoTogglePlay {
-                        deck_uuid: deck.uuid.clone(),
-                    });
-                }
-                if button(ui, "⏩", "Forward 5 seconds", "Forward 5 seconds") {
-                    seek(actions, vp.position + JUMP_SECS);
-                }
-                ui.add_space(6.0);
-                let out = if vp.out_point > 0.0 {
-                    vp.out_point
-                } else {
-                    vp.duration
-                };
-                ui.label(egui::RichText::new(clock(vp.position)).monospace())
-                    .on_hover_text("Where the playhead is");
-                ui.label(
-                    egui::RichText::new(format!("-{}", clock(out - vp.position)))
-                        .monospace()
-                        .weak(),
-                )
-                .on_hover_text("Left to play, to the out-point");
-                if let Some(list) = &deck.playlist {
-                    let name = list
-                        .shown
-                        .and_then(|index| list.items.get(index))
-                        .map_or("Playlist clip", PlaylistItem::name);
-                    ui.add_space(12.0);
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            needs = ui
+                .horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 3.0;
+                    if button(ui, "⏮", "To the in-point", "Back to the in-point") {
+                        seek(actions, vp.in_point);
+                    }
+                    if button(ui, "⏪", "Back 5 seconds", "Back 5 seconds") {
+                        seek(actions, vp.position - JUMP_SECS);
+                    }
+                    let (glyph, name) = if vp.playing {
+                        ("⏸", "Pause")
+                    } else {
+                        ("▶", "Play")
+                    };
+                    if button(ui, glyph, name, name) {
+                        actions.commands.push(EngineCommand::VideoTogglePlay {
+                            deck_uuid: deck.uuid.clone(),
+                        });
+                    }
+                    if button(ui, "⏩", "Forward 5 seconds", "Forward 5 seconds") {
+                        seek(actions, vp.position + JUMP_SECS);
+                    }
+                    ui.add_space(6.0);
+                    let out = if vp.out_point > 0.0 {
+                        vp.out_point
+                    } else {
+                        vp.duration
+                    };
+                    ui.label(egui::RichText::new(clock(vp.position)).monospace())
+                        .on_hover_text("Where the playhead is");
+                    ui.label(
+                        egui::RichText::new(format!("-{}", clock(out - vp.position)))
+                            .monospace()
+                            .weak(),
+                    )
+                    .on_hover_text("Left to play, to the out-point");
+                    if let Some(list) = &deck.playlist {
+                        let name = list
+                            .shown
+                            .and_then(|index| list.items.get(index))
+                            .map_or("Playlist clip", PlaylistItem::name);
+                        ui.add_space(12.0);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.add(
+                                egui::Label::new(egui::RichText::new(name).small().weak())
+                                    .truncate(),
+                            )
+                            .on_hover_text(name);
+                        });
+                        return;
+                    }
+                    if compact {
+                        return;
+                    }
+                    ui.add_space(6.0);
+                    if ui
+                        .small_button("[ In")
+                        .on_hover_text("Start here: set the in-point at the playhead")
+                        .clicked()
+                    {
+                        actions.commands.push(EngineCommand::VideoSetInPoint {
+                            deck_uuid: deck.uuid.clone(),
+                            secs: vp.position,
+                        });
+                    }
+                    if ui
+                        .small_button("Out ]")
+                        .on_hover_text("End here: set the out-point at the playhead")
+                        .clicked()
+                    {
+                        actions.commands.push(EngineCommand::VideoSetOutPoint {
+                            deck_uuid: deck.uuid.clone(),
+                            secs: vp.position,
+                        });
+                    }
+                    let trimmed = vp.in_point > 0.0 || vp.out_point > 0.0;
+                    if ui
+                        .add_enabled(trimmed, egui::Button::new("×").small())
+                        .on_hover_text("Clear the in and out points: play all of it")
+                        .clicked()
+                    {
+                        actions.commands.push(EngineCommand::VideoClearInOutPoints {
+                            deck_uuid: deck.uuid.clone(),
+                        });
+                    }
+                    let mut looping = vp.loop_mode == LoopMode::Loop;
+                    if ui
+                        .checkbox(&mut looping, "Loop")
+                        .on_hover_text("Play it round and round; off, it stops at the end")
+                        .changed()
+                    {
+                        actions.commands.push(EngineCommand::VideoSetLoopMode {
+                            deck_uuid: deck.uuid.clone(),
+                            mode: if looping {
+                                LoopMode::Loop
+                            } else {
+                                LoopMode::HoldLast
+                            },
+                        });
+                    }
+                    if several_layers {
                         ui.add(
-                            egui::Label::new(egui::RichText::new(name).small().weak()).truncate(),
-                        )
-                        .on_hover_text(name);
-                    });
-                    return;
-                }
-                if compact {
-                    return;
-                }
-                ui.add_space(6.0);
-                if ui
-                    .small_button("[ In")
-                    .on_hover_text("Start here: set the in-point at the playhead")
-                    .clicked()
-                {
-                    actions.commands.push(EngineCommand::VideoSetInPoint {
-                        deck_uuid: deck.uuid.clone(),
-                        secs: vp.position,
-                    });
-                }
-                if ui
-                    .small_button("Out ]")
-                    .on_hover_text("End here: set the out-point at the playhead")
-                    .clicked()
-                {
-                    actions.commands.push(EngineCommand::VideoSetOutPoint {
-                        deck_uuid: deck.uuid.clone(),
-                        secs: vp.position,
-                    });
-                }
-                let trimmed = vp.in_point > 0.0 || vp.out_point > 0.0;
-                if ui
-                    .add_enabled(trimmed, egui::Button::new("×").small())
-                    .on_hover_text("Clear the in and out points: play all of it")
-                    .clicked()
-                {
-                    actions.commands.push(EngineCommand::VideoClearInOutPoints {
-                        deck_uuid: deck.uuid.clone(),
-                    });
-                }
-                let mut looping = vp.loop_mode == LoopMode::Loop;
-                if ui
-                    .checkbox(&mut looping, "Loop")
-                    .on_hover_text("Play it round and round; off, it stops at the end")
-                    .changed()
-                {
-                    actions.commands.push(EngineCommand::VideoSetLoopMode {
-                        deck_uuid: deck.uuid.clone(),
-                        mode: if looping {
-                            LoopMode::Loop
-                        } else {
-                            LoopMode::HoldLast
-                        },
-                    });
-                }
-                if several_layers {
-                    ui.add(
-                        egui::Label::new(egui::RichText::new(&deck.name).small().weak()).truncate(),
-                    );
-                }
-            })
-            .response
-            .rect
-            .width();
+                            egui::Label::new(egui::RichText::new(&deck.name).small().weak())
+                                .truncate(),
+                        );
+                    }
+                })
+                .response
+                .rect
+                .width();
         },
     );
     needs
@@ -684,7 +687,14 @@ mod tile_tests {
             vp.position = position;
             let deck = deck.clone();
             let mut harness = egui_kittest::Harness::new_ui(move |ui| {
-                render_transport(ui, Some((&deck, &vp)), false, 400.0, false, &mut UIActions::new());
+                render_transport(
+                    ui,
+                    Some((&deck, &vp)),
+                    false,
+                    400.0,
+                    false,
+                    &mut UIActions::new(),
+                );
             });
             harness.run();
             harness.get_by_label("Playhead");
@@ -699,7 +709,14 @@ mod tile_tests {
         let name = format!("♪ {}", ch.decks[0].name);
         let harness = egui_kittest::Harness::new_ui(move |ui| {
             let picture = egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(320.0, 120.0));
-            overlay_on_picture(ui, picture, &ch, 1, &UIData::test_fixture(), &mut UIActions::new());
+            overlay_on_picture(
+                ui,
+                picture,
+                &ch,
+                1,
+                &UIData::test_fixture(),
+                &mut UIActions::new(),
+            );
         });
         let label = harness.get_by_label(&name).rect();
         let play = harness.get_by_label("▶").rect();

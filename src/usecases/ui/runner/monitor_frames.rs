@@ -90,9 +90,7 @@ pub(super) fn step(shown: Option<u64>, oldest: u64, newest: u64) -> u64 {
 /// source not yet written over (two slots kept clear of the engine).
 pub(super) fn available(frames: &Frames) -> Option<(u64, u64)> {
     let newest = frames.newest?;
-    let oldest = newest
-        .saturating_sub(SLOTS - 2)
-        .max(frames.first_of_source);
+    let oldest = newest.saturating_sub(SLOTS - 2).max(frames.first_of_source);
     Some((oldest, newest))
 }
 
@@ -238,13 +236,16 @@ impl Picker {
                 view_formats: &[],
             });
             let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-            let id = egui_renderer.register_native_texture(&gpu.device, &view, wgpu::FilterMode::Linear);
+            let id =
+                egui_renderer.register_native_texture(&gpu.device, &view, wgpu::FilterMode::Linear);
             self.copies[at] = Some((texture, id));
         }
         let (copy, id) = self.copies[at].as_ref()?;
         let mut encoder = gpu
             .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Monitor Shown") });
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Monitor Shown"),
+            });
         encoder.copy_texture_to_texture(source.as_image_copy(), copy.as_image_copy(), size);
         gpu.submit(std::iter::once(encoder.finish()));
         Some(*id)
@@ -257,10 +258,17 @@ mod tests {
 
     /// A 16×16 picture of one colour, as the engine's frames are made, and
     /// writable here.
-    fn frame_of(gpu: &crate::renderer::GpuContext, rgba: [u8; 4]) -> (wgpu::Texture, wgpu::TextureView) {
+    fn frame_of(
+        gpu: &crate::renderer::GpuContext,
+        rgba: [u8; 4],
+    ) -> (wgpu::Texture, wgpu::TextureView) {
         let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
             label: None,
-            size: wgpu::Extent3d { width: 16, height: 16, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 16,
+                height: 16,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -280,7 +288,11 @@ mod tests {
         gpu.queue.write_texture(
             texture.as_image_copy(),
             &pixels,
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(64), rows_per_image: Some(16) },
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(64),
+                rows_per_image: Some(16),
+            },
             texture.size(),
         );
     }
@@ -293,7 +305,9 @@ mod tests {
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
-        let mut encoder = gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+        let mut encoder = gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         encoder.copy_texture_to_buffer(
             texture.as_image_copy(),
             wgpu::TexelCopyBufferInfo {
@@ -337,7 +351,9 @@ mod tests {
             first_of_source: 0,
         };
         let mut picker = super::Picker::default();
-        let id = picker.pick(super::MAIN, &frames, &gpu, &mut renderer).expect("a frame");
+        let id = picker
+            .pick(super::MAIN, &frames, &gpu, &mut renderer)
+            .expect("a frame");
         let copy = &picker.copies[super::MAIN].as_ref().expect("its copy").0;
         // Frame 4, one behind the newest: slot 0.
         assert_eq!(first_pixel(&gpu, copy), colour(0));
@@ -346,7 +362,9 @@ mod tests {
         assert_eq!(first_pixel(&gpu, copy), colour(0), "the picked frame kept");
         // The next call steps to frame 5 (slot 1), into the same picture.
         frames.newest = Some(6);
-        let again = picker.pick(super::MAIN, &frames, &gpu, &mut renderer).expect("a frame");
+        let again = picker
+            .pick(super::MAIN, &frames, &gpu, &mut renderer)
+            .expect("a frame");
         assert_eq!(again, id, "one picture, registered once");
         let copy = &picker.copies[super::MAIN].as_ref().expect("its copy").0;
         assert_eq!(first_pixel(&gpu, copy), colour(1));
@@ -371,8 +389,14 @@ mod tests {
         let share = super::MonitorShare::default();
         let source = |_: Option<&str>| Some((&view, 1920_u32, 1080_u32));
         super::lock(&share).wants = [
-            Some(super::Want { channel: None, drawn: Some([600, 338]) }),
-            Some(super::Want { channel: Some("ch-a".into()), drawn: Some([600, 338]) }),
+            Some(super::Want {
+                channel: None,
+                drawn: Some([600, 338]),
+            }),
+            Some(super::Want {
+                channel: Some("ch-a".into()),
+                drawn: Some([600, 338]),
+            }),
         ];
         for _ in 0..6 {
             super::capture(&share, &encoder, &gpu, source);
@@ -383,21 +407,39 @@ mod tests {
             assert_eq!(main.newest, Some(5));
             assert_eq!(main.targets.len(), 4);
             let (w, h) = (main.targets[0].0.width(), main.targets[0].0.height());
-            assert!((600..1920).contains(&w) && h >= 338, "{w}×{h}: sized to what was drawn");
-            assert_eq!(super::available(main), Some((3, 5)), "two kept clear of the engine");
+            assert!(
+                (600..1920).contains(&w) && h >= 338,
+                "{w}×{h}: sized to what was drawn"
+            );
+            assert_eq!(
+                super::available(main),
+                Some((3, 5)),
+                "two kept clear of the engine"
+            );
         }
-        super::lock(&share).wants[super::PREVIEW] =
-            Some(super::Want { channel: Some("ch-b".into()), drawn: Some([600, 338]) });
+        super::lock(&share).wants[super::PREVIEW] = Some(super::Want {
+            channel: Some("ch-b".into()),
+            drawn: Some([600, 338]),
+        });
         super::capture(&share, &encoder, &gpu, source);
         {
             let shared = super::lock(&share);
-            let preview = shared.frames[super::PREVIEW].as_ref().expect("Preview's frames");
+            let preview = shared.frames[super::PREVIEW]
+                .as_ref()
+                .expect("Preview's frames");
             assert_eq!(preview.source.as_deref(), Some("ch-b"));
-            assert_eq!(super::available(preview), Some((6, 6)), "only the new input's frames");
+            assert_eq!(
+                super::available(preview),
+                Some((6, 6)),
+                "only the new input's frames"
+            );
         }
         super::lock(&share).wants[super::MAIN] = None;
         super::capture(&share, &encoder, &gpu, source);
-        assert!(super::lock(&share).frames[super::MAIN].is_none(), "not wanted: let go");
+        assert!(
+            super::lock(&share).frames[super::MAIN].is_none(),
+            "not wanted: let go"
+        );
     }
 
     /// The window steps one frame each refresh whichever side of the
@@ -448,7 +490,11 @@ mod tests {
         }
         assert!(seen.windows(2).all(|p| p[1] - p[0] == 2), "{seen:?}");
         assert_eq!(step(None, 3, 9), 8, "starts a frame behind");
-        assert_eq!(step(Some(2), 3, 9), 8, "written over: back to a frame behind");
+        assert_eq!(
+            step(Some(2), 3, 9),
+            8,
+            "written over: back to a frame behind"
+        );
         assert_eq!(step(Some(9), 7, 9), 9, "nothing newer: the same");
     }
 }

@@ -1105,7 +1105,9 @@ impl AudioManager {
             reopened_since_change: HashSet::new(),
             numbers: HashMap::new(),
             next_number: 0,
-            opener: Arc::new(move |devices, id, subs| open_device(devices, id, subs, &opening_range)),
+            opener: Arc::new(move |devices, id, subs| {
+                open_device(devices, id, subs, &opening_range)
+            }),
             opening: HashMap::new(),
             unclaimed: HashMap::new(),
             landed: 0,

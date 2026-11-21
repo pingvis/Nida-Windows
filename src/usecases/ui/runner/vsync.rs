@@ -182,7 +182,10 @@ impl DisplayClock {
     /// Whether this clock is the one wanted: the screen `display`, a frame
     /// every `every` refreshes, at `hz` (see [`same_clock`]).
     pub fn is(&self, display: u32, every: u32, hz: f64) -> bool {
-        same_clock((self.display, self.every, self.refresh_hz), (display, every, hz))
+        same_clock(
+            (self.display, self.every, self.refresh_hz),
+            (display, every, hz),
+        )
     }
 
     /// Whether refreshes are arriving: once one has, and none is overdue.
@@ -415,10 +418,19 @@ mod tests {
     fn a_screen_that_changes_rate_needs_a_new_clock() {
         assert!(same_clock((1, 1, 60.0), (1, 1, 60.0)));
         assert!(same_clock((1, 1, 60.0), (1, 1, 59.94)), "60's own wobble");
-        assert!(!same_clock((1, 1, 60.0), (1, 1, 50.0)), "60 → 50 Hz at 50 fps");
-        assert!(!same_clock((1, 2, 120.0), (1, 2, 100.0)), "120 → 100 Hz at 50 fps");
+        assert!(
+            !same_clock((1, 1, 60.0), (1, 1, 50.0)),
+            "60 → 50 Hz at 50 fps"
+        );
+        assert!(
+            !same_clock((1, 2, 120.0), (1, 2, 100.0)),
+            "120 → 100 Hz at 50 fps"
+        );
         assert!(!same_clock((1, 1, 60.0), (2, 1, 60.0)), "another screen");
-        assert!(!same_clock((1, 1, 60.0), (1, 2, 60.0)), "another rate of frames");
+        assert!(
+            !same_clock((1, 1, 60.0), (1, 2, 60.0)),
+            "another rate of frames"
+        );
     }
 
     #[test]

@@ -10,8 +10,8 @@ use crate::audio::AudioData;
 use crate::isf::{ISFPass, PhaseInput};
 use crate::modulation::ModulationEngine;
 use crate::params::ShaderParams;
+use crate::renderer::region::{draw_within, scissors_for, Area, Pixels};
 use crate::renderer::BlitPipeline;
-use crate::renderer::region::{Area, Pixels, draw_within, scissors_for};
 use crate::renderer::{GpuContext, ISFUniforms, UnifiedPipeline};
 use anyhow::Result;
 use std::collections::HashMap;
@@ -1368,7 +1368,8 @@ impl Deck {
             return Err("not a live input");
         };
         let drawn = self.drawn_effects(modulation);
-        let others = "effects other than its crop and Transform, or a crop or Transform modulated, \
+        let others =
+            "effects other than its crop and Transform, or a crop or Transform modulated, \
                       masked, inverted, turned or wrapped";
         let (crop, pos, scale, flip) = if drawn.is_empty() {
             (None, [0.0; 2], [1.0; 2], [false; 2])

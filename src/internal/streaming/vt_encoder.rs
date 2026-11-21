@@ -284,7 +284,10 @@ impl VtEncoder {
             )
         };
         let Some(raw) = NonNull::new(raw).filter(|_| status == 0) else {
-            bail!("the media engine could not start a {} encoder ({status})", codec.label());
+            bail!(
+                "the media engine could not start a {} encoder ({status})",
+                codec.label()
+            );
         };
         // SAFETY: a session made by `create`, which returns it retained.
         let session = unsafe { CFRetained::from_raw(raw) };
@@ -398,8 +401,9 @@ impl VtEncoder {
         let began = std::time::Instant::now();
         let mut raw: *mut CVPixelBuffer = std::ptr::null_mut();
         // SAFETY: a valid pool; `raw` receives a retained buffer.
-        let status =
-            unsafe { CVPixelBufferPool::create_pixel_buffer(None, &self.pool, NonNull::from(&mut raw)) };
+        let status = unsafe {
+            CVPixelBufferPool::create_pixel_buffer(None, &self.pool, NonNull::from(&mut raw))
+        };
         let Some(raw) = NonNull::new(raw).filter(|_| status == 0) else {
             bail!("no frame buffer from the media engine ({status})");
         };
@@ -455,8 +459,9 @@ impl VtEncoder {
         };
         if status != 0 {
             // No callback comes for a frame the engine refused.
-            self.shared
-                .record(Encoded::Failed(format!("the media engine refused a frame ({status})")));
+            self.shared.record(Encoded::Failed(format!(
+                "the media engine refused a frame ({status})"
+            )));
             bail!("the media engine refused a frame ({status})");
         }
         if flags.contains(VTEncodeInfoFlags::FrameDropped) {
@@ -511,7 +516,11 @@ fn configure(
     // SAFETY: VideoToolbox's and CoreVideo's constant keys and values.
     let settings: [(&str, &CFString, &CFType); 8] = unsafe {
         [
-            ("real time", kVTCompressionPropertyKey_RealTime, CFBoolean::new(true)),
+            (
+                "real time",
+                kVTCompressionPropertyKey_RealTime,
+                CFBoolean::new(true),
+            ),
             (
                 "profile",
                 kVTCompressionPropertyKey_ProfileLevel,
@@ -526,7 +535,11 @@ fn configure(
                 kVTCompressionPropertyKey_AllowFrameReordering,
                 CFBoolean::new(false),
             ),
-            ("keyframes", kVTCompressionPropertyKey_MaxKeyFrameInterval, &gop),
+            (
+                "keyframes",
+                kVTCompressionPropertyKey_MaxKeyFrameInterval,
+                &gop,
+            ),
             (
                 "keyframe time",
                 kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration,
@@ -606,7 +619,9 @@ fn set_rate(
         return Ok(constant);
     }
     if constant && fallback {
-        log::warn!("The media engine holds no constant rate here ({status}); averaging {kbps} kbps");
+        log::warn!(
+            "The media engine holds no constant rate here ({status}); averaging {kbps} kbps"
+        );
         return set_rate(session, kbps, false, false);
     }
     bail!("the media engine refused {kbps} kbps ({status})")
@@ -686,7 +701,10 @@ unsafe fn frame_of(sample: &CMSampleBuffer, slot: u64, codec: VideoCodec) -> Opt
 /// # Safety
 ///
 /// `description` is a valid video format description of `codec`.
-unsafe fn configuration_record(description: &CMFormatDescription, codec: VideoCodec) -> Option<Vec<u8>> {
+unsafe fn configuration_record(
+    description: &CMFormatDescription,
+    codec: VideoCodec,
+) -> Option<Vec<u8>> {
     // SAFETY: a valid description; CoreMedia's constant key.
     let atoms = unsafe {
         description.extension(kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms)
@@ -792,7 +810,9 @@ mod tests {
                 encoder.set_kbps(500).expect("a new rate");
             }
             // Every other slot: the times need not follow on.
-            encoder.encode(&frame(640, 360, n), n as u64 * 2).expect("a frame");
+            encoder
+                .encode(&frame(640, 360, n), n as u64 * 2)
+                .expect("a frame");
         }
         encoder.finish();
         assert_eq!(encoder.kbps(), 500);
@@ -808,8 +828,15 @@ mod tests {
                 Encoded::Failed(why) => panic!("failed: {why}"),
             })
             .collect();
-        assert_eq!(slots, (0..60).map(|n| n * 2).collect::<Vec<u64>>(), "in order, each its slot");
-        let Encoded::Frame { key, config, units, .. } = &ended[0] else {
+        assert_eq!(
+            slots,
+            (0..60).map(|n| n * 2).collect::<Vec<u64>>(),
+            "in order, each its slot"
+        );
+        let Encoded::Frame {
+            key, config, units, ..
+        } = &ended[0]
+        else {
             panic!("the first frame dropped");
         };
         assert!(key, "a keyframe first");

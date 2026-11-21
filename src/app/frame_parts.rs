@@ -313,13 +313,21 @@ mod tests {
         frame(&mut parts, t0, &[("ui", 4000), ("gpu wait", 2000)]);
         frame(&mut parts, t0 + step, &[("ui", 4000), ("gpu wait", 2000)]);
         assert!(parts.slow_frames().is_empty(), "on time");
-        frame(&mut parts, t0 + step * 2, &[("ui", 4000), ("gpu wait", 20_000)]);
+        frame(
+            &mut parts,
+            t0 + step * 2,
+            &[("ui", 4000), ("gpu wait", 20_000)],
+        );
         let slow = parts.slow_frames();
         assert_eq!(slow.len(), 1);
         assert!((slow[0].busy_ms - 24.0).abs() < 0.01, "{:?}", slow[0]);
         assert!(describe(&slow[0]).contains("gpu wait 20.0, ui 4.0"));
         // The one after starts late, because this one ran long.
-        frame(&mut parts, t0 + step * 2 + Duration::from_millis(26), &[("ui", 4000)]);
+        frame(
+            &mut parts,
+            t0 + step * 2 + Duration::from_millis(26),
+            &[("ui", 4000)],
+        );
         let slow = parts.slow_frames();
         assert_eq!(slow.len(), 2);
         assert!(slow[1].interval_ms > 25.0);
@@ -337,7 +345,11 @@ mod tests {
         frame(&mut parts, t0, &[("ui", 2000)]);
         frame(&mut parts, t0 + step, &[("ui", 2000)]);
         assert!(parts.slow_frames().is_empty(), "on time");
-        frame(&mut parts, t0 + step + Duration::from_millis(32), &[("ui", 2000)]);
+        frame(
+            &mut parts,
+            t0 + step + Duration::from_millis(32),
+            &[("ui", 2000)],
+        );
         let slow = parts.slow_frames();
         assert_eq!(slow.len(), 1);
         assert!((slow[0].interval_ms - 32.0).abs() < 0.01, "{:?}", slow[0]);
@@ -371,7 +383,9 @@ mod tests {
         );
         let line = late(&mut FrameParts::default());
         assert!(
-            line.starts_with("[PACING] slow frame: 32.0 ms after the last, 30.0 of it between frames"),
+            line.starts_with(
+                "[PACING] slow frame: 32.0 ms after the last, 30.0 of it between frames"
+            ),
             "{line}"
         );
     }
@@ -400,7 +414,10 @@ mod tests {
         assert!(parts.slow_frames().is_empty(), "{:?}", parts.slow_frames());
         let waited = parts.stats();
         let acquire = waited.iter().find(|s| s.name == "ui acquire").unwrap();
-        assert!((acquire.mean_ms - 12.0).abs() < 0.01, "still among its parts");
+        assert!(
+            (acquire.mean_ms - 12.0).abs() < 0.01,
+            "still among its parts"
+        );
 
         waiting_frame(&mut parts, t0 + step * 4, 15_500, 500);
         let slow = parts.slow_frames();
@@ -409,7 +426,11 @@ mod tests {
 
         waiting_frame(&mut parts, t0 + step * 5, 2000, 40_000);
         let slow = parts.slow_frames();
-        assert_eq!(slow.len(), 2, "a wait far past a frame's time is slow: {slow:?}");
+        assert_eq!(
+            slow.len(),
+            2,
+            "a wait far past a frame's time is slow: {slow:?}"
+        );
         assert!(describe(&slow[1]).contains("ui acquire 40.0, ui 2.0"));
 
         // The wait is this frame's alone: the next, all work, is long.
@@ -466,7 +487,11 @@ mod tests {
         let slow = parts.slow_frames();
         assert_eq!(slow.len(), 1, "{slow:?}");
         assert!(slow[0].before.is_none(), "long, and on time: {:?}", slow[0]);
-        frame(&mut parts, t0 + step + Duration::from_millis(26), &[("ui", 4000)]);
+        frame(
+            &mut parts,
+            t0 + step + Duration::from_millis(26),
+            &[("ui", 4000)],
+        );
         let slow = parts.slow_frames();
         assert_eq!(slow.len(), 2, "{slow:?}");
         assert!(slow[1].before.is_none(), "{:?}", slow[1]);
@@ -492,7 +517,8 @@ mod tests {
         assert_eq!(slow.len(), 1, "{slow:?}");
         assert!(slow[0].before.is_some(), "{:?}", slow[0]);
         assert!(
-            describe(&slow[0]).ends_with("busy 2.0 ms: ui 2.0; the frame before: busy 2.0 ms: ui 2.0"),
+            describe(&slow[0])
+                .ends_with("busy 2.0 ms: ui 2.0; the frame before: busy 2.0 ms: ui 2.0"),
             "{}",
             describe(&slow[0])
         );
@@ -549,7 +575,10 @@ mod tests {
         }
         let stats = parts.stats();
         assert_eq!(stats[0].name, "ui");
-        assert!((stats[0].mean_ms - 6.0).abs() < 0.01, "twice in a frame adds up");
+        assert!(
+            (stats[0].mean_ms - 6.0).abs() < 0.01,
+            "twice in a frame adds up"
+        );
         let gpu = stats.iter().find(|s| s.name == "gpu wait").unwrap();
         assert!((gpu.mean_ms - 2.0).abs() < 0.01 && (gpu.max_ms - 3.0).abs() < 0.01);
         assert!(stats.iter().any(|s| s.name == "start delay"));

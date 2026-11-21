@@ -132,7 +132,11 @@ fn once_then_kept(gpu: &GpuContext, mixer: &mut Mixer, what: &str) {
 /// A red picture alone in the overlay, a frame drawn of it.
 fn a_picture_shown(gpu: &GpuContext) -> Mixer {
     let mut mixer = mixer_with(gpu, picture(gpu, RED));
-    assert_eq!(kept(gpu, &mut mixer, 1), 0, "the first frame is put together");
+    assert_eq!(
+        kept(gpu, &mut mixer, 1),
+        0,
+        "the first frame is put together"
+    );
     mixer
 }
 
@@ -145,13 +149,29 @@ fn a_picture_standing_still_is_put_together_once_and_kept() {
     let gpu = headless_gpu();
     let mut mixer = a_picture_shown(&gpu);
     assert_eq!(kept(&gpu, &mut mixer, 5), 5, "kept from then on");
-    assert_eq!(drawn(&gpu, &mut mixer, 3), 3, "its frames counted all the same");
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 0, "the picture's own frame too");
+    assert_eq!(
+        drawn(&gpu, &mut mixer, 3),
+        3,
+        "its frames counted all the same"
+    );
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 3),
+        0,
+        "the picture's own frame too"
+    );
     let as_kept = main_picture(&gpu, &mixer);
-    assert!(red(&as_kept) > 900_000, "the picture on Main: {}", red(&as_kept));
+    assert!(
+        red(&as_kept) > 900_000,
+        "the picture on Main: {}",
+        red(&as_kept)
+    );
 
     mixer.keep_still_inputs = false;
-    assert_eq!(kept(&gpu, &mut mixer, 4), 0, "switched off: every frame anew");
+    assert_eq!(
+        kept(&gpu, &mut mixer, 4),
+        0,
+        "switched off: every frame anew"
+    );
     let anew = main_picture(&gpu, &mixer);
     let worst = differ(&as_kept, &anew);
     assert!(worst < 1e-3, "Main differs by {worst}");
@@ -187,7 +207,11 @@ fn a_layer_changed_is_put_together_again() {
     over_mut(&mut mixer).add_deck(other);
     once_then_kept(&gpu, &mut mixer, "another picture over it");
     let covered = main_picture(&gpu, &mixer);
-    assert!(green(&covered) > 900_000, "the one over it: {}", green(&covered));
+    assert!(
+        green(&covered) > 900_000,
+        "the one over it: {}",
+        green(&covered)
+    );
 
     let _ = over_mut(&mut mixer).remove_deck(1);
     once_then_kept(&gpu, &mut mixer, "taken away again");
@@ -218,8 +242,16 @@ fn a_picture_or_a_size_changed_is_put_together_again() {
     mixer.resize(&gpu, W / 2, H / 2);
     once_then_kept(&gpu, &mut mixer, "half the size");
     let small = main_picture(&gpu, &mixer);
-    assert_eq!(small.len(), (W / 2 * (H / 2)) as usize, "Main at the new size");
-    assert!(green(&small) > 200_000, "the picture there: {}", green(&small));
+    assert_eq!(
+        small.len(),
+        (W / 2 * (H / 2)) as usize,
+        "Main at the new size"
+    );
+    assert!(
+        green(&small) > 200_000,
+        "the picture there: {}",
+        green(&small)
+    );
 }
 
 /// An effect on the input draws every frame: nothing is kept while it is
@@ -238,7 +270,11 @@ fn an_input_with_an_effect_on_is_put_together_every_frame() {
     over_mut(&mut mixer).effects[0].enabled = false;
     once_then_kept(&gpu, &mut mixer, "the effect off");
     let plain = main_picture(&gpu, &mixer);
-    assert!(red(&plain) > 900_000, "the picture as it is: {}", red(&plain));
+    assert!(
+        red(&plain) > 900_000,
+        "the picture as it is: {}",
+        red(&plain)
+    );
 }
 
 /// A deck made anew in another's place — the same UUID, the same count of
@@ -261,7 +297,11 @@ fn a_deck_made_anew_in_its_place_is_put_together() {
     let deck = &over(&mixer).decks[0].deck;
     assert_eq!(deck.rendered_frames(), 1, "drawn once, as the old one was");
     let main = main_picture(&gpu, &mixer);
-    assert!(green(&main) > 900_000, "the new deck's picture: {}", green(&main));
+    assert!(
+        green(&main) > 900_000,
+        "the new deck's picture: {}",
+        green(&main)
+    );
     assert_eq!(kept(&gpu, &mut mixer, 3), 3, "and kept after");
 }
 
@@ -276,14 +316,18 @@ fn an_input_that_shows_itself_is_put_together_every_frame() {
     assert_eq!(kept(&gpu, &mut mixer, 2), 2, "standing still");
 
     let over_uuid = over(&mixer).uuid().to_string();
-    let tap = Deck::new_from_tap(&gpu, TapSource::Channel(over_uuid), "itself", W, H)
-        .expect("a tap");
+    let tap =
+        Deck::new_from_tap(&gpu, TapSource::Channel(over_uuid), "itself", W, H).expect("a tap");
     let index = over_mut(&mut mixer).add_deck(tap);
     over_mut(&mut mixer).decks[index].mute = true;
     for frame in 0..4 {
         assert_eq!(kept(&gpu, &mut mixer, 1), 0, "frame {frame}: put together");
         let main = main_picture(&gpu, &mixer);
-        assert!(red(&main) > 900_000, "frame {frame}: the picture: {}", red(&main));
+        assert!(
+            red(&main) > 900_000,
+            "frame {frame}: the picture: {}",
+            red(&main)
+        );
     }
     assert!(
         over(&mixer).decks[index].deck.tapped_picture.is_none(),
@@ -296,7 +340,11 @@ fn an_input_that_shows_itself_is_put_together_every_frame() {
     for frame in 0..4 {
         assert_eq!(kept(&gpu, &mut mixer, 1), 0, "frame {frame}: put together");
         let main = main_picture(&gpu, &mixer);
-        assert!(green(&main) > 900_000, "frame {frame}: the new one: {}", green(&main));
+        assert!(
+            green(&main) > 900_000,
+            "frame {frame}: the new one: {}",
+            green(&main)
+        );
     }
 }
 
@@ -312,10 +360,14 @@ fn an_input_shown_in_the_overlay(gpu: &GpuContext) -> (Mixer, usize) {
         channel.add_deck(its_picture);
         channel.uuid().to_string()
     };
-    let tap = Deck::new_from_tap(gpu, TapSource::Channel(uuid), "the third input", W, H)
-        .expect("a tap");
+    let tap =
+        Deck::new_from_tap(gpu, TapSource::Channel(uuid), "the third input", W, H).expect("a tap");
     over_mut(&mut mixer).add_deck(tap);
-    assert_eq!(kept(gpu, &mut mixer, 1), 0, "the first frame is put together");
+    assert_eq!(
+        kept(gpu, &mut mixer, 1),
+        0,
+        "the first frame is put together"
+    );
     (mixer, shown)
 }
 
@@ -327,26 +379,50 @@ fn an_input_shown_in_the_overlay(gpu: &GpuContext) -> (Mixer, usize) {
 fn an_input_showing_another_is_kept_while_that_one_stands_still() {
     let gpu = headless_gpu();
     let (mut mixer, shown) = an_input_shown_in_the_overlay(&gpu);
-    assert_eq!(over(&mixer).drawn_onto, 1, "drawn straight from the other's picture");
+    assert_eq!(
+        over(&mixer).drawn_onto,
+        1,
+        "drawn straight from the other's picture"
+    );
     assert!(
         over(&mixer).decks[0].deck.tapped_picture.is_some(),
         "told which picture it shows"
     );
-    assert_eq!(kept(&gpu, &mut mixer, 5), 5, "the other standing still: kept");
+    assert_eq!(
+        kept(&gpu, &mut mixer, 5),
+        5,
+        "the other standing still: kept"
+    );
     let first = main_picture(&gpu, &mixer);
-    assert!(red(&first) > 900_000, "the other's picture on Main: {}", red(&first));
+    assert!(
+        red(&first) > 900_000,
+        "the other's picture on Main: {}",
+        red(&first)
+    );
     same_put_together(&gpu, &mut mixer, "another input shown");
     assert_eq!(kept(&gpu, &mut mixer, 3), 2, "the switch back on");
 
     mixer.channel_mut(shown).expect("the third input").decks[0]
         .deck
         .replace_picture(&gpu, &plain(GREEN));
-    assert_eq!(kept(&gpu, &mut mixer, 1), 0, "the other changed: put together that frame");
+    assert_eq!(
+        kept(&gpu, &mut mixer, 1),
+        0,
+        "the other changed: put together that frame"
+    );
     let second = main_picture(&gpu, &mixer);
-    assert!(green(&second) > 900_000, "its new picture at once: {}", green(&second));
+    assert!(
+        green(&second) > 900_000,
+        "its new picture at once: {}",
+        green(&second)
+    );
     assert_eq!(kept(&gpu, &mut mixer, 3), 3, "and kept after");
     let later = main_picture(&gpu, &mixer);
-    assert!(green(&later) > 900_000, "the new picture still: {}", green(&later));
+    assert!(
+        green(&later) > 900_000,
+        "the new picture still: {}",
+        green(&later)
+    );
 }
 
 /// The other input moving — an effect on it draws every frame — the input
@@ -362,14 +438,26 @@ fn an_input_showing_one_that_moves_is_put_together_every_frame() {
         .channel_mut(shown)
         .expect("the third input")
         .add_effect(invert(&gpu));
-    assert_eq!(kept(&gpu, &mut mixer, 4), 0, "the other every frame: this one too");
+    assert_eq!(
+        kept(&gpu, &mut mixer, 4),
+        0,
+        "the other every frame: this one too"
+    );
     let inverted = main_picture(&gpu, &mixer);
-    assert!(red(&inverted) < 1000, "the other inverted: {}", red(&inverted));
+    assert!(
+        red(&inverted) < 1000,
+        "the other inverted: {}",
+        red(&inverted)
+    );
 
     mixer.channel_mut(shown).expect("the third input").effects[0].enabled = false;
     once_then_kept(&gpu, &mut mixer, "the other still again");
     let plain = main_picture(&gpu, &mixer);
-    assert!(red(&plain) > 900_000, "the picture as it is: {}", red(&plain));
+    assert!(
+        red(&plain) > 900_000,
+        "the picture as it is: {}",
+        red(&plain)
+    );
 }
 
 /// A tap of Main, or of an input drawn after its own — round a loop, the
@@ -413,7 +501,11 @@ fn an_input_showing_main_or_one_drawn_after_it_is_put_together_every_frame() {
         .replace_picture(&gpu, &plain(GREEN));
     assert_eq!(kept(&gpu, &mut mixer, 2), 0, "put together still");
     let after = main_picture(&gpu, &mixer);
-    assert!(green(&after) > 900_000, "the new picture, a frame late: {}", green(&after));
+    assert!(
+        green(&after) > 900_000,
+        "the new picture, a frame late: {}",
+        green(&after)
+    );
 }
 
 /// The number of the picture the overlay holds now (`Channel::picture`).
@@ -434,7 +526,10 @@ fn no_two_inputs_pictures_have_the_same_number() {
         .load(Ordering::Relaxed);
     assert_ne!(number(&mixer), under, "no two the same");
     let next = crate::deck::next_picture();
-    assert!(next > number(&mixer) && next > under, "one count for all: {next}");
+    assert!(
+        next > number(&mixer) && next > under,
+        "one count for all: {next}"
+    );
 }
 
 /// An input's picture keeps its number while it is kept, and has another
@@ -466,7 +561,10 @@ fn an_inputs_picture_changed_for_the_one_before_has_another_number() {
     assert_eq!(number(&mixer), stood, "nothing to change it for: the same");
     over_mut(&mut mixer).ensure_tap(&gpu, W, H);
     over_mut(&mut mixer).swap_tap();
-    assert!(number(&mixer) > stood, "changed for the other: another number");
+    assert!(
+        number(&mixer) > stood,
+        "changed for the other: another number"
+    );
 }
 
 /// An input's picture made anew — the show another size — has another
@@ -497,7 +595,11 @@ fn a_layer_in_a_transition_is_put_together_every_frame() {
         ..DeckAutoTransition::new()
     });
     assert_eq!(kept(&gpu, &mut mixer, 4), 0, "in a transition: every frame");
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 2), 0, "the picture's frame kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 2),
+        0,
+        "the picture's frame kept"
+    );
     let phase = over(&mixer).decks[0].transition_phase();
     assert!(
         matches!(phase, DeckTransitionPhase::Transitioning { .. }),
@@ -520,7 +622,11 @@ fn an_input_drawn_to_be_left_clear_is_not_kept_instead() {
     let mut mixer = a_picture_shown(&gpu);
     mixer.skip_blank_channels = false;
     over_mut(&mut mixer).decks[0].mute = true;
-    assert_eq!(kept(&gpu, &mut mixer, 1), 0, "muted: put together, of nothing");
+    assert_eq!(
+        kept(&gpu, &mut mixer, 1),
+        0,
+        "muted: put together, of nothing"
+    );
     assert_eq!(kept(&gpu, &mut mixer, 3), 3, "and kept so");
     let clear = main_picture(&gpu, &mixer);
     assert!(red(&clear) < 1000, "none of the picture: {}", red(&clear));
@@ -543,7 +649,11 @@ fn a_decks_textures_made_anew_are_put_together() {
     over_mut(&mut mixer).decks[0].deck.fault("a test's fault");
     assert_eq!(kept(&gpu, &mut mixer, 3), 3, "its last frame, kept");
     let frozen = main_picture(&gpu, &mixer);
-    assert!(red(&frozen) > 900_000, "the picture still: {}", red(&frozen));
+    assert!(
+        red(&frozen) > 900_000,
+        "the picture still: {}",
+        red(&frozen)
+    );
 
     let drawn_before = over(&mixer).decks[0].deck.rendered_frames();
     over_mut(&mut mixer).decks[0].deck.resize(&gpu, W, H);
@@ -551,7 +661,11 @@ fn a_decks_textures_made_anew_are_put_together() {
     let drawn_after = over(&mixer).decks[0].deck.rendered_frames();
     assert_eq!(drawn_after, drawn_before, "with no drawing of it");
     let empty = main_picture(&gpu, &mixer);
-    assert!(red(&empty) < 1000, "what they hold — nothing: {}", red(&empty));
+    assert!(
+        red(&empty) < 1000,
+        "what they hold — nothing: {}",
+        red(&empty)
+    );
     assert_eq!(kept(&gpu, &mut mixer, 3), 3, "and kept after");
 }
 
@@ -607,7 +721,10 @@ fn a_deck_that_keeps_its_frame_is_not_timed_and_costs_nothing() {
     give_a_cost(&mut mixer);
     assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 0, "its frame kept");
     let (by_clock, on_gpu) = cost(&mixer);
-    assert!(by_clock <= 0.0 && on_gpu <= 0.0, "no cost: {by_clock} {on_gpu}");
+    assert!(
+        by_clock <= 0.0 && on_gpu <= 0.0,
+        "no cost: {by_clock} {on_gpu}"
+    );
     assert_eq!(pairs_held(&gpu, &mut mixer), 0, "and no pair held");
 
     over_mut(&mut mixer).decks[0]
@@ -620,9 +737,16 @@ fn a_deck_that_keeps_its_frame_is_not_timed_and_costs_nothing() {
 
     over_mut(&mut mixer).decks[0].deck.fault("a test's fault");
     give_a_cost(&mut mixer);
-    assert_eq!(pairs_held(&gpu, &mut mixer), 0, "kept from the GPU: no pair");
+    assert_eq!(
+        pairs_held(&gpu, &mut mixer),
+        0,
+        "kept from the GPU: no pair"
+    );
     let (by_clock, on_gpu) = cost(&mixer);
-    assert!(by_clock <= 0.0 && on_gpu <= 0.0, "nor a cost: {by_clock} {on_gpu}");
+    assert!(
+        by_clock <= 0.0 && on_gpu <= 0.0,
+        "nor a cost: {by_clock} {on_gpu}"
+    );
 }
 
 /// A deck faulted in its draw has drawn nothing either, though the draw
@@ -646,7 +770,10 @@ fn a_deck_faulted_in_its_draw_is_not_timed_and_costs_nothing() {
     let counted = deck.rendered_frames() - drawn_before;
     assert_eq!(counted, 1, "the draw was counted, and taken back");
     let (by_clock, on_gpu) = cost(&mixer);
-    assert!(by_clock <= 0.0 && on_gpu <= 0.0, "no cost: {by_clock} {on_gpu}");
+    assert!(
+        by_clock <= 0.0 && on_gpu <= 0.0,
+        "no cost: {by_clock} {on_gpu}"
+    );
 }
 
 /// A time the GPU took, read back a frame or two after the draw, is given
@@ -665,7 +792,10 @@ fn a_time_read_back_is_not_given_to_a_deck_that_draws_nothing() {
     slot.gpu_render_cost_us = 0.0;
     mixer.apply_gpu_times();
     let (by_clock, on_gpu) = cost(&mixer);
-    assert!(by_clock <= 0.0 && on_gpu <= 0.0, "no cost: {by_clock} {on_gpu}");
+    assert!(
+        by_clock <= 0.0 && on_gpu <= 0.0,
+        "no cost: {by_clock} {on_gpu}"
+    );
 
     over_mut(&mut mixer).decks[0].render_cost_us = 5.0;
     mixer.apply_gpu_times();
@@ -750,7 +880,11 @@ fn a_live_source_is_kept_while_its_picture_is_the_same() {
     assert_eq!(kept(&gpu, &mut mixer, 4), 0, "no number: every frame anew");
     assert_eq!(over(&mixer).drawn_onto, 1, "drawn straight onto its input");
     let first = main_picture(&gpu, &mixer);
-    assert!(red(&first) > 900_000, "its picture on Main: {}", red(&first));
+    assert!(
+        red(&first) > 900_000,
+        "its picture on Main: {}",
+        red(&first)
+    );
 
     over_mut(&mut mixer).decks[0].deck.external_source_picture = Some(1);
     assert_eq!(kept(&gpu, &mut mixer, 4), 3, "a number: once, then kept");
@@ -759,9 +893,17 @@ fn a_live_source_is_kept_while_its_picture_is_the_same() {
 
     fill(&gpu, &texture, GREEN);
     over_mut(&mut mixer).decks[0].deck.external_source_picture = Some(2);
-    assert_eq!(kept(&gpu, &mut mixer, 4), 3, "another number: once, then kept");
+    assert_eq!(
+        kept(&gpu, &mut mixer, 4),
+        3,
+        "another number: once, then kept"
+    );
     let second = main_picture(&gpu, &mixer);
-    assert!(green(&second) > 900_000, "the new picture: {}", green(&second));
+    assert!(
+        green(&second) > 900_000,
+        "the new picture: {}",
+        green(&second)
+    );
 
     // Half the size, its source too — drawn straight onto its input still —
     // and the number as it was: the input's picture is a new, empty one.
@@ -774,7 +916,11 @@ fn a_live_source_is_kept_while_its_picture_is_the_same() {
     render(&gpu, &mut mixer);
     assert_eq!(over(&mixer).drawn_onto, 1, "straight onto its input still");
     let resized = main_picture(&gpu, &mixer);
-    assert!(green(&resized) > 200_000, "put together: {}", green(&resized));
+    assert!(
+        green(&resized) > 200_000,
+        "put together: {}",
+        green(&resized)
+    );
     assert_eq!(kept(&gpu, &mut mixer, 3), 3, "and kept after");
 }
 
@@ -879,7 +1025,11 @@ fn a_clip_is_drawn_once_for_each_of_its_frames() {
     );
 
     mixer.keep_still_clips = false;
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 4, "switched off: every frame");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        4,
+        "switched off: every frame"
+    );
     assert_eq!(kept(&gpu, &mut mixer, 4), 0, "and its input put together");
     let every_frame = main_picture(&gpu, &mixer);
     let worst = differ(&as_kept, &every_frame);
@@ -976,7 +1126,11 @@ fn a_clip_kept_is_drawn_where_it_shows_and_again_when_more_shows() {
     assert!(share > 0.5, "and all of what shows round it: {share}");
 
     let _ = over_mut(&mut mixer).remove_deck(1);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "uncovered: drawn at once");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "uncovered: drawn at once"
+    );
     let share = over(&mixer).decks[0].deck.drawn_share();
     assert!(share >= 1.0, "all of it: {share}");
     let at_once = main_picture(&gpu, &mixer);
@@ -1027,29 +1181,73 @@ fn a_tap_drawing_its_own_frame_keeps_it_while_the_other_stands_still() {
     let gpu = headless_gpu();
     let (mut mixer, shown) = an_input_shown_in_the_overlay(&gpu);
     thumbnail_on_screen(&mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "in a frame of its own: drawn");
-    assert_eq!(over(&mixer).drawn_onto, 0, "not straight from the other's picture");
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "the other standing still: its frame kept");
-    assert_eq!(kept(&gpu, &mut mixer, 5), 5, "and its input's picture with it");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "in a frame of its own: drawn"
+    );
+    assert_eq!(
+        over(&mixer).drawn_onto,
+        0,
+        "not straight from the other's picture"
+    );
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 5),
+        0,
+        "the other standing still: its frame kept"
+    );
+    assert_eq!(
+        kept(&gpu, &mut mixer, 5),
+        5,
+        "and its input's picture with it"
+    );
     let first = main_picture(&gpu, &mixer);
-    assert!(red(&first) > 900_000, "the other's picture on Main: {}", red(&first));
+    assert!(
+        red(&first) > 900_000,
+        "the other's picture on Main: {}",
+        red(&first)
+    );
     same_put_together(&gpu, &mut mixer, "a tap's own frame kept");
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 1, "the switch back on: once more");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 3),
+        1,
+        "the switch back on: once more"
+    );
 
     mixer.channel_mut(shown).expect("the third input").decks[0]
         .deck
         .replace_picture(&gpu, &plain(GREEN));
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "the other changed: drawn that frame");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "the other changed: drawn that frame"
+    );
     let second = main_picture(&gpu, &mixer);
-    assert!(green(&second) > 900_000, "its new picture at once: {}", green(&second));
+    assert!(
+        green(&second) > 900_000,
+        "its new picture at once: {}",
+        green(&second)
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 0, "and kept after");
     let later = main_picture(&gpu, &mixer);
-    assert!(green(&later) > 900_000, "the new picture still: {}", green(&later));
+    assert!(
+        green(&later) > 900_000,
+        "the new picture still: {}",
+        green(&later)
+    );
 
     mixer.keep_still_inputs = false;
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 4, "the switch off: every frame");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        4,
+        "the switch off: every frame"
+    );
     mixer.keep_still_inputs = true;
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 1, "on again: once, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        1,
+        "on again: once, then kept"
+    );
 }
 
 /// The other input moving — an effect on it draws every frame — the tap
@@ -1060,20 +1258,40 @@ fn a_tap_drawing_its_own_frame_draws_every_picture_of_one_that_moves() {
     let gpu = headless_gpu();
     let (mut mixer, shown) = an_input_shown_in_the_overlay(&gpu);
     thumbnail_on_screen(&mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 1, "standing still: once, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 3),
+        1,
+        "standing still: once, then kept"
+    );
 
     mixer
         .channel_mut(shown)
         .expect("the third input")
         .add_effect(invert(&gpu));
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 4, "the other every frame: this one too");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        4,
+        "the other every frame: this one too"
+    );
     let inverted = main_picture(&gpu, &mixer);
-    assert!(red(&inverted) < 1000, "the other inverted: {}", red(&inverted));
+    assert!(
+        red(&inverted) < 1000,
+        "the other inverted: {}",
+        red(&inverted)
+    );
 
     mixer.channel_mut(shown).expect("the third input").effects[0].enabled = false;
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 1, "the other still again: once, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        1,
+        "the other still again: once, then kept"
+    );
     let plain = main_picture(&gpu, &mixer);
-    assert!(red(&plain) > 900_000, "the picture as it is: {}", red(&plain));
+    assert!(
+        red(&plain) > 900_000,
+        "the picture as it is: {}",
+        red(&plain)
+    );
 }
 
 /// Drawn straight from the other's picture for a while — its thumbnail off
@@ -1085,13 +1303,29 @@ fn a_tap_back_in_its_own_frame_keeps_it_only_of_the_same_picture() {
     let gpu = headless_gpu();
     let (mut mixer, shown) = an_input_shown_in_the_overlay(&gpu);
     thumbnail_on_screen(&mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 1, "a frame of its own, once");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 3),
+        1,
+        "a frame of its own, once"
+    );
 
     mixer.previewed_decks.clear();
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 2), 0, "drawn straight: no frame of its own");
-    assert_eq!(over(&mixer).drawn_onto, 1, "straight from the other's picture");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 2),
+        0,
+        "drawn straight: no frame of its own"
+    );
+    assert_eq!(
+        over(&mixer).drawn_onto,
+        1,
+        "straight from the other's picture"
+    );
     thumbnail_on_screen(&mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 2), 0, "back, the same picture: the frame it has");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 2),
+        0,
+        "back, the same picture: the frame it has"
+    );
     assert_eq!(over(&mixer).drawn_onto, 0, "its own frame put on its input");
     let same = main_picture(&gpu, &mixer);
     assert!(red(&same) > 900_000, "the other's picture: {}", red(&same));
@@ -1102,11 +1336,23 @@ fn a_tap_back_in_its_own_frame_keeps_it_only_of_the_same_picture() {
         .deck
         .replace_picture(&gpu, &plain(GREEN));
     render(&gpu, &mut mixer);
-    assert_eq!(over(&mixer).drawn_onto, 1, "the new picture, drawn straight");
+    assert_eq!(
+        over(&mixer).drawn_onto,
+        1,
+        "the new picture, drawn straight"
+    );
     thumbnail_on_screen(&mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "back, another picture: drawn at once");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "back, another picture: drawn at once"
+    );
     let now = main_picture(&gpu, &mixer);
-    assert!(green(&now) > 900_000, "the other's picture now: {}", green(&now));
+    assert!(
+        green(&now) > 900_000,
+        "the other's picture now: {}",
+        green(&now)
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 0, "and kept after");
 }
 
@@ -1118,22 +1364,46 @@ fn a_tap_back_in_its_own_frame_keeps_it_only_of_the_same_picture() {
 fn a_live_source_drawing_its_own_frame_keeps_it_by_its_picture() {
     let gpu = headless_gpu();
     let (mut mixer, texture) = a_live_source_in_its_own_frame(&gpu);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 4, "no number: drawn every frame");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        4,
+        "no number: drawn every frame"
+    );
     assert_eq!(over(&mixer).drawn_onto, 0, "in a frame of its own");
     let first = main_picture(&gpu, &mixer);
-    assert!(red(&first) > 900_000, "its picture on Main: {}", red(&first));
+    assert!(
+        red(&first) > 900_000,
+        "its picture on Main: {}",
+        red(&first)
+    );
 
     over_mut(&mut mixer).decks[0].deck.external_source_picture = Some(1);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 1, "a number: once, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        1,
+        "a number: once, then kept"
+    );
     assert_eq!(kept(&gpu, &mut mixer, 3), 3, "its input's picture with it");
     same_put_together(&gpu, &mut mixer, "a live source's own frame kept");
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 1, "the switch back on: once more");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 3),
+        1,
+        "the switch back on: once more"
+    );
 
     fill(&gpu, &texture, GREEN);
     over_mut(&mut mixer).decks[0].deck.external_source_picture = Some(2);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "another number: drawn that frame");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "another number: drawn that frame"
+    );
     let second = main_picture(&gpu, &mixer);
-    assert!(green(&second) > 900_000, "the new picture at once: {}", green(&second));
+    assert!(
+        green(&second) > 900_000,
+        "the new picture at once: {}",
+        green(&second)
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 0, "and kept after");
 }
 
@@ -1198,7 +1468,9 @@ fn a_live_source_kept_is_drawn_again_read_as_it_was_coded() {
     let gpu = headless_gpu();
     let (mut mixer, texture) = a_live_source_kept(&gpu);
     let coded = texture.create_view(&wgpu::TextureViewDescriptor::default());
-    over_mut(&mut mixer).decks[0].deck.external_source_coded_view = Some(coded);
+    over_mut(&mut mixer).decks[0]
+        .deck
+        .external_source_coded_view = Some(coded);
     drawn_again(&gpu, &mut mixer, "read as it was coded");
 }
 
@@ -1231,9 +1503,17 @@ fn a_capture_kept_is_drawn_again_sized_another_way() {
     deck.external_source_picture = Some(1);
     let mut mixer = mixer_with(&gpu, deck);
     thumbnail_on_screen(&mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 1, "its picture the same: once, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        1,
+        "its picture the same: once, then kept"
+    );
     let whole = main_picture(&gpu, &mixer);
-    assert!(red(&whole) > 900_000, "fitted within the show: {}", red(&whole));
+    assert!(
+        red(&whole) > 900_000,
+        "fitted within the show: {}",
+        red(&whole)
+    );
 
     over_mut(&mut mixer).decks[0]
         .deck
@@ -1242,7 +1522,11 @@ fn a_capture_kept_is_drawn_again_sized_another_way() {
         .expect("its capture")
         .config
         .scale_to = Some((W / 2, H / 2));
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "asked for half the size: drawn again");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "asked for half the size: drawn again"
+    );
     let half = main_picture(&gpu, &mixer);
     assert!(
         red(&half) > 200_000 && red(&half) < 260_000,
@@ -1271,18 +1555,30 @@ fn a_live_source_kept_is_drawn_where_it_shows_and_again_when_more_shows() {
     // Every deck in a frame of its own, drawn where it shows.
     mixer.direct_layers = false;
     over_mut(&mut mixer).add_deck(a_picture_in_picture(&gpu));
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 1, "its picture the same: once, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        1,
+        "its picture the same: once, then kept"
+    );
     assert_eq!(over(&mixer).drawn_onto, 0, "in a frame of its own");
     let share = over(&mixer).decks[0].deck.drawn_share();
     assert!(share < 0.9, "drawn round the picture over it only: {share}");
     assert!(share > 0.5, "and all of what shows round it: {share}");
 
     let _ = over_mut(&mut mixer).remove_deck(1);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "uncovered: drawn at once");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "uncovered: drawn at once"
+    );
     let share = over(&mixer).decks[0].deck.drawn_share();
     assert!(share >= 1.0, "all of it: {share}");
     let at_once = main_picture(&gpu, &mixer);
-    assert!(red(&at_once) > 900_000, "all of its picture: {}", red(&at_once));
+    assert!(
+        red(&at_once) > 900_000,
+        "all of its picture: {}",
+        red(&at_once)
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 0, "and kept after");
 }
 
@@ -1298,14 +1594,22 @@ fn a_live_source_with_nothing_to_draw_from_is_drawn_every_frame() {
     deck.external_source_picture = Some(1);
     let mut mixer = mixer_with(&gpu, deck);
     thumbnail_on_screen(&mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 4, "no view yet: every frame");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        4,
+        "no view yet: every frame"
+    );
     let nothing = main_picture(&gpu, &mixer);
     assert!(red(&nothing) < 1000, "nothing of it yet: {}", red(&nothing));
 
     over_mut(&mut mixer).decks[0].deck.external_source_view = Some(view);
     assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "its view come: drawn");
     let first = main_picture(&gpu, &mixer);
-    assert!(red(&first) > 900_000, "its picture at once: {}", red(&first));
+    assert!(
+        red(&first) > 900_000,
+        "its picture at once: {}",
+        red(&first)
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 3), 0, "and kept after");
 }
 

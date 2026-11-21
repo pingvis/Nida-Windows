@@ -60,8 +60,7 @@ pub(super) fn render_notifications(
             .fixed_pos(toast_rect.min)
             .order(egui::Order::Foreground)
             .show(ctx, |ui| {
-                let (rect, body) =
-                    ui.allocate_exact_size(toast_rect.size(), egui::Sense::click());
+                let (rect, body) = ui.allocate_exact_size(toast_rect.size(), egui::Sense::click());
                 let painter = ui.painter();
 
                 // Background

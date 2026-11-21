@@ -204,16 +204,16 @@ fn gpu_resident_picture_seek_pool_and_fallback() {
                 .unwrap(),
         );
     }
-    assert!(
-        converter
-            .copy(&native.decoded, (width, height), native.quarter_turns, 0.0)
-            .unwrap()
-            .is_none()
-    );
+    assert!(converter
+        .copy(&native.decoded, (width, height), native.quarter_turns, 0.0)
+        .unwrap()
+        .is_none());
     // Pressure retains the current decoder picture. A playing worker must use
     // bounded periodic retries even when its eligibility deadline is in the past.
     native.set_playing(true);
-    native.playback.last_advance = std::time::Instant::now().checked_sub(std::time::Duration::from_secs(1)).unwrap();
+    native.playback.last_advance = std::time::Instant::now()
+        .checked_sub(std::time::Duration::from_secs(1))
+        .unwrap();
     assert!(native.next_picture_deadline().is_some());
     let position = native.playback.position;
     let timestamp = native.decoded.timestamp().unwrap() as f64 * native.time_base - native.start;
@@ -251,12 +251,10 @@ fn gpu_resident_picture_seek_pool_and_fallback() {
     native.playback.show_frame = true;
     assert_ne!(native.next_frame().unwrap().unwrap(), [] as [u8; 0]);
     assert!(native.gpu.is_none());
-    assert!(
-        native
-            .delivery
-            .snapshot()
-            .fallback_reason
-            .unwrap()
-            .contains("Ping-pong")
-    );
+    assert!(native
+        .delivery
+        .snapshot()
+        .fallback_reason
+        .unwrap()
+        .contains("Ping-pong"));
 }

@@ -7,11 +7,11 @@
 
 mod actions;
 pub mod colour_sampler;
-pub(crate) mod preview_picker;
 mod data;
 pub(crate) mod keyboard;
 pub mod notifications;
 pub mod panels;
+pub(crate) mod preview_picker;
 pub mod runner;
 pub mod screen_layout;
 mod session;

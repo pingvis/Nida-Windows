@@ -1449,7 +1449,10 @@ fn black_bus(app: &mut VardaApp, name: &str, width: u32, height: u32) -> String 
         },
     );
     send_cmd(app, EngineCommand::BusCut { uuid: bus.clone() });
-    assert_eq!(app.production_buses().get(&bus).unwrap().program(), &BusInputRef::Black);
+    assert_eq!(
+        app.production_buses().get(&bus).unwrap().program(),
+        &BusInputRef::Black
+    );
     bus
 }
 
@@ -1739,9 +1742,17 @@ fn latency_survives_a_restart() {
         ));
     }
     let mut app = headless_app_in(dir.path()).expect("second app");
-    assert_eq!(app.frames_in_flight(), 1, "precondition: a fresh app starts on Low");
+    assert_eq!(
+        app.frames_in_flight(),
+        1,
+        "precondition: a fresh app starts on Low"
+    );
     let _ = app.load_workspace();
-    assert_eq!(app.frames_in_flight(), 2, "Normal must come back after a restart");
+    assert_eq!(
+        app.frames_in_flight(),
+        2,
+        "Normal must come back after a restart"
+    );
 }
 
 #[test]
@@ -2274,7 +2285,9 @@ fn dropped_files_load_in_the_order_they_were_dropped() {
     assert_eq!(order, [0, 1, 2, 3, 4]);
     // The loader counts a file done just after it sends it: a moment later.
     let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
-    while pending.load(std::sync::atomic::Ordering::Relaxed) != 0 && std::time::Instant::now() < until {
+    while pending.load(std::sync::atomic::Ordering::Relaxed) != 0
+        && std::time::Instant::now() < until
+    {
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
     assert_eq!(pending.load(std::sync::atomic::Ordering::Relaxed), 0);

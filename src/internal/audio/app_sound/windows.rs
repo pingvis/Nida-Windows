@@ -720,7 +720,10 @@ mod tests {
     #[ignore = "Real audio test: run three quiet tone fixtures and set NIDA_APP_AUDIO_FIXTURE"]
     fn native_process_audio_is_isolated_mixes_instances_and_stops_promptly() {
         #[derive(serde::Deserialize)]
-        #[expect(clippy::struct_field_names, reason = "PID suffixes match the external audio-fixture JSON schema")]
+        #[expect(
+            clippy::struct_field_names,
+            reason = "PID suffixes match the external audio-fixture JSON schema"
+        )]
         struct Fixture {
             first_pid: u32,
             second_pid: u32,

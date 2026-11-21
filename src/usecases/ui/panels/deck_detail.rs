@@ -5,8 +5,8 @@ use super::super::{
     PointCloudUI, ScreenCaptureUI, ShaderParamsUI, TapUI, UIActions, UIData,
 };
 use super::utils::{
-    format_time, render_collapsed_column, render_effect_drag_ghost,
-    render_effect_drag_handle, render_effect_drop_zone_row,
+    format_time, render_collapsed_column, render_effect_drag_ghost, render_effect_drag_handle,
+    render_effect_drop_zone_row,
 };
 use crate::channel::DeckRenderFps;
 use crate::engine::{EffectTarget, EngineCommand};
@@ -410,10 +410,12 @@ fn render_capture_target(
             actions.commands.push(EngineCommand::RescanCaptureTargets);
         }
         if let Some(target) = chosen {
-            actions.commands.push(EngineCommand::SetScreenCaptureTarget {
-                deck_uuid: deck.uuid.clone(),
-                target,
-            });
+            actions
+                .commands
+                .push(EngineCommand::SetScreenCaptureTarget {
+                    deck_uuid: deck.uuid.clone(),
+                    target,
+                });
         }
     });
     if capture.kept_by_name {
@@ -448,9 +450,9 @@ fn is_captured(
         (Some(kept), Some(of_target)) => {
             kept == of_target
                 && (target.label == capture.target_label
-                    || !listed.iter().any(|t| {
-                        t.uuid.as_ref() == Some(kept) && t.label == capture.target_label
-                    }))
+                    || !listed
+                        .iter()
+                        .any(|t| t.uuid.as_ref() == Some(kept) && t.label == capture.target_label))
         }
         // Where displays have no identity the name is all there is.
         (None, None) => !capture.kept_by_name && target.label == capture.target_label,
@@ -804,10 +806,12 @@ fn render_camera_latency(ui: &mut egui::Ui, deck: &DeckUIInfo, on: bool, actions
     ui.checkbox(&mut chosen, "Lowest latency")
         .on_hover_text(LOWEST_LATENCY_HINT);
     if chosen != on {
-        actions.commands.push(EngineCommand::SetCameraLowestLatency {
-            deck_uuid: deck.uuid.clone(),
-            on: chosen,
-        });
+        actions
+            .commands
+            .push(EngineCommand::SetCameraLowestLatency {
+                deck_uuid: deck.uuid.clone(),
+                on: chosen,
+            });
     }
 }
 
@@ -880,7 +884,8 @@ const CAMERA_PROFILE_HINT: &str = "Set as the camera is: a log or HLG picture is
 
 /// A LUT file being chosen for a camera layer: the dialog runs on a thread,
 /// and its answer is taken as the UI renders.
-type ChosenLut = std::sync::Arc<std::sync::Mutex<Option<std::sync::mpsc::Receiver<std::path::PathBuf>>>>;
+type ChosenLut =
+    std::sync::Arc<std::sync::Mutex<Option<std::sync::mpsc::Receiver<std::path::PathBuf>>>>;
 
 fn camera_lut_id(deck_uuid: &str) -> egui::Id {
     egui::Id::new(("camera_lut_chosen", deck_uuid))
@@ -1552,12 +1557,17 @@ pub(super) fn render_browser_source_settings(
 ) {
     if let Some(browser) = &deck.browser {
         if let Some(error) = &browser.error {
-            ui.add(egui::Label::new(egui::RichText::new(error).color(egui::Color32::YELLOW)).wrap());
+            ui.add(
+                egui::Label::new(egui::RichText::new(error).color(egui::Color32::YELLOW)).wrap(),
+            );
         } else if !browser.ready {
             ui.label("Loading website…");
         }
         let key = egui::Id::new(("browser_settings", &deck.uuid));
-        let (mut original, mut settings) = ui.data(|d| d.get_temp::<(crate::html::BrowserSettings, crate::html::BrowserSettings)>(key))
+        let (mut original, mut settings) = ui
+            .data(|d| {
+                d.get_temp::<(crate::html::BrowserSettings, crate::html::BrowserSettings)>(key)
+            })
             .unwrap_or_else(|| (browser.settings.clone(), browser.settings.clone()));
         if original != browser.settings {
             // Applied here, or changed through the API: show the live settings.
@@ -1565,11 +1575,13 @@ pub(super) fn render_browser_source_settings(
             settings = original.clone();
         }
         ui.label("URL");
-        ui.add(egui::TextEdit::singleline(&mut settings.url)
-            .id_salt(("browser_url", &deck.uuid))
-            .hint_text("https://… or data:text/html,…")
-            .desired_width(ui.available_width())
-            .clip_text(true));
+        ui.add(
+            egui::TextEdit::singleline(&mut settings.url)
+                .id_salt(("browser_url", &deck.uuid))
+                .hint_text("https://… or data:text/html,…")
+                .desired_width(ui.available_width())
+                .clip_text(true),
+        );
         ui.horizontal_wrapped(|ui| {
             ui.label("Width");
             ui.add(egui::DragValue::new(&mut settings.width).range(1..=4096));
@@ -1581,7 +1593,8 @@ pub(super) fn render_browser_source_settings(
         ui.horizontal_wrapped(|ui| {
             if ui.button("Apply source settings").clicked() {
                 actions.commands.push(EngineCommand::ConfigureBrowserDeck {
-                    deck_uuid: deck.uuid.clone(), settings: settings.clone(),
+                    deck_uuid: deck.uuid.clone(),
+                    settings: settings.clone(),
                 });
             }
             render_browser_reload(ui, deck, data, actions);
@@ -1593,17 +1606,39 @@ pub(super) fn render_browser_source_settings(
     let mut transparent = deck.transparent;
     let response = ui.checkbox(&mut transparent, "Transparent BG");
     if response.changed() {
-        actions.commands.push(EngineCommand::SetDeckTransparent { deck_uuid: deck.uuid.clone(), transparent });
+        actions.commands.push(EngineCommand::SetDeckTransparent {
+            deck_uuid: deck.uuid.clone(),
+            transparent,
+        });
     }
-    learn_overlay(ui, response.rect, format!("deck/{}/transparent", deck.uuid), data, actions);
+    learn_overlay(
+        ui,
+        response.rect,
+        format!("deck/{}/transparent", deck.uuid),
+        data,
+        actions,
+    );
 }
 
-fn render_browser_reload(ui: &mut egui::Ui, deck: &DeckUIInfo, data: &UIData, actions: &mut UIActions) {
+fn render_browser_reload(
+    ui: &mut egui::Ui,
+    deck: &DeckUIInfo,
+    data: &UIData,
+    actions: &mut UIActions,
+) {
     let reload = ui.button("⟳ Reload");
     if reload.clicked() {
-        actions.commands.push(EngineCommand::ReloadHtmlDeck { deck_uuid: deck.uuid.clone() });
+        actions.commands.push(EngineCommand::ReloadHtmlDeck {
+            deck_uuid: deck.uuid.clone(),
+        });
     }
-    learn_overlay(ui, reload.rect, format!("deck/{}/html/reload", deck.uuid), data, actions);
+    learn_overlay(
+        ui,
+        reload.rect,
+        format!("deck/{}/html/reload", deck.uuid),
+        data,
+        actions,
+    );
 }
 
 /// A deck's source settings: how its picture is scaled into the frame, the
@@ -2366,7 +2401,11 @@ pub(super) fn framing_indices(deck: &DeckUIInfo) -> Vec<usize> {
         .map(|(name, _)| *name)
         .chain([LAYER_MASK_EFFECT])
         .filter_map(|name| deck.effects.iter().position(|(_, n, ..)| n == name))
-        .chain(deck.effects.iter().position(|(_, n, ..)| is_frame_effect(n)))
+        .chain(
+            deck.effects
+                .iter()
+                .position(|(_, n, ..)| is_frame_effect(n)),
+        )
         .collect()
 }
 
@@ -2471,11 +2510,12 @@ pub(super) fn render_take_frame(
         .show(ui, |ui| {
             ui.set_width(super::switcher::TAKE_COLUMN_WIDTH - 12.0);
             ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
-                ui.label(egui::RichText::new("Send to").strong()).on_hover_text(
-                    "Cut / Fade put this input on a bus in place of what it shows; Back puts \
+                ui.label(egui::RichText::new("Send to").strong())
+                    .on_hover_text(
+                        "Cut / Fade put this input on a bus in place of what it shows; Back puts \
                      that back. To show it over what a bus shows, use Overlay (over Main) or \
                      Show on (lower thirds).",
-                );
+                    );
                 if let Some(ch) = data
                     .channels
                     .iter()
@@ -2618,7 +2658,10 @@ pub(super) fn render_framing(
 /// sits before Transform in the layer's chain, so the layer is moved and
 /// scaled frame and all.
 fn render_frame(ui: &mut egui::Ui, deck: &DeckUIInfo, data: &UIData, actions: &mut UIActions) {
-    let current = deck.effects.iter().find(|(_, name, ..)| is_frame_effect(name));
+    let current = deck
+        .effects
+        .iter()
+        .find(|(_, name, ..)| is_frame_effect(name));
     // A library with no frames offers none (a layer that has one, from a
     // show made with them, still shows it).
     if data.frames.is_empty() && current.is_none() {
@@ -2668,7 +2711,11 @@ fn frame_choices(ui: &mut egui::Ui, deck: &DeckUIInfo, data: &UIData, actions: &
     }
     for frame in &data.frames {
         let selected = current == Some(frame.name.as_str());
-        if ui.selectable_label(selected, frame.title.as_str()).clicked() && !selected {
+        if ui
+            .selectable_label(selected, frame.title.as_str())
+            .clicked()
+            && !selected
+        {
             actions.commands.push(EngineCommand::SetLayerFrame {
                 deck_uuid: deck.uuid.clone(),
                 frame: Some(frame.name.clone()),
@@ -3008,14 +3055,23 @@ fn render_effect_param_widgets(
     let srgb_key = cfg!(target_os = "windows") && effect.1 == "chroma_key";
     let linear_params;
     let params = if srgb_key {
-        linear_params = eff_params.params.iter().cloned().map(|mut param| {
-            if let ParamValue::Color(ref mut c) = param.value {
-                for component in &mut c[..3] { *component = crate::params::srgb_to_linear(*component); }
-            }
-            param
-        }).collect::<Vec<_>>();
+        linear_params = eff_params
+            .params
+            .iter()
+            .cloned()
+            .map(|mut param| {
+                if let ParamValue::Color(ref mut c) = param.value {
+                    for component in &mut c[..3] {
+                        *component = crate::params::srgb_to_linear(*component);
+                    }
+                }
+                param
+            })
+            .collect::<Vec<_>>();
         &linear_params
-    } else { &eff_params.params };
+    } else {
+        &eff_params.params
+    };
     widgets::render_effect_params(
         ui,
         params,
@@ -3026,12 +3082,16 @@ fn render_effect_param_widgets(
             value: if srgb_key {
                 match val {
                     ParamValue::Color(mut c) => {
-                        for component in &mut c[..3] { *component = super::super::preview_picker::srgb_from_linear(*component); }
+                        for component in &mut c[..3] {
+                            *component = super::super::preview_picker::srgb_from_linear(*component);
+                        }
                         ParamValue::Color(c)
                     }
                     other => other,
                 }
-            } else { val },
+            } else {
+                val
+            },
         },
         Some(
             &|name: &str, source_uuid: &str| EngineCommand::AssignModulation {
@@ -3136,7 +3196,10 @@ mod tests {
         let mut actions = UIActions::new();
         let h = harness(&data, &mut actions);
         h.get_by_label(&format!("{deck} result"));
-        assert!(h.query_by_label("Ch B result").is_none(), "not the whole input");
+        assert!(
+            h.query_by_label("Ch B result").is_none(),
+            "not the whole input"
+        );
         drop(h);
 
         let mut none_yet = ch_b_deck_selected();
@@ -3322,8 +3385,14 @@ mod tests {
             },
         ));
         let at = framed.effects.len() - 1;
-        assert!(framing_indices(framed).contains(&at), "not among the effects");
-        assert!(!is_frame_effect("⚠ blur — offline"), "another effect's shader gone");
+        assert!(
+            framing_indices(framed).contains(&at),
+            "not among the effects"
+        );
+        assert!(
+            !is_frame_effect("⚠ blur — offline"),
+            "another effect's shader gone"
+        );
         let deck = framed.clone();
         let mut actions = UIActions::new();
         {
@@ -3691,7 +3760,8 @@ mod tests {
             });
             h.run();
             assert_eq!(
-                h.query_by_label_contains("frames a second arrive").is_some(),
+                h.query_by_label_contains("frames a second arrive")
+                    .is_some(),
                 said,
                 "at {fps} fps"
             );
@@ -3880,11 +3950,13 @@ mod tests {
             let mut h = harness(&data, &mut actions);
             h.get_by_label("Picture profile:").click();
             h.run();
-            h.get_by_label(&CameraProfile::SonySLog3Cine.label()).click();
+            h.get_by_label(&CameraProfile::SonySLog3Cine.label())
+                .click();
             h.run();
             h.get_by_label("Picture profile:").click();
             h.run();
-            h.get_by_label("LUT: URSA Broadcast Film to Video.cube").click();
+            h.get_by_label("LUT: URSA Broadcast Film to Video.cube")
+                .click();
             h.run();
         }
         let sent: Vec<CameraProfile> = actions
@@ -4003,9 +4075,7 @@ mod tests {
     /// The fixture's first layer as a screen capture, on a desk whose
     /// capture box is "Display 1" and whose 4K "Display 2", a Keynote window
     /// open.
-    fn capture_picker(
-        capture: ScreenCaptureUI,
-    ) -> egui_kittest::Harness<'static, UIActions> {
+    fn capture_picker(capture: ScreenCaptureUI) -> egui_kittest::Harness<'static, UIActions> {
         let mut data = UIData::test_fixture();
         data.capture_targets = vec![
             listed("display", "Display 1", Some("capture"), 1920),
@@ -4105,14 +4175,14 @@ mod tests {
             listed("display", "Display 2", Some("4k"), 3840),
             listed("window", "Opening", None, 1280),
         ];
-        let marked =
-            |capture: &ScreenCaptureUI, targets: &[crate::engine::CaptureTargetSnapshot]| {
-                targets
-                    .iter()
-                    .filter(|t| is_captured(capture, t, targets))
-                    .map(|t| t.label.clone())
-                    .collect::<Vec<_>>()
-            };
+        let marked = |capture: &ScreenCaptureUI,
+                      targets: &[crate::engine::CaptureTargetSnapshot]| {
+            targets
+                .iter()
+                .filter(|t| is_captured(capture, t, targets))
+                .map(|t| t.label.clone())
+                .collect::<Vec<_>>()
+        };
         // The 4K, saved as "Display 1" when it was that.
         let the_4k = capture_of_display_1(Some("4k"));
         assert_eq!(marked(&the_4k, &targets), ["Display 2"]);

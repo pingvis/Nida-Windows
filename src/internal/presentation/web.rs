@@ -77,7 +77,11 @@ impl std::fmt::Debug for WebEvent {
                 attempt,
                 target,
                 ..
-            } => write!(f, "Captured({key}#{generation}/{attempt}, {})", target.label),
+            } => write!(
+                f,
+                "Captured({key}#{generation}/{attempt}, {})",
+                target.label
+            ),
             Self::Failed {
                 key,
                 generation,
@@ -99,7 +103,14 @@ pub trait WebEngine: Send {
     /// Open the page at `path` for `key` — the opening numbered
     /// `generation` — its picture `pixels` big, its media paused; once set
     /// up it goes to `slide` (when given) and says [`WebEvent::Ready`].
-    fn load(&mut self, key: &str, generation: u64, path: &Path, pixels: (u32, u32), slide: Option<u32>);
+    fn load(
+        &mut self,
+        key: &str,
+        generation: u64,
+        path: &Path,
+        pixels: (u32, u32),
+        slide: Option<u32>,
+    );
     /// Its media playing (on or coming), or paused (ready only).
     fn set_playing(&mut self, key: &str, playing: bool);
     /// Its sound silenced, or heard again.
@@ -323,7 +334,9 @@ mod mac {
         #[must_use]
         pub fn can_draw_off_screen() -> bool {
             AnyClass::get(c"WKWebView").is_some_and(|class| {
-                class.instance_method(sel!(_setWindowOcclusionDetectionEnabled:)).is_some()
+                class
+                    .instance_method(sel!(_setWindowOcclusionDetectionEnabled:))
+                    .is_some()
             })
         }
     }
@@ -365,24 +378,26 @@ mod mac {
             slide: Option<u32>,
         ) {
             let (key, path, tx) = (key.to_string(), path.to_path_buf(), self.tx.clone());
-            on_main(move |mtm| match open_page(mtm, &key, generation, &path, pixels, slide) {
-                Ok(()) => {
-                    // Given up on in time even should its scripts never
-                    // answer (a page stuck in a loop).
-                    let (late_key, late_tx) = (key.clone(), tx.clone());
-                    after(OVERDUE, move || overdue(&late_key, generation, &late_tx));
-                    watch(key, generation, tx);
-                    keep_telling();
-                }
-                Err(why) => {
-                    let _ = tx.send(WebEvent::Failed {
-                        key,
-                        generation,
-                        attempt: None,
-                        why,
-                    });
-                }
-            });
+            on_main(
+                move |mtm| match open_page(mtm, &key, generation, &path, pixels, slide) {
+                    Ok(()) => {
+                        // Given up on in time even should its scripts never
+                        // answer (a page stuck in a loop).
+                        let (late_key, late_tx) = (key.clone(), tx.clone());
+                        after(OVERDUE, move || overdue(&late_key, generation, &late_tx));
+                        watch(key, generation, tx);
+                        keep_telling();
+                    }
+                    Err(why) => {
+                        let _ = tx.send(WebEvent::Failed {
+                            key,
+                            generation,
+                            attempt: None,
+                            why,
+                        });
+                    }
+                },
+            );
         }
 
         fn set_playing(&mut self, key: &str, playing: bool) {
@@ -414,7 +429,12 @@ mod mac {
                 let found = PAGES.with_borrow(|pages| {
                     pages.get(&key).map(|page| {
                         let frame = page.window.frame();
-                        (page.window.windowNumber(), frame.size, page.pixels, page.generation)
+                        (
+                            page.window.windowNumber(),
+                            frame.size,
+                            page.pixels,
+                            page.generation,
+                        )
                     })
                 });
                 if let Some((number, size, pixels, generation)) = found {
@@ -728,7 +748,9 @@ mod mac {
             if there || since.elapsed() > ARRIVE_WITHIN {
                 after(DRAWN, move || ready(&key, generation, &tx));
             } else {
-                after(ARRIVING_EVERY, move || arrive(key, generation, n, since, tx));
+                after(ARRIVING_EVERY, move || {
+                    arrive(key, generation, n, since, tx)
+                });
             }
         });
     }
@@ -879,9 +901,8 @@ mod mac {
     /// Tell the sound side which processes are this Nida's web talks':
     /// theirs is web talks' sound, and nothing else's.
     fn tell_processes() {
-        let pids: BTreeSet<i32> = PAGES.with_borrow(|pages| {
-            pages.values().flat_map(|p| processes_of(&p.web)).collect()
-        });
+        let pids: BTreeSet<i32> =
+            PAGES.with_borrow(|pages| pages.values().flat_map(|p| processes_of(&p.web)).collect());
         if TOLD.with_borrow(|told| *told != pids) {
             log::info!("Web talks: their sound is WebKit's processes {pids:?}");
             TOLD.set(pids.clone());
@@ -1194,7 +1215,10 @@ impl ScreenCaptureBackend for Blind {
         None
     }
 
-    fn set_config(&mut self, _config: &CaptureConfig) -> Result<(), crate::screen_capture::backend::CaptureError> {
+    fn set_config(
+        &mut self,
+        _config: &CaptureConfig,
+    ) -> Result<(), crate::screen_capture::backend::CaptureError> {
         Ok(())
     }
 }
@@ -1212,7 +1236,12 @@ impl FakeWeb {
     pub fn pages(&self) -> Vec<(String, u32, bool)> {
         self.state
             .lock()
-            .map(|s| s.pages.iter().map(|(k, (at, p, _))| (k.clone(), *at, *p)).collect())
+            .map(|s| {
+                s.pages
+                    .iter()
+                    .map(|(k, (at, p, _))| (k.clone(), *at, *p))
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -1337,7 +1366,14 @@ const FAKE_SLIDES: u32 = 5;
 
 #[cfg(any(test, feature = "test-fixtures"))]
 impl WebEngine for FakeWeb {
-    fn load(&mut self, key: &str, generation: u64, path: &Path, _pixels: (u32, u32), slide: Option<u32>) {
+    fn load(
+        &mut self,
+        key: &str,
+        generation: u64,
+        path: &Path,
+        _pixels: (u32, u32),
+        slide: Option<u32>,
+    ) {
         let Ok(mut s) = self.state.lock() else {
             return;
         };
@@ -1399,7 +1435,8 @@ impl WebEngine for FakeWeb {
 
     fn resize(&mut self, key: &str, pixels: (u32, u32)) {
         if let Ok(mut s) = self.state.lock() {
-            s.log.push(format!("resize {key} {}x{}", pixels.0, pixels.1));
+            s.log
+                .push(format!("resize {key} {}x{}", pixels.0, pixels.1));
         }
     }
 
@@ -1472,7 +1509,9 @@ mod tests {
         let next = step_js(Go::Next).unwrap();
         assert!(next.contains("Reveal.next();return true;"), "{next}");
         assert!(step_js(Go::Previous).unwrap().contains("Reveal.prev()"));
-        assert!(step_js(Go::First).unwrap().contains("Reveal.slide(0,0,-1);"));
+        assert!(step_js(Go::First)
+            .unwrap()
+            .contains("Reveal.slide(0,0,-1);"));
         assert!(step_js(Go::Last).unwrap().contains("all[all.length-1]"));
         assert_eq!(step_js(Go::Slide(4)), None);
     }
@@ -1488,7 +1527,9 @@ mod tests {
         assert!(!is_page_program(&format!(
             "{at}/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU"
         )));
-        assert!(!is_page_program("/Applications/Safari.app/Contents/MacOS/Safari"));
+        assert!(!is_page_program(
+            "/Applications/Safari.app/Contents/MacOS/Safari"
+        ));
         assert!(!is_page_program("/tmp/com.apple.WebKit.WebContent"));
     }
 

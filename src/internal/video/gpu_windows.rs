@@ -5,18 +5,18 @@
 //! slot is released by the *consuming command buffer's* completion callback.
 //! Dropping an unconsumed mailbox frame releases its slot immediately.
 use super::gpu_colour::Params;
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{bail, ensure, Context, Result};
 use ffmpeg_next as ffmpeg;
 use std::{
     mem::ManuallyDrop,
     os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle},
-    sync::{Arc, atomic::Ordering},
+    sync::{atomic::Ordering, Arc},
     time::{Duration, Instant},
 };
 use wgpu::util::DeviceExt;
 use windows::{
-    Win32::Graphics::{Direct3D12 as dx12, Dxgi::Common as dxgi},
     core::Interface,
+    Win32::Graphics::{Direct3D12 as dx12, Dxgi::Common as dxgi},
 };
 
 #[cfg(test)]

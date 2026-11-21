@@ -79,23 +79,26 @@ fn render_bus(ui: &mut egui::Ui, bus_ui: &BusUI, data: &UIData, actions: &mut UI
         let roomy = ui.available_width() >= name_width + MENUS_ROOM;
         let header = |ui: &mut egui::Ui, actions: &mut UIActions| {
             let name = ui
-                .add(egui::Label::new(egui::RichText::new(&bus.name).strong()).sense(egui::Sense::click()))
+                .add(
+                    egui::Label::new(egui::RichText::new(&bus.name).strong())
+                        .sense(egui::Sense::click()),
+                )
                 .on_hover_text("Double-click to rename; right-click for more");
             if name.double_clicked() {
                 super::rename::open_bus(ui.ctx(), uuid, &bus.name);
             }
             name.context_menu(|ui| {
-                    if ui.button("Rename bus…").clicked() {
-                        super::rename::open_bus(ui.ctx(), uuid, &bus.name);
-                        ui.close();
-                    }
-                    if ui.button("Remove bus").clicked() {
-                        actions
-                            .commands
-                            .push(EngineCommand::RemoveBus { uuid: uuid.clone() });
-                        ui.close();
-                    }
-                });
+                if ui.button("Rename bus…").clicked() {
+                    super::rename::open_bus(ui.ctx(), uuid, &bus.name);
+                    ui.close();
+                }
+                if ui.button("Remove bus").clicked() {
+                    actions
+                        .commands
+                        .push(EngineCommand::RemoveBus { uuid: uuid.clone() });
+                    ui.close();
+                }
+            });
             if roomy {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     render_screen_picker(ui, bus_ui, data, actions);
@@ -243,9 +246,12 @@ fn render_sources(
     }
     if shown == 0 {
         ui.label(
-            egui::RichText::new(format!("No buttons on {} — choose some in Buttons ▾", bus.name))
-                .small()
-                .weak(),
+            egui::RichText::new(format!(
+                "No buttons on {} — choose some in Buttons ▾",
+                bus.name
+            ))
+            .small()
+            .weak(),
         );
     }
 }
@@ -314,9 +320,7 @@ fn source_button(
         painter.galley(egui::pos2(rect.center().x, top), galley, colour);
     }
     let label = label.to_string();
-    response.widget_info(move || {
-        egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label)
-    });
+    response.widget_info(move || egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label));
     response
 }
 
@@ -886,7 +890,9 @@ mod tests {
                 });
             harness.get_by_value("Off").click();
             harness.run_steps(4);
-            harness.get_by_label("UltraStudio Monitor 3G (Blackmagic)").click();
+            harness
+                .get_by_label("UltraStudio Monitor 3G (Blackmagic)")
+                .click();
             harness.run_steps(4);
         }
         assert!(
@@ -1201,7 +1207,11 @@ mod tests {
         let black = harness
             .get_by_role_and_label(egui::accesskit::Role::Button, "Black")
             .rect();
-        assert_eq!(long.size(), short.size(), "a long name must not widen its button");
+        assert_eq!(
+            long.size(),
+            short.size(),
+            "a long name must not widen its button"
+        );
         assert_eq!(black.size(), short.size());
         assert_eq!(short.size(), SOURCE_BUTTON);
     }
@@ -1223,8 +1233,14 @@ mod tests {
             .fold(f32::MIN, f32::max);
         for take in ["CUT", "AUTO"] {
             let rect = harness.get_by_label(take).rect();
-            assert!(rect.left() > sources_right, "{take} at {rect:?}, sources end {sources_right}");
-            assert!(rect.width() > SOURCE_BUTTON.x, "{take} is not bigger: {rect:?}");
+            assert!(
+                rect.left() > sources_right,
+                "{take} at {rect:?}, sources end {sources_right}"
+            );
+            assert!(
+                rect.width() > SOURCE_BUTTON.x,
+                "{take} is not bigger: {rect:?}"
+            );
         }
     }
 
@@ -1233,10 +1249,8 @@ mod tests {
     #[test]
     fn a_bus_row_shows_only_the_buttons_chosen_for_it() {
         let mut data = UIData::test_fixture();
-        data.buses[0].bus.hidden_sources = vec![
-            BusInputRef::Black,
-            BusInputRef::Channel("ca000001".into()),
-        ];
+        data.buses[0].bus.hidden_sources =
+            vec![BusInputRef::Black, BusInputRef::Channel("ca000001".into())];
         let mut harness = harness_of(data, egui::vec2(700.0, 480.0));
         harness.run_steps(2);
         assert!(harness
@@ -1300,7 +1314,9 @@ mod tests {
             "{commands:?}"
         );
         assert!(
-            !commands.iter().any(|c| matches!(c, EngineCommand::SetBusPreview { .. })),
+            !commands
+                .iter()
+                .any(|c| matches!(c, EngineCommand::SetBusPreview { .. })),
             "a right-click stages nothing: {commands:?}"
         );
     }
@@ -1337,13 +1353,19 @@ mod tests {
                 let rect = harness.get_by_label(take).rect();
                 assert!(rect.right() <= width, "{take} at {rect:?} in {width}");
                 if width < 300.0 {
-                    assert!(rect.top() > black.bottom(), "{take} under the sources: {rect:?}");
+                    assert!(
+                        rect.top() > black.bottom(),
+                        "{take} under the sources: {rect:?}"
+                    );
                 } else {
                     assert!(rect.left() > black.right(), "{take} beside the sources");
                 }
             }
             let screen = harness.get_by_value("Off").rect();
-            assert!(screen.right() <= width, "the Screen picker at {screen:?} in {width}");
+            assert!(
+                screen.right() <= width,
+                "the Screen picker at {screen:?} in {width}"
+            );
             let add = harness.get_by_label("+ Bus").rect();
             assert!(add.top() < 520.0, "+ Bus at {add:?} in {width}");
         }
@@ -1365,7 +1387,10 @@ mod tests {
                 rect.left() >= name.right() || rect.top() >= name.bottom(),
                 "{menu} at {rect:?} over the name at {name:?}"
             );
-            assert!(rect.left() >= 0.0 && rect.right() <= width, "{menu} at {rect:?}");
+            assert!(
+                rect.left() >= 0.0 && rect.right() <= width,
+                "{menu} at {rect:?}"
+            );
         }
         let screen = harness.get_by_value("Off").rect();
         assert!(screen.left() >= name.right() || screen.top() >= name.bottom());

@@ -516,7 +516,14 @@ pub(super) fn render_deck_column(
     ui.label(egui::RichText::new("Playlist").strong());
     ui.horizontal(|ui| transport(ui, &deck.uuid, list, data, actions));
     if let Some(playback) = &deck.video_playback {
-        super::transport::render_transport(ui, Some((deck, playback)), false, 350.0, false, actions);
+        super::transport::render_transport(
+            ui,
+            Some((deck, playback)),
+            false,
+            350.0,
+            false,
+            actions,
+        );
     }
     let now = list
         .shown

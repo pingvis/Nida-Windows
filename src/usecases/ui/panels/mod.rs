@@ -37,21 +37,21 @@ mod notifications_overlay;
 mod out_meters;
 mod outputs;
 mod playlist;
-mod presentation;
 mod popovers;
+mod presentation;
 mod record;
 mod rename;
 mod right_panel;
 mod rundown;
 mod screens;
 mod sequence;
-mod slides;
 mod show_menu;
+mod slides;
 mod stage;
 mod stream;
 mod switcher;
-mod timer;
 mod text;
+mod timer;
 mod tonemap;
 mod transport;
 pub(crate) mod utils;
@@ -103,7 +103,11 @@ pub(super) type DropArea = (egui::Rect, egui::LayerId);
 /// Channels and Inputs side by side — adds its own, and a drop on either
 /// goes to it.
 pub(super) fn publish_drop_rect(ui: &egui::Ui, ch_idx: usize, rect: egui::Rect) {
-    publish_drop_area(ui.ctx(), ch_idx, (rect.intersect(ui.clip_rect()), ui.layer_id()));
+    publish_drop_area(
+        ui.ctx(),
+        ch_idx,
+        (rect.intersect(ui.clip_rect()), ui.layer_id()),
+    );
 }
 
 fn publish_drop_area(ctx: &egui::Context, ch_idx: usize, area: DropArea) {
@@ -128,7 +132,10 @@ pub(super) fn drop_areas(ctx: &egui::Context, ch_idx: usize) -> Vec<DropArea> {
 
 /// The rects of [`drop_areas`].
 pub(super) fn drop_rects(ctx: &egui::Context, ch_idx: usize) -> Vec<egui::Rect> {
-    drop_areas(ctx, ch_idx).into_iter().map(|(rect, _)| rect).collect()
+    drop_areas(ctx, ch_idx)
+        .into_iter()
+        .map(|(rect, _)| rect)
+        .collect()
 }
 
 /// What is in front at `pos` for a drop: the layer drawn on top there — a
@@ -241,7 +248,12 @@ fn take_to_main_shortcuts(ui: &egui::Ui, data: &UIData, actions: &mut UIActions)
 /// its own, on its own keys and its own text field (see
 /// `dock::render_window`). `was_typing`: a text field was typed into as the
 /// frame began there.
-pub(super) fn keymap_shortcuts(ui: &egui::Ui, data: &UIData, actions: &mut UIActions, was_typing: bool) {
+pub(super) fn keymap_shortcuts(
+    ui: &egui::Ui,
+    data: &UIData,
+    actions: &mut UIActions,
+    was_typing: bool,
+) {
     use crate::keymap::{ActionId, KeyTarget};
     use crate::usecases::ui::keyboard::collect_pressed_keys;
     let pressed = collect_pressed_keys(ui.ctx());
@@ -348,13 +360,15 @@ const TOP_BAR_MARGIN: f32 = 12.0;
 /// to the bar's end now, less what the other items took last frame, against
 /// how much each form takes now; the first frame has them whole.
 fn live_stats_tier(ui: &egui::Ui, data: &UIData) -> (u8, [f32; 3], f32) {
-    let widths = [0u8, 1, 2].map(|tier| {
-        stream::stats_width(ui, data, tier) + record::stats_width(ui, data, tier)
-    });
+    let widths = [0u8, 1, 2]
+        .map(|tier| stream::stats_width(ui, data, tier) + record::stats_width(ui, data, tier));
     // The buttons as they are now: they widen by their clocks as a stream
     // or a recording starts, the very frame the stats appear.
     let buttons = stream::button_width(ui, data) + record::button_width(ui, data);
-    let Some(last) = ui.ctx().data(|d| d.get_temp::<TopBarRoom>(top_bar_room_id())) else {
+    let Some(last) = ui
+        .ctx()
+        .data(|d| d.get_temp::<TopBarRoom>(top_bar_room_id()))
+    else {
         return (0, widths, buttons);
     };
     let room = ui.available_width() - last.others - last.right - buttons;
@@ -696,8 +710,11 @@ pub fn render_ui(ui: &mut egui::Ui, data: &UIData) -> UIActions {
     // After the settings window has looked at the selection, which a take
     // changes without moving that window.
     main_desk::swap_preview_after_take(ui.ctx(), data, &mut actions);
-    let own_windows: Vec<egui::ViewportId> =
-        screen.windows.iter().map(|w| dock::window_viewport(w.pane)).collect();
+    let own_windows: Vec<egui::ViewportId> = screen
+        .windows
+        .iter()
+        .map(|w| dock::window_viewport(w.pane))
+        .collect();
     rename::render_rename_in(ui.ctx(), data, &mut actions, &own_windows);
     // A Rundown in a window of its own opens its step windows there.
     if !screen.in_window(crate::usecases::ui::screen_layout::Pane::Rundown) {
@@ -836,7 +853,10 @@ mod tests {
             harness.state_mut().stream_status = live.stream_status.clone();
             harness.state_mut().record = live.record.clone();
             harness.step();
-            assert!(clear_of_the_right(&harness), "{width} wide: the first live frame");
+            assert!(
+                clear_of_the_right(&harness),
+                "{width} wide: the first live frame"
+            );
         }
     }
 
@@ -915,16 +935,20 @@ mod tests {
         let ctx = egui::Context::default();
         // The fonts set in one pass are used from the next.
         for _ in 0..2 {
-            let mut pass =
-                ctx.run_ui(egui::RawInput::default(), |ui| complete_the_fonts(ui.ctx()));
+            let mut pass = ctx.run_ui(egui::RawInput::default(), |ui| complete_the_fonts(ui.ctx()));
             pass.textures_delta.clear();
         }
         let font = egui::FontId::proportional(12.0);
         let literal = |line: &str| -> Vec<String> {
-            line.split('"').skip(1).step_by(2).map(str::to_string).collect()
+            line.split('"')
+                .skip(1)
+                .step_by(2)
+                .map(str::to_string)
+                .collect()
         };
         let mut boxes = std::collections::BTreeSet::new();
-        let mut dirs = vec![std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/usecases/ui")];
+        let mut dirs =
+            vec![std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/usecases/ui")];
         while let Some(dir) = dirs.pop() {
             for entry in std::fs::read_dir(&dir).expect("the UI sources") {
                 let path = entry.expect("an entry").path();
@@ -944,7 +968,8 @@ mod tests {
                         for c in piece.chars() {
                             // Emoji joiners, presentation selectors and
                             // combining marks have no width of their own.
-                            let marks = matches!(c, '\u{0300}'..='\u{036f}' | '\u{20d0}'..='\u{20ff}');
+                            let marks =
+                                matches!(c, '\u{0300}'..='\u{036f}' | '\u{20d0}'..='\u{20ff}');
                             if c.is_ascii() || marks || c == '\u{fe0f}' || c == '\u{200d}' {
                                 continue;
                             }
@@ -996,7 +1021,10 @@ mod tests {
         let first = toast(1).expect("the first toast");
         assert!(first.height() < 140.0, "six lines at most: {first:?}");
         assert!(toast(2).is_some(), "a second fits");
-        assert!(toast(3).is_none(), "a third would run past 40 % of the window");
+        assert!(
+            toast(3).is_none(),
+            "a third would run past 40 % of the window"
+        );
 
         let at = first.center();
         harness.event(egui::Event::PointerMoved(at));
@@ -1009,7 +1037,11 @@ mod tests {
             });
             harness.run_steps(1);
         }
-        assert_eq!(harness.state().as_slice(), [1], "the toast clicked, put away");
+        assert_eq!(
+            harness.state().as_slice(),
+            [1],
+            "the toast clicked, put away"
+        );
     }
 
     /// A toast arriving between a press on another and its release — taking
@@ -1194,9 +1226,21 @@ mod tests {
         let layer = egui::LayerId::background();
         publish_drop_area(&ctx, 0, (column, layer));
         publish_drop_area(&ctx, 0, (tile, layer));
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(100.0, 300.0), 1), Some(0), "its column");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(500.0, 100.0), 1), Some(0), "its tile");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(350.0, 100.0), 1), None, "between");
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(100.0, 300.0), 1),
+            Some(0),
+            "its column"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(500.0, 100.0), 1),
+            Some(0),
+            "its tile"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(350.0, 100.0), 1),
+            None,
+            "between"
+        );
     }
 
     /// A view scrolled half out of its panel takes drops only where it is in
@@ -1212,11 +1256,26 @@ mod tests {
         for _ in 0..2 {
             let mut drawn = ctx.run_ui(egui::RawInput::default(), |ui| {
                 egui::CentralPanel::default().show(ui, |ui| {
-                    ui.set_clip_rect(egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(400.0, 600.0)));
+                    ui.set_clip_rect(egui::Rect::from_min_size(
+                        egui::pos2(0.0, 0.0),
+                        egui::vec2(400.0, 600.0),
+                    ));
                     publish_drop_rect(ui, 0, column);
                     let cards: insertion::Cards = vec![
-                        ("deck0".into(), egui::Rect::from_min_max(egui::pos2(10.0, 120.0), egui::pos2(390.0, 200.0))),
-                        ("deck1".into(), egui::Rect::from_min_max(egui::pos2(10.0, 210.0), egui::pos2(390.0, 290.0))),
+                        (
+                            "deck0".into(),
+                            egui::Rect::from_min_max(
+                                egui::pos2(10.0, 120.0),
+                                egui::pos2(390.0, 200.0),
+                            ),
+                        ),
+                        (
+                            "deck1".into(),
+                            egui::Rect::from_min_max(
+                                egui::pos2(10.0, 210.0),
+                                egui::pos2(390.0, 290.0),
+                            ),
+                        ),
                     ];
                     insertion::publish_cards(ui, 0, cards, column);
                 });
@@ -1226,23 +1285,49 @@ mod tests {
                         // Ch 0's view at its left, Ch 1's beside it.
                         let (rect, _) = ui.allocate_exact_size(window.size(), egui::Sense::hover());
                         let split = rect.left() + 50.0;
-                        publish_drop_rect(ui, 0, egui::Rect::from_min_max(rect.min, egui::pos2(split, rect.bottom())));
-                        publish_drop_rect(ui, 1, egui::Rect::from_min_max(egui::pos2(split, rect.top()), rect.max));
+                        publish_drop_rect(
+                            ui,
+                            0,
+                            egui::Rect::from_min_max(rect.min, egui::pos2(split, rect.bottom())),
+                        );
+                        publish_drop_rect(
+                            ui,
+                            1,
+                            egui::Rect::from_min_max(egui::pos2(split, rect.top()), rect.max),
+                        );
                     });
             });
             drawn.textures_delta.clear();
         }
-        assert_eq!(drop_rects(&ctx, 0).first().map(egui::Rect::right), Some(400.0), "in sight only");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(500.0, 300.0), 2), None, "the hidden part");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(350.0, 400.0), 2), Some(0), "the column");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(250.0, 200.0), 2), Some(1), "the window in front");
+        assert_eq!(
+            drop_rects(&ctx, 0).first().map(egui::Rect::right),
+            Some(400.0),
+            "in sight only"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(500.0, 300.0), 2),
+            None,
+            "the hidden part"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(350.0, 400.0), 2),
+            Some(0),
+            "the column"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(250.0, 200.0), 2),
+            Some(1),
+            "the window in front"
+        );
         // Ch 0's own view in the window, over its column's cards: no spot
         // between cards it does not show.
         let over = egui::pos2(120.0, 215.0);
         assert!(window.contains(over));
         assert_eq!(drop_channel_at(&ctx, over, 2), Some(0));
         assert_eq!(insertion::insertion_at(&ctx, 0, over).line, None);
-        assert!(insertion::insertion_at(&ctx, 0, egui::pos2(350.0, 215.0)).line.is_some());
+        assert!(insertion::insertion_at(&ctx, 0, egui::pos2(350.0, 215.0))
+            .line
+            .is_some());
     }
 
     /// A window in front with no drop target there — the Stream window over
@@ -1288,17 +1373,38 @@ mod tests {
                     .order(egui::Order::Foreground)
                     .fixed_pos(egui::pos2(700.0, 200.0))
                     .show(ui.ctx(), |ui| {
-                        let _ = ui.allocate_exact_size(egui::vec2(80.0, 80.0), egui::Sense::hover());
+                        let _ =
+                            ui.allocate_exact_size(egui::vec2(80.0, 80.0), egui::Sense::hover());
                     });
             });
             drawn.textures_delta.clear();
         }
         let under_stream = egui::pos2(100.0, 62.0);
-        assert_eq!(drop_channel_at(&ctx, under_stream, 2), None, "the Stream window's");
-        assert_eq!(insertion::insertion_at(&ctx, 0, under_stream).line, None, "no hidden spot");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(300.0, 400.0), 2), Some(0), "the column");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(600.0, 100.0), 2), Some(1), "the settings");
-        assert_eq!(drop_channel_at(&ctx, egui::pos2(720.0, 220.0), 2), None, "a window over it");
+        assert_eq!(
+            drop_channel_at(&ctx, under_stream, 2),
+            None,
+            "the Stream window's"
+        );
+        assert_eq!(
+            insertion::insertion_at(&ctx, 0, under_stream).line,
+            None,
+            "no hidden spot"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(300.0, 400.0), 2),
+            Some(0),
+            "the column"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(600.0, 100.0), 2),
+            Some(1),
+            "the settings"
+        );
+        assert_eq!(
+            drop_channel_at(&ctx, egui::pos2(720.0, 220.0), 2),
+            None,
+            "a window over it"
+        );
     }
 
     /// The input settings window is drawn over the channel views, so a drop
@@ -1310,11 +1416,10 @@ mod tests {
         let window = egui::Rect::from_min_size(egui::pos2(100.0, 100.0), egui::vec2(300.0, 200.0));
         publish_drop_area(&ctx, 0, (whole, egui::LayerId::background()));
         ctx.memory_mut(|m| {
-            m.data
-                .insert_temp(
-                    channel_settings::drop_window_id(),
-                    (1_usize, window, egui::LayerId::background()),
-                );
+            m.data.insert_temp(
+                channel_settings::drop_window_id(),
+                (1_usize, window, egui::LayerId::background()),
+            );
         });
         assert_eq!(drop_channel_at(&ctx, egui::pos2(200.0, 200.0), 2), Some(1));
         assert_eq!(drop_channel_at(&ctx, egui::pos2(600.0, 500.0), 2), Some(0));

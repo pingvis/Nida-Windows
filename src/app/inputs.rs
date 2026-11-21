@@ -439,8 +439,7 @@ impl VardaApp {
         }
         // An opening for a source no longer wanted — another patched, or LTC
         // off — is not waited for: patched again later, it is opened afresh.
-        if self.input.ltc_opening.is_some()
-            && self.input.ltc_opening != wanted.map(|w| w.source_id)
+        if self.input.ltc_opening.is_some() && self.input.ltc_opening != wanted.map(|w| w.source_id)
         {
             self.input.ltc_opening = None;
         }
@@ -701,11 +700,13 @@ mod tests {
             return;
         };
         app.audio_manager = crate::audio::AudioManager::listing(&["LTC box"]);
-        app.input.timecode.set_ltc_input(Some(crate::timecode::LtcInput {
-            source_id: 0,
-            channel: 0,
-            rate: None,
-        }));
+        app.input
+            .timecode
+            .set_ltc_input(Some(crate::timecode::LtcInput {
+                source_id: 0,
+                channel: 0,
+                rate: None,
+            }));
         let t0 = std::time::Instant::now();
         app.tick_ltc(t0);
         assert!(app.input.ltc_tap.is_none(), "not taken in the same frame");

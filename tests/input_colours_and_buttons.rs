@@ -122,7 +122,11 @@ fn an_inputs_colour_is_kept_with_the_show_and_undone() {
     };
     let load = app.load_workspace();
     assert!(load.is_ok(), "{:?}", load.error_message());
-    assert_eq!(colour(&app, &uuid), Some([55, 115, 220]), "kept with the show");
+    assert_eq!(
+        colour(&app, &uuid),
+        Some([55, 115, 220]),
+        "kept with the show"
+    );
 
     ok(send_cmd(
         &mut app,
@@ -210,7 +214,10 @@ fn a_bus_rows_buttons_are_kept_with_the_show() {
             hidden: false,
         },
     ));
-    assert_eq!(hidden(&app, &led), vec![BusInputRef::Channel(first.clone())]);
+    assert_eq!(
+        hidden(&app, &led),
+        vec![BusInputRef::Channel(first.clone())]
+    );
     ok(send_cmd(&mut app, EngineCommand::Undo));
     assert_eq!(
         hidden(&app, &led),

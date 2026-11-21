@@ -199,9 +199,17 @@ pub enum Start {
     },
     /// Watched, but not a whole cycle of the block it saw: started as it
     /// was, not moved.
-    Unmoved { looks: u32, block: usize, center: f64 },
+    Unmoved {
+        looks: u32,
+        block: usize,
+        center: f64,
+    },
     /// Started without landing, and why.
-    Plain { why: &'static str, push: usize, center: f64 },
+    Plain {
+        why: &'static str,
+        push: usize,
+        center: f64,
+    },
     /// Its producer stopped while it watched: started with what was left.
     Stopped { looks: u32, center: f64 },
 }
@@ -346,7 +354,12 @@ impl DriftControl {
     /// is never less than that read takes (with the interpolator's frames)
     /// and half a block — a device reading 4096 frames a call against a
     /// 1440-frame target ran dry at every read.
-    pub fn step_for(&mut self, fifo: &mut VecDeque<Frame>, nominal: f64, need: usize) -> Option<f64> {
+    pub fn step_for(
+        &mut self,
+        fifo: &mut VecDeque<Frame>,
+        nominal: f64,
+        need: usize,
+    ) -> Option<f64> {
         if self.empty_first {
             self.empty_first = false;
             fifo.clear();
@@ -437,7 +450,9 @@ impl DriftControl {
                     grew: 0,
                     report: None,
                 });
-                return self.land(fifo, take, need).and_then(|started| started.then_some(nominal));
+                return self
+                    .land(fifo, take, need)
+                    .and_then(|started| started.then_some(nominal));
             }
         }
         let floor = self.center(need);
@@ -477,7 +492,10 @@ impl DriftControl {
         let (low, high) = if self.learning.is_some() {
             (center * (1.0 - DEADBAND), center * OVERFILL_FACTOR)
         } else {
-            (center * (1.0 - DEADBAND / 2.0), center * (1.0 + DEADBAND / 2.0))
+            (
+                center * (1.0 - DEADBAND / 2.0),
+                center * (1.0 + DEADBAND / 2.0),
+            )
         };
         if self.smoothed < low {
             self.steering = Some(true);
@@ -524,9 +542,14 @@ impl DriftControl {
             // The least common multiple, in reads.
             self.push / a
         };
-        let most = (LANDING_MOST_FRAMES / read).max(2).min(LANDING_READS as usize);
+        let most = (LANDING_MOST_FRAMES / read)
+            .max(2)
+            .min(LANDING_READS as usize);
         let reads = cycle.clamp(2, most);
-        (u32::try_from(reads).unwrap_or(LANDING_READS), reads >= cycle)
+        (
+            u32::try_from(reads).unwrap_or(LANDING_READS),
+            reads >= cycle,
+        )
     }
 
     /// One read of a landing (see [`Landing`]): `Some(false)` while it
@@ -538,7 +561,10 @@ impl DriftControl {
             // Its producer stopped: what is left plays.
             let center = self.center(need);
             self.start(center);
-            self.started = Some(Start::Stopped { looks: landing.looks, center });
+            self.started = Some(Start::Stopped {
+                looks: landing.looks,
+                center,
+            });
             return Some(true);
         }
         if let Some(after) = landing.after {
@@ -579,7 +605,12 @@ impl DriftControl {
                 }
                 whole = block / a <= landing.looks as usize;
                 if whole {
-                    self.push = grown.iter().copied().filter(|&g| g <= 2 * block).max().unwrap_or(block);
+                    self.push = grown
+                        .iter()
+                        .copied()
+                        .filter(|&g| g <= 2 * block)
+                        .max()
+                        .unwrap_or(block);
                 }
             }
             let center = self.center(need);
@@ -777,10 +808,18 @@ mod tests {
         let mut fifo: VecDeque<Frame> = (0..50).map(|_| [0.0; 2]).collect();
         assert_eq!(drift.step(&mut fifo, 1.0), None, "priming");
         fifo.extend((0..60).map(|_| [0.0; 2]));
-        assert_eq!(drift.step(&mut fifo, 1.0), None, "a block of 60: waits for 100 + 30");
+        assert_eq!(
+            drift.step(&mut fifo, 1.0),
+            None,
+            "a block of 60: waits for 100 + 30"
+        );
         fifo.extend((0..30).map(|_| [0.0; 2]));
         assert!(drift.step(&mut fifo, 1.0).is_some());
-        assert_eq!(fifo.len(), 130, "started half a block over its target, the rest let go");
+        assert_eq!(
+            fifo.len(),
+            130,
+            "started half a block over its target, the rest let go"
+        );
     }
 
     #[test]
@@ -823,14 +862,22 @@ mod tests {
             drift.step(&mut fifo, 1.0).is_some()
         });
         assert!(started, "plays");
-        assert!(fifo.len() >= 100 && fifo.len() < fed, "from its start: {} of {fed}", fifo.len());
+        assert!(
+            fifo.len() >= 100 && fifo.len() < fed,
+            "from its start: {} of {fed}",
+            fifo.len()
+        );
         // The usual kind starts from what it has, once it has seen a block.
         let mut kept = DriftControl::new(100);
         let mut fifo: VecDeque<Frame> = (0..300).map(|_| [0.5; 2]).collect();
         assert_eq!(kept.step(&mut fifo, 1.0), None, "no block seen yet");
         fifo.extend((0..40).map(|_| [0.5; 2]));
         assert!(kept.step(&mut fifo, 1.0).is_some());
-        assert!(fifo.len() >= 100 && fifo.len() < 340, "its start, the backlog let go: {}", fifo.len());
+        assert!(
+            fifo.len() >= 100 && fifo.len() < 340,
+            "its start, the backlog let go: {}",
+            fifo.len()
+        );
     }
 
     /// Clocks that agree, the producer in 10 ms blocks and the reader in
@@ -919,7 +966,11 @@ mod tests {
             }
         }
         assert_ne!((steps).len(), 0);
-        assert!(steps.iter().all(|s| *s == 1.0), "never off 1: {:?}", steps.iter().find(|s| **s != 1.0));
+        assert!(
+            steps.iter().all(|s| *s == 1.0),
+            "never off 1: {:?}",
+            steps.iter().find(|s| **s != 1.0)
+        );
     }
 
     /// A device reading 4096 frames a call against a 1440-frame target, fed
@@ -959,7 +1010,10 @@ mod tests {
             let _ = owed;
             assert!(started);
             assert!(dry <= 1, "phase {phase}: ran dry {dry} times");
-            assert_eq!(steered, 0, "phase {phase}: steered {steered} reads at matching clocks");
+            assert_eq!(
+                steered, 0,
+                "phase {phase}: steered {steered} reads at matching clocks"
+            );
         }
     }
 
@@ -1056,7 +1110,11 @@ mod tests {
             (dry, steered, close)
         };
         let (dry, _, close) = run(0.998);
-        assert_eq!((dry, close), (0, 0), "slow: dry {dry} times, {close} reads with no margin");
+        assert_eq!(
+            (dry, close),
+            (0, 0),
+            "slow: dry {dry} times, {close} reads with no margin"
+        );
         let (dry, steered, _) = run(1.0);
         assert_eq!((dry, steered), (0, 0), "matching: never dry, never steered");
     }
@@ -1103,7 +1161,13 @@ mod tests {
     #[test]
     fn a_reader_lands_on_one_depth_whatever_the_phase() {
         // (mean depth after a read once settled, dry reads after the start, frames until it played)
-        fn settle(push: usize, read: usize, target: usize, empty_first: bool, phase: usize) -> (f64, u32, usize) {
+        fn settle(
+            push: usize,
+            read: usize,
+            target: usize,
+            empty_first: bool,
+            phase: usize,
+        ) -> (f64, u32, usize) {
             let mut drift = if empty_first {
                 DriftControl::starting_empty(target)
             } else {
@@ -1141,13 +1205,18 @@ mod tests {
             (480, 512, 1440, true, 8.0, 1449.0),
             (480, 64, 1440, true, 8.0, 1376.0),
         ] {
-            let runs: Vec<(f64, u32, usize)> =
-                (0..push.max(read)).step_by(push.max(read) / 16).map(|p| settle(push, read, target, ring, p)).collect();
+            let runs: Vec<(f64, u32, usize)> = (0..push.max(read))
+                .step_by(push.max(read) / 16)
+                .map(|p| settle(push, read, target, ring, p))
+                .collect();
             let lo = runs.iter().map(|r| r.0).fold(f64::MAX, f64::min);
             let hi = runs.iter().map(|r| r.0).fold(f64::MIN, f64::max);
             let dry: u32 = runs.iter().map(|r| r.1).sum();
             let start = runs.iter().map(|r| r.2).max().unwrap_or(usize::MAX);
-            let case = format!("{push} against {read}: {lo:.0}..{hi:.0}, {dry} dry, playing by {:.0} ms", start as f64 / 48.0);
+            let case = format!(
+                "{push} against {read}: {lo:.0}..{hi:.0}, {dry} dry, playing by {:.0} ms",
+                start as f64 / 48.0
+            );
             assert!(hi - lo <= spread, "{case}");
             assert!((f64::midpoint(lo, hi) - settles).abs() <= spread, "{case}");
             assert_eq!(dry, 0, "{case}");
@@ -1161,7 +1230,14 @@ mod tests {
     /// (Codex: 469 frames left for a read of 480).
     #[test]
     fn a_landing_through_late_reads_never_runs_dry() {
-        for (late_from, phase) in [(1_usize, 0_usize), (2, 100), (3, 200), (4, 300), (5, 400), (6, 500)] {
+        for (late_from, phase) in [
+            (1_usize, 0_usize),
+            (2, 100),
+            (3, 200),
+            (4, 300),
+            (5, 400),
+            (6, 500),
+        ] {
             let mut drift = DriftControl::new(960);
             let mut reader = RateReader::default();
             let mut fifo: VecDeque<Frame> = VecDeque::new();
@@ -1319,7 +1395,14 @@ mod tests {
         // Producer `push` input frames every `push` ticks (ticks: input
         // frames at the producer's clock, `fast` parts a million fast);
         // reads of `read` output frames at step `nominal`.
-        fn settle(push: usize, read: usize, nominal: f64, fast: f64, target: usize, phase: usize) -> (f64, u32) {
+        fn settle(
+            push: usize,
+            read: usize,
+            nominal: f64,
+            fast: f64,
+            target: usize,
+            phase: usize,
+        ) -> (f64, u32) {
             let mut drift = DriftControl::new(target);
             let mut reader = RateReader::default();
             let mut fifo: VecDeque<Frame> = VecDeque::new();
@@ -1352,7 +1435,10 @@ mod tests {
             ("48k 512 in, 300 ppm fast", 512, 1.0, 300.0),
             ("48k 512 in, 300 ppm slow", 512, 1.0, -300.0),
         ] {
-            let runs: Vec<(f64, u32)> = (0..push).step_by(32).map(|p| settle(push, 480, nominal, fast, 960, p)).collect();
+            let runs: Vec<(f64, u32)> = (0..push)
+                .step_by(32)
+                .map(|p| settle(push, 480, nominal, fast, 960, p))
+                .collect();
             let lo = runs.iter().map(|r| r.0).fold(f64::MAX, f64::min);
             let hi = runs.iter().map(|r| r.0).fold(f64::MIN, f64::max);
             let dry: u32 = runs.iter().map(|r| r.1).sum();
@@ -1369,14 +1455,20 @@ mod tests {
     /// up to 1.5 ms late, one in 50 by 5-15 ms (then caught up). Times in
     /// frames at 48 kHz.
     fn rng(state: &mut u64) -> f64 {
-        *state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
+        *state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
         ((*state >> 11) as f64) / ((1u64 << 53) as f64)
     }
     // (resting depth after a read, reads steered after the first second, dry reads)
     fn jittered(ring: bool, n: usize, seed: u64) -> (f64, u32, u32) {
         let mut state = seed;
         let target = if ring { 1440 } else { 960 };
-        let mut drift = if ring { DriftControl::starting_empty(target) } else { DriftControl::new(target) };
+        let mut drift = if ring {
+            DriftControl::starting_empty(target)
+        } else {
+            DriftControl::new(target)
+        };
         let mut reader = RateReader::default();
         let mut fifo: VecDeque<Frame> = VecDeque::new();
         let read = if ring { n } else { 480 };
@@ -1387,7 +1479,11 @@ mod tests {
         let phase = (rng(&mut state) * 480.0) as usize;
         for k in 0..2_000 {
             let due = phase + k * 480;
-            let late = if rng(&mut state) < 0.02 { 240.0 + rng(&mut state) * 480.0 } else { rng(&mut state) * 72.0 };
+            let late = if rng(&mut state) < 0.02 {
+                240.0 + rng(&mut state) * 480.0
+            } else {
+                rng(&mut state) * 72.0
+            };
             mix_events.push(due + late as usize);
         }
         // Catching up: a block is never mixed before the one before it.
@@ -1408,7 +1504,11 @@ mod tests {
                 mixes += 1;
                 mi += 1;
             }
-            let (pushes, reads) = if ring { (mixes, usize::from(dev)) } else { (usize::from(dev), mixes) };
+            let (pushes, reads) = if ring {
+                (mixes, usize::from(dev))
+            } else {
+                (usize::from(dev), mixes)
+            };
             for _ in 0..pushes {
                 fifo.extend(std::iter::repeat_n([0.5, 0.5], if ring { 480 } else { n }));
             }
@@ -1439,10 +1539,16 @@ mod tests {
     #[test]
     fn a_mixer_late_now_and_then_never_makes_a_small_ring_glide() {
         for n in [32, 64, 128] {
-            let runs: Vec<(f64, u32, u32)> = (1..=12).map(|seed| jittered(true, n, seed * 7919)).collect();
+            let runs: Vec<(f64, u32, u32)> = (1..=12)
+                .map(|seed| jittered(true, n, seed * 7919))
+                .collect();
             let glides = runs.iter().filter(|r| r.1 > 0).count();
             let dry: u32 = runs.iter().map(|r| r.2).sum();
-            assert_eq!((glides, dry), (0, 0), "reads of {n}: glided in {glides} of 12, ran dry {dry} times");
+            assert_eq!(
+                (glides, dry),
+                (0, 0),
+                "reads of {n}: glided in {glides} of 12, ran dry {dry} times"
+            );
         }
     }
 
@@ -1451,13 +1557,33 @@ mod tests {
     #[test]
     #[ignore = "exploration"]
     fn landing_with_jitter() {
-        for (ring, n) in [(true, 32), (true, 64), (true, 128), (true, 256), (true, 512), (false, 32), (false, 128), (false, 256), (false, 512)] {
-            let runs: Vec<(f64, u32, u32)> = (1..=24).map(|seed| jittered(ring, n, seed * 7919)).collect();
+        for (ring, n) in [
+            (true, 32),
+            (true, 64),
+            (true, 128),
+            (true, 256),
+            (true, 512),
+            (false, 32),
+            (false, 128),
+            (false, 256),
+            (false, 512),
+        ] {
+            let runs: Vec<(f64, u32, u32)> = (1..=24)
+                .map(|seed| jittered(ring, n, seed * 7919))
+                .collect();
             let lo = runs.iter().map(|r| r.0).fold(f64::MAX, f64::min);
             let hi = runs.iter().map(|r| r.0).fold(f64::MIN, f64::max);
             let glides = runs.iter().filter(|r| r.1 > 0).count();
             let dry: u32 = runs.iter().map(|r| r.2).sum();
-            eprintln!("{} {n}: settles {lo:.0}..{hi:.0} (spread {:.0}), glided in {glides}/24, dry {dry}", if ring { "ring 480 ->" } else { "input -> 480, n =" }, hi - lo);
+            eprintln!(
+                "{} {n}: settles {lo:.0}..{hi:.0} (spread {:.0}), glided in {glides}/24, dry {dry}",
+                if ring {
+                    "ring 480 ->"
+                } else {
+                    "input -> 480, n ="
+                },
+                hi - lo
+            );
         }
     }
 
@@ -1485,7 +1611,15 @@ mod tests {
             }
         }
         assert!(
-            matches!(told[..], [Start::Landed { looks: 16, block: 512, reserve: 512, .. }]),
+            matches!(
+                told[..],
+                [Start::Landed {
+                    looks: 16,
+                    block: 512,
+                    reserve: 512,
+                    ..
+                }]
+            ),
             "{told:?}"
         );
         let mut burst = DriftControl::new(960);
@@ -1495,7 +1629,9 @@ mod tests {
                 break;
             }
         }
-        assert!(matches!(burst.take_start(), Some(Start::Plain { why, .. }) if why.contains("no block")));
+        assert!(
+            matches!(burst.take_start(), Some(Start::Plain { why, .. }) if why.contains("no block"))
+        );
         assert_eq!(burst.take_start(), None, "told once");
     }
 
@@ -1507,7 +1643,14 @@ mod tests {
     fn blocks_of_no_fixed_size_never_run_dry() {
         // (rate, the two sizes, target, first block at, held from, until)
         for (rate, sizes, target, first, held, until) in [
-            (44_100.0_f64, [441_usize, 442], 882, 130_usize, 42_514_usize, 43_218_usize),
+            (
+                44_100.0_f64,
+                [441_usize, 442],
+                882,
+                130_usize,
+                42_514_usize,
+                43_218_usize,
+            ),
             (48_000.0, [1601, 1602], 2880, 130, 42_514, 43_218),
         ] {
             let nominal = rate / 48_000.0;
@@ -1562,7 +1705,10 @@ mod tests {
             }
             if !(41_168..41_872).contains(&tick) {
                 while owed > 0 {
-                    fifo.extend(std::iter::repeat_n([0.5, 0.5], if i.is_multiple_of(2) { 480 } else { 512 }));
+                    fifo.extend(std::iter::repeat_n(
+                        [0.5, 0.5],
+                        if i.is_multiple_of(2) { 480 } else { 512 },
+                    ));
                     i += 1;
                     owed -= 1;
                 }
@@ -1652,7 +1798,11 @@ mod tests {
     #[test]
     fn late_blocks_while_landing_never_run_a_ring_dry() {
         for (read, phase, holds) in [
-            (128_usize, 30_usize, [(2_300_usize, 2_500_usize), (4_000, 5_400)]),
+            (
+                128_usize,
+                30_usize,
+                [(2_300_usize, 2_500_usize), (4_000, 5_400)],
+            ),
             (512, 0, [(4_200, 4_650), (18_300, 20_000)]),
         ] {
             let mut drift = DriftControl::starting_empty(1440);
@@ -1754,7 +1904,13 @@ mod tests {
             }
             if tick == next {
                 let n = if tick < 2_015 { 32 } else { 8_192 };
-                next += if tick + 32 < 2_015 { 32 } else if tick < 2_015 { 2_015 - tick } else { 8_192 };
+                next += if tick + 32 < 2_015 {
+                    32
+                } else if tick < 2_015 {
+                    2_015 - tick
+                } else {
+                    8_192
+                };
                 let mut out = vec![[0.0; 2]; n];
                 if let Some(step) = drift.step_for(&mut fifo, 1.0, n) {
                     if reader.read(&mut fifo, step, &mut out) < n {
@@ -1777,7 +1933,11 @@ mod tests {
         fifo.extend(std::iter::repeat_n([0.3, 0.3], 44_100));
         let started = (0..20).any(|_| drift.step_for(&mut fifo, 1.0, 480).is_some());
         assert!(started, "started");
-        assert!(fifo.len() < 10_000, "not on the whole backlog: {}", fifo.len());
+        assert!(
+            fifo.len() < 10_000,
+            "not on the whole backlog: {}",
+            fifo.len()
+        );
     }
 
     /// Grown by a big block once and then no more, short of where it would

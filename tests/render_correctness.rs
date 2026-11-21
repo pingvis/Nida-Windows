@@ -1193,7 +1193,10 @@ fn a_crop_that_keeps_nothing_draws_no_border() {
             p.set_float("crop_bottom", 1.0 / FRAME_H as f32);
         });
         let lit = pixels.iter().filter(|p| p[0] > 0.01 || p[3] > 0.01).count();
-        assert_eq!(lit, 0, "border {border}, circle {circle}: {lit} pixels drawn");
+        assert_eq!(
+            lit, 0,
+            "border {border}, circle {circle}: {lit} pixels drawn"
+        );
     }
 }
 
@@ -1337,7 +1340,10 @@ fn a_flipped_cropped_top_deck_shows_the_deck_below_where_the_hole_went() {
     let pixels = render_and_read(&ctx, &mut mixer);
     assert!(composited(&mixer) > 1, "a flipped crop does not cover");
     let row = (H / 2 * W) as usize;
-    assert_hi(pixels[row + 1][2], "blue: the kept half, mirrored to the left");
+    assert_hi(
+        pixels[row + 1][2],
+        "blue: the kept half, mirrored to the left",
+    );
     assert_hi(
         pixels[row + (W - 2) as usize][1],
         "green in the hole, now on the right",

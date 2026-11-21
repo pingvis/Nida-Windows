@@ -1765,7 +1765,10 @@ pub enum EngineCommand {
     /// drawn is held a frame all the same, to stay smooth — or, `false`,
     /// each in turn at the delay that keeps motion even. Every layer on
     /// that camera takes it: they share its capture.
-    SetCameraLowestLatency { deck_uuid: String, on: bool },
+    SetCameraLowestLatency {
+        deck_uuid: String,
+        on: bool,
+    },
     /// Open a camera layer's camera at another format — a size and rate of
     /// those it offers (`GET /api/state/cameras`), or, left out, its best —
     /// its inputs keeping its last picture meanwhile. Every layer on that
@@ -2303,11 +2306,17 @@ pub enum EngineCommand {
     },
     /// An audio bus as a monitor mix: sources reach it before their faders
     /// (unless a send says otherwise).
-    SetAudioBusPreFader { uuid: String, pre_fader: bool },
+    SetAudioBusPreFader {
+        uuid: String,
+        pre_fader: bool,
+    },
     /// Echo removal on an audio bus, for a call's: its microphones arrive
     /// with what `room` plays (the bus the room's speakers play, by UUID)
     /// taken out; `None` is off.
-    SetAudioBusEchoRoom { uuid: String, room: Option<String> },
+    SetAudioBusEchoRoom {
+        uuid: String,
+        room: Option<String>,
+    },
     /// Send a source to an audio bus, or stop.
     SetAudioSend {
         uuid: String,

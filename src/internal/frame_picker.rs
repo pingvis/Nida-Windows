@@ -105,7 +105,6 @@ const AT_THE_DRAW: f64 = 0.25;
 /// Recorder, its pictures stamped as they came, 2026-10-28).
 const AT_THE_DRAW_MOST: usize = AGES_KEPT / 20;
 
-
 /// Gaps too long to be the input's rate, in a row, after which they are its
 /// rate: a camera gone from 60 to 30 fps.
 const RELEARN_AFTER: usize = 30;
@@ -324,7 +323,12 @@ impl<F> FramePicker<F> {
         let mut let_go = Vec::new();
         let at = self.follow_clock(at);
         let half = self.period.unwrap_or(1.0 / 60.0) * 0.5;
-        if let Some(last) = self.waiting.back().map(|&(newest, _)| newest).or(self.shown) {
+        if let Some(last) = self
+            .waiting
+            .back()
+            .map(|&(newest, _)| newest)
+            .or(self.shown)
+        {
             if at < last - WENT_BACK {
                 let_go.extend(self.start_afresh(at));
             } else if at <= last {
@@ -469,7 +473,11 @@ impl<F> FramePicker<F> {
             if self.ages.len() >= AGES_KEPT {
                 self.ages.pop_front();
             }
-            let came = if self.shown.is_some() { oldest_new } else { newest };
+            let came = if self.shown.is_some() {
+                oldest_new
+            } else {
+                newest
+            };
             self.ages.push_back(show_at - came);
             self.counted = Some(newest);
         }
@@ -741,7 +749,9 @@ mod tests {
     /// Pseudo-random arrival jitter, 0 to `most` seconds, the same each run.
     fn jitter(most: f64) -> impl Fn(usize) -> f64 {
         move |i| {
-            let x = (i as u64).wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
+            let x = (i as u64)
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
             (x >> 33) as f64 / f64::from(u32::MAX) * most
         }
     }
@@ -750,7 +760,13 @@ mod tests {
     /// one frame per show frame: nothing repeated, nothing skipped.
     #[test]
     fn an_input_at_the_shows_rate_moves_one_frame_a_frame_however_unevenly_it_arrives() {
-        let (run, shown) = run(1.0 / 60.0, 1.0 / 60.0015, NEAR_THE_DRAW, jitter(0.008), 60.0);
+        let (run, shown) = run(
+            1.0 / 60.0,
+            1.0 / 60.0015,
+            NEAR_THE_DRAW,
+            jitter(0.008),
+            60.0,
+        );
         assert_eq!(run, Run::default(), "{run:?}");
         assert!(shown.windows(2).skip(70).all(|w| w[1] == w[0] + 1));
     }
@@ -787,7 +803,13 @@ mod tests {
     /// the rates must, one at a time and never skipping.
     #[test]
     fn a_slower_input_repeats_a_frame_now_and_then_one_at_a_time() {
-        let (run, _) = run(1.001 / 60.0, 1.0 / 60.0015, NEAR_THE_DRAW, jitter(0.006), 60.0);
+        let (run, _) = run(
+            1.001 / 60.0,
+            1.0 / 60.0015,
+            NEAR_THE_DRAW,
+            jitter(0.006),
+            60.0,
+        );
         // 60.0015 − 59.94 = 0.06 frames a second: about 3.5 in 59 s.
         assert!((2..=5).contains(&run.repeated), "{run:?}");
         assert_eq!((run.skipped, run.repeats_in_a_row), (0, 1), "{run:?}");
@@ -817,7 +839,13 @@ mod tests {
     /// never two repeats together.
     #[test]
     fn a_50_fps_input_on_a_60_fps_show_repeats_evenly() {
-        let (run, _) = run(1.0 / 50.0, 1.0 / 60.0015, NEAR_THE_DRAW, jitter(0.006), 20.0);
+        let (run, _) = run(
+            1.0 / 50.0,
+            1.0 / 60.0015,
+            NEAR_THE_DRAW,
+            jitter(0.006),
+            20.0,
+        );
         assert_eq!((run.skipped, run.repeats_in_a_row), (0, 1), "{run:?}");
         assert!((185..=200).contains(&run.repeated), "{run:?}");
     }
@@ -851,7 +879,11 @@ mod tests {
                 delay <= came + 2.5 * input,
                 "input {input}: delay {delay} for frames {came} late"
             );
-            assert!(picker.waiting.len() <= 3, "{} waiting", picker.waiting.len());
+            assert!(
+                picker.waiting.len() <= 3,
+                "{} waiting",
+                picker.waiting.len()
+            );
         }
     }
 
@@ -862,9 +894,18 @@ mod tests {
     /// hiccup — then it moves one frame a frame.
     #[test]
     fn an_input_that_stalls_is_shown_live_again_at_once() {
-        let stall = |i: usize| if (600..606).contains(&i) { 0.100 - (i - 600) as f64 / 60.0 } else { 0.0 };
+        let stall = |i: usize| {
+            if (600..606).contains(&i) {
+                0.100 - (i - 600) as f64 / 60.0
+            } else {
+                0.0
+            }
+        };
         let (run, shown) = run(1.0 / 60.0, 1.0 / 60.0, 0.030, stall, 45.0);
-        assert!(run.repeats_in_a_row <= 7, "frozen only while nothing came: {run:?}");
+        assert!(
+            run.repeats_in_a_row <= 7,
+            "frozen only while nothing came: {run:?}"
+        );
         // Caught up in one go: a delay lengthened for the frames held up
         // would have been caught up later, by single frames.
         assert_eq!(run.skipped, run.skipped_at_once, "{run:?}");
@@ -976,7 +1017,11 @@ mod tests {
             }
             let (_, what) = picker.pick(show_at);
             if k > 300 {
-                in_a_row = if what == Picked::Repeated { in_a_row + 1 } else { 0 };
+                in_a_row = if what == Picked::Repeated {
+                    in_a_row + 1
+                } else {
+                    0
+                };
                 most = most.max(in_a_row);
             }
         }
@@ -993,12 +1038,19 @@ mod tests {
         let came = |i: usize, _: f64| 0.036 + jitter(0.008)(i);
         let (picks, picker) = kept_run(4, period, came, 20.0);
         let late = picks.iter().filter(|(t, _)| (10.0..20.0).contains(t));
-        let skipped = late.clone().filter(|(_, p)| matches!(p, Picked::Skipped(_))).count();
+        let skipped = late
+            .clone()
+            .filter(|(_, p)| matches!(p, Picked::Skipped(_)))
+            .count();
         let shown = late.clone().filter(|(_, p)| *p != Picked::Repeated).count();
         assert_eq!(skipped, 0);
         assert!((295..=305).contains(&shown), "{shown} frames shown in 10 s");
         let learned = picker.period.expect("a rate");
-        assert!((learned - 1.0 / 30.0).abs() < 0.001, "rate learned {}", 1.0 / learned);
+        assert!(
+            (learned - 1.0 / 30.0).abs() < 0.001,
+            "rate learned {}",
+            1.0 / learned
+        );
     }
 
     /// A frame stamped a hair before the one waiting — the same frame again,
@@ -1017,7 +1069,11 @@ mod tests {
         let _ = picker.push(shown + 0.001, 100);
         let _ = picker.push(shown - 0.003, 101);
         let (frame, _) = picker.pick(shown + 0.040);
-        assert_eq!(frame, Some(100), "the frame waiting, not one older than the shown");
+        assert_eq!(
+            frame,
+            Some(100),
+            "the frame waiting, not one older than the shown"
+        );
     }
 
     /// A camera a hair faster than the show (60.02 fps on 60, as an ATEM
@@ -1062,8 +1118,14 @@ mod tests {
             last_delay = picker.delay;
         }
         // 0.02 fps faster: about 2.4 frames over two minutes to skip.
-        assert!(skips <= 4, "skips {skips}, repeats {repeats}, delay changes {changes}");
-        assert!(repeats <= 1, "skips {skips}, repeats {repeats}, delay changes {changes}");
+        assert!(
+            skips <= 4,
+            "skips {skips}, repeats {repeats}, delay changes {changes}"
+        );
+        assert!(
+            repeats <= 1,
+            "skips {skips}, repeats {repeats}, delay changes {changes}"
+        );
     }
 
     /// A camera whose frames come in time but now and then one a frame late
@@ -1151,7 +1213,10 @@ mod tests {
                 coming.push_back((arrived, next_capture, at));
                 next_capture += 1;
             }
-            while coming.front().is_some_and(|&(when, _, _)| when <= show_at - 0.010) {
+            while coming
+                .front()
+                .is_some_and(|&(when, _, _)| when <= show_at - 0.010)
+            {
                 let (_, i, at) = coming.pop_front().unwrap();
                 let _ = picker.push(at, i);
             }
@@ -1172,7 +1237,11 @@ mod tests {
             last_delay = picker.delay;
         }
         let waited = |n: usize| shortened[n] - late[n];
-        assert!(waited(5) > 300.0, "the bad patch: waited {:.0} s", waited(5));
+        assert!(
+            waited(5) > 300.0,
+            "the bad patch: waited {:.0} s",
+            waited(5)
+        );
         assert!(waited(6) < 15.0, "in time since: waited {:.0} s", waited(6));
     }
 
@@ -1396,7 +1465,10 @@ mod tests {
                 }
             }
             assert_eq!(pairs, 0, "rate {rate}: {repeats} repeated, {skips} skipped");
-            assert!(repeats + skips <= 3, "rate {rate}: {repeats} repeated, {skips} skipped");
+            assert!(
+                repeats + skips <= 3,
+                "rate {rate}: {repeats} repeated, {skips} skipped"
+            );
         }
     }
 
@@ -1418,7 +1490,10 @@ mod tests {
             }
         }
         assert!(shown.windows(2).all(|w| w[1] > w[0]), "in order: {shown:?}");
-        assert!(shown.iter().any(|&k| k > 160), "picked again after the jump");
+        assert!(
+            shown.iter().any(|&k| k > 160),
+            "picked again after the jump"
+        );
     }
 
     /// Frames that always come in time are shown as soon as they come: no
@@ -1451,5 +1526,3 @@ mod tests {
         assert!(extra.abs() < 0.001, "{:.2} ms later", extra * 1000.0);
     }
 }
-
-

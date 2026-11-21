@@ -60,7 +60,10 @@ fn text_shown(gpu: &GpuContext) -> Mixer {
     shown.visible = true;
     let deck = Deck::new_text(gpu, shown, W, H).expect("a text");
     let mut mixer = mixer_with(gpu, deck);
-    assert!(text(&mut mixer).wait_drawn(Duration::from_secs(20)), "drawn");
+    assert!(
+        text(&mut mixer).wait_drawn(Duration::from_secs(20)),
+        "drawn"
+    );
     render(gpu, &mut mixer);
     mixer
 }
@@ -98,8 +101,14 @@ fn a_name_on_air_is_drawn_once_and_kept() {
     assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "on air: kept");
     assert_eq!(drawn(&gpu, &mut mixer, 3), 3, "its input drawn every frame");
     assert_eq!(mixer.main_layer_channels(), vec![UNDER, OVER], "layered");
-    assert!(plate(&deck_picture(&gpu, &mixer)) > 5_000, "the plate in its frame");
-    assert!(plate(&main_picture(&gpu, &mixer)) > 5_000, "the plate on Main");
+    assert!(
+        plate(&deck_picture(&gpu, &mixer)) > 5_000,
+        "the plate in its frame"
+    );
+    assert!(
+        plate(&main_picture(&gpu, &mixer)) > 5_000,
+        "the plate on Main"
+    );
 }
 
 /// The switch off, a name on air is drawn every frame, as before; on
@@ -112,7 +121,11 @@ fn with_the_switch_off_a_name_on_air_is_drawn_every_frame() {
     mixer.keep_still_text = false;
     assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 4, "off: drawn every frame");
     mixer.keep_still_text = true;
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 1, "on: once more, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        1,
+        "on: once more, then kept"
+    );
 }
 
 /// Coming in (a fade of three seconds, the longest there is: five frames
@@ -136,7 +149,10 @@ fn coming_in_and_going_out_it_is_drawn_every_frame() {
     let began = Instant::now();
     let drew = deck_drawn(&gpu, &mut mixer, 5);
     let took = began.elapsed();
-    assert_eq!(drew, 5, "coming in: drawn every frame (they took {took:?} of its 3 s)");
+    assert_eq!(
+        drew, 5,
+        "coming in: drawn every frame (they took {took:?} of its 3 s)"
+    );
     // Not waited for: its fade made a short one, it is in at once.
     let mut quick = slow.clone();
     quick.look.motion_secs = 0.05;
@@ -145,7 +161,10 @@ fn coming_in_and_going_out_it_is_drawn_every_frame() {
     assert!(drawn, "drawn with the short fade");
     till_it_stands(&gpu, &mut mixer);
     assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "in: kept");
-    assert!(plate(&main_picture(&gpu, &mixer)) > 5_000, "the plate on Main");
+    assert!(
+        plate(&main_picture(&gpu, &mixer)) > 5_000,
+        "the plate on Main"
+    );
     // The long fade again — drawn for it at most once, then kept — and out.
     lower(&mut mixer).set_settings(slow);
     let drawn = lower(&mut mixer).wait_drawn(Duration::from_secs(20));
@@ -155,7 +174,10 @@ fn coming_in_and_going_out_it_is_drawn_every_frame() {
     let began = Instant::now();
     let drew = deck_drawn(&gpu, &mut mixer, 5);
     let took = began.elapsed();
-    assert_eq!(drew, 5, "going out: drawn every frame (they took {took:?} of its 3 s)");
+    assert_eq!(
+        drew, 5,
+        "going out: drawn every frame (they took {took:?} of its 3 s)"
+    );
 }
 
 /// Its look changed with the name on air — the plate green for red — its
@@ -173,7 +195,10 @@ fn another_look_is_drawn_once_and_kept() {
     assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "another drawing: drawn");
     let picture = deck_picture(&gpu, &mixer);
     assert_eq!(plate(&picture), 0, "none of the red plate left");
-    assert!(green_plate(&picture) > 5_000, "the green plate in its frame");
+    assert!(
+        green_plate(&picture) > 5_000,
+        "the green plate in its frame"
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "then kept");
 }
 
@@ -187,10 +212,17 @@ fn placed_otherwise_it_is_drawn_at_once() {
     let mut right = lower(&mut mixer).settings().clone();
     right.look.place = LowerThirdPlace::LowerRight;
     lower(&mut mixer).set_settings(right);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "placed otherwise: drawn");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "placed otherwise: drawn"
+    );
     let redrawn = lower(&mut mixer).wait_drawn(Duration::from_secs(20));
     assert!(redrawn, "drawn for the new place");
-    assert!(deck_drawn(&gpu, &mut mixer, 2) <= 1, "its new drawing: once");
+    assert!(
+        deck_drawn(&gpu, &mut mixer, 2) <= 1,
+        "its new drawing: once"
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "then kept");
 }
 
@@ -203,7 +235,11 @@ fn another_name_is_drawn_and_kept() {
     let first = deck_picture(&gpu, &mixer);
     lower(&mut mixer).show(Some(1));
     till_it_stands(&gpu, &mut mixer);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "the other name on air: kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 5),
+        0,
+        "the other name on air: kept"
+    );
     let second = deck_picture(&gpu, &mixer);
     assert!(plate(&second) > 5_000, "its plate in its frame");
     assert!(second != first, "the other name's frame, not the first's");
@@ -234,12 +270,22 @@ fn resized_it_is_drawn_anew_and_kept() {
     let mut mixer = on_air(&gpu);
     assert_eq!(deck_drawn(&gpu, &mut mixer, 2), 0, "on air: kept");
     mixer.resize(&gpu, W / 2, H / 2);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "its frame made anew: drawn");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "its frame made anew: drawn"
+    );
     let redrawn = lower(&mut mixer).wait_drawn(Duration::from_secs(20));
     assert!(redrawn, "drawn for the new size");
-    assert!(deck_drawn(&gpu, &mut mixer, 2) <= 1, "its new drawing: once");
+    assert!(
+        deck_drawn(&gpu, &mut mixer, 2) <= 1,
+        "its new drawing: once"
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "then kept");
-    assert!(plate(&deck_picture(&gpu, &mixer)) > 500, "the plate in its frame");
+    assert!(
+        plate(&deck_picture(&gpu, &mixer)) > 500,
+        "the plate in its frame"
+    );
 }
 
 /// An effect that draws — invert — on the lower third: its frame may be
@@ -281,7 +327,11 @@ fn a_text_shown_is_drawn_once_and_kept() {
     mixer.keep_still_text = false;
     assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 4, "off: drawn every frame");
     mixer.keep_still_text = true;
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 4), 1, "on: once more, then kept");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 4),
+        1,
+        "on: once more, then kept"
+    );
 }
 
 /// Its colour changed — a drawing the size of the one before, written
@@ -314,11 +364,18 @@ fn a_text_placed_otherwise_is_drawn_at_once() {
     let mut corner = text(&mut mixer).settings().clone();
     corner.look.anchor = Anchor::TopLeft;
     text(&mut mixer).set_settings(corner);
-    assert_eq!(deck_drawn(&gpu, &mut mixer, 1), 1, "placed otherwise: drawn");
+    assert_eq!(
+        deck_drawn(&gpu, &mut mixer, 1),
+        1,
+        "placed otherwise: drawn"
+    );
     assert!(deck_picture(&gpu, &mixer) != middle, "its frame another");
     let redrawn = text(&mut mixer).wait_drawn(Duration::from_secs(20));
     assert!(redrawn, "drawn for the new spot");
-    assert!(deck_drawn(&gpu, &mut mixer, 2) <= 1, "its new drawing: once");
+    assert!(
+        deck_drawn(&gpu, &mut mixer, 2) <= 1,
+        "its new drawing: once"
+    );
     assert_eq!(deck_drawn(&gpu, &mut mixer, 5), 0, "then kept");
 }
 
@@ -331,7 +388,10 @@ fn a_text_fading_is_drawn_every_frame() {
     let mut fading = text_settings();
     let deck = Deck::new_text(&gpu, fading.clone(), W, H).expect("a text");
     let mut mixer = mixer_with(&gpu, deck);
-    assert!(text(&mut mixer).wait_drawn(Duration::from_secs(20)), "drawn");
+    assert!(
+        text(&mut mixer).wait_drawn(Duration::from_secs(20)),
+        "drawn"
+    );
     render(&gpu, &mut mixer);
     fading.visible = true;
     fading.fade_secs = 5.0;
@@ -339,7 +399,10 @@ fn a_text_fading_is_drawn_every_frame() {
     let began = Instant::now();
     let drew = deck_drawn(&gpu, &mut mixer, 5);
     let took = began.elapsed();
-    assert_eq!(drew, 5, "fading in: drawn every frame (they took {took:?} of its 5 s)");
+    assert_eq!(
+        drew, 5,
+        "fading in: drawn every frame (they took {took:?} of its 5 s)"
+    );
     // Not waited for: its fade made a short one, from where it is.
     fading.fade_secs = 0.05;
     text(&mut mixer).set_settings(fading.clone());
@@ -357,5 +420,8 @@ fn a_text_fading_is_drawn_every_frame() {
     let began = Instant::now();
     let drew = deck_drawn(&gpu, &mut mixer, 5);
     let took = began.elapsed();
-    assert_eq!(drew, 5, "fading out: drawn every frame (they took {took:?} of its 5 s)");
+    assert_eq!(
+        drew, 5,
+        "fading out: drawn every frame (they took {took:?} of its 5 s)"
+    );
 }

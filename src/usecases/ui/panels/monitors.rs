@@ -824,7 +824,10 @@ mod tests {
         let program = harness.get_by_label("Program picture").rect();
         for meter in ["REC meter", "STREAM meter", "Bus B meter"] {
             let rect = harness.get_by_label(meter).rect();
-            assert!(rect.left() >= program.right(), "{meter} at {rect:?}, Program {program:?}");
+            assert!(
+                rect.left() >= program.right(),
+                "{meter} at {rect:?}, Program {program:?}"
+            );
             assert!(
                 rect.left() - program.right() < 3.0 * GAP + 52.0 * 3.0,
                 "{meter} beside Program, not at the edge: {rect:?}, Program {program:?}"
@@ -859,7 +862,12 @@ mod tests {
     #[test]
     fn meters_stay_by_program_over_narrow_pictures() {
         let (mut data, _) = with_clip();
-        let vp = data.channels[1].decks.last().unwrap().video_playback.clone();
+        let vp = data.channels[1]
+            .decks
+            .last()
+            .unwrap()
+            .video_playback
+            .clone();
         data.channels[0].decks.last_mut().unwrap().video_playback = vp;
         // Room for both transports, not much more: a row worked out from
         // the pictures alone would end past the pane.
@@ -873,7 +881,10 @@ mod tests {
         let rec = harness.get_by_label("REC meter").rect();
         let last = harness.get_by_label("STREAM meter").rect();
         assert!(last.right() <= width, "inside the pane: {last:?}");
-        assert!(rec.left() >= program.right(), "right of Program: {rec:?} {program:?}");
+        assert!(
+            rec.left() >= program.right(),
+            "right of Program: {rec:?} {program:?}"
+        );
         assert!(
             rec.left() - program.right() < 200.0,
             "against Program, not past its transport: {rec:?} {program:?}"
@@ -887,7 +898,12 @@ mod tests {
     fn narrow_transports_keep_to_the_essentials() {
         let clips = || {
             let (mut data, _) = with_clip();
-            let vp = data.channels[1].decks.last().unwrap().video_playback.clone();
+            let vp = data.channels[1]
+                .decks
+                .last()
+                .unwrap()
+                .video_playback
+                .clone();
             data.channels[0].decks.last_mut().unwrap().video_playback = vp;
             std::rc::Rc::new(data)
         };
@@ -914,7 +930,12 @@ mod tests {
     #[test]
     fn the_columns_shrink_when_the_clips_go() {
         let (mut data, _) = with_clip();
-        let vp = data.channels[1].decks.last().unwrap().video_playback.clone();
+        let vp = data.channels[1]
+            .decks
+            .last()
+            .unwrap()
+            .video_playback
+            .clone();
         data.channels[0].decks.last_mut().unwrap().video_playback = vp;
         let mut harness = egui_kittest::Harness::builder()
             .with_size(egui::vec2(1800.0, 260.0))
@@ -924,7 +945,8 @@ mod tests {
             );
         harness.run_steps(3);
         let gap = |h: &egui_kittest::Harness<'_, UIData>| {
-            h.get_by_label("REC meter").rect().left() - h.get_by_label("Program picture").rect().right()
+            h.get_by_label("REC meter").rect().left()
+                - h.get_by_label("Program picture").rect().right()
         };
         let with_clips = gap(&harness);
         for ch in &mut harness.state_mut().channels {

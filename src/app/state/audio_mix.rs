@@ -482,7 +482,10 @@ impl VardaApp {
             return AudioMixError::NoSuchBus(bus.into()).into();
         }
         if let Some(db) = gain_db {
-            let check = crate::audio_mix::SendConfig { gain_db: db, ..Default::default() };
+            let check = crate::audio_mix::SendConfig {
+                gain_db: db,
+                ..Default::default()
+            };
             if let Err(message) = check.validate() {
                 return CommandResult::Err {
                     code: ErrorCode::InvalidInput,
@@ -564,7 +567,9 @@ mod tests {
         let Some(mut app) = headless_app() else {
             return;
         };
-        let mut add = |name: &str| match app.execute_command(EngineCommand::AddAudioBus { name: name.into() }) {
+        let mut add = |name: &str| match app
+            .execute_command(EngineCommand::AddAudioBus { name: name.into() })
+        {
             CommandResult::OkWithId { uuid } => uuid,
             other => panic!("expected a bus, got {other:?}"),
         };
@@ -584,8 +589,20 @@ mod tests {
                 .find(|b| b.uuid == call)
                 .and_then(|b| b.echo_room.clone())
         };
-        assert!(matches!(set(&mut app, Some(&call)), CommandResult::Err { code: ErrorCode::InvalidInput, .. }));
-        assert!(matches!(set(&mut app, Some("nope")), CommandResult::Err { code: ErrorCode::NotFound, .. }));
+        assert!(matches!(
+            set(&mut app, Some(&call)),
+            CommandResult::Err {
+                code: ErrorCode::InvalidInput,
+                ..
+            }
+        ));
+        assert!(matches!(
+            set(&mut app, Some("nope")),
+            CommandResult::Err {
+                code: ErrorCode::NotFound,
+                ..
+            }
+        ));
         assert_eq!(echo_room(&app), None);
         assert!(matches!(set(&mut app, Some(&room)), CommandResult::Ok));
         assert_eq!(echo_room(&app), Some(room.clone()));

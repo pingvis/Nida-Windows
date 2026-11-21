@@ -365,11 +365,18 @@ impl Fanout {
         let limit = buffer_limit(bytes_per_sec, buffer_secs);
         // Under the lock pieces are offered under: none is offered against
         // the new limit before each destination has what it carries.
-        let slots = self.shared.slots.lock().unwrap_or_else(PoisonError::into_inner);
+        let slots = self
+            .shared
+            .slots
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let before = self.shared.limit.load(Ordering::Relaxed);
         for runner in slots.iter().flatten() {
             let carry = &runner.state.carry;
-            carry.store(carried(before, limit, carry.load(Ordering::Relaxed)), Ordering::Relaxed);
+            carry.store(
+                carried(before, limit, carry.load(Ordering::Relaxed)),
+                Ordering::Relaxed,
+            );
         }
         self.shared.limit.store(limit, Ordering::Relaxed);
     }
@@ -435,12 +442,19 @@ impl Shared {
     /// megabit stream as twenty kilobits, and a piece lost then as seconds.
     fn came_in(&self, bytes: usize, now: Instant) {
         let mut came = self.came.lock().unwrap_or_else(PoisonError::into_inner);
-        if came.back().is_some_and(|&(at, _)| now.duration_since(at) >= WINDOW) {
+        if came
+            .back()
+            .is_some_and(|&(at, _)| now.duration_since(at) >= WINDOW)
+        {
             came.clear();
         }
         let total = came.back().map_or(0, |&(_, b)| b) + bytes as u64;
         came.push_back((now, total));
-        while came.len() > 1 && came.get(1).is_some_and(|&(at, _)| now.duration_since(at) >= WINDOW) {
+        while came.len() > 1
+            && came
+                .get(1)
+                .is_some_and(|&(at, _)| now.duration_since(at) >= WINDOW)
+        {
             came.pop_front();
         }
     }
@@ -464,7 +478,11 @@ impl Shared {
 /// until it drains (see `offer`) or a new limit covers it — a rate lowered,
 /// raised part way back, or set again, takes nothing it holds.
 fn carried(before: usize, limit: usize, carry: usize) -> usize {
-    let kept = if limit < before { before.max(carry) } else { carry };
+    let kept = if limit < before {
+        before.max(carry)
+    } else {
+        carry
+    };
     if kept > limit {
         kept
     } else {
@@ -528,7 +546,11 @@ struct Resume {
 /// broken. A destination connecting starts at a keyframe the same way.
 /// `streams` are the stream's PIDs, as its tables say.
 fn offer(
-    (tx, queued, state): (&crossbeam_channel::Sender<Queued>, &AtomicUsize, &RunnerState),
+    (tx, queued, state): (
+        &crossbeam_channel::Sender<Queued>,
+        &AtomicUsize,
+        &RunnerState,
+    ),
     piece: &Piece,
     (keyframe, streams): (Option<&Resume>, &[u16]),
     limit: usize,
@@ -631,7 +653,11 @@ impl Runner {
         // The stream's rate until pieces say it.
         state.rate_bps.store(rate_bps, Ordering::Relaxed);
         // What it sends starts at a keyframe.
-        state.flow.lock().unwrap_or_else(PoisonError::into_inner).skip = Skip::ToKeyframe;
+        state
+            .flow
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .skip = Skip::ToKeyframe;
         let stop = Arc::new(AtomicBool::new(false));
         let thread = {
             let (target, state, stop) = (target.clone(), state.clone(), stop.clone());
@@ -682,7 +708,11 @@ impl RunnerState {
     /// `pieces` of `bytes` in all thrown away at a stream of `rate_bps`,
     /// counted once the destination has been live: whether they were.
     fn note_lost(&self, pieces: u64, bytes: usize, rate_bps: u64) -> bool {
-        self.note_lost_us(pieces, bytes, bytes as u64 * 8 * 1_000_000 / rate_bps.max(1))
+        self.note_lost_us(
+            pieces,
+            bytes,
+            bytes as u64 * 8 * 1_000_000 / rate_bps.max(1),
+        )
     }
 
     /// `pieces` of `bytes` in all, holding `us` of stream, thrown away:
@@ -692,7 +722,8 @@ impl RunnerState {
             && (self.sending.load(Ordering::Relaxed) || self.been_live.load(Ordering::Relaxed));
         if counted {
             self.dropped.fetch_add(pieces, Ordering::Relaxed);
-            self.dropped_bytes.fetch_add(bytes as u64, Ordering::Relaxed);
+            self.dropped_bytes
+                .fetch_add(bytes as u64, Ordering::Relaxed);
             self.dropped_us.fetch_add(us, Ordering::Relaxed);
         }
         counted
@@ -828,9 +859,10 @@ fn supervise(
             state
                 .network
                 .store(super::network::epoch_for(&target.url), Ordering::Relaxed);
-            state
-                .generation
-                .store(NEXT_GENERATION.fetch_add(1, Ordering::Relaxed), Ordering::Relaxed);
+            state.generation.store(
+                NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
+                Ordering::Relaxed,
+            );
         }
         let outcome = run_sender(target, probe_us, (rx, queued), state, stop);
         state.sending.store(false, Ordering::Relaxed);
@@ -997,10 +1029,14 @@ fn run_sender(
         }
         let (last_advance, written) = {
             let p = state.lock();
-            (p.last_advance, p.samples.back().map_or(0, |&(_, _, bytes)| bytes))
+            (
+                p.last_advance,
+                p.samples.back().map_or(0, |&(_, _, bytes)| bytes),
+            )
         };
         let epoch = super::network::epoch_for(&target.url);
-        if watch.gone(epoch, last_advance, written, Instant::now()) && !stop.load(Ordering::SeqCst) {
+        if watch.gone(epoch, last_advance, written, Instant::now()) && !stop.load(Ordering::SeqCst)
+        {
             break End::NetworkChanged;
         }
         std::thread::sleep(Duration::from_millis(100));
@@ -1073,7 +1109,13 @@ impl NetworkWatch {
     /// [`SOCKET_MOST`]), [`NETWORK_TRUST`] at the least, goes a way that
     /// works, and that count is trusted: what it wrote went somewhere,
     /// however slow its stream.
-    fn gone(&mut self, epoch: u64, last_advance: Option<Instant>, written: u64, now: Instant) -> bool {
+    fn gone(
+        &mut self,
+        epoch: u64,
+        last_advance: Option<Instant>,
+        written: u64,
+        now: Instant,
+    ) -> bool {
         if epoch == self.trusted {
             return false;
         }
@@ -1279,7 +1321,9 @@ mod tests {
         assert_eq!(s.dropped, 2);
         assert_eq!(s.dropped_bytes, 5096, "their bytes counted too");
         assert!(
-            s.message.as_deref().is_some_and(|m| m.contains("lower the Video bit rate")),
+            s.message
+                .as_deref()
+                .is_some_and(|m| m.contains("lower the Video bit rate")),
             "and what to do said: {:?}",
             s.message
         );
@@ -1319,7 +1363,11 @@ mod tests {
             "two pieces fit in 1000 bytes, the third is dropped"
         );
         assert_eq!(state.dropped.load(Ordering::Relaxed), 1);
-        assert_eq!(queued.load(Ordering::Relaxed), 800, "the bytes waiting counted");
+        assert_eq!(
+            queued.load(Ordering::Relaxed),
+            800,
+            "the bytes waiting counted"
+        );
         // What comes after waits for a keyframe (see below).
     }
 
@@ -1353,14 +1401,26 @@ mod tests {
         assert_eq!(queued.load(Ordering::Relaxed), 400);
         *state.flow.lock().unwrap() = Flow::default();
         offer((&tx, &queued, &state), &piece, (None, &[]), 500, 8_000_000);
-        assert_eq!(queued.load(Ordering::Relaxed), 800, "held under the old limit");
-        assert_eq!(state.dropped.load(Ordering::Relaxed), dropped, "nothing more lost");
+        assert_eq!(
+            queued.load(Ordering::Relaxed),
+            800,
+            "held under the old limit"
+        );
+        assert_eq!(
+            state.dropped.load(Ordering::Relaxed),
+            dropped,
+            "nothing more lost"
+        );
         // Drained under the new limit, the new one holds.
         while let Ok(sent) = rx.try_recv() {
             queued.fetch_sub(sent.len(), Ordering::Relaxed);
         }
         offer((&tx, &queued, &state), &piece, (None, &[]), 500, 8_000_000);
-        assert_eq!(state.carry.load(Ordering::Relaxed), 0, "the new limit from now on");
+        assert_eq!(
+            state.carry.load(Ordering::Relaxed),
+            0,
+            "the new limit from now on"
+        );
         offer((&tx, &queued, &state), &piece, (None, &[]), 500, 8_000_000);
         assert_eq!(rx.len(), 1, "a second piece is over the new limit");
     }
@@ -1371,7 +1431,11 @@ mod tests {
     #[test]
     fn a_lowered_limit_is_carried_until_a_new_one_covers_it() {
         assert_eq!(carried(1000, 500, 0), 1000);
-        assert_eq!(carried(800, 500, 1000), 1000, "lowered twice: the first it had");
+        assert_eq!(
+            carried(800, 500, 1000),
+            1000,
+            "lowered twice: the first it had"
+        );
         assert_eq!(carried(500, 700, 1000), 1000, "raised part way back");
         assert_eq!(carried(500, 500, 1000), 1000, "set again");
         assert_eq!(carried(500, 2000, 1000), 0, "raised past it");
@@ -1400,7 +1464,11 @@ mod tests {
             drain(&rx, &queued, &state);
             assert_eq!(queued.load(Ordering::Relaxed), 0);
             assert!(rx.is_empty());
-            let counted = if been_live { (3, 3750, 40_000) } else { (0, 0, 0) };
+            let counted = if been_live {
+                (3, 3750, 40_000)
+            } else {
+                (0, 0, 0)
+            };
             assert_eq!(
                 (
                     state.dropped.load(Ordering::Relaxed),
@@ -1427,20 +1495,38 @@ mod tests {
         let fast = |ms: u64| ms * 1000;
         let mut watch = NetworkWatch::new(0);
         assert!(!watch.gone(0, Some(at(0)), 0, at(100)), "no change");
-        assert!(!watch.gone(1, Some(at(900)), fast(900), at(1000)), "changed, still going out");
-        assert!(watch.gone(1, Some(at(900)), fast(900), at(3000)), "quiet two seconds after: gone");
-        assert!(NetworkWatch::new(0).gone(1, None, 0, at(0)), "never went out: gone");
+        assert!(
+            !watch.gone(1, Some(at(900)), fast(900), at(1000)),
+            "changed, still going out"
+        );
+        assert!(
+            watch.gone(1, Some(at(900)), fast(900), at(3000)),
+            "quiet two seconds after: gone"
+        );
+        assert!(
+            NetworkWatch::new(0).gone(1, None, 0, at(0)),
+            "never went out: gone"
+        );
 
         let mut watch = NetworkWatch::new(0);
         for ms in (1000..=9000).step_by(500) {
-            assert!(!watch.gone(1, Some(at(ms)), fast(ms), at(ms)), "going on through it at {ms}");
+            assert!(
+                !watch.gone(1, Some(at(ms)), fast(ms), at(ms)),
+                "going on through it at {ms}"
+            );
         }
-        assert!(watch.gone(1, Some(at(9000)), fast(9000), at(11_100)), "8 MB since: not yet trusted");
+        assert!(
+            watch.gone(1, Some(at(9000)), fast(9000), at(11_100)),
+            "8 MB since: not yet trusted"
+        );
         let mut watch = NetworkWatch::new(0);
         for ms in (1000..=9500).step_by(500) {
             assert!(!watch.gone(1, Some(at(ms)), fast(ms), at(ms)));
         }
-        assert!(!watch.gone(1, Some(at(9500)), fast(9500), at(12_000)), "8.5 MB since: trusted");
+        assert!(
+            !watch.gone(1, Some(at(9500)), fast(9500), at(12_000)),
+            "8.5 MB since: trusted"
+        );
 
         // A black picture's 250 kbps: seeming to send for a minute earns
         // nothing — a socket could hold it all.
@@ -1449,7 +1535,10 @@ mod tests {
         for ms in (0..=60_000).step_by(500) {
             assert!(!watch.gone(1, Some(at(ms)), slow(ms), at(ms)));
         }
-        assert!(watch.gone(1, Some(at(60_000)), slow(60_000), at(62_500)), "quiet after a minute: gone");
+        assert!(
+            watch.gone(1, Some(at(60_000)), slow(60_000), at(62_500)),
+            "quiet after a minute: gone"
+        );
 
         // A second change just as the first would have been trusted: its
         // own wait and count, so the way dying with it is still caught.
@@ -1457,9 +1546,18 @@ mod tests {
         for ms in (0..=8000).step_by(500) {
             assert!(!watch.gone(1, Some(at(ms)), fast(ms), at(ms)));
         }
-        assert!(!watch.gone(2, Some(at(8100)), fast(8100), at(8100)), "a second change");
-        assert!(!watch.gone(2, Some(at(8600)), fast(8600), at(8600)), "not yet trusted");
-        assert!(watch.gone(2, Some(at(8600)), fast(8600), at(10_700)), "quiet after the second: gone");
+        assert!(
+            !watch.gone(2, Some(at(8100)), fast(8100), at(8100)),
+            "a second change"
+        );
+        assert!(
+            !watch.gone(2, Some(at(8600)), fast(8600), at(8600)),
+            "not yet trusted"
+        );
+        assert!(
+            watch.gone(2, Some(at(8600)), fast(8600), at(10_700)),
+            "quiet after the second: gone"
+        );
     }
 
     /// The sender is given no socket size: the system's own.
@@ -1493,35 +1591,55 @@ mod tests {
             came: Mutex::new(std::collections::VecDeque::new()),
             remedy: Mutex::new(Remedy::default()),
         };
-        assert_eq!(shared.reckoned_bps(), 4_160_000, "no measure yet: the rate the encoder took");
+        assert_eq!(
+            shared.reckoned_bps(),
+            4_160_000,
+            "no measure yet: the rate the encoder took"
+        );
         let now = Instant::now();
         {
             let mut came = shared.came.lock().unwrap();
             // A megabit a second for three seconds, up to now.
             for tenth in 0..=30u64 {
-                let at = now.checked_sub(Duration::from_millis(3000 - tenth * 100)).unwrap();
+                let at = now
+                    .checked_sub(Duration::from_millis(3000 - tenth * 100))
+                    .unwrap();
                 came.push_back((at, tenth * 12_500));
             }
         }
         let measured = shared.reckoned_bps();
-        assert!((990_000..=1_010_000).contains(&measured), "measured: {measured}");
+        assert!(
+            (990_000..=1_010_000).contains(&measured),
+            "measured: {measured}"
+        );
         {
             let mut came = shared.came.lock().unwrap();
             for sample in came.iter_mut() {
                 sample.0 = sample.0.checked_sub(WINDOW).unwrap();
             }
         }
-        assert_eq!(shared.reckoned_bps(), 4_160_000, "gone quiet: the rate the encoder took");
+        assert_eq!(
+            shared.reckoned_bps(),
+            4_160_000,
+            "gone quiet: the rate the encoder took"
+        );
         // Back after five seconds' silence: measured afresh, from the
         // first bytes back — not across the silence.
         let back = Instant::now();
         shared.came_in(12_500, back);
-        assert_eq!(shared.reckoned_bps(), 4_160_000, "one sample back: no measure yet");
+        assert_eq!(
+            shared.reckoned_bps(),
+            4_160_000,
+            "one sample back: no measure yet"
+        );
         for tenth in 1..=25u64 {
             shared.came_in(12_500, back + Duration::from_millis(tenth * 100));
         }
         let kbps = shared.measured_kbps().expect("measured again");
-        assert!((990..=1010).contains(&kbps), "a megabit, not twenty kilobits: {kbps}");
+        assert!(
+            (990..=1010).contains(&kbps),
+            "a megabit, not twenty kilobits: {kbps}"
+        );
     }
 
     /// Packets with their continuity counts left out, to compare what they
@@ -1566,7 +1684,13 @@ mod tests {
                 tables: scan.tables(),
             });
             // 1 Mbit/s: a 188-byte packet is 1.504 ms.
-            offer((&tx, queued, &state), piece, (keyframe.as_ref(), scan.streams()), 1000, 1_000_000);
+            offer(
+                (&tx, queued, &state),
+                piece,
+                (keyframe.as_ref(), scan.streams()),
+                1000,
+                1_000_000,
+            );
         };
         let first = ts_piece(true, true);
         send(&first, &queued);
@@ -1576,7 +1700,11 @@ mod tests {
         let taken = rx.recv().unwrap();
         queued.fetch_sub(taken.len(), Ordering::Relaxed);
         send(&ts_piece(false, false), &queued);
-        assert_eq!(rx.len(), 0, "nothing until a keyframe, though there is room");
+        assert_eq!(
+            rx.len(),
+            0,
+            "nothing until a keyframe, though there is room"
+        );
         // A keyframe: resumed from it, the tables first.
         send(&ts_piece(false, true), &queued);
         let resumed = rx.recv().expect("resumed at the keyframe");
@@ -1585,14 +1713,22 @@ mod tests {
             uncounted(&first[..2 * TS_PACKET]),
             "the tables first"
         );
-        assert_eq!(resumed[3] & 0x0F, 1, "counted on from the tables sent before");
+        assert_eq!(
+            resumed[3] & 0x0F,
+            1,
+            "counted on from the tables sent before"
+        );
         let first_after = &resumed[2 * TS_PACKET..3 * TS_PACKET];
         assert_eq!(
             (first_after[1], first_after[2], first_after[3] & 0xF0),
             (0x41, 0x00, 0x30),
             "then the keyframe's own packet: the video's, flagged"
         );
-        assert_eq!(resumed.len(), 4 * TS_PACKET, "the audio packet before it left out");
+        assert_eq!(
+            resumed.len(),
+            4 * TS_PACKET,
+            "the audio packet before it left out"
+        );
         assert_eq!(state.dropped.load(Ordering::Relaxed), 3);
         let lost = state.dropped_us.load(Ordering::Relaxed);
         assert_eq!(lost, 7 * 1504, "seven packets' time lost");
@@ -1615,23 +1751,53 @@ mod tests {
                 at,
                 tables: scan.tables(),
             });
-            offer((&tx, &queued, &state), &piece, (keyframe.as_ref(), scan.streams()), 1000, 1_000_000);
+            offer(
+                (&tx, &queued, &state),
+                &piece,
+                (keyframe.as_ref(), scan.streams()),
+                1000,
+                1_000_000,
+            );
         };
-        send([pat(0x1000), pmt(0x1000, 0x101, 0x100), packet(0x100, true, true, &[1]), packet(0x100, false, false, &[2])].concat());
+        send(
+            [
+                pat(0x1000),
+                pmt(0x1000, 0x101, 0x100),
+                packet(0x100, true, true, &[1]),
+                packet(0x100, false, false, &[2]),
+            ]
+            .concat(),
+        );
         assert_eq!(rx.len(), 1);
         // Over the limit: the frame's rest, and the sound's start ends it.
-        let rest = [packet(0x100, false, false, &[3]), packet(0x100, false, false, &[4])].concat();
+        let rest = [
+            packet(0x100, false, false, &[3]),
+            packet(0x100, false, false, &[4]),
+        ]
+        .concat();
         send([rest.clone(), packet(0x101, true, true, &[5])].concat());
         assert_eq!(rx.len(), 2, "the frame's rest went, past the limit");
         // The next frame's start closes it; nothing more until a keyframe.
-        send([packet(0x100, true, false, &[6]), packet(0x100, false, false, &[7])].concat());
+        send(
+            [
+                packet(0x100, true, false, &[6]),
+                packet(0x100, false, false, &[7]),
+            ]
+            .concat(),
+        );
         assert_eq!(rx.len(), 2);
         // The sender catches up.
         let mut got: Vec<Piece> = rx.try_iter().map(|q| q.piece).collect();
         for piece in &got {
             queued.fetch_sub(piece.len(), Ordering::Relaxed);
         }
-        send([packet(0x100, true, true, &[8]), packet(0x100, false, false, &[9])].concat());
+        send(
+            [
+                packet(0x100, true, true, &[8]),
+                packet(0x100, false, false, &[9]),
+            ]
+            .concat(),
+        );
         got.extend(rx.try_iter().map(|q| q.piece));
         assert_eq!(got.len(), 3, "resumed at the keyframe");
         assert_eq!(uncounted(&got[1]), uncounted(&rest));
@@ -1655,17 +1821,30 @@ mod tests {
                 at,
                 tables: scan.tables(),
             });
-            offer((&tx, &queued, &state), &piece, (keyframe.as_ref(), scan.streams()), 1 << 20, 1_000_000);
+            offer(
+                (&tx, &queued, &state),
+                &piece,
+                (keyframe.as_ref(), scan.streams()),
+                1 << 20,
+                1_000_000,
+            );
         }
         assert_eq!(rx.len(), 1, "only from the keyframe on");
-        assert_eq!(state.dropped.load(Ordering::Relaxed), 0, "not lost: not yet sending");
+        assert_eq!(
+            state.dropped.load(Ordering::Relaxed),
+            0,
+            "not lost: not yet sending"
+        );
     }
 
     /// What a struggling destination says to do follows who lowers the rate.
     #[test]
     fn the_remedy_follows_who_lowers_the_rate() {
         let state = RunnerState::default();
-        recent(&state, &[(1000, 0), (1500, 1), (2000, 2), (2500, 3), (3000, 4)]);
+        recent(
+            &state,
+            &[(1000, 0), (1500, 1), (2000, 2), (2500, 3), (3000, 4)],
+        );
         state.note_drop(4096, 8_000_000);
         let said = |remedy| state.status(remedy, 0).message.unwrap_or_default();
         assert!(said(Remedy::LowerByHand).contains("stop, lower the Video bit rate"));

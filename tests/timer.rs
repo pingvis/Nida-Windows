@@ -96,7 +96,11 @@ fn add_timer_input(app: &mut VardaApp, settings: TimerSettings) -> String {
         },
     ));
     let state = app.build_engine_state();
-    assert_eq!(state.mixer.channels.len(), before + 1, "an input of its own");
+    assert_eq!(
+        state.mixer.channels.len(),
+        before + 1,
+        "an input of its own"
+    );
     let channel = state.mixer.channels.last().unwrap();
     channel.decks.last().unwrap().uuid.clone()
 }
@@ -117,7 +121,11 @@ fn a_count_down_starts_pauses_adjusts_and_resets() {
     let state = app.build_engine_state();
     assert_eq!(state.mixer.channels.last().unwrap().name, "Count down");
     let t = timer(&app, &deck);
-    assert_eq!((t.text.as_str(), t.running), ("1:30", false), "paused at its top");
+    assert_eq!(
+        (t.text.as_str(), t.running),
+        ("1:30", false),
+        "paused at its top"
+    );
 
     control(&mut app, &deck, TimerAction::Start);
     assert!(timer(&app, &deck).running);
@@ -236,7 +244,8 @@ fn f16(bits: u16) -> f32 {
 /// Every pixel of an `Rgba16Float` texture, row by row.
 fn pixels(gpu: &varda::renderer::context::GpuContext, texture: &wgpu::Texture) -> Vec<[f32; 4]> {
     let (w, h) = (texture.width(), texture.height());
-    let row = (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let row =
+        (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: u64::from(row * h),
@@ -300,8 +309,14 @@ fn white_box(app: &mut VardaApp, ch: usize) -> Option<[f32; 4]> {
             .map(|(i, _)| (i as u32 % w, i as u32 / w))
             .collect();
         if !white.is_empty() {
-            let (x0, x1) = (white.iter().map(|p| p.0).min()?, white.iter().map(|p| p.0).max()?);
-            let (y0, y1) = (white.iter().map(|p| p.1).min()?, white.iter().map(|p| p.1).max()?);
+            let (x0, x1) = (
+                white.iter().map(|p| p.0).min()?,
+                white.iter().map(|p| p.0).max()?,
+            );
+            let (y0, y1) = (
+                white.iter().map(|p| p.1).min()?,
+                white.iter().map(|p| p.1).max()?,
+            );
             return Some([
                 x0 as f32 / w as f32,
                 y0 as f32 / h as f32,
@@ -354,10 +369,16 @@ fn the_numbers_are_drawn_where_the_look_puts_them_over_the_layer_below() {
     assert!(x0 > 0.5 && y0 > 0.5, "bottom right: {x0},{y0} – {x1},{y1}");
     assert!(x1 < 0.99 && y1 < 0.99, "in from the edges: {x1},{y1}");
     let height = y1 - y0;
-    assert!((0.17..0.23).contains(&height), "a fifth of the frame high: {height}");
+    assert!(
+        (0.17..0.23).contains(&height),
+        "a fifth of the frame high: {height}"
+    );
     let mixer = app.mixer_ref();
     let corner = pixels(app.gpu_context(), &mixer.channels()[0].composite_texture)[0];
-    assert!(corner[2] > 0.9 && corner[0] < 0.1, "the layer below shows: {corner:?}");
+    assert!(
+        corner[2] > 0.9 && corner[0] < 0.1,
+        "the layer below shows: {corner:?}"
+    );
 
     settings.look.anchor = Anchor::TopLeft;
     set(&mut app, &deck, settings);

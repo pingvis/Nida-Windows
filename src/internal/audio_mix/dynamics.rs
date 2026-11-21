@@ -15,8 +15,8 @@
 //! pingvis); its FFmpeg compressor gave way to `dsp.rs`.
 
 use super::dsp::{
-    Compressor, CompressorConfig, DeEsser, DeEsserConfig, Eq, EqConfig, Gate, GateConfig, Leveler, LevelerConfig, Limiter,
-    LimiterConfig, LoudnessMeter, LoudnessSnapshot, LowCut, LowCutConfig,
+    Compressor, CompressorConfig, DeEsser, DeEsserConfig, Eq, EqConfig, Gate, GateConfig, Leveler,
+    LevelerConfig, Limiter, LimiterConfig, LoudnessMeter, LoudnessSnapshot, LowCut, LowCutConfig,
 };
 use super::reader::{gain_to_db, Frame};
 
@@ -438,7 +438,11 @@ mod tests {
             chain.snapshot().gate_reduction_db
         };
         assert!(reduction(false) < 1.0, "rumble alone holds it open");
-        assert!(reduction(true) > 15.0, "the low cut first: closed, {}", reduction(true));
+        assert!(
+            reduction(true) > 15.0,
+            "the low cut first: closed, {}",
+            reduction(true)
+        );
     }
 
     /// The gate is keyed before the EQ: a band lifting the room does not
@@ -472,7 +476,11 @@ mod tests {
             let mut block = tone(0.01, 500.0, at);
             chain.process(&mut block);
         }
-        assert!(chain.snapshot().gate_reduction_db > 15.0, "closed: {}", chain.snapshot().gate_reduction_db);
+        assert!(
+            chain.snapshot().gate_reduction_db > 15.0,
+            "closed: {}",
+            chain.snapshot().gate_reduction_db
+        );
     }
 
     /// The de-esser comes after the compressor: an "s" the compressor's
@@ -501,8 +509,16 @@ mod tests {
             chain.process(&mut block);
         }
         let snapshot = chain.snapshot();
-        assert!(snapshot.de_esser_reduction_db > 3.0, "{}", snapshot.de_esser_reduction_db);
-        assert!((snapshot.de_esser_band_db + 28.0).abs() < 1.0, "{}", snapshot.de_esser_band_db);
+        assert!(
+            snapshot.de_esser_reduction_db > 3.0,
+            "{}",
+            snapshot.de_esser_reduction_db
+        );
+        assert!(
+            (snapshot.de_esser_band_db + 28.0).abs() < 1.0,
+            "{}",
+            snapshot.de_esser_band_db
+        );
     }
 
     #[test]
@@ -534,7 +550,11 @@ mod tests {
         });
         let snapshot = chain.snapshot();
         assert_eq!(snapshot.low_cut, Some(LowCutConfig::default()));
-        assert_eq!(snapshot.gate, Some(GateConfig::default()), "a gate out of range: off");
+        assert_eq!(
+            snapshot.gate,
+            Some(GateConfig::default()),
+            "a gate out of range: off"
+        );
         assert_eq!(snapshot.leveler, Some(LevelerConfig::default()));
         assert_eq!(snapshot.config, CompressorConfig::default());
     }

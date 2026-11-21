@@ -695,8 +695,7 @@ fn a_powerpoint_talk_ended_by_hand_is_off_and_powerpoint_left_alone_until_one_is
             && s.talks[0].state == TalkState::Ready
             && s.talks[2].state == TalkState::Ready
     });
-    let slide_of_two =
-        |s: &SlidesSnapshot| s.talks[1].presentation.as_ref().and_then(|p| p.slide);
+    let slide_of_two = |s: &SlidesSnapshot| s.talks[1].presentation.as_ref().and_then(|p| p.slide);
     step(&mut app, Go::Next);
     until(&mut app, |s| slide_of_two(s) == Some(2));
     step(&mut app, Go::Next);
@@ -726,7 +725,12 @@ fn a_powerpoint_talk_ended_by_hand_is_off_and_powerpoint_left_alone_until_one_is
         "the third comes next; the one ended is the one before"
     );
     let log = ppt.log();
-    for line in ["end two.pptx", "close one.pptx", "close two.pptx", "close three.pptx"] {
+    for line in [
+        "end two.pptx",
+        "close one.pptx",
+        "close two.pptx",
+        "close three.pptx",
+    ] {
         assert!(log.iter().any(|l| l == line), "{line}: {log:?}");
     }
 
@@ -988,10 +992,16 @@ fn a_clip_talk_goes_on_with_its_first_frame_never_an_empty_picture() {
         app.render_mixer_frame();
         let on = middle_of_main(&app);
         if slides(&app).unwrap().2.live == Some(1) {
-            assert!(near(on, linear([255, 0, 0])), "the clip came on without its picture: {on:?}");
+            assert!(
+                near(on, linear([255, 0, 0])),
+                "the clip came on without its picture: {on:?}"
+            );
             break;
         }
-        assert!(near(on, linear([0, 0, 255])), "what was on did not stay on: {on:?}");
+        assert!(
+            near(on, linear([0, 0, 255])),
+            "what was on did not stay on: {on:?}"
+        );
         assert!(Instant::now() < deadline, "the clip never came on");
         std::thread::sleep(Duration::from_millis(2));
     }
@@ -1504,18 +1514,29 @@ fn a_powerpoint_talk_given_another_file_plays_on_until_started_again() {
         std::thread::sleep(Duration::from_millis(5));
     }
     let log = ppt.log();
-    assert!(!log.iter().any(|l| l == "end one.pptx" || l == "close one.pptx"), "{log:?}");
+    assert!(
+        !log.iter()
+            .any(|l| l == "end one.pptx" || l == "close one.pptx"),
+        "{log:?}"
+    );
     assert!(!log.iter().any(|l| l == "show one-v2.pptx"), "{log:?}");
     assert_eq!(slides(&app).unwrap().2.live, Some(0), "still on");
     // Started again: the new file plays, then the old show ends.
     start(&mut app, TalkRef::Id(s.talks[0].id.clone()));
     until(&mut app, |_| ppt.log().iter().any(|l| l == "end one.pptx"));
     let log = ppt.log();
-    let show_v2 = log.iter().position(|l| l == "show one-v2.pptx").expect("the new file plays");
+    let show_v2 = log
+        .iter()
+        .position(|l| l == "show one-v2.pptx")
+        .expect("the new file plays");
     let end_old = log.iter().position(|l| l == "end one.pptx").unwrap();
     assert!(show_v2 < end_old, "{log:?}");
     let s = slides(&app).unwrap().2;
-    assert_eq!((s.live, s.previous), (Some(0), None), "the same talk, not the one before it");
+    assert_eq!(
+        (s.live, s.previous),
+        (Some(0), None),
+        "the same talk, not the one before it"
+    );
 }
 
 #[test]
@@ -1618,7 +1639,9 @@ fn a_web_talk_is_opened_ahead_played_stepped_by_its_keys_and_closed_two_talks_on
     assert!(!web.pages()[0].2, "not playing while only ready");
     // Started: played, its window captured, on; where it is, from the page.
     start(&mut app, TalkRef::Next);
-    let s = until(&mut app, |s| s.live == Some(0) && s.talks[0].shown == Some(5));
+    let s = until(&mut app, |s| {
+        s.live == Some(0) && s.talks[0].shown == Some(5)
+    });
     assert_eq!(s.talks[0].position, Some(1));
     // Its media plays from the frame after its picture took over.
     app.render_mixer_frame();
@@ -1664,7 +1687,13 @@ fn a_talk_is_renamed_moved_and_taken_out_by_its_id_and_each_undone() {
     let (_, layer, s) = slides(&app).unwrap();
     let ids: Vec<String> = s.talks.iter().map(|t| t.id.clone()).collect();
     let names = |app: &VardaApp| -> Vec<String> {
-        slides(app).unwrap().2.talks.iter().map(|t| t.name.clone()).collect()
+        slides(app)
+            .unwrap()
+            .2
+            .talks
+            .iter()
+            .map(|t| t.name.clone())
+            .collect()
     };
     // A talk not there, or a file nothing plays: refused, nothing changed
     // (each still leaves an undo step, as any refused edit does: asked first).
@@ -1767,8 +1796,13 @@ fn a_talk_given_another_file_keeps_each_files_place_apart() {
     ));
     step(&mut app, Go::Next);
     step(&mut app, Go::Next);
-    let s = until(&mut app, |s| s.on.as_ref().and_then(|t| t.position) == Some(3));
-    assert_eq!(s.talks[0].path, std::fs::canonicalize(&new).unwrap().to_string_lossy());
+    let s = until(&mut app, |s| {
+        s.on.as_ref().and_then(|t| t.position) == Some(3)
+    });
+    assert_eq!(
+        s.talks[0].path,
+        std::fs::canonicalize(&new).unwrap().to_string_lossy()
+    );
     // Started again: the new file, from its own first page — not page 3
     // of the old one.
     start(&mut app, TalkRef::Id(id));
@@ -1804,7 +1838,8 @@ fn the_manuals_examples_are_commands_nida_takes() {
             }
         } else if let Some(json) = line.strip_prefix("POST /api/inputs") {
             let body: serde_json::Value = serde_json::from_str(json.trim()).unwrap();
-            let source = serde_json::from_value::<varda::engine::InputSource>(body["source"].clone());
+            let source =
+                serde_json::from_value::<varda::engine::InputSource>(body["source"].clone());
             assert!(source.is_ok(), "{line}: {source:?}");
         }
     }
@@ -1902,7 +1937,9 @@ fn a_talk_replaced_once_moved_on_starts_its_new_file_from_the_beginning() {
     until(&mut app, |s| s.live == Some(0));
     step(&mut app, Go::Next);
     step(&mut app, Go::Next);
-    until(&mut app, |s| s.on.as_ref().and_then(|t| t.position) == Some(3));
+    until(&mut app, |s| {
+        s.on.as_ref().and_then(|t| t.position) == Some(3)
+    });
     ok(send_cmd(
         &mut app,
         EngineCommand::EditTalk {
@@ -1959,7 +1996,9 @@ fn a_web_talk_given_a_pdf_says_the_pdfs_page_not_the_pages_slide() {
     until(&mut app, |s| s.live == Some(0));
     step(&mut app, Go::Next);
     step(&mut app, Go::Next);
-    until(&mut app, |s| s.on.as_ref().and_then(|t| t.position) == Some(3));
+    until(&mut app, |s| {
+        s.on.as_ref().and_then(|t| t.position) == Some(3)
+    });
     ok(send_cmd(
         &mut app,
         EngineCommand::EditTalk {
@@ -2030,7 +2069,11 @@ fn a_web_talk_is_shown_only_once_its_page_is_set_up_and_late_answers_are_let_go(
     let s = slides(&app).unwrap().2;
     assert_eq!(s.live, Some(0), "the talk on stays on");
     assert_eq!(s.talks[1].state, TalkState::Starting);
-    assert!(!web.log().iter().any(|l| l.starts_with("capture ")), "{:?}", web.log());
+    assert!(
+        !web.log().iter().any(|l| l.starts_with("capture ")),
+        "{:?}",
+        web.log()
+    );
     until_main_is(&mut app, page_colour(1));
     let key = page_of(&web, &layer);
     web.set_up(&key);
@@ -2102,14 +2145,18 @@ fn a_web_talk_opened_again_goes_back_to_where_it_was_left() {
     until(&mut app, |s| s.live == Some(0));
     step(&mut app, Go::Next);
     step(&mut app, Go::Next);
-    until(&mut app, |s| s.on.as_ref().and_then(|t| t.position) == Some(3));
+    until(&mut app, |s| {
+        s.on.as_ref().and_then(|t| t.position) == Some(3)
+    });
     start(&mut app, TalkRef::Next);
     until(&mut app, |s| s.live == Some(1));
     start(&mut app, TalkRef::Next);
     until(&mut app, |s| s.live == Some(2));
     until(&mut app, |_| web.pages().is_empty());
     start(&mut app, TalkRef::Id(id));
-    let s = until(&mut app, |s| s.live == Some(0) && s.on.as_ref().is_some_and(|t| t.position.is_some()));
+    let s = until(&mut app, |s| {
+        s.live == Some(0) && s.on.as_ref().is_some_and(|t| t.position.is_some())
+    });
     assert_eq!(s.on.unwrap().position, Some(3));
 }
 
@@ -2158,7 +2205,11 @@ fn a_web_page_is_laid_out_again_when_the_picture_changes_size() {
             .is_some_and(|at| log[at..].iter().any(|l| *l == format!("capture {key}")))
     };
     until(&mut app, |_| captures_after(&web.log()));
-    assert_eq!(web.log().iter().filter(|l| l.starts_with("load ")).count(), 1, "not opened again");
+    assert_eq!(
+        web.log().iter().filter(|l| l.starts_with("load ")).count(),
+        1,
+        "not opened again"
+    );
 }
 
 /// Web talks' sound is one strip, as PowerPoint's is, whichever Slides input
@@ -2312,10 +2363,17 @@ fn a_page_slow_to_capture_is_waited_for() {
     };
     frames_for(&mut app, 4.0);
     let asked = |web: &varda::presentation::web::FakeWeb| {
-        web.log().iter().filter(|l| **l == format!("capture {key}")).count()
+        web.log()
+            .iter()
+            .filter(|l| **l == format!("capture {key}"))
+            .count()
     };
     assert_eq!(asked(&web), 1, "{:?}", web.log());
-    assert_eq!(slides(&app).unwrap().2.live, Some(0), "the talk on stays on meanwhile");
+    assert_eq!(
+        slides(&app).unwrap().2.live,
+        Some(0),
+        "the talk on stays on meanwhile"
+    );
     web.answer_captures();
     until(&mut app, |s| s.live == Some(1));
     assert_eq!(asked(&web), 1);
@@ -2336,7 +2394,10 @@ fn a_capture_with_no_picture_is_asked_for_again() {
     let s = until(&mut app, |s| s.live == Some(1));
     assert_eq!(s.talks[1].state, TalkState::Live);
     assert_eq!(
-        web.log().iter().filter(|l| **l == format!("capture {key}")).count(),
+        web.log()
+            .iter()
+            .filter(|l| **l == format!("capture {key}"))
+            .count(),
         2,
         "{:?}",
         web.log()
@@ -2446,7 +2507,10 @@ fn a_web_talk_coming_is_not_heard_before_it_is_seen() {
         },
     ));
     let playing = |web: &varda::presentation::web::FakeWeb| {
-        web.pages().into_iter().find(|(k, _, _)| k.starts_with(&layer)).is_some_and(|p| p.2)
+        web.pages()
+            .into_iter()
+            .find(|(k, _, _)| k.starts_with(&layer))
+            .is_some_and(|p| p.2)
     };
     start(&mut app, TalkRef::Next);
     until(&mut app, |s| s.live == Some(0));
@@ -2455,11 +2519,18 @@ fn a_web_talk_coming_is_not_heard_before_it_is_seen() {
     start(&mut app, TalkRef::Next);
     until(&mut app, |s| s.live == Some(1));
     app.render_mixer_frame();
-    assert!(!playing(&web), "the talk before, ready for questions: quiet");
+    assert!(
+        !playing(&web),
+        "the talk before, ready for questions: quiet"
+    );
     web.hold_captures();
     start(&mut app, TalkRef::Previous);
     frames_for(&mut app, 1.0);
-    assert_eq!(slides(&app).unwrap().2.live, Some(1), "the picture still on");
+    assert_eq!(
+        slides(&app).unwrap().2.live,
+        Some(1),
+        "the picture still on"
+    );
     assert!(!playing(&web), "coming, its picture not there: not heard");
     web.answer_captures();
     until(&mut app, |s| s.live == Some(0));
@@ -2510,7 +2581,10 @@ fn a_page_resized_whose_new_capture_sends_nothing_is_captured_again() {
     let resized = format!("resize {key} 1280x720");
     let captures_after = |log: &[String]| {
         log.iter().position(|l| *l == resized).map_or(0, |at| {
-            log[at..].iter().filter(|l| **l == format!("capture {key}")).count()
+            log[at..]
+                .iter()
+                .filter(|l| **l == format!("capture {key}"))
+                .count()
         })
     };
     until(&mut app, |_| captures_after(&web.log()) >= 2);
@@ -2562,7 +2636,11 @@ fn a_powerpoint_talks_slide_pictures_give_the_presenter_view_its_next_slide() {
     ));
     let made = until(&mut app, |s| s.talks[0].pictures && s.making_pictures == 0);
     assert!(made.talks[0].pictures);
-    assert!(ppt.log().iter().any(|l| l.starts_with("save pdf")), "{:?}", ppt.log());
+    assert!(
+        ppt.log().iter().any(|l| l.starts_with("save pdf")),
+        "{:?}",
+        ppt.log()
+    );
 
     start(&mut app, TalkRef::Next);
     until(&mut app, |s| s.live == Some(0));
@@ -2693,9 +2771,12 @@ fn slide_pictures_are_made_by_themselves_once_make_was_pressed_a_first_time() {
     let before = slides(&app).expect("a Slides input").2;
     assert!(!before.pictures_given && before.settings.make_pictures);
     // Make, a first time: both made.
-    ok(send_cmd(&mut app, EngineCommand::MakeSlidePictures {
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::MakeSlidePictures {
             deck_uuid: Some(layer.clone()),
-        }));
+        },
+    ));
     until(&mut app, |s| {
         s.talks.iter().all(|t| t.pictures) && s.making_pictures == 0
     });
@@ -2716,7 +2797,11 @@ fn slide_pictures_are_made_by_themselves_once_make_was_pressed_a_first_time() {
     frames_for(&mut app, 2.0);
     assert_eq!(
         pdf_saves(&ppt),
-        ["save pdf first.pptx", "save pdf second.pptx", "save pdf third.pptx"]
+        [
+            "save pdf first.pptx",
+            "save pdf second.pptx",
+            "save pdf third.pptx"
+        ]
     );
     assert!(said_of_pictures(&app).is_empty(), "{:?}", app.notices());
 }
@@ -2804,9 +2889,12 @@ fn beside_a_talk_on_slide_pictures_are_made_of_the_decks_open_one_at_a_time() {
     );
     assert!(said_of_pictures(&app).is_empty(), "{:?}", app.notices());
     // Make, the talk on: it says which it cannot make now, and why.
-    let refused = send_cmd(&mut app, EngineCommand::MakeSlidePictures {
+    let refused = send_cmd(
+        &mut app,
+        EngineCommand::MakeSlidePictures {
             deck_uuid: Some(layer.clone()),
-        });
+        },
+    );
     assert!(
         matches!(&refused, CommandResult::Err { message, .. }
             if message.contains("m-far.pptx, n-farther.pptx")
@@ -2927,7 +3015,10 @@ fn slide_pictures_make_could_not_make_are_not_asked_again_by_themselves() {
     let deadline = Instant::now() + Duration::from_secs(30);
     while varda::presentation::pictures::missing_known(&path).is_none() {
         app.render_mixer_frame();
-        assert!(Instant::now() < deadline, "the changed file was never found");
+        assert!(
+            Instant::now() < deadline,
+            "the changed file was never found"
+        );
         std::thread::sleep(Duration::from_millis(5));
     }
     // By themselves again, looked at four times: it is left, as Make
@@ -2983,7 +3074,13 @@ fn slide_pictures_are_not_made_by_themselves_for_an_input_told_not_to() {
     app.set_slide_pictures_by_themselves(true);
     frames_for(&mut app, 2.5);
     assert!(pdf_saves(&ppt).is_empty(), "{:?}", ppt.log());
-    assert!(!slides(&app).expect("a Slides input").2.settings.make_pictures);
+    assert!(
+        !slides(&app)
+            .expect("a Slides input")
+            .2
+            .settings
+            .make_pictures
+    );
     tell(&mut app, true);
     until(&mut app, |s| s.talks[0].pictures && s.making_pictures == 0);
     assert_eq!(pdf_saves(&ppt), ["save pdf talk.pptx"]);
@@ -3035,9 +3132,12 @@ fn slide_pictures_that_fail_are_said_once_and_asked_again_only_by_make() {
     looks(&mut app, &ppt, 2);
     make_by_themselves(&mut app, &layer, &added.settings, true);
     assert_eq!(looks(&mut app, &ppt, 3).0, 1, "not asked again by itself");
-    ok(send_cmd(&mut app, EngineCommand::MakeSlidePictures {
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::MakeSlidePictures {
             deck_uuid: Some(layer.clone()),
-        }));
+        },
+    ));
     until(&mut app, |s| s.talks[0].pictures && s.making_pictures == 0);
     assert_eq!(pdf_saves(&ppt).len(), 2, "{:?}", ppt.log());
     assert_eq!(said_of_pictures(&app).len(), 1, "{:?}", app.notices());
@@ -3255,7 +3355,10 @@ fn a_deck_just_written_is_left_to_settle_before_its_slide_pictures_are_made() {
     ));
     let (at, _) = until_saved(&mut app, &ppt, 1);
     let waited = at[0].duration_since(written);
-    assert!(waited >= Duration::from_millis(2800), "asked after {waited:?}");
+    assert!(
+        waited >= Duration::from_millis(2800),
+        "asked after {waited:?}"
+    );
     until(&mut app, |s| s.talks[0].pictures && s.making_pictures == 0);
     assert_eq!(pdf_saves(&ppt), ["save pdf talk.pptx"]);
 }

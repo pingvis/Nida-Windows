@@ -269,7 +269,9 @@ fn panel_cached_from(
     uuid: Option<String>,
     ask: impl FnOnce(u32) -> Option<(u32, u32)>,
 ) -> Option<(u32, u32)> {
-    let mut panels = PANELS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut panels = PANELS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     *panels
         .get_or_insert_with(Default::default)
         .entry((display, uuid))
@@ -278,7 +280,9 @@ fn panel_cached_from(
 
 /// The screens have changed: each panel is asked again.
 pub(crate) fn forget_panels() {
-    *PANELS.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = None;
+    *PANELS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
 }
 
 /// Put each screen's label big on it for a couple of seconds — `screens`,
@@ -510,7 +514,10 @@ mod tests {
             assert_eq!(panel_cached_from(display, first(), ask), Some((3840, 2160)));
         }
         assert_eq!(asked.get(), 1, "asked once");
-        assert_eq!(panel_cached_from(display, Some("B-2".into()), ask), Some((3840, 2160)));
+        assert_eq!(
+            panel_cached_from(display, Some("B-2".into()), ask),
+            Some((3840, 2160))
+        );
         assert_eq!(asked.get(), 2, "another screen with its number: asked");
         forget_panels();
         assert_eq!(panel_cached_from(display, first(), ask), Some((3840, 2160)));
@@ -657,4 +664,3 @@ mod tests {
         );
     }
 }
-

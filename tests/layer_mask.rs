@@ -42,9 +42,13 @@ fn f16(bits: u16) -> f32 {
 }
 
 /// Every pixel of an `Rgba16Float` texture, row by row.
-fn frame_pixels(gpu: &varda::renderer::context::GpuContext, texture: &wgpu::Texture) -> Vec<[f32; 4]> {
+fn frame_pixels(
+    gpu: &varda::renderer::context::GpuContext,
+    texture: &wgpu::Texture,
+) -> Vec<[f32; 4]> {
     let (w, h) = (texture.width(), texture.height());
-    let row = (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let row =
+        (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: u64::from(row * h),
@@ -119,7 +123,9 @@ fn blue_under_red(app: &mut VardaApp) -> (String, String) {
             },
         ));
     }
-    let red = app.build_engine_state().mixer.channels[0].decks[1].uuid.clone();
+    let red = app.build_engine_state().mixer.channels[0].decks[1]
+        .uuid
+        .clone();
     send_cmd(
         app,
         EngineCommand::TakeToMain {
@@ -178,7 +184,10 @@ fn a_layers_mask_cuts_a_hole_that_shows_what_is_under_it() {
         pixels[((y * h as f32) as u32 * w + (x * w as f32) as u32) as usize]
     };
     let (pixels, w, h) = picture(&mut app);
-    assert!(at(&pixels, w, h, 0.5, 0.5)[0] > 0.95, "red all over at first");
+    assert!(
+        at(&pixels, w, h, 0.5, 0.5)[0] > 0.95,
+        "red all over at first"
+    );
 
     id(send_cmd(
         &mut app,
@@ -189,9 +198,15 @@ fn a_layers_mask_cuts_a_hole_that_shows_what_is_under_it() {
     ));
     let (pixels, w, h) = picture(&mut app);
     let middle = at(&pixels, w, h, 0.5, 0.5);
-    assert!(middle[2] > 0.95 && middle[0] < 0.05, "blue through the hole: {middle:?}");
+    assert!(
+        middle[2] > 0.95 && middle[0] < 0.05,
+        "blue through the hole: {middle:?}"
+    );
     let corner = at(&pixels, w, h, 0.1, 0.1);
-    assert!(corner[0] > 0.95 && corner[2] < 0.05, "red round it: {corner:?}");
+    assert!(
+        corner[0] > 0.95 && corner[2] < 0.05,
+        "red round it: {corner:?}"
+    );
 
     id(send_cmd(
         &mut app,
@@ -202,9 +217,15 @@ fn a_layers_mask_cuts_a_hole_that_shows_what_is_under_it() {
     ));
     let (pixels, w, h) = picture(&mut app);
     let middle = at(&pixels, w, h, 0.5, 0.5);
-    assert!(middle[0] > 0.95, "inverted, only the shape kept: {middle:?}");
+    assert!(
+        middle[0] > 0.95,
+        "inverted, only the shape kept: {middle:?}"
+    );
     let corner = at(&pixels, w, h, 0.1, 0.1);
-    assert!(corner[2] > 0.95 && corner[0] < 0.05, "blue round it: {corner:?}");
+    assert!(
+        corner[2] > 0.95 && corner[0] < 0.05,
+        "blue round it: {corner:?}"
+    );
 }
 
 /// Across a feathered edge the layer fades out — red giving way to the blue
@@ -320,7 +341,10 @@ fn a_layers_mask_stays_one_and_last_however_the_chain_changes() {
         },
     ));
     let last = chain(&app, &red).len() - 1;
-    let at = chain(&app, &red).iter().position(|n| n == "invert").unwrap();
+    let at = chain(&app, &red)
+        .iter()
+        .position(|n| n == "invert")
+        .unwrap();
     send_cmd(
         &mut app,
         EngineCommand::MoveEffect {
@@ -350,8 +374,16 @@ fn a_layers_mask_stays_one_and_last_however_the_chain_changes() {
         );
     }
     let names = chain(&app, &red);
-    assert_eq!(names.iter().filter(|n| *n == LAYER_MASK_EFFECT).count(), 1, "{names:?}");
-    assert_eq!(names.last().map(String::as_str), Some(LAYER_MASK_EFFECT), "{names:?}");
+    assert_eq!(
+        names.iter().filter(|n| *n == LAYER_MASK_EFFECT).count(),
+        1,
+        "{names:?}"
+    );
+    assert_eq!(
+        names.last().map(String::as_str),
+        Some(LAYER_MASK_EFFECT),
+        "{names:?}"
+    );
     send_cmd(
         &mut app,
         EngineCommand::SetLayerMask {
@@ -379,7 +411,10 @@ fn a_layers_mask_is_one_effect_kept_last() {
             mask: Some(ellipse(0.0, false)),
         },
     ));
-    assert_eq!(chain(&app, &red).last().map(String::as_str), Some(LAYER_MASK_EFFECT));
+    assert_eq!(
+        chain(&app, &red).last().map(String::as_str),
+        Some(LAYER_MASK_EFFECT)
+    );
     let again = id(send_cmd(
         &mut app,
         EngineCommand::SetLayerMask {
@@ -397,7 +432,11 @@ fn a_layers_mask_is_one_effect_kept_last() {
     ));
     let names = chain(&app, &red);
     assert_eq!(names.iter().filter(|n| *n == LAYER_MASK_EFFECT).count(), 1);
-    assert_eq!(names.last().map(String::as_str), Some(LAYER_MASK_EFFECT), "{names:?}");
+    assert_eq!(
+        names.last().map(String::as_str),
+        Some(LAYER_MASK_EFFECT),
+        "{names:?}"
+    );
     assert!(names.contains(&"invert".to_string()));
 
     let none = EffectMask {

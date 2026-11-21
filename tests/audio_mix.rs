@@ -275,9 +275,17 @@ fn a_clip_off_air_still_shows_what_it_plays() {
     assert!(peak(&off_air) < 1e-4, "off air, silent: {}", peak(&off_air));
     let strip = source(&app);
     assert!(strip.muted, "off air");
-    assert!(strip.meter_db[0] < -90.0, "nothing heard: {:?}", strip.meter_db);
+    assert!(
+        strip.meter_db[0] < -90.0,
+        "nothing heard: {:?}",
+        strip.meter_db
+    );
     // lavfi's sine is 1/8 of full scale, about −18 dBFS.
-    assert!(strip.signal_db[0] > -30.0, "what it plays: {:?}", strip.signal_db);
+    assert!(
+        strip.signal_db[0] > -30.0,
+        "what it plays: {:?}",
+        strip.signal_db
+    );
 }
 
 #[test]
@@ -568,7 +576,10 @@ fn audio_buses_route_and_save_with_the_stage() {
         assert!(kept, "marked as sent before");
         // Its default send (to the first bus, on as it was added, no settings
         // saved): turned off, its settings are kept too — and on again.
-        let first_bus = app.build_engine_state().audio_mix.buses[0].config.uuid.clone();
+        let first_bus = app.build_engine_state().audio_mix.buses[0]
+            .config
+            .uuid
+            .clone();
         let strip = |app: &VardaApp| {
             app.build_engine_state()
                 .audio_mix
@@ -578,15 +589,29 @@ fn audio_buses_route_and_save_with_the_stage() {
                 .cloned()
                 .expect("mic")
         };
-        assert!(strip(&app).sends.contains(&first_bus), "sent there by default");
+        assert!(
+            strip(&app).sends.contains(&first_bus),
+            "sent there by default"
+        );
         ok(send_cmd(
             &mut app,
-            EngineCommand::SetAudioSend { uuid: mic.clone(), bus_uuid: first_bus.clone(), on: false },
+            EngineCommand::SetAudioSend {
+                uuid: mic.clone(),
+                bus_uuid: first_bus.clone(),
+                on: false,
+            },
         ));
-        assert!(strip(&app).sent_before.contains(&first_bus), "marked as it went off");
+        assert!(
+            strip(&app).sent_before.contains(&first_bus),
+            "marked as it went off"
+        );
         ok(send_cmd(
             &mut app,
-            EngineCommand::SetAudioSend { uuid: mic.clone(), bus_uuid: first_bus.clone(), on: true },
+            EngineCommand::SetAudioSend {
+                uuid: mic.clone(),
+                bus_uuid: first_bus.clone(),
+                on: true,
+            },
         ));
         ok(send_cmd(
             &mut app,
@@ -617,7 +642,13 @@ fn audio_buses_route_and_save_with_the_stage() {
             ..varda::audio_mix::EqConfig::default()
         };
         eq.bands[2].gain_db = 2.5;
-        ok(send_cmd(&mut app, EngineCommand::SetAudioSourceEq { uuid: mic.clone(), config: eq }));
+        ok(send_cmd(
+            &mut app,
+            EngineCommand::SetAudioSourceEq {
+                uuid: mic.clone(),
+                config: eq,
+            },
+        ));
         // A send's level set while it is off: kept, the send still off.
         ok(send_cmd(
             &mut app,
@@ -642,12 +673,22 @@ fn audio_buses_route_and_save_with_the_stage() {
             ),
             CommandResult::Err { .. }
         ));
-        ok(send_cmd(&mut app, EngineCommand::SetAudioBusPreFader { uuid: stream.clone(), pre_fader: true }));
+        ok(send_cmd(
+            &mut app,
+            EngineCommand::SetAudioBusPreFader {
+                uuid: stream.clone(),
+                pre_fader: true,
+            },
+        ));
         // A live buffer is one of those offered.
         assert!(matches!(
             send_cmd(
                 &mut app,
-                EngineCommand::SetAudioBusLive { uuid: stream.clone(), live: false, frames: Some(1) },
+                EngineCommand::SetAudioBusLive {
+                    uuid: stream.clone(),
+                    live: false,
+                    frames: Some(1)
+                },
             ),
             CommandResult::Err { .. }
         ));
@@ -690,7 +731,11 @@ fn audio_buses_route_and_save_with_the_stage() {
     assert!((bus.config.gain_db + 3.0).abs() < 1e-6);
     assert!((bus.config.delay_ms - 80.0).abs() < 1e-6);
     assert!(bus.config.live, "played live, as saved");
-    assert_eq!(bus.config.live_frames, Some(128), "a refused buffer left it as it was");
+    assert_eq!(
+        bus.config.live_frames,
+        Some(128),
+        "a refused buffer left it as it was"
+    );
     assert!(bus.config.pre_fader, "a monitor mix, as saved");
     let insert = bus.config.insert.as_ref().expect("its insert, as saved");
     assert_eq!(insert.component, "aufx:lpas:appl");
@@ -703,14 +748,32 @@ fn audio_buses_route_and_save_with_the_stage() {
         .expect("the microphone came back");
     assert!(!strip.live, "its device is not here");
     let de_esser = strip.dynamics.de_esser.expect("its de-esser");
-    assert!(de_esser.enabled && (de_esser.hz - 7_500.0).abs() < 1e-3, "as saved: {de_esser:?}");
-    let send = strip.send_settings.get(&stream).expect("its send to STREAM, kept");
-    assert!((send.gain_db + 9.0).abs() < 1e-6 && send.mode == varda::audio_mix::SendMode::Pre, "{send:?}");
-    assert!(strip.sends.contains(&stream), "a level leaves the send as it was (on)");
+    assert!(
+        de_esser.enabled && (de_esser.hz - 7_500.0).abs() < 1e-3,
+        "as saved: {de_esser:?}"
+    );
+    let send = strip
+        .send_settings
+        .get(&stream)
+        .expect("its send to STREAM, kept");
+    assert!(
+        (send.gain_db + 9.0).abs() < 1e-6 && send.mode == varda::audio_mix::SendMode::Pre,
+        "{send:?}"
+    );
+    assert!(
+        strip.sends.contains(&stream),
+        "a level leaves the send as it was (on)"
+    );
     let eq = strip.dynamics.eq.expect("its EQ");
-    assert!(eq.enabled && (eq.bands[2].gain_db - 2.5).abs() < 1e-6, "its EQ, as saved: {eq:?}");
+    assert!(
+        eq.enabled && (eq.bands[2].gain_db - 2.5).abs() < 1e-6,
+        "its EQ, as saved: {eq:?}"
+    );
     let gate = strip.dynamics.gate.expect("its gate");
-    assert!(gate.enabled && (gate.threshold_db + 45.0).abs() < 1e-6, "its gate, as saved: {gate:?}");
+    assert!(
+        gate.enabled && (gate.threshold_db + 45.0).abs() < 1e-6,
+        "its gate, as saved: {gate:?}"
+    );
     assert!(strip.sends.contains(&stream));
 }
 
@@ -914,7 +977,15 @@ fn flash_clip(dir: &Path) -> Option<PathBuf> {
         )
         .args(["-f", "lavfi", "-i"])
         .arg("aevalsrc=exprs='if(lt(mod(t,2),0.2),0.7*sin(2*PI*1000*t),0)':s=48000:d=20")
-        .args(["-c:v", "mpeg4", "-q:v", "2", "-c:a", "pcm_s16le", "-shortest"])
+        .args([
+            "-c:v",
+            "mpeg4",
+            "-q:v",
+            "2",
+            "-c:a",
+            "pcm_s16le",
+            "-shortest",
+        ])
         .arg(&path)
         .status();
     match status {
@@ -944,7 +1015,11 @@ fn flashes_and_beeps(file: &Path) -> (Vec<f64>, Vec<f64>) {
         if out.status.success() && text.contains("YAVG") {
             break text;
         }
-        assert!(Instant::now() < until, "{} never became readable", file.display());
+        assert!(
+            Instant::now() < until,
+            "{} never became readable",
+            file.display()
+        );
         std::thread::sleep(Duration::from_millis(200));
     };
     // Each frame's time and mean brightness, on whatever scale its bit
@@ -973,7 +1048,9 @@ fn flashes_and_beeps(file: &Path) -> (Vec<f64>, Vec<f64>) {
     let out = std::process::Command::new("ffmpeg")
         .args(["-v", "error", "-i"])
         .arg(file)
-        .args(["-map", "0:a:0", "-ac", "1", "-ar", "48000", "-f", "f32le", "-"])
+        .args([
+            "-map", "0:a:0", "-ac", "1", "-ar", "48000", "-f", "f32le", "-",
+        ])
         .output()
         .unwrap();
     let samples: Vec<f32> = out
@@ -1030,7 +1107,10 @@ fn recorded_offsets(
         size: Some((320, 180)),
         ..varda::record::RecordOptions::default()
     };
-    ok(send_cmd(&mut app, EngineCommand::SetRecordOptions { options }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetRecordOptions { options },
+    ));
     ok(send_cmd(&mut app, EngineCommand::StartRecording));
     std::thread::sleep(stall);
     run(&mut app, 9.0);
@@ -1055,7 +1135,10 @@ fn recorded_offsets(
 }
 
 fn assert_together(offsets: &[f64], what: &str) {
-    let ms: Vec<i64> = offsets.iter().map(|o| (o * 1000.0).round() as i64).collect();
+    let ms: Vec<i64> = offsets
+        .iter()
+        .map(|o| (o * 1000.0).round() as i64)
+        .collect();
     assert!(
         offsets.iter().all(|o| o.abs() < 0.05),
         "{what}: the sound lands {ms:?} ms from the picture (more than 50 ms is visible)"
@@ -1230,7 +1313,10 @@ fn a_frame_is_noted_at_the_rate_frames_really_come() {
     let later = refresh + Duration::from_millis(17);
     app.set_frame_refresh_at(Some(later));
     app.render_mixer_frame();
-    assert_eq!(varda::renderer::subprocess::frame_drawn(later).map(|d| d.1), Some(30));
+    assert_eq!(
+        varda::renderer::subprocess::frame_drawn(later).map(|d| d.1),
+        Some(30)
+    );
 }
 
 #[test]

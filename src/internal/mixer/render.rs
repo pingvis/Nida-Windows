@@ -2229,7 +2229,7 @@ fn apply_lut_in_place(
 
 #[cfg(test)]
 mod gpu_load_ratio_tests {
-    use super::{MAX_GPU_LOAD_RATIO, raw_gpu_load_ratio};
+    use super::{raw_gpu_load_ratio, MAX_GPU_LOAD_RATIO};
 
     const BUDGET_60FPS: f32 = 1_000_000.0 / 60.0;
 

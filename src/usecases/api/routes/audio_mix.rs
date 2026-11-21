@@ -293,12 +293,18 @@ pub async fn set_bus_insert_bypass(
 }
 
 #[utoipa::path(post, path = "/api/audio-buses/{bus_uuid}/insert/window", params(("bus_uuid" = String, Path, description = "Audio bus UUID")), responses((status = 200, body = crate::usecases::api::ApiReply), (status = 404, description = "No such bus"), (status = 503, description = "No effect on it, or not loaded")), tag = "Audio Mixer")]
-pub async fn open_bus_insert(State(s): State<SharedState>, Path(uuid): Path<String>) -> impl IntoResponse {
+pub async fn open_bus_insert(
+    State(s): State<SharedState>,
+    Path(uuid): Path<String>,
+) -> impl IntoResponse {
     dispatch(&s, EngineCommand::OpenAudioBusInsert { uuid }).await
 }
 
 #[utoipa::path(delete, path = "/api/audio-buses/{bus_uuid}/insert/window", params(("bus_uuid" = String, Path, description = "Audio bus UUID")), responses((status = 200, body = crate::usecases::api::ApiReply)), tag = "Audio Mixer")]
-pub async fn close_bus_insert(State(s): State<SharedState>, Path(uuid): Path<String>) -> impl IntoResponse {
+pub async fn close_bus_insert(
+    State(s): State<SharedState>,
+    Path(uuid): Path<String>,
+) -> impl IntoResponse {
     dispatch(&s, EngineCommand::CloseAudioBusInsert { uuid }).await
 }
 
@@ -420,7 +426,14 @@ pub async fn set_bus_pre_fader(
     Path(uuid): Path<String>,
     Json(b): Json<AudioPreFaderBody>,
 ) -> impl IntoResponse {
-    dispatch(&s, EngineCommand::SetAudioBusPreFader { uuid, pre_fader: b.pre_fader }).await
+    dispatch(
+        &s,
+        EngineCommand::SetAudioBusPreFader {
+            uuid,
+            pre_fader: b.pre_fader,
+        },
+    )
+    .await
 }
 
 #[utoipa::path(put, path = "/api/audio-buses/{bus_uuid}/echo-room", params(("bus_uuid" = String, Path, description = "Audio bus UUID")), request_body = AudioEchoRoomBody, responses((status = 200, body = crate::usecases::api::ApiReply), (status = 400, description = "The bus itself as its room"), (status = 404, description = "No such bus")), tag = "Audio Mixer")]
@@ -429,7 +442,11 @@ pub async fn set_bus_echo_room(
     Path(uuid): Path<String>,
     Json(b): Json<AudioEchoRoomBody>,
 ) -> impl IntoResponse {
-    dispatch(&s, EngineCommand::SetAudioBusEchoRoom { uuid, room: b.room }).await
+    dispatch(
+        &s,
+        EngineCommand::SetAudioBusEchoRoom { uuid, room: b.room },
+    )
+    .await
 }
 
 #[utoipa::path(put, path = "/api/audio-sources/{source_uuid}/follow", params(("source_uuid" = String, Path, description = "Source UUID (the deck's, for a clip)")), request_body = AudioFollowBody, responses((status = 200, body = crate::usecases::api::ApiReply), (status = 404, description = "No such source or video bus")), tag = "Audio Mixer")]

@@ -130,7 +130,9 @@ pub struct RealDisk;
 
 impl Disk for RealDisk {
     fn file(&self, path: &Path) -> Option<Found> {
-        let meta = std::fs::metadata(path).ok().filter(std::fs::Metadata::is_file)?;
+        let meta = std::fs::metadata(path)
+            .ok()
+            .filter(std::fs::Metadata::is_file)?;
         Some(Found {
             len: meta.len(),
             modified: meta.modified().ok(),
@@ -176,12 +178,20 @@ impl Known {
     /// there are too many — giving them back to be dropped elsewhere.
     fn sweep(&mut self, now: Instant) -> Vec<Entry> {
         let crowded = self.answers.len() > KEPT_AT_MOST;
-        let every = if crowded { Duration::from_secs(1) } else { SWEEP };
+        let every = if crowded {
+            Duration::from_secs(1)
+        } else {
+            SWEEP
+        };
         if now.duration_since(self.swept) < every {
             return Vec::new();
         }
         self.swept = now;
-        let unused = if crowded { Duration::from_secs(60) } else { FORGOTTEN };
+        let unused = if crowded {
+            Duration::from_secs(60)
+        } else {
+            FORGOTTEN
+        };
         let gone: Vec<Question> = self
             .answers
             .iter()
@@ -244,7 +254,10 @@ impl Facts {
                 .spawn(move || find(&*disk, &known, &questions, (&all, &mine), idle));
             if let Err(e) = started {
                 // Not known then: no show thread asks the disk.
-                log::warn!("Files on {} are not looked at: no thread ({e})", place.display());
+                log::warn!(
+                    "Files on {} are not looked at: no thread ({e})",
+                    place.display()
+                );
                 return false;
             }
             places.insert(place.clone(), ask);
@@ -509,7 +522,10 @@ mod tests {
         });
         let until = Instant::now() + Duration::from_secs(2);
         while !asking.is_finished() {
-            assert!(Instant::now() < until, "the asker waited on the held-up disk");
+            assert!(
+                Instant::now() < until,
+                "the asker waited on the held-up disk"
+            );
             std::thread::sleep(Duration::from_millis(5));
         }
         let (first, again, facts) = asking.join().unwrap();
@@ -518,7 +534,11 @@ mod tests {
         assert!(facts.settle(Duration::from_secs(5)));
         let found = facts.file(Path::new("/talks/a.pptx")).unwrap().unwrap();
         assert_eq!(found.len, 10);
-        assert_eq!(disk.asked.load(Ordering::SeqCst), 1, "one question, asked twice");
+        assert_eq!(
+            disk.asked.load(Ordering::SeqCst),
+            1,
+            "one question, asked twice"
+        );
     }
 
     /// A file gone is said to be gone once looked at again — within a
@@ -533,7 +553,11 @@ mod tests {
         assert!(facts.file(Path::new("/talks/a.pptx")).unwrap().is_some());
         assert_eq!(facts.file(Path::new("/talks/b.pptx")), None);
         assert!(facts.settle(Duration::from_secs(5)));
-        assert_eq!(facts.file(Path::new("/talks/b.pptx")), Some(None), "no such file");
+        assert_eq!(
+            facts.file(Path::new("/talks/b.pptx")),
+            Some(None),
+            "no such file"
+        );
 
         disk.files.lock().unwrap().clear();
         // Still the last answer until it is a second old.
@@ -541,7 +565,11 @@ mod tests {
         std::thread::sleep(FRESH);
         let _ = facts.file(Path::new("/talks/a.pptx"));
         assert!(facts.settle(Duration::from_secs(5)));
-        assert_eq!(facts.file(Path::new("/talks/a.pptx")), Some(None), "gone now");
+        assert_eq!(
+            facts.file(Path::new("/talks/a.pptx")),
+            Some(None),
+            "gone now"
+        );
     }
 
     /// A PDF's pages are counted once for its size and change time, however
@@ -558,16 +586,26 @@ mod tests {
         assert_eq!(facts.pdf_pages(Path::new("/p/a.pdf"), &found), None);
         assert!(facts.settle(Duration::from_secs(5)));
         for _ in 0..5 {
-            assert_eq!(facts.pdf_pages(Path::new("/p/a.pdf"), &found), Some(Some(12)));
+            assert_eq!(
+                facts.pdf_pages(Path::new("/p/a.pdf"), &found),
+                Some(Some(12))
+            );
         }
         std::thread::sleep(FRESH);
-        assert_eq!(facts.pdf_pages(Path::new("/p/a.pdf"), &found), Some(Some(12)));
+        assert_eq!(
+            facts.pdf_pages(Path::new("/p/a.pdf"), &found),
+            Some(Some(12))
+        );
         assert!(facts.settle(Duration::from_secs(5)));
         assert_eq!(disk.pdfs_counted.load(Ordering::SeqCst), 1);
         found.len = 200;
         let _ = facts.pdf_pages(Path::new("/p/a.pdf"), &found);
         assert!(facts.settle(Duration::from_secs(5)));
-        assert_eq!(disk.pdfs_counted.load(Ordering::SeqCst), 2, "changed: counted again");
+        assert_eq!(
+            disk.pdfs_counted.load(Ordering::SeqCst),
+            2,
+            "changed: counted again"
+        );
     }
 
     /// A PDF that would not open is tried again — its file the same, but
@@ -589,7 +627,10 @@ mod tests {
         std::thread::sleep(FRESH);
         let _ = facts.pdf_pages(Path::new("/p/a.pdf"), &found);
         assert!(facts.settle(Duration::from_secs(5)));
-        assert_eq!(facts.pdf_pages(Path::new("/p/a.pdf"), &found), Some(Some(12)));
+        assert_eq!(
+            facts.pdf_pages(Path::new("/p/a.pdf"), &found),
+            Some(Some(12))
+        );
     }
 
     /// A disk that never answers — a share gone — keeps only its own thread
@@ -608,17 +649,27 @@ mod tests {
         let _ = facts.pdf_pages(Path::new("/Volumes/dead/a.pdf"), &found);
         let until = Instant::now() + Duration::from_secs(5);
         while disk.pdfs_counted.load(Ordering::SeqCst) == 0 {
-            assert!(Instant::now() < until, "the dead disk's thread took its question");
+            assert!(
+                Instant::now() < until,
+                "the dead disk's thread took its question"
+            );
             std::thread::sleep(Duration::from_millis(5));
         }
         // Held up now on the dead disk; the Mac's own disk answers.
         let _ = facts.file(Path::new("/Users/me/talks/a.pptx"));
         let until = Instant::now() + Duration::from_secs(5);
         loop {
-            if facts.file(Path::new("/Users/me/talks/a.pptx")).flatten().is_some() {
+            if facts
+                .file(Path::new("/Users/me/talks/a.pptx"))
+                .flatten()
+                .is_some()
+            {
                 break;
             }
-            assert!(Instant::now() < until, "the Mac's own disk waited on the dead one");
+            assert!(
+                Instant::now() < until,
+                "the Mac's own disk waited on the dead one"
+            );
             std::thread::sleep(Duration::from_millis(5));
         }
         *disk.dead.0.lock().unwrap() = false;
@@ -643,7 +694,14 @@ mod tests {
         }
         let _ = facts.file(Path::new("/Volumes/STICK/b.pptx"));
         assert!(facts.settle(Duration::from_secs(5)));
-        assert_eq!(facts.file(Path::new("/Volumes/STICK/b.pptx")).unwrap().unwrap().len, 2);
+        assert_eq!(
+            facts
+                .file(Path::new("/Volumes/STICK/b.pptx"))
+                .unwrap()
+                .unwrap()
+                .len,
+            2
+        );
     }
 
     #[test]
@@ -672,7 +730,10 @@ mod tests {
         assert!(facts.settle(Duration::from_secs(5)));
         assert_eq!(
             facts.folder(Path::new("/luts")),
-            Some(Some(Arc::new(vec!["a.cube".to_string(), "b.cube".to_string()])))
+            Some(Some(Arc::new(vec![
+                "a.cube".to_string(),
+                "b.cube".to_string()
+            ])))
         );
     }
 }

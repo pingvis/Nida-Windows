@@ -186,7 +186,13 @@ pub(super) fn render_mask_row(
     data: &UIData,
     actions: &mut UIActions,
 ) {
-    render_row(ui, &MaskOwner::Effect(effect.to_string()), &EFFECT_WORDS, data, actions);
+    render_row(
+        ui,
+        &MaskOwner::Effect(effect.to_string()),
+        &EFFECT_WORDS,
+        data,
+        actions,
+    );
 }
 
 /// A layer's own mask (Input Settings → **Mask**): a shape cut out of the
@@ -197,7 +203,13 @@ pub(super) fn render_layer_mask_row(
     data: &UIData,
     actions: &mut UIActions,
 ) {
-    render_row(ui, &MaskOwner::Layer(deck_uuid.to_string()), &LAYER_WORDS, data, actions);
+    render_row(
+        ui,
+        &MaskOwner::Layer(deck_uuid.to_string()),
+        &LAYER_WORDS,
+        data,
+        actions,
+    );
 }
 
 fn render_row(
@@ -508,8 +520,16 @@ mod tests {
             feather: 0.0,
             invert: false,
         };
-        set_mask(&mut actions, &MaskOwner::Layer("dk000001".into()), Some(mask.clone()));
-        set_mask(&mut actions, &MaskOwner::Effect("fx000001".into()), Some(mask));
+        set_mask(
+            &mut actions,
+            &MaskOwner::Layer("dk000001".into()),
+            Some(mask.clone()),
+        );
+        set_mask(
+            &mut actions,
+            &MaskOwner::Effect("fx000001".into()),
+            Some(mask),
+        );
         assert!(matches!(
             actions.commands.as_slice(),
             [

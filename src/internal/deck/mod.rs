@@ -2115,9 +2115,7 @@ impl Deck {
                 source_height,
                 scaling_mode,
                 ..
-            } if self.keep_still_sources
-                && !matches!(kind, ExternalSourceKind::DepthSensor(_)) =>
-            {
+            } if self.keep_still_sources && !matches!(kind, ExternalSourceKind::DepthSensor(_)) => {
                 // Nothing to draw from yet: the frame drawn now is not the
                 // picture's, whatever its number.
                 self.external_source_view.as_ref()?;
@@ -2617,7 +2615,10 @@ mod tests {
             capture_drawn_as(Fit, [f32::INFINITY, 2.0]),
             drawn(2.0, 0.0, 0.0)
         );
-        assert_eq!(capture_drawn_as(Fill, [f32::NAN, 2.0]), drawn(1.0, 2.0, 2.0));
+        assert_eq!(
+            capture_drawn_as(Fill, [f32::NAN, 2.0]),
+            drawn(1.0, 2.0, 2.0)
+        );
         assert_eq!(
             capture_drawn_as(Stretch, [f32::NAN, f32::INFINITY]),
             drawn(1.0, 1.0, 1.0)
@@ -2672,11 +2673,19 @@ mod tests {
         deck.effects[1].params.set("scale", Float(2.0));
         assert_eq!(deck.capture_drawn(&modulation), drawn(2.0, 0.0), "zoomed");
         deck.effects[0].params.set("crop_left", Float(0.25));
-        assert_eq!(deck.capture_drawn(&modulation), drawn(2.0, 0.0), "cropped too");
+        assert_eq!(
+            deck.capture_drawn(&modulation),
+            drawn(2.0, 0.0),
+            "cropped too"
+        );
         deck.set_scaling_mode(ScalingMode::Fill);
         assert_eq!(deck.capture_drawn(&modulation), drawn(1.0, 2.0));
         deck.set_scaling_mode(ScalingMode::Center);
-        assert_eq!(deck.capture_drawn(&modulation), drawn(2.0, 0.0), "as one fitted");
+        assert_eq!(
+            deck.capture_drawn(&modulation),
+            drawn(2.0, 0.0),
+            "as one fitted"
+        );
         deck.set_scaling_mode(ScalingMode::Fit);
 
         // Scaled apart: the wider of the two, the picture keeping its shape;
@@ -2723,7 +2732,11 @@ mod tests {
         // is the capture's.
         deck.add_effect(effect("transform"));
         deck.effects[2].params.set("scale", Float(4.0));
-        assert_eq!(deck.capture_drawn(&modulation), drawn(2.0, 0.0), "the first");
+        assert_eq!(
+            deck.capture_drawn(&modulation),
+            drawn(2.0, 0.0),
+            "the first"
+        );
         // And with the first off, the second comes first.
         deck.effects[1].enabled = false;
         deck.effects[0].enabled = false;
@@ -2763,7 +2776,10 @@ mod tests {
             ..Default::default()
         });
         assert_ne!(light, coded);
-        assert_eq!(source_read(Some(&light), Some(&coded)), Some((&coded, true)));
+        assert_eq!(
+            source_read(Some(&light), Some(&coded)),
+            Some((&coded, true))
+        );
         assert_eq!(source_read(Some(&light), None), Some((&light, false)));
         assert_eq!(source_read(None, Some(&coded)), None);
         assert_eq!(source_read(None, None), None);
@@ -2959,7 +2975,11 @@ mod tests {
         let mut waiting = capture_deck(&gpu, unbound, (1920, 1080), false);
         assert_eq!(waiting.cap_capture_to_show(3840, 2160), None);
         let state = waiting.screen_capture.as_ref().expect("a capture");
-        assert_eq!(state.config.scale_to, Some((3840, 2160)), "opened so when it comes");
+        assert_eq!(
+            state.config.scale_to,
+            Some((3840, 2160)),
+            "opened so when it comes"
+        );
 
         let mut show = capture_deck(&gpu, 8, (1920, 1080), true);
         assert_eq!(show.cap_capture_to_show(3840, 2160), None);
@@ -3125,7 +3145,10 @@ mod tests {
         ];
         for (source, target, first) in cases {
             let at = first_pixel_shown(ScalingMode::Center, source, target);
-            assert!(on(at, first), "{source:?} in {target:?}: begins at {at:?}, not {first:?}");
+            assert!(
+                on(at, first),
+                "{source:?} in {target:?}: begins at {at:?}, not {first:?}"
+            );
         }
     }
 
@@ -3142,7 +3165,10 @@ mod tests {
         ];
         for (source, target, first) in cases {
             let at = first_pixel_shown(ScalingMode::Fit, source, target);
-            assert!(on(at, first), "{source:?} in {target:?}: begins at {at:?}, not {first:?}");
+            assert!(
+                on(at, first),
+                "{source:?} in {target:?}: begins at {at:?}, not {first:?}"
+            );
         }
     }
 
@@ -3158,7 +3184,10 @@ mod tests {
         ];
         for (source, target, first) in cases {
             let at = first_pixel_shown(ScalingMode::Fill, source, target);
-            assert!(on(at, first), "{source:?} in {target:?}: begins at {at:?}, not {first:?}");
+            assert!(
+                on(at, first),
+                "{source:?} in {target:?}: begins at {at:?}, not {first:?}"
+            );
         }
     }
 
@@ -3168,15 +3197,30 @@ mod tests {
     fn a_picture_a_pixel_short_of_a_wide_frame_does_not_fill_it() {
         let frame = (16384, 1080);
         for mode in [ScalingMode::Center, ScalingMode::Fit] {
-            assert!(!fills_the_frame(mode, (16383, 1080), frame), "{mode:?}, a column short");
-            assert!(!fills_the_frame(mode, (16384, 1079), frame), "{mode:?}, a row short");
-            assert!(!fills_the_frame(mode, (1919, 1080), (1920, 1080)), "{mode:?}, a narrow frame");
+            assert!(
+                !fills_the_frame(mode, (16383, 1080), frame),
+                "{mode:?}, a column short"
+            );
+            assert!(
+                !fills_the_frame(mode, (16384, 1079), frame),
+                "{mode:?}, a row short"
+            );
+            assert!(
+                !fills_the_frame(mode, (1919, 1080), (1920, 1080)),
+                "{mode:?}, a narrow frame"
+            );
         }
         for mode in [ScalingMode::Center, ScalingMode::Fit, ScalingMode::Fill] {
-            assert!(fills_the_frame(mode, frame, frame), "{mode:?}, as big as the frame");
+            assert!(
+                fills_the_frame(mode, frame, frame),
+                "{mode:?}, as big as the frame"
+            );
         }
         for mode in [ScalingMode::Center, ScalingMode::Fill] {
-            assert!(fills_the_frame(mode, (16385, 1081), frame), "{mode:?}, a pixel more");
+            assert!(
+                fills_the_frame(mode, (16385, 1081), frame),
+                "{mode:?}, a pixel more"
+            );
         }
     }
 

@@ -9,12 +9,12 @@
 //! shows.
 
 pub(crate) mod adaptive;
-#[cfg(target_os = "windows")]
-pub(crate) mod nvenc;
 mod fanout;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) mod flv;
 pub mod network;
+#[cfg(target_os = "windows")]
+pub(crate) mod nvenc;
 pub(crate) mod ts;
 #[cfg(target_os = "macos")]
 pub mod vt_bench;
@@ -129,7 +129,10 @@ impl StreamEncoder {
                 encoder: Self::Software,
                 mode,
                 constant: mode != RateMode::Average,
-                note: Some("NVIDIA NVENC requires Windows, H.264 and Constant (CBR); using software".into()),
+                note: Some(
+                    "NVIDIA NVENC requires Windows, H.264 and Constant (CBR); using software"
+                        .into(),
+                ),
             };
         }
         self.plan_from(self.resolved(codec), mode)
@@ -192,12 +195,19 @@ impl StreamEncoder {
                 if self == Self::Software && codec == VideoCodec::Hevc {
                     // x265 holds the rate only so told; without it a still
                     // went out at 17 kbps of a 1000 asked.
-                    set(&mut args, "-x265-params", "scenecut=0:log-level=error:strict-cbr=1".into());
+                    set(
+                        &mut args,
+                        "-x265-params",
+                        "scenecut=0:log-level=error:strict-cbr=1".into(),
+                    );
                 }
             }
             (Self::Hardware, _, RateMode::Variable) => {
                 let filler = if codec == VideoCodec::H264 { 12 } else { 38 };
-                args.extend(["-bsf:v".into(), format!("filter_units=remove_types={filler}")]);
+                args.extend([
+                    "-bsf:v".into(),
+                    format!("filter_units=remove_types={filler}"),
+                ]);
             }
             (Self::Software, VideoCodec::H264, RateMode::Variable) => {
                 set(&mut args, "-x264-params", "force-cfr=1".into());
@@ -986,7 +996,9 @@ pub struct StreamStatus {
 }
 
 /// A stream's video bit rate following its upload.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema,
+)]
 pub struct AdaptiveStatus {
     /// The rate set, in kbit/s: never more.
     pub asked_kbps: u32,
@@ -1378,30 +1390,55 @@ mod tests {
         use StreamEncoder::{Hardware, Software};
         use VideoCodec::{Hevc, H264};
         let args = |enc: StreamEncoder, codec: VideoCodec, mode: RateMode| {
-            enc.stream_video_args(codec, 4000, 100, &plan(enc, mode)).join(" ")
+            enc.stream_video_args(codec, 4000, 100, &plan(enc, mode))
+                .join(" ")
         };
         for codec in [H264, Hevc] {
             let filler = if codec == H264 { 12 } else { 38 };
             let constant = args(Hardware, codec, RateMode::Constant);
-            assert!(constant.contains("-constant_bit_rate 1") && !constant.contains("filter_units"), "{constant}");
+            assert!(
+                constant.contains("-constant_bit_rate 1") && !constant.contains("filter_units"),
+                "{constant}"
+            );
             let variable = args(Hardware, codec, RateMode::Variable);
             assert!(variable.contains("-constant_bit_rate 1"), "{variable}");
-            assert!(variable.contains(&format!("-bsf:v filter_units=remove_types={filler}")), "{variable}");
+            assert!(
+                variable.contains(&format!("-bsf:v filter_units=remove_types={filler}")),
+                "{variable}"
+            );
             let average = args(Hardware, codec, RateMode::Average);
-            assert!(!average.contains("-constant_bit_rate") && !average.contains("filter_units"), "{average}");
+            assert!(
+                !average.contains("-constant_bit_rate") && !average.contains("filter_units"),
+                "{average}"
+            );
         }
         let constant = args(Software, H264, RateMode::Constant);
-        assert!(constant.contains("nal-hrd=cbr") && constant.contains("-maxrate 4000k"), "{constant}");
+        assert!(
+            constant.contains("nal-hrd=cbr") && constant.contains("-maxrate 4000k"),
+            "{constant}"
+        );
         let variable = args(Software, H264, RateMode::Variable);
-        assert!(!variable.contains("nal-hrd") && variable.contains("-maxrate 4000k -bufsize 8000k"), "{variable}");
+        assert!(
+            !variable.contains("nal-hrd") && variable.contains("-maxrate 4000k -bufsize 8000k"),
+            "{variable}"
+        );
         let average = args(Software, H264, RateMode::Average);
-        assert!(!average.contains("nal-hrd") && average.contains("-maxrate 6000k -bufsize 12000k"), "{average}");
+        assert!(
+            !average.contains("nal-hrd") && average.contains("-maxrate 6000k -bufsize 12000k"),
+            "{average}"
+        );
         let constant = args(Software, Hevc, RateMode::Constant);
         assert!(constant.contains("strict-cbr=1"), "{constant}");
         let variable = args(Software, Hevc, RateMode::Variable);
-        assert!(!variable.contains("strict-cbr") && variable.contains("-maxrate 4000k"), "{variable}");
+        assert!(
+            !variable.contains("strict-cbr") && variable.contains("-maxrate 4000k"),
+            "{variable}"
+        );
         let average = args(Software, Hevc, RateMode::Average);
-        assert!(!average.contains("strict-cbr") && average.contains("-maxrate 6000k"), "{average}");
+        assert!(
+            !average.contains("strict-cbr") && average.contains("-maxrate 6000k"),
+            "{average}"
+        );
     }
 
     /// A media engine with no constant rate (some Intel Macs) sends
@@ -1414,14 +1451,26 @@ mod tests {
         for asked in [RateMode::Constant, RateMode::Variable] {
             let plan = intel(asked);
             assert_eq!((plan.mode, plan.constant), (RateMode::Average, false));
-            assert!(plan.note.as_deref().is_some_and(|n| n.contains("no constant rate") && n.contains(asked.label())));
+            assert!(plan
+                .note
+                .as_deref()
+                .is_some_and(|n| n.contains("no constant rate") && n.contains(asked.label())));
         }
         assert_eq!(intel(RateMode::Average).note, None);
         let gone = Hardware.plan_from((Software, true), RateMode::Variable);
-        assert_eq!((gone.encoder, gone.mode, gone.constant), (Software, RateMode::Variable, true));
-        assert!(gone.note.as_deref().is_some_and(|n| n.contains("does not open")));
+        assert_eq!(
+            (gone.encoder, gone.mode, gone.constant),
+            (Software, RateMode::Variable, true)
+        );
+        assert!(gone
+            .note
+            .as_deref()
+            .is_some_and(|n| n.contains("does not open")));
         let software = Software.plan_from((Software, true), RateMode::Average);
-        assert_eq!((software.mode, software.constant, software.note), (RateMode::Average, false, None));
+        assert_eq!(
+            (software.mode, software.constant, software.note),
+            (RateMode::Average, false, None)
+        );
     }
 
     /// ffmpeg takes every encoder, codec and mode as asked: a few frames of
@@ -1429,12 +1478,18 @@ mod tests {
     /// opens here.
     #[test]
     fn ffmpeg_takes_every_rate_mode() {
-        if std::process::Command::new("ffmpeg").arg("-version").output().is_err() {
+        if std::process::Command::new("ffmpeg")
+            .arg("-version")
+            .output()
+            .is_err()
+        {
             return;
         }
         for encoder in [StreamEncoder::Software, StreamEncoder::Hardware] {
             for codec in [VideoCodec::H264, VideoCodec::Hevc] {
-                if encoder == StreamEncoder::Hardware && hardware_support(codec) != HardwareSupport::ConstantRate {
+                if encoder == StreamEncoder::Hardware
+                    && hardware_support(codec) != HardwareSupport::ConstantRate
+                {
                     continue;
                 }
                 for mode in RateMode::ALL {
@@ -1581,7 +1636,8 @@ mod tests {
         let options: StreamOptions = serde_json::from_str("{}").unwrap();
         assert_eq!(options.encoder, StreamEncoder::preferred());
         assert_ne!(options.encoder, StreamEncoder::NvidiaNvenc);
-        let explicit: StreamOptions = serde_json::from_str(r#"{"encoder":"nvidia_nvenc","adaptive":false}"#).unwrap();
+        let explicit: StreamOptions =
+            serde_json::from_str(r#"{"encoder":"nvidia_nvenc","adaptive":false}"#).unwrap();
         assert_eq!(explicit.encoder, StreamEncoder::NvidiaNvenc);
         let plan = explicit.encoder.plan(VideoCodec::Hevc, RateMode::Constant);
         assert_eq!(plan.encoder, StreamEncoder::Software);

@@ -18,8 +18,8 @@ use super::{Deck, ScalingMode};
 use crate::engine::value::playlist::{
     PlaylistItem, PlaylistSettings, PlaylistSnapshot, PlaylistTransition,
 };
-use crate::renderer::GpuContext;
 use crate::renderer::playlist_mix::{Mix, PlaylistMixPipeline};
+use crate::renderer::GpuContext;
 
 /// The longest step time takes between two looks, so a stall (a dragged
 /// window, a slow frame) does not jump a picture's time.

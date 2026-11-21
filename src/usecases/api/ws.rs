@@ -274,8 +274,8 @@ mod tests {
             .and_then(|(_, rest)| rest.split_once("```"))
             .expect("in a json block")
             .0;
-        let message: WsCommand = serde_json::from_str(block.trim())
-            .unwrap_or_else(|e| panic!("{}: {e}", block.trim()));
+        let message: WsCommand =
+            serde_json::from_str(block.trim()).unwrap_or_else(|e| panic!("{}: {e}", block.trim()));
         assert_eq!(message.id.as_deref(), Some("req-1"));
     }
 }

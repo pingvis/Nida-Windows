@@ -675,8 +675,15 @@ fn a_lower_third_on_a_bus_moves_every_frame_with_its_input_off_air() {
         .filter(|c| *c > full / 10)
         .collect();
     let repeats = moving.windows(2).filter(|w| w[0] == w[1]).count();
-    println!("wipe frames {}, repeats {repeats}: {moving:?}", moving.len());
-    assert!(moving.len() >= 8, "a wipe over many frames: {}", moving.len());
+    println!(
+        "wipe frames {}, repeats {repeats}: {moving:?}",
+        moving.len()
+    );
+    assert!(
+        moving.len() >= 8,
+        "a wipe over many frames: {}",
+        moving.len()
+    );
     assert!(
         repeats * 5 < moving.len(),
         "the wipe stood still on {repeats} of {} frames",
@@ -781,12 +788,22 @@ fn a_text_sent_to_a_bus_comes_on_over_it_in_its_screens_part() {
         std::thread::sleep(std::time::Duration::from_millis(20));
         red = red_in_band(&app);
     }
-    assert!(red.len() >= 200, "its box on the band: {} red pixels", red.len());
+    assert!(
+        red.len() >= 200,
+        "its box on the band: {} red pixels",
+        red.len()
+    );
     // In the band's lower left, whole inside it.
     let (xs, ys): (Vec<u32>, Vec<u32>) = red.iter().copied().unzip();
     assert!(*xs.iter().max().unwrap() < W * 3 / 4, "in the band's left");
-    assert!(ys.iter().sum::<u32>() / ys.len() as u32 > 50, "in the band's lower half");
-    assert!(ys.iter().all(|y| *y < 99), "inside the band, not cut at its foot");
+    assert!(
+        ys.iter().sum::<u32>() / ys.len() as u32 > 50,
+        "in the band's lower half"
+    );
+    assert!(
+        ys.iter().all(|y| *y < 99),
+        "inside the band, not cut at its foot"
+    );
     let px = output_pixels(&app, &out);
     assert!(
         near(px[(10 * W + W - 10) as usize], [0, 255, 0]),

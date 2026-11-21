@@ -3307,11 +3307,13 @@ fn re_arming_returns_the_parameter_to_the_arrangement() {
         (deck_snapshot(&mut app, &deck).opacity - 1.0).abs() < 1e-4,
         "after re-arming the envelope should drive the deck again"
     );
-    assert_eq!(app
-        .build_engine_state()
-        .arrangement
-        .expect("arrangement")
-        .overridden_params, [] as [std::string::String; 0]);
+    assert_eq!(
+        app.build_engine_state()
+            .arrangement
+            .expect("arrangement")
+            .overridden_params,
+        [] as [std::string::String; 0]
+    );
 }
 
 /// A lane is a deck's row, so removing it must give the deck back rather than
@@ -3673,11 +3675,13 @@ fn re_arming_everything_hands_back_every_parameter() {
     fire(&mut app, EngineCommand::RearmAll { seconds: Some(0.0) });
     step(&mut app);
 
-    assert_eq!(app
-        .build_engine_state()
-        .arrangement
-        .expect("arrangement")
-        .overridden_params, [] as [std::string::String; 0]);
+    assert_eq!(
+        app.build_engine_state()
+            .arrangement
+            .expect("arrangement")
+            .overridden_params,
+        [] as [std::string::String; 0]
+    );
     for uuid in [&deck, &second] {
         assert!(
             (deck_snapshot(&mut app, uuid).opacity - 1.0).abs() < 1e-4,
@@ -3774,11 +3778,13 @@ fn a_route_write_to_an_unknown_path_holds_nothing() {
     app.note_live_route_write("not/a/path/at/all", 0.25);
     step(&mut app);
 
-    assert_eq!(app
-        .build_engine_state()
-        .arrangement
-        .expect("arrangement")
-        .overridden_params, [] as [std::string::String; 0]);
+    assert_eq!(
+        app.build_engine_state()
+            .arrangement
+            .expect("arrangement")
+            .overridden_params,
+        [] as [std::string::String; 0]
+    );
 }
 
 // ── Cue points ───────────────────────────────────────────────────────

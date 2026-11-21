@@ -115,12 +115,20 @@ pub(super) fn start(
 ) -> (std::thread::JoinHandle<()>, NativeVideo) {
     let shared = NativeShared::new(engine.kbps(), audio_kbps, fps);
     let output = {
-        let (events, shared, shutting_down) = (events.clone(), shared.clone(), shutting_down.clone());
+        let (events, shared, shutting_down) =
+            (events.clone(), shared.clone(), shutting_down.clone());
         let label = label.to_string();
         std::thread::Builder::new()
             .name(format!("stream-video-{label}"))
             .spawn(move || {
-                write_out(stdin, &events, (codec, fps), &shared, (&write_failed, &shutting_down), &label);
+                write_out(
+                    stdin,
+                    &events,
+                    (codec, fps),
+                    &shared,
+                    (&write_failed, &shutting_down),
+                    &label,
+                );
             })
             .expect("failed to spawn the stream's video output thread")
     };

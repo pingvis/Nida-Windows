@@ -1944,13 +1944,26 @@ mod tests {
             CommandResult::Ok
         ));
         let saved = app.output.outputs[0].led().cloned().expect("its layout");
-        app.save_workspace(&UILayoutState::default()).expect("saved");
+        app.save_workspace(&UILayoutState::default())
+            .expect("saved");
         app.set_render_resolution(1920, 1080);
-        assert_ne!(app.output.outputs[0].led(), Some(&saved), "rescaled to 1080p");
+        assert_ne!(
+            app.output.outputs[0].led(),
+            Some(&saved),
+            "rescaled to 1080p"
+        );
         let _ = app.load_workspace();
-        assert_eq!((app.render_width, app.render_height), (3840, 2160), "the show's size");
+        assert_eq!(
+            (app.render_width, app.render_height),
+            (3840, 2160),
+            "the show's size"
+        );
         assert_eq!(app.output.outputs.len(), 1, "the output kept open");
-        assert_eq!(app.output.outputs[0].led(), Some(&saved), "its screens as saved");
+        assert_eq!(
+            app.output.outputs[0].led(),
+            Some(&saved),
+            "its screens as saved"
+        );
     }
 
     /// The same for an output still opening — the show opened, its output
@@ -1989,7 +2002,8 @@ mod tests {
                 app.cmd_set_output_led(&output, Some(layout)),
                 CommandResult::Ok
             ));
-            app.save_workspace(&UILayoutState::default()).expect("saved");
+            app.save_workspace(&UILayoutState::default())
+                .expect("saved");
         }
         let Some(mut app) = headless_app_in(tmp.path()) else {
             return;
@@ -2008,8 +2022,16 @@ mod tests {
         app.set_render_resolution(1920, 1080);
         assert_ne!(pending(&app), saved, "rescaled to 1080p");
         let _ = app.load_workspace();
-        assert_eq!((app.render_width, app.render_height), (3840, 2160), "the show's size");
-        assert_eq!(pending(&app), saved, "asked for once, with its screens as saved");
+        assert_eq!(
+            (app.render_width, app.render_height),
+            (3840, 2160),
+            "the show's size"
+        );
+        assert_eq!(
+            pending(&app),
+            saved,
+            "asked for once, with its screens as saved"
+        );
     }
 
     #[test]

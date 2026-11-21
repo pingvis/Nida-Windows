@@ -482,8 +482,16 @@ fn a_layer_covered_by_two_pictures_together_with_its_thumbnail_shown_is_not_draw
     // Its first frame drawn for its thumbnail, then left.
     render(&ctx, &mut mixer);
     render(&ctx, &mut mixer);
-    assert_eq!(mixer.channels()[0].active_deck_count, 2, "the pattern is not rendered");
-    assert_eq!(mixer.channels()[0].composited_deck_count, 2, "nor composited");
+    assert_eq!(
+        mixer.channels()[0].active_deck_count,
+        2,
+        "the pattern is not rendered"
+    );
+    assert_eq!(
+        mixer.channels()[0].composited_deck_count,
+        2,
+        "nor composited"
+    );
 }
 
 /// An opaque picture fitted with bars at its sides covers only between the

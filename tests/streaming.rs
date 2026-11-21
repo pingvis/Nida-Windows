@@ -1179,7 +1179,12 @@ fn bit_rate_changes_live(adaptive: bool) -> bool {
     options.height = 360;
     options.video_kbps = 4000;
     options.adaptive = adaptive;
-    ok(send_cmd(&mut app, EngineCommand::SetStreamOptions { options: options.clone() }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetStreamOptions {
+            options: options.clone(),
+        },
+    ));
     ok(send_cmd(
         &mut app,
         EngineCommand::SetStreamDestination {
@@ -1204,9 +1209,16 @@ fn bit_rate_changes_live(adaptive: bool) -> bool {
         let _ = server.wait();
         return false;
     }
-    assert!(app.stream_status().rate_live, "encoded in Nida, whatever the box says");
+    assert!(
+        app.stream_status().rate_live,
+        "encoded in Nida, whatever the box says"
+    );
     let sending = |app: &VardaApp| app.stream_status().destinations[0].kbps;
-    assert!(run(&mut app, 10.0, |app| sending(app) > 3500.0), "at the rate set: {}", sending(&app));
+    assert!(
+        run(&mut app, 10.0, |app| sending(app) > 3500.0),
+        "at the rate set: {}",
+        sending(&app)
+    );
     let generation = app.stream_status().destinations[0].generation;
 
     let set = |app: &mut VardaApp, video_kbps: u32, adaptive: bool| {
@@ -1223,12 +1235,17 @@ fn bit_rate_changes_live(adaptive: bool) -> bool {
     };
     set(&mut app, 1500, adaptive);
     let lowered = run(&mut app, 10.0, |app| sending(app) < 2000.0);
-    assert!(lowered, "adaptive {adaptive}: lowered while live: {} kbps", sending(&app));
+    assert!(
+        lowered,
+        "adaptive {adaptive}: lowered while live: {} kbps",
+        sending(&app)
+    );
     // What the stream is at now, sound and picture, as it comes out.
     let audio = options.audio_kbps;
     let at_new_rate = run(&mut app, 6.0, |app| {
-        app.stream_loss_reckoned_kbps()
-            .is_some_and(|k| (f64::from(k) - f64::from(1500 + audio)).abs() < f64::from(1500 + audio) * 0.15)
+        app.stream_loss_reckoned_kbps().is_some_and(|k| {
+            (f64::from(k) - f64::from(1500 + audio)).abs() < f64::from(1500 + audio) * 0.15
+        })
     });
     assert!(
         at_new_rate,
@@ -1237,11 +1254,19 @@ fn bit_rate_changes_live(adaptive: bool) -> bool {
     );
     if adaptive {
         let rate = app.stream_status().adaptive.expect("following the upload");
-        assert_eq!((rate.asked_kbps, rate.kbps), (1500, 1500), "the rate set is the most");
+        assert_eq!(
+            (rate.asked_kbps, rate.kbps),
+            (1500, 1500),
+            "the rate set is the most"
+        );
     }
     set(&mut app, 4000, !adaptive);
     let raised = run(&mut app, 10.0, |app| sending(app) > 3500.0);
-    assert!(raised, "adaptive {adaptive}: raised while live: {} kbps", sending(&app));
+    assert!(
+        raised,
+        "adaptive {adaptive}: raised while live: {} kbps",
+        sending(&app)
+    );
     assert_eq!(
         app.stream_status().adaptive.is_some(),
         !adaptive,
@@ -1249,14 +1274,28 @@ fn bit_rate_changes_live(adaptive: bool) -> bool {
     );
     let status = app.stream_status();
     let dest = &status.destinations[0];
-    assert_eq!(dest.generation, generation, "the same connection throughout");
-    assert_eq!((dest.reconnects, dest.dropped), (0, 0), "nothing lost: {dest:?}");
-    assert_eq!(app.stream_settings().options.video_kbps, 4000, "the rate set is kept");
+    assert_eq!(
+        dest.generation, generation,
+        "the same connection throughout"
+    );
+    assert_eq!(
+        (dest.reconnects, dest.dropped),
+        (0, 0),
+        "nothing lost: {dest:?}"
+    );
+    assert_eq!(
+        app.stream_settings().options.video_kbps,
+        4000,
+        "the rate set is kept"
+    );
 
     ok(send_cmd(&mut app, EngineCommand::StopStream));
     wait_exit(&mut server);
     let streams = streams_in(&out);
-    assert!(streams.contains("h264") && streams.contains("aac"), "{streams}");
+    assert!(
+        streams.contains("h264") && streams.contains("aac"),
+        "{streams}"
+    );
     true
 }
 
@@ -1288,7 +1327,12 @@ fn variable_drops_the_padding_of_a_still_picture() {
     let state = app.build_engine_state();
     let ch = state.mixer.channels[0].uuid.clone();
     for deck in &state.mixer.channels[0].decks {
-        send_cmd(&mut app, EngineCommand::RemoveDeck { deck_uuid: deck.uuid.clone() });
+        send_cmd(
+            &mut app,
+            EngineCommand::RemoveDeck {
+                deck_uuid: deck.uuid.clone(),
+            },
+        );
     }
     assert!(matches!(
         send_cmd(
@@ -1317,7 +1361,12 @@ fn variable_drops_the_padding_of_a_still_picture() {
     options.adaptive = false;
     options.encoder = StreamEncoder::Hardware;
     options.rate_mode = varda::streaming::RateMode::Constant;
-    ok(send_cmd(&mut app, EngineCommand::SetStreamOptions { options: options.clone() }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetStreamOptions {
+            options: options.clone(),
+        },
+    ));
     ok(send_cmd(
         &mut app,
         EngineCommand::SetStreamDestination {
@@ -1343,7 +1392,11 @@ fn variable_drops_the_padding_of_a_still_picture() {
         return;
     }
     let sending = |app: &VardaApp| app.stream_status().destinations[0].kbps;
-    assert!(run(&mut app, 10.0, |app| sending(app) > 3500.0), "Constant pads: {}", sending(&app));
+    assert!(
+        run(&mut app, 10.0, |app| sending(app) > 3500.0),
+        "Constant pads: {}",
+        sending(&app)
+    );
     let generation = app.stream_status().destinations[0].generation;
     let set = |app: &mut VardaApp, rate_mode| {
         send_cmd(
@@ -1357,25 +1410,47 @@ fn variable_drops_the_padding_of_a_still_picture() {
         )
     };
     let measured = app.stream_status().stream_kbps.expect("measured");
-    assert!(measured > 3500, "the stream at the rate set, padded: {measured}");
+    assert!(
+        measured > 3500,
+        "the stream at the rate set, padded: {measured}"
+    );
     ok(set(&mut app, varda::streaming::RateMode::Variable));
     let lean = run(&mut app, 10.0, |app| sending(app) < 1500.0);
     assert!(lean, "Variable drops the padding: {} kbps", sending(&app));
-    assert_eq!(app.stream_status().rate_mode, Some(varda::streaming::RateMode::Variable));
-    let lean = run(&mut app, 6.0, |app| app.stream_status().stream_kbps.is_some_and(|k| k < 1500));
-    assert!(lean, "and measured so: {:?}", app.stream_status().stream_kbps);
+    assert_eq!(
+        app.stream_status().rate_mode,
+        Some(varda::streaming::RateMode::Variable)
+    );
+    let lean = run(&mut app, 6.0, |app| {
+        app.stream_status().stream_kbps.is_some_and(|k| k < 1500)
+    });
+    assert!(
+        lean,
+        "and measured so: {:?}",
+        app.stream_status().stream_kbps
+    );
     match set(&mut app, varda::streaming::RateMode::Average) {
         CommandResult::Err { message, .. } => assert!(message.contains("Average"), "{message}"),
         other => panic!("Average taken while live: {other:?}"),
     }
     ok(set(&mut app, varda::streaming::RateMode::Constant));
-    assert!(run(&mut app, 10.0, |app| sending(app) > 3500.0), "padded again: {}", sending(&app));
+    assert!(
+        run(&mut app, 10.0, |app| sending(app) > 3500.0),
+        "padded again: {}",
+        sending(&app)
+    );
     let dest = &app.stream_status().destinations[0];
-    assert_eq!(dest.generation, generation, "the same connection throughout");
+    assert_eq!(
+        dest.generation, generation,
+        "the same connection throughout"
+    );
     ok(send_cmd(&mut app, EngineCommand::StopStream));
     wait_exit(&mut server);
     let streams = streams_in(&out);
-    assert!(streams.contains("h264") && streams.contains("aac"), "{streams}");
+    assert!(
+        streams.contains("h264") && streams.contains("aac"),
+        "{streams}"
+    );
 }
 
 /// With the software encoder the bit rate waits for a stop, and a change
@@ -1399,7 +1474,12 @@ fn a_software_stream_says_its_bit_rate_waits_for_a_stop() {
     options.height = 180;
     options.video_kbps = 800;
     options.encoder = StreamEncoder::Software;
-    ok(send_cmd(&mut app, EngineCommand::SetStreamOptions { options: options.clone() }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetStreamOptions {
+            options: options.clone(),
+        },
+    ));
     ok(send_cmd(
         &mut app,
         EngineCommand::SetStreamDestination {
@@ -1486,7 +1566,8 @@ fn throttle(to: u16) -> Throttle {
     std::thread::spawn(move || {
         for client in listener.incoming() {
             let Ok(client) = client else { return };
-            let Ok(server) = TcpStream::connect(("127.0.0.1", target.load(Ordering::Relaxed))) else {
+            let Ok(server) = TcpStream::connect(("127.0.0.1", target.load(Ordering::Relaxed)))
+            else {
                 continue;
             };
             // Made at this count of cuts: a later one ends its way.
@@ -1495,7 +1576,8 @@ fn throttle(to: u16) -> Throttle {
                 let cuts = cuts.clone();
                 move || cuts.load(Ordering::Relaxed) > born
             };
-            let (mut back_in, mut back_out) = (server.try_clone().unwrap(), client.try_clone().unwrap());
+            let (mut back_in, mut back_out) =
+                (server.try_clone().unwrap(), client.try_clone().unwrap());
             let back_dead = dead.clone();
             std::thread::spawn(move || {
                 let mut buf = [0u8; 4096];
@@ -1550,7 +1632,12 @@ fn throttle(to: u16) -> Throttle {
             });
         }
     });
-    Throttle { port, limit, cut, to }
+    Throttle {
+        port,
+        limit,
+        cut,
+        to,
+    }
 }
 
 /// The operator's case: Wi-Fi switched to another network mid-stream. The
@@ -1580,7 +1667,10 @@ fn a_change_of_network_reconnects_at_once() {
     options.width = 640;
     options.height = 360;
     options.video_kbps = 2000;
-    ok(send_cmd(&mut app, EngineCommand::SetStreamOptions { options }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetStreamOptions { options },
+    ));
     ok(send_cmd(
         &mut app,
         EngineCommand::SetStreamDestination {
@@ -1595,7 +1685,12 @@ fn a_change_of_network_reconnects_at_once() {
     ));
     ok(send_cmd(&mut app, EngineCommand::StartStream));
     let dest = |app: &VardaApp| app.stream_status().destinations[0].clone();
-    assert!(run(&mut app, 15.0, |app| dest(app).state == DestinationState::Live), "{:?}", dest(&app));
+    assert!(
+        run(&mut app, 15.0, |app| dest(app).state
+            == DestinationState::Live),
+        "{:?}",
+        dest(&app)
+    );
     run(&mut app, 3.0, |_| false);
     let before = dest(&app);
 
@@ -1607,11 +1702,18 @@ fn a_change_of_network_reconnects_at_once() {
     way.to.store(new_port, Ordering::Relaxed);
     way.cut();
     run(&mut app, 7.0, |_| false);
-    assert_eq!(dest(&app).reconnects, before.reconnects, "still on the dead connection: {:?}", dest(&app));
+    assert_eq!(
+        dest(&app).reconnects,
+        before.reconnects,
+        "still on the dead connection: {:?}",
+        dest(&app)
+    );
     // The network is seen to change: the quiet connection goes at once.
     varda::streaming::network::change_for_test(way.port);
     let moved = Instant::now();
-    let gone = run(&mut app, 10.0, |app| dest(app).reconnects > before.reconnects);
+    let gone = run(&mut app, 10.0, |app| {
+        dest(app).reconnects > before.reconnects
+    });
     assert!(gone, "{:?}", dest(&app));
     assert!(
         moved.elapsed() < Duration::from_secs(3),
@@ -1625,10 +1727,15 @@ fn a_change_of_network_reconnects_at_once() {
     let after = dest(&app);
     assert!(back, "connected again the new way: {after:?}");
     assert_eq!(after.reconnects, before.reconnects + 1, "{after:?}");
-    assert!(after.dropped_secs > before.dropped_secs, "the stream it missed is counted: {after:?}");
+    assert!(
+        after.dropped_secs > before.dropped_secs,
+        "the stream it missed is counted: {after:?}"
+    );
     if let Some(rate) = app.stream_status().adaptive {
         let restored = run(&mut app, 5.0, |app| {
-            app.stream_status().adaptive.is_some_and(|a| a.kbps == a.asked_kbps)
+            app.stream_status()
+                .adaptive
+                .is_some_and(|a| a.kbps == a.asked_kbps)
         });
         assert!(restored, "the rate stands where it stood: {rate:?}");
     }
@@ -1638,7 +1745,10 @@ fn a_change_of_network_reconnects_at_once() {
     let _ = old_server.kill();
     let _ = old_server.wait();
     let streams = streams_in(&second);
-    assert!(streams.contains("h264") && streams.contains("aac"), "the new way carries it: {streams}");
+    assert!(
+        streams.contains("h264") && streams.contains("aac"),
+        "the new way carries it: {streams}"
+    );
 }
 
 /// The way dies just as the network is seen to change — the usual order
@@ -1665,7 +1775,10 @@ fn a_way_dying_as_the_network_changes_is_caught() {
     options.width = 640;
     options.height = 360;
     options.video_kbps = 2000;
-    ok(send_cmd(&mut app, EngineCommand::SetStreamOptions { options }));
+    ok(send_cmd(
+        &mut app,
+        EngineCommand::SetStreamOptions { options },
+    ));
     ok(send_cmd(
         &mut app,
         EngineCommand::SetStreamDestination {
@@ -1680,7 +1793,12 @@ fn a_way_dying_as_the_network_changes_is_caught() {
     ));
     ok(send_cmd(&mut app, EngineCommand::StartStream));
     let dest = |app: &VardaApp| app.stream_status().destinations[0].clone();
-    assert!(run(&mut app, 15.0, |app| dest(app).state == DestinationState::Live), "{:?}", dest(&app));
+    assert!(
+        run(&mut app, 15.0, |app| dest(app).state
+            == DestinationState::Live),
+        "{:?}",
+        dest(&app)
+    );
     run(&mut app, 3.0, |_| false);
     let before = dest(&app);
     let new_port = free_port();
@@ -1690,7 +1808,9 @@ fn a_way_dying_as_the_network_changes_is_caught() {
     way.cut();
     varda::streaming::network::change_for_test(way.port);
     let moved = Instant::now();
-    let gone = run(&mut app, 15.0, |app| dest(app).reconnects > before.reconnects);
+    let gone = run(&mut app, 15.0, |app| {
+        dest(app).reconnects > before.reconnects
+    });
     assert!(gone, "{:?}", dest(&app));
     assert!(
         moved.elapsed() < Duration::from_secs(6),
@@ -1835,10 +1955,16 @@ fn a_stream_follows_what_its_upload_carries() {
     });
     let status = app.stream_status();
     assert!(cut, "cut under the upload: {:?}", status.adaptive);
-    let (lost, waiting) = (status.destinations[0].dropped, status.destinations[0].backlog_bytes);
+    let (lost, waiting) = (
+        status.destinations[0].dropped,
+        status.destinations[0].backlog_bytes,
+    );
     run(&mut app, 8.0, |_| false);
     let status = app.stream_status();
-    assert_eq!(status.destinations[0].dropped, lost, "nothing more lost once under it");
+    assert_eq!(
+        status.destinations[0].dropped, lost,
+        "nothing more lost once under it"
+    );
     assert!(lost == 0, "nothing lost at all: {lost} pieces");
     let rate = status.adaptive.unwrap().kbps;
     // What waits is draining: less than when the rate was cut, or next to
@@ -1859,7 +1985,10 @@ fn a_stream_follows_what_its_upload_carries() {
     ok(send_cmd(&mut app, EngineCommand::StopStream));
     wait_exit(&mut server);
     let streams = streams_in(&out);
-    assert!(streams.contains("h264") && streams.contains("aac"), "{streams}");
+    assert!(
+        streams.contains("h264") && streams.contains("aac"),
+        "{streams}"
+    );
 }
 
 /// An upload too slow even at the lowest rate: the destination falls as far

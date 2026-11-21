@@ -232,7 +232,11 @@ impl Step {
             play.timer = play.timer.map(valid_timer);
         }
         self.then_secs = self.then_secs.and_then(valid_then);
-        if self.then_ends.as_deref().is_some_and(|deck| !self.plays_on(deck)) {
+        if self
+            .then_ends
+            .as_deref()
+            .is_some_and(|deck| !self.plays_on(deck))
+        {
             self.then_ends = None;
         }
         if self.then_ends.is_some() {
@@ -471,9 +475,10 @@ impl Rundown {
     /// The step taken last, by UUID — none taken, or the one taken since
     /// removed.
     pub fn last(&self) -> Option<&str> {
-        self.last.as_deref().filter(|uuid| self.position(uuid).is_some())
+        self.last
+            .as_deref()
+            .filter(|uuid| self.position(uuid).is_some())
     }
-
 
     /// The step `GO` takes: the one the operator said comes next, else the
     /// one after the step taken last, the first when none was taken — and
@@ -559,11 +564,7 @@ impl Rundown {
         let Some(idx) = self.position(uuid) else {
             return false;
         };
-        let to = if later {
-            idx + 1
-        } else {
-            idx.wrapping_sub(1)
-        };
+        let to = if later { idx + 1 } else { idx.wrapping_sub(1) };
         if to >= self.steps.len() {
             return false;
         }
@@ -726,7 +727,9 @@ impl Rundown {
     /// Whether it became due.
     pub fn end_came(&mut self, now: f64) -> bool {
         match self.follow.as_mut() {
-            Some(follow) if follow.until.is_some() && follow.seen_running && follow.due.is_infinite() => {
+            Some(follow)
+                if follow.until.is_some() && follow.seen_running && follow.due.is_infinite() =>
+            {
                 follow.due = now.max(follow.not_before);
                 true
             }
@@ -791,7 +794,9 @@ impl Rundown {
             step.at_always
                 && self.last.as_deref() != Some(step.uuid.as_str())
                 && !self.is_held(&step.uuid)
-                && step.at_secs.is_some_and(|at| clock_came_to(was, now, f64::from(at)))
+                && step
+                    .at_secs
+                    .is_some_and(|at| clock_came_to(was, now, f64::from(at)))
         })
     }
 
@@ -865,7 +870,12 @@ impl Rundown {
                 })
             } else {
                 let secs = step.then_secs?;
-                Some(Follow::at(from, to, now + f64::from(secs.max(settle_secs)), fade))
+                Some(Follow::at(
+                    from,
+                    to,
+                    now + f64::from(secs.max(settle_secs)),
+                    fade,
+                ))
             }
         });
         self.last = Some(uuid.to_string());
@@ -990,10 +1000,18 @@ impl Rundown {
             // There, or there again — the show is on it — or none taken.
             _ => self.to_come.clear(),
         }
-        if self.next.as_ref().is_some_and(|n| self.position(n).is_none()) {
+        if self
+            .next
+            .as_ref()
+            .is_some_and(|n| self.position(n).is_none())
+        {
             self.next = None;
         }
-        if self.at_held.as_ref().is_some_and(|h| self.position(h).is_none()) {
+        if self
+            .at_held
+            .as_ref()
+            .is_some_and(|h| self.position(h).is_none())
+        {
             self.at_held = None;
         }
         let gone: Vec<String> = self

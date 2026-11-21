@@ -461,7 +461,10 @@ mod tests {
             readback.begin_readback(&mut encoder, &texture, made);
             context.submit(std::iter::once(encoder.finish()));
         }
-        assert!(readback.try_read_all(&context.device).is_empty(), "asynchronous");
+        assert!(
+            readback.try_read_all(&context.device).is_empty(),
+            "asynchronous"
+        );
         let _ = context.device.poll(wgpu::PollType::wait_indefinitely());
         let made: Vec<_> = readback
             .try_read_all(&context.device)

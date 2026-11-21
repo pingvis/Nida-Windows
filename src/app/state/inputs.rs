@@ -526,7 +526,8 @@ impl VardaApp {
         if !new {
             return;
         }
-        let message = format!(
+        let message =
+            format!(
             "{inputs} screen {} by a display's number ({}), not the screen itself: {} whichever \
              screen has that number today. Check {}, and pick its screen in its settings to \
              keep that screen.",
@@ -935,8 +936,15 @@ mod tests {
         assert_eq!(colour_of(&app, &second), full, "the same camera");
         assert!(colour_of(&app, &other).is_auto(), "another camera");
 
-        let not_found =
-            |result: CommandResult| matches!(result, CommandResult::Err { code: ErrorCode::NotFound, .. });
+        let not_found = |result: CommandResult| {
+            matches!(
+                result,
+                CommandResult::Err {
+                    code: ErrorCode::NotFound,
+                    ..
+                }
+            )
+        };
         assert!(not_found(set(&mut app, "no-such-layer")));
         let channel_uuid = app.mixer.channels()[0].uuid().to_string();
         let CommandResult::OkWithId { uuid: colour_layer } =
@@ -988,7 +996,10 @@ mod tests {
         assert_eq!(same.camera_colour, full);
         assert_eq!(same.camera_profile, CameraProfile::SonyHlg);
         let by_device = new_layer(&app, 7, "0xatem");
-        assert_eq!(by_device.camera_colour, full, "the same device, opened again");
+        assert_eq!(
+            by_device.camera_colour, full,
+            "the same device, opened again"
+        );
         let other = new_layer(&app, 4, "0xfacetime");
         assert!(other.camera_colour.is_auto() && other.camera_profile.is_normal());
     }
@@ -1070,7 +1081,9 @@ mod tests {
         let other = camera_layer(&mut app, 4, "0xfacetime");
         let lowest = |app: &VardaApp, uuid: &str| {
             let (ch, dk) = app.mixer.find_deck_by_uuid(uuid).expect("the layer");
-            app.mixer.channels()[ch].decks[dk].deck.camera_lowest_latency
+            app.mixer.channels()[ch].decks[dk]
+                .deck
+                .camera_lowest_latency
         };
         let set = |app: &mut VardaApp, deck_uuid: &str, on: bool| {
             app.execute_command(EngineCommand::SetCameraLowestLatency {
@@ -1079,7 +1092,10 @@ mod tests {
             })
         };
         assert!(matches!(set(&mut app, &first, true), CommandResult::Ok));
-        assert!(lowest(&app, &first) && lowest(&app, &second), "the same camera");
+        assert!(
+            lowest(&app, &first) && lowest(&app, &second),
+            "the same camera"
+        );
         assert!(!lowest(&app, &other), "another camera");
 
         let mut new_layer =
@@ -1087,7 +1103,10 @@ mod tests {
                 .expect("a camera layer");
         new_layer.camera_device = Some("0xatem".into());
         app.read_as_its_camera_is(&mut new_layer);
-        assert!(new_layer.camera_lowest_latency, "a new layer on it takes it");
+        assert!(
+            new_layer.camera_lowest_latency,
+            "a new layer on it takes it"
+        );
 
         // As the command bus does for an undoable command.
         let before = app.history_snapshot_default();
@@ -1119,7 +1138,10 @@ mod tests {
         let other = camera_layer(&mut app, 4, "0xfacetime");
         let profile_of = |app: &VardaApp, uuid: &str| {
             let (ch, dk) = app.mixer.find_deck_by_uuid(uuid).expect("the layer");
-            app.mixer.channels()[ch].decks[dk].deck.camera_profile.clone()
+            app.mixer.channels()[ch].decks[dk]
+                .deck
+                .camera_profile
+                .clone()
         };
         let s_log3 = CameraProfile::SonySLog3Cine;
         let result = app.execute_command(EngineCommand::SetCameraProfile {

@@ -267,8 +267,11 @@ pub(super) fn render_toolbar(ui: &mut egui::Ui, data: &UIData, actions: &mut UIA
             if ui
                 .add_enabled(
                     can_take && data.main.fade.is_none(),
-                    egui::Button::new(big(&format!("{} (Enter)", transition.name().to_uppercase())))
-                        .min_size(egui::vec2(70.0, 30.0)),
+                    egui::Button::new(big(&format!(
+                        "{} (Enter)",
+                        transition.name().to_uppercase()
+                    )))
+                    .min_size(egui::vec2(70.0, 30.0)),
                 )
                 .on_hover_text(format!(
                     "Take the next channel to Main — {} — over {} (Enter)",

@@ -214,9 +214,9 @@ pub(super) fn render_deck_column(
 fn web_sound(ui: &mut egui::Ui, data: &UIData, deck: &DeckUIInfo, actions: &mut UIActions) {
     use crate::audio::app_sound::WEB_TALKS;
     use crate::audio_mix::AudioSourceKind;
-    let there = data.audio_mix.sources.iter().any(|s| {
-        matches!(&s.kind, AudioSourceKind::Input { app: Some(app), .. } if app == WEB_TALKS)
-    });
+    let there = data.audio_mix.sources.iter().any(
+        |s| matches!(&s.kind, AudioSourceKind::Input { app: Some(app), .. } if app == WEB_TALKS),
+    );
     if there {
         ui.label(
             egui::RichText::new("Web talks' sound: in the audio mixer")
@@ -288,7 +288,12 @@ pub(super) fn render_slides_panel(ui: &mut egui::Ui, data: &UIData, actions: &mu
     ui.ctx().data_mut(|d| {
         d.insert_temp(
             rect_id,
-            (panel, all.get(chosen).map(|i| i.deck.uuid.clone()), frame, layer),
+            (
+                panel,
+                all.get(chosen).map(|i| i.deck.uuid.clone()),
+                frame,
+                layer,
+            ),
         );
     });
     let Some(input) = all.get(chosen).copied() else {
@@ -302,7 +307,10 @@ pub(super) fn render_slides_panel(ui: &mut egui::Ui, data: &UIData, actions: &mu
                 .selected_text(&input.channel.name)
                 .show_ui(ui, |ui| {
                     for (i, other) in all.iter().enumerate() {
-                        if ui.selectable_label(i == chosen, &other.channel.name).clicked() {
+                        if ui
+                            .selectable_label(i == chosen, &other.channel.name)
+                            .clicked()
+                        {
                             ui.ctx()
                                 .data_mut(|d| d.insert_temp(chosen_id(), other.deck.uuid.clone()));
                         }
@@ -321,7 +329,9 @@ pub(super) fn render_slides_panel(ui: &mut egui::Ui, data: &UIData, actions: &mu
     ui.horizontal(|ui| {
         if ui
             .button("+ Add files…")
-            .on_hover_text("PowerPoint decks, PDFs, web pages (.html), clips and pictures, as talks")
+            .on_hover_text(
+                "PowerPoint decks, PDFs, web pages (.html), clips and pictures, as talks",
+            )
             .clicked()
         {
             choose_files(ui.ctx(), Some(input.deck.uuid.clone()), None);
@@ -413,7 +423,12 @@ fn kind_label(kind: Option<TalkKind>) -> &'static str {
 
 /// The talk on, with its picture and what moves it on; the talk coming
 /// next, and Start next talk.
-fn render_now_and_next(ui: &mut egui::Ui, data: &UIData, input: Input<'_>, actions: &mut UIActions) {
+fn render_now_and_next(
+    ui: &mut egui::Ui,
+    data: &UIData,
+    input: Input<'_>,
+    actions: &mut UIActions,
+) {
     let wide = ui.available_width() > 560.0;
     if wide {
         ui.columns(2, |cols| {
@@ -615,10 +630,17 @@ fn render_moves(
         for (text, to, hover) in [
             ("⏮", Go::First, "The first slide: the talk from its start"),
             ("◀", Go::Previous, "Back a step (PageUp)"),
-            ("▶", Go::Next, "On a step: the next animation or slide (PageDown)"),
+            (
+                "▶",
+                Go::Next,
+                "On a step: the next animation or slide (PageDown)",
+            ),
         ] {
             if ui
-                .add_enabled(steps, egui::Button::new(egui::RichText::new(text).size(16.0)).min_size(size))
+                .add_enabled(
+                    steps,
+                    egui::Button::new(egui::RichText::new(text).size(16.0)).min_size(size),
+                )
                 .on_hover_text(hover)
                 .clicked()
             {
@@ -638,15 +660,19 @@ fn render_moves(
             if ui
                 .add_enabled(
                     live.is_some(),
-                    egui::Button::new(text).selected(on).min_size(egui::vec2(0.0, size.y)),
+                    egui::Button::new(text)
+                        .selected(on)
+                        .min_size(egui::vec2(0.0, size.y)),
                 )
                 .on_hover_text(hover)
                 .clicked()
             {
-                actions.commands.push(EngineCommand::TogglePresentationScreen {
-                    deck_uuid: Some(deck.clone()),
-                    screen: which,
-                });
+                actions
+                    .commands
+                    .push(EngineCommand::TogglePresentationScreen {
+                        deck_uuid: Some(deck.clone()),
+                        screen: which,
+                    });
             }
         }
         // Apart from what is pressed all through a talk. Never greyed out:
@@ -837,13 +863,21 @@ fn render_pictures(ui: &mut egui::Ui, input: Input<'_>, actions: &mut UIActions)
             });
         }
         let said = if s.making_pictures > 0 {
-            format!("making {}… ({with} of {} done)", s.making_pictures, decks.len())
+            format!(
+                "making {}… ({with} of {} done)",
+                s.making_pictures,
+                decks.len()
+            )
         } else {
             format!("{with} of {} PowerPoint talks", decks.len())
         };
         ui.label(egui::RichText::new(said).small().weak());
         if s.settings.make_pictures && !s.pictures_given {
-            ui.label(egui::RichText::new("press Make the first time").small().weak());
+            ui.label(
+                egui::RichText::new("press Make the first time")
+                    .small()
+                    .weak(),
+            );
         }
     });
 }
@@ -1008,7 +1042,10 @@ fn render_list(ui: &mut egui::Ui, input: Input<'_>, actions: &mut UIActions) {
         // What the check found, said under the row once ⚠ check is pressed.
         let said_id = egui::Id::new(("slides_talk_checks", deck.as_str(), talk.id.as_str()));
         let said = !talk.warnings.is_empty()
-            && ui.ctx().data(|d| d.get_temp::<bool>(said_id)).unwrap_or(false);
+            && ui
+                .ctx()
+                .data(|d| d.get_temp::<bool>(said_id))
+                .unwrap_or(false);
         let mut pressed = false;
         let row = egui::Frame::NONE
             .fill(fill)
@@ -1313,7 +1350,9 @@ pub(super) fn take_chosen_files(ctx: &egui::Context, actions: &mut UIActions) {
         (Some(talk), Some(deck)) => {
             // The talk keeps its place, its name and its id.
             if let Some(path) = paths.into_iter().next() {
-                actions.commands.push(edit_talk(&deck, &talk, None, Some(path)));
+                actions
+                    .commands
+                    .push(edit_talk(&deck, &talk, None, Some(path)));
             }
         }
         (_, deck) => actions.commands.push(EngineCommand::AddTalks {
@@ -1374,9 +1413,7 @@ pub(super) fn take_drop(
         );
         let y = match at {
             Some(i) => rows[i].top(),
-            None => rows
-                .last()
-                .map_or(panel.top() + 40.0, egui::Rect::bottom),
+            None => rows.last().map_or(panel.top() + 40.0, egui::Rect::bottom),
         };
         painter.hline(panel.x_range(), y, egui::Stroke::new(2.0, READY_GREEN));
         let text = if hovering == 1 {
@@ -1565,7 +1602,12 @@ mod tests {
             (shown, enabled, sent(&harness))
         };
         if let Some(s) = data.channels[0].decks[0].slides.as_mut() {
-            s.talks.push(talk("t4", "Closing", TalkKind::PowerPoint, TalkState::Ready));
+            s.talks.push(talk(
+                "t4",
+                "Closing",
+                TalkKind::PowerPoint,
+                TalkState::Ready,
+            ));
         }
         // The keynote — PowerPoint — on, PowerPoint never having saved into
         // the folder: not now, and said.
@@ -1592,7 +1634,9 @@ mod tests {
         {
             let mut harness = harness(&data);
             harness.run_steps(2);
-            assert!(harness.query_by_label("press Make the first time").is_none());
+            assert!(harness
+                .query_by_label("press Make the first time")
+                .is_none());
             // By themselves, as a list comes: the box takes it off.
             harness.get_by_label("by themselves").click();
             harness.run_steps(2);
@@ -1612,7 +1656,9 @@ mod tests {
         {
             let mut harness = harness(&data);
             harness.run_steps(2);
-            assert!(harness.query_by_label("press Make the first time").is_none());
+            assert!(harness
+                .query_by_label("press Make the first time")
+                .is_none());
         }
         // Nothing on, never saved into: asked, of this Slides input.
         if let Some(s) = data.channels[0].decks[0].slides.as_mut() {
@@ -1659,10 +1705,7 @@ mod tests {
                 });
             harness.run_steps(3);
             let inside = |rect: egui::Rect| rect.left() >= 0.0 && rect.right() <= width + 0.5;
-            let starts: Vec<egui::Rect> = harness
-                .get_all_by_label("▶")
-                .map(|n| n.rect())
-                .collect();
+            let starts: Vec<egui::Rect> = harness.get_all_by_label("▶").map(|n| n.rect()).collect();
             assert!(starts.len() >= 3, "a ▶ for each row, and the talk's own");
             for rect in starts {
                 assert!(inside(rect), "▶ at {rect:?} in a panel {width} wide");
@@ -1716,7 +1759,9 @@ mod tests {
         harness.run_steps(2);
         harness.get_by_label("Rename…").click();
         harness.run_steps(3);
-        harness.get_by_role(egui::accesskit::Role::TextInput).type_text("Coffee");
+        harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .type_text("Coffee");
         harness.run_steps(2);
         harness.key_press(egui::Key::Enter);
         harness.run_steps(2);
@@ -1739,7 +1784,9 @@ mod tests {
         harness.run_steps(2);
         harness.get_by_label("Rename…").click();
         harness.run_steps(3);
-        harness.get_by_role(egui::accesskit::Role::TextInput).type_text("Lunch");
+        harness
+            .get_by_role(egui::accesskit::Role::TextInput)
+            .type_text("Lunch");
         harness.run_steps(2);
         // Somewhere else in the panel.
         harness.get_by_label("1 · Keynote").click();
@@ -1787,7 +1834,10 @@ mod tests {
         harness.get_by_label("It plays all the same. Put it right, then press Check again.");
         harness.get_by_label("⚠ check").click();
         harness.run_steps(2);
-        assert!(harness.query_by_label(found).is_none(), "pressed again: gone");
+        assert!(
+            harness.query_by_label(found).is_none(),
+            "pressed again: gone"
+        );
         assert_eq!(sent(&harness), "[]", "nothing asked of the engine");
     }
 
@@ -1828,7 +1878,10 @@ mod tests {
             took
         };
         assert!(frame(true, false), "drawn, nothing over it");
-        assert!(!frame(false, false), "not drawn this frame (closed, behind a tab)");
+        assert!(
+            !frame(false, false),
+            "not drawn this frame (closed, behind a tab)"
+        );
         // A window over it: laid out the first frame it shows, there after.
         let _ = frame(true, true);
         assert!(!frame(true, true), "the window over it takes the files");
@@ -1867,7 +1920,11 @@ mod tests {
             took.1 = take_drop(ui.ctx(), Some(inside), 1, &[], &mut actions);
         });
         out.textures_delta.clear();
-        assert_eq!(took, (true, false), "its own window's, not the main window's");
+        assert_eq!(
+            took,
+            (true, false),
+            "its own window's, not the main window's"
+        );
     }
 
     /// Files from Finder dropped on the panel in a window of its own become
@@ -1895,7 +1952,9 @@ mod tests {
                 egui::Pos2::ZERO,
                 egui::vec2(900.0, 700.0),
             )),
-            dropped_files: vec![std::sync::Arc::new(Dropped(file.clone())) as egui::DroppedFileHandle],
+            dropped_files: vec![
+                std::sync::Arc::new(Dropped(file.clone())) as egui::DroppedFileHandle
+            ],
             events: vec![egui::Event::PointerMoved(egui::pos2(300.0, 300.0))],
             ..Default::default()
         };
@@ -2089,7 +2148,9 @@ mod tests {
     #[test]
     fn every_kind_of_talk_can_be_chosen_in_the_dialog() {
         let all = talk_extensions();
-        for ext in ["pptx", "ppt", "pdf", "html", "mp4", "mov", "png", "jpg", "wav"] {
+        for ext in [
+            "pptx", "ppt", "pdf", "html", "mp4", "mov", "png", "jpg", "wav",
+        ] {
             assert!(all.contains(&ext), "{ext}");
         }
     }

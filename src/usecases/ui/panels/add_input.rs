@@ -1108,9 +1108,7 @@ fn ndi_body(ui: &mut egui::Ui, data: &UIData, state: &mut State) -> bool {
 
 /// A capture target as a scene names it: a display by name, a window by its
 /// app and title.
-pub(super) fn capture_target(
-    target: &crate::engine::CaptureTargetSnapshot,
-) -> CaptureTargetConfig {
+pub(super) fn capture_target(target: &crate::engine::CaptureTargetSnapshot) -> CaptureTargetConfig {
     if target.kind == "display" {
         CaptureTargetConfig::Display {
             name: target.label.clone(),

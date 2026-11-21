@@ -470,10 +470,9 @@ impl ScreenLayout {
         }
         for window in &mut self.windows {
             remove_pane(&mut self.dock, window.pane);
-            if window
-                .rect
-                .is_some_and(|[x, y, w, h]| ![x, y, w, h].iter().all(|v| v.is_finite()) || w < 1.0 || h < 1.0)
-            {
+            if window.rect.is_some_and(|[x, y, w, h]| {
+                ![x, y, w, h].iter().all(|v| v.is_finite()) || w < 1.0 || h < 1.0
+            }) {
                 window.rect = None;
             }
         }
@@ -1043,11 +1042,17 @@ mod tests {
         assert!(has_pane(&screen.dock, Pane::Switcher));
         screen.open_in_window(Pane::Switcher);
         assert!(screen.in_window(Pane::Switcher) && screen.has(Pane::Switcher));
-        assert!(!has_pane(&screen.dock, Pane::Switcher), "not in the dock too");
+        assert!(
+            !has_pane(&screen.dock, Pane::Switcher),
+            "not in the dock too"
+        );
         screen.open_in_window(Pane::Switcher);
         assert_eq!(screen.windows.len(), 1, "one window for it");
         screen.open(Pane::Switcher);
-        assert!(!has_pane(&screen.dock, Pane::Switcher), "open already, in its window");
+        assert!(
+            !has_pane(&screen.dock, Pane::Switcher),
+            "open already, in its window"
+        );
         screen.put_back(Pane::Switcher);
         assert!(!screen.in_window(Pane::Switcher));
         assert!(has_pane(&screen.dock, Pane::Switcher), "back in the dock");
@@ -1079,7 +1084,10 @@ mod tests {
     fn a_built_in_layout_puts_the_windows_back_and_a_saved_one_keeps_its_own() {
         let mut screen = ScreenLayout::builtin(Builtin::Classic);
         screen.open_in_window(Pane::Audio);
-        assert!(!screen.arranged_as(&Builtin::Classic.dock(), &[]), "changed");
+        assert!(
+            !screen.arranged_as(&Builtin::Classic.dock(), &[]),
+            "changed"
+        );
         screen.arrange(Builtin::Broadcast.dock(), &[]);
         assert!(screen.windows.is_empty(), "back in the dock");
         assert!(has_pane(&screen.dock, Pane::Audio));
@@ -1092,7 +1100,10 @@ mod tests {
         let (dock, windows) = (screen.dock.clone(), screen.windows.clone());
         screen.arrange(Builtin::Classic.dock(), &[]);
         screen.arrange(dock.clone(), &windows);
-        assert_eq!(screen.windows, windows, "in their windows again, where they were");
+        assert_eq!(
+            screen.windows, windows,
+            "in their windows again, where they were"
+        );
         assert!(!has_pane(&screen.dock, Pane::Audio) && !has_pane(&screen.dock, Pane::Switcher));
         assert!(screen.arranged_as(&dock, &windows));
         // A window moved is still the layout; a panel put back is not.
@@ -1115,7 +1126,10 @@ mod tests {
         remove_pane(&mut no_library, Pane::Library);
         screen.arrange(no_library.clone(), &library);
         assert_eq!((screen.windows).len(), 0);
-        assert!(has_pane(&screen.dock, Pane::Library), "in the dock, not lost");
+        assert!(
+            has_pane(&screen.dock, Pane::Library),
+            "in the dock, not lost"
+        );
         assert!(screen.arranged_as(&no_library, &library));
     }
 
@@ -1167,8 +1181,14 @@ mod tests {
             place: false,
         };
         assert_eq!(layout.windows, vec![switcher, audio, rundown]);
-        assert!(!has_pane(&layout.dock, Pane::Switcher), "in its window only");
-        assert!(has_pane(&layout.dock, Pane::Setup), "no window for it: in the dock");
+        assert!(
+            !has_pane(&layout.dock, Pane::Switcher),
+            "in its window only"
+        );
+        assert!(
+            has_pane(&layout.dock, Pane::Setup),
+            "no window for it: in the dock"
+        );
 
         let text = serde_json::to_string(&layout).unwrap();
         let back: ScreenLayout = serde_json::from_str(&text).unwrap();
@@ -1465,7 +1485,12 @@ mod tests {
     #[test]
     fn saving_a_name_again_replaces_it() {
         let mut saved = Vec::new();
-        assert!(!upsert(&mut saved, "Show", Builtin::Broadcast.dock(), Vec::new()));
+        assert!(!upsert(
+            &mut saved,
+            "Show",
+            Builtin::Broadcast.dock(),
+            Vec::new()
+        ));
         assert!(upsert(&mut saved, "show", Builtin::Vj.dock(), Vec::new()));
         assert_eq!(saved.len(), 1);
         assert_eq!(saved[0].name, "show");
@@ -1504,7 +1529,9 @@ mod tests {
             store.save_as("  Show day ", &Builtin::Broadcast.dock(), &[]),
             Ok("Show day".to_string())
         );
-        assert!(store.save_as("VJ", &Builtin::Broadcast.dock(), &[]).is_err());
+        assert!(store
+            .save_as("VJ", &Builtin::Broadcast.dock(), &[])
+            .is_err());
         assert_eq!(SavedLayoutStore::open(path.clone()).layouts().len(), 1);
         assert!(store.delete("show day").is_ok());
         assert!(store.delete("show day").is_err(), "already gone");

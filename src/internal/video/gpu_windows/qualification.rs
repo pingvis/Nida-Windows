@@ -3,7 +3,7 @@ use crate::{
     deck::playlist::Playlist,
     engine::value::playlist::{PlaylistItem, PlaylistSettings, PlaylistTransition},
     renderer::GpuContext,
-    video::{VideoPlayer, hwdecode},
+    video::{hwdecode, VideoPlayer},
 };
 use std::{
     collections::{HashMap, HashSet},

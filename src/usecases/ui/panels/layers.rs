@@ -153,10 +153,8 @@ fn render_row(ui: &mut egui::Ui, ch: &ChannelUIInfo, data: &UIData, actions: &mu
         super::publish_drop_rect(ui, ch.ch_idx, rect);
         // The cards' part of the row, from the first card to the row's end.
         if let Some((_, first)) = cards.first() {
-            let area = egui::Rect::from_min_max(
-                egui::pos2(first.left() - 4.0, rect.top()),
-                rect.max,
-            );
+            let area =
+                egui::Rect::from_min_max(egui::pos2(first.left() - 4.0, rect.top()), rect.max);
             super::insertion::publish_cards_across(ui, ch.ch_idx, cards, area);
         }
         super::dnd::publish_channel_surface_fx(ui.ctx(), &ch.uuid, ch.ch_idx, rect);
@@ -457,8 +455,9 @@ mod tests {
         let stacks = harness
             .ctx
             .memory(|m| {
-                m.data
-                    .get_temp::<Vec<super::super::insertion::Stack>>(super::super::insertion::stacks_id(0))
+                m.data.get_temp::<Vec<super::super::insertion::Stack>>(
+                    super::super::insertion::stacks_id(0),
+                )
             })
             .expect("the row publishes its cards");
         let stack = stacks.first().expect("one view");
@@ -471,7 +470,10 @@ mod tests {
             super::super::insertion::insertion_at(&harness.ctx, 0, between).before,
             Some(front.clone())
         );
-        let past = egui::pos2(stack.cards.last().unwrap().1.right() + 20.0, first.center().y);
+        let past = egui::pos2(
+            stack.cards.last().unwrap().1.right() + 20.0,
+            first.center().y,
+        );
         assert_eq!(
             super::super::insertion::insertion_at(&harness.ctx, 0, past).before,
             Some(back),

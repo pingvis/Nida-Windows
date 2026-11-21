@@ -151,7 +151,14 @@ macro_rules! sanitized {
         }
     )*};
 }
-sanitized!(LowCutConfig, GateConfig, LevelerConfig, CompressorConfig, LimiterConfig, DeEsserConfig);
+sanitized!(
+    LowCutConfig,
+    GateConfig,
+    LevelerConfig,
+    CompressorConfig,
+    LimiterConfig,
+    DeEsserConfig
+);
 
 // ── Filters ─────────────────────────────────────────────────────────────
 
@@ -508,12 +515,20 @@ impl Gate {
             }
             let floor = self.floor_db.next(floor_to);
             let target = if self.open { 0.0 } else { floor };
-            let k = if target > self.gain_db { attack } else { release };
+            let k = if target > self.gain_db {
+                attack
+            } else {
+                release
+            };
             self.gain_db = self.gain_db * k + target * (1.0 - k);
             if self.gain_db.abs() < 1e-9 {
                 self.gain_db = 0.0;
             }
-            let gain = if self.gain_db == 0.0 { 1.0 } else { 10f64.powf(self.gain_db / 20.0) };
+            let gain = if self.gain_db == 0.0 {
+                1.0
+            } else {
+                10f64.powf(self.gain_db / 20.0)
+            };
             let mix = self.mix.next(target_mix);
             let g = 1.0 + (gain - 1.0) * mix;
             deepest = deepest.min(g);
@@ -610,7 +625,11 @@ impl EqConfig {
         let mut bands = self.bands;
         for (band, new) in bands.iter_mut().zip(fresh.bands) {
             if band.validate().is_err() {
-                *band = EqBandConfig { hz: new.hz, q: new.q, ..EqBandConfig::default() };
+                *band = EqBandConfig {
+                    hz: new.hz,
+                    q: new.q,
+                    ..EqBandConfig::default()
+                };
             }
         }
         Self { bands, ..self }
@@ -635,7 +654,11 @@ struct BandTuning {
 
 impl BandTuning {
     /// Passes the sound as it is.
-    const FLAT: Self = Self { g: 0.1, k: 1.0, m: [1.0, 0.0, 0.0] };
+    const FLAT: Self = Self {
+        g: 0.1,
+        k: 1.0,
+        m: [1.0, 0.0, 0.0],
+    };
 
     /// The tuning for band `index` (0 low shelf, 1–2 bells, 3 high shelf).
     fn of(index: usize, band: EqBandConfig) -> Self {
@@ -643,7 +666,11 @@ impl BandTuning {
         let a = 10f64.powf(f64::from(band.gain_db.clamp(-18.0, 18.0)) / 40.0);
         let t = (std::f64::consts::PI * hz / RATE).tan();
         match index {
-            0 => Self { g: t / a.sqrt(), k: 1.0 / SHELF_Q, m: [1.0, (a - 1.0) / SHELF_Q, a * a - 1.0] },
+            0 => Self {
+                g: t / a.sqrt(),
+                k: 1.0 / SHELF_Q,
+                m: [1.0, (a - 1.0) / SHELF_Q, a * a - 1.0],
+            },
             3 => Self {
                 g: t * a.sqrt(),
                 k: 1.0 / SHELF_Q,
@@ -651,7 +678,11 @@ impl BandTuning {
             },
             _ => {
                 let q = f64::from(band.q.clamp(0.3, 10.0));
-                Self { g: t, k: 1.0 / (q * a), m: [1.0, (a * a - 1.0) / (q * a), 0.0] }
+                Self {
+                    g: t,
+                    k: 1.0 / (q * a),
+                    m: [1.0, (a * a - 1.0) / (q * a), 0.0],
+                }
             }
         }
     }
@@ -664,7 +695,10 @@ impl BandTuning {
         }
         // Landed: exactly, so a flat band passes the sound bit for bit.
         let close = |a: f64, b: f64| (a - b).abs() < 1e-12;
-        if close(self.g, to.g) && close(self.k, to.k) && self.m.iter().zip(to.m).all(|(a, b)| close(*a, b)) {
+        if close(self.g, to.g)
+            && close(self.k, to.k)
+            && self.m.iter().zip(to.m).all(|(a, b)| close(*a, b))
+        {
             *self = *to;
         }
     }
@@ -701,7 +735,13 @@ impl Eq {
             // Off, or the whole EQ off: flat, gliding there — the filter runs
             // on, so it is warm when switched back.
             let heard = config.enabled && band.enabled;
-            *target = BandTuning::of(i, EqBandConfig { gain_db: if heard { band.gain_db } else { 0.0 }, ..band });
+            *target = BandTuning::of(
+                i,
+                EqBandConfig {
+                    gain_db: if heard { band.gain_db } else { 0.0 },
+                    ..band
+                },
+            );
         }
     }
 
@@ -970,7 +1010,11 @@ impl DeEsser {
             }
             loudest = loudest.max(self.key);
             let wanted = self.wanted_db(self.key);
-            let follow = if wanted > self.reduction_db { attack } else { release };
+            let follow = if wanted > self.reduction_db {
+                attack
+            } else {
+                release
+            };
             self.reduction_db = self.reduction_db * follow + wanted * (1.0 - follow);
             if self.reduction_db < 1e-9 {
                 self.reduction_db = 0.0;
@@ -994,8 +1038,18 @@ impl DeEsser {
                 }
             }
         }
-        hold(&mut self.deepest_db, &mut self.deepest_for, deepest, block.len());
-        hold(&mut self.loudest, &mut self.loudest_for, loudest, block.len());
+        hold(
+            &mut self.deepest_db,
+            &mut self.deepest_for,
+            deepest,
+            block.len(),
+        );
+        hold(
+            &mut self.loudest,
+            &mut self.loudest_for,
+            loudest,
+            block.len(),
+        );
     }
 }
 
@@ -2032,10 +2086,16 @@ mod tests {
         };
         {
             let blocks = de_esser(BLOCK_FRAMES);
-            assert!(largest_difference(&blocks, &hissed) > 0.01, "the de-esser did something");
+            assert!(
+                largest_difference(&blocks, &hissed) > 0.01,
+                "the de-esser did something"
+            );
             for size in [64, 37] {
                 let d = largest_difference(&de_esser(size), &blocks);
-                assert!(d < 1e-6, "the de-esser in {size}-frame calls differs by {d}");
+                assert!(
+                    d < 1e-6,
+                    "the de-esser in {size}-frame calls differs by {d}"
+                );
             }
         }
         for (name, run) in [
@@ -2046,7 +2106,10 @@ mod tests {
             ("limiter", &limiter),
         ] {
             let blocks = run(BLOCK_FRAMES);
-            assert!(largest_difference(&blocks, &input) > 0.01, "{name} did something");
+            assert!(
+                largest_difference(&blocks, &input) > 0.01,
+                "{name} did something"
+            );
             for size in [64, 37] {
                 let d = largest_difference(&run(size), &blocks);
                 assert!(d < 1e-6, "{name} in {size}-frame calls differs by {d}");
@@ -2080,7 +2143,10 @@ mod tests {
             let mut compared = 0;
             for (at, gain) in &by_call {
                 if let Some(want) = by_block.get(at) {
-                    assert!((gain - want).abs() < 1e-9, "{size}: at {at} {gain} not {want}");
+                    assert!(
+                        (gain - want).abs() < 1e-9,
+                        "{size}: at {at} {gain} not {want}"
+                    );
                     compared += 1;
                 }
             }
@@ -2108,7 +2174,11 @@ mod tests {
         let mut block = vec![[0.1_f32, 0.1]; BLOCK_FRAMES];
         leveler.process(&mut block);
         let want = 0.1 * db_to_gain(6.0);
-        assert!((block[0][0] - want).abs() < 1e-4, "{} not {want}", block[0][0]);
+        assert!(
+            (block[0][0] - want).abs() < 1e-4,
+            "{} not {want}",
+            block[0][0]
+        );
         leveler.start_at(99.0);
         let most = LevelerConfig::speech().max_boost_db;
         assert!((leveler.gain_db() - most).abs() < 1e-6, "within its limits");
@@ -2129,7 +2199,10 @@ mod tests {
     }
 
     fn peak_of(frames: &[Frame]) -> f32 {
-        frames.iter().map(|f| f[0].abs().max(f[1].abs())).fold(0.0, f32::max)
+        frames
+            .iter()
+            .map(|f| f[0].abs().max(f[1].abs()))
+            .fold(0.0, f32::max)
     }
 
     fn gated(config: GateConfig, sound: &[Frame]) -> Vec<Frame> {
@@ -2156,10 +2229,16 @@ mod tests {
         let sound = [tone(-20.0, 0.5), tone(-60.0, 1.0)].concat();
         let out = gated(speech_gate(), &sound);
         let voice = peak_of(&out[12_000..24_000]);
-        assert!((voice - db_to_gain(-20.0)).abs() < 0.005, "the voice passes: {voice}");
+        assert!(
+            (voice - db_to_gain(-20.0)).abs() < 0.005,
+            "the voice passes: {voice}"
+        );
         let pause = peak_of(&out[out.len() - 12_000..]);
         let want = db_to_gain(-60.0 - 15.0);
-        assert!((pause / want - 1.0).abs() < 0.06, "the pause 15 dB down: {pause} not {want}");
+        assert!(
+            (pause / want - 1.0).abs() < 0.06,
+            "the pause 15 dB down: {pause} not {want}"
+        );
     }
 
     /// Its release is in dB: a whole 30 dB range is all but reached a second
@@ -2178,7 +2257,10 @@ mod tests {
         let out = gated(config, &sound);
         // 1 s after the voice stopped (and its 8 ms key fell away).
         let at = 14_400 + 48_000;
-        let down = to_db(f64::from(peak_of(&out[at..at + 960]) / db_to_gain(-60.0)), false);
+        let down = to_db(
+            f64::from(peak_of(&out[at..at + 960]) / db_to_gain(-60.0)),
+            false,
+        );
         assert!(down < -29.0, "a second in: {down:.1} dB");
     }
 
@@ -2189,7 +2271,11 @@ mod tests {
         let out = gated(speech_gate(), &sound);
         let at = |ms: usize| peak_of(&out[9_600 + ms * 48..9_600 + (ms + 10) * 48]);
         let open = db_to_gain(-60.0);
-        assert!((at(30) / open - 1.0).abs() < 0.05, "held open 30 ms in: {}", at(30));
+        assert!(
+            (at(30) / open - 1.0).abs() < 0.05,
+            "held open 30 ms in: {}",
+            at(30)
+        );
         assert!(at(450) < open * 0.25, "closed later: {}", at(450));
     }
 
@@ -2199,11 +2285,19 @@ mod tests {
     fn a_voice_at_the_threshold_does_not_chatter() {
         let mut config = speech_gate();
         config.hold_ms = 0.0;
-        let sound: Vec<Frame> = (0..20).flat_map(|i| tone(if i % 2 == 0 { -39.0 } else { -41.0 }, 0.02)).collect();
+        let sound: Vec<Frame> = (0..20)
+            .flat_map(|i| tone(if i % 2 == 0 { -39.0 } else { -41.0 }, 0.02))
+            .collect();
         let out = gated(config, &sound);
         let low = db_to_gain(-41.0);
-        let quietest = (1..20).step_by(2).map(|i| peak_of(&out[i * 960 + 480..(i + 1) * 960])).fold(1.0, f32::min);
-        assert!(quietest > low * 0.95, "never closed: {quietest} against {low}");
+        let quietest = (1..20)
+            .step_by(2)
+            .map(|i| peak_of(&out[i * 960 + 480..(i + 1) * 960]))
+            .fold(1.0, f32::min);
+        assert!(
+            quietest > low * 0.95,
+            "never closed: {quietest} against {low}"
+        );
     }
 
     /// Its range changed while it is closed — at a waveform's peak, with the
@@ -2266,7 +2360,10 @@ mod tests {
             gate.process(&mut b);
             out.extend(b);
         }
-        let step = out.windows(2).map(|w| (w[1][0] - w[0][0]).abs()).fold(0.0, f32::max);
+        let step = out
+            .windows(2)
+            .map(|w| (w[1][0] - w[0][0]).abs())
+            .fold(0.0, f32::max);
         assert!(step < 0.001, "a step of {step}");
     }
 
@@ -2279,7 +2376,10 @@ mod tests {
             })
             .collect();
         let out = cut_run(&sound, BLOCK_FRAMES, &[], |b, _| eq.process(b));
-        to_db(f64::from(peak_of(&out[12_000..])) / f64::from(peak_of(&sound[12_000..])), false)
+        to_db(
+            f64::from(peak_of(&out[12_000..])) / f64::from(peak_of(&sound[12_000..])),
+            false,
+        )
     }
 
     fn eq_with(index: usize, hz: f32, gain_db: f32, q: f32) -> Eq {
@@ -2287,7 +2387,12 @@ mod tests {
             enabled: true,
             ..EqConfig::default()
         };
-        config.bands[index] = EqBandConfig { enabled: true, hz, gain_db, q };
+        config.bands[index] = EqBandConfig {
+            enabled: true,
+            hz,
+            gain_db,
+            q,
+        };
         let mut eq = Eq::default();
         eq.configure(config);
         eq
@@ -2299,10 +2404,22 @@ mod tests {
     fn the_eqs_bands_shape_as_set() {
         assert!((gain_through(&mut eq_with(1, 1_000.0, 6.0, 1.0), 1_000.0) - 6.0).abs() < 0.2);
         assert!((gain_through(&mut eq_with(2, 3_000.0, -9.0, 2.0), 3_000.0) + 9.0).abs() < 0.2);
-        assert!(gain_through(&mut eq_with(1, 1_000.0, 6.0, 1.0), 100.0).abs() < 0.3, "far from it");
-        assert!((gain_through(&mut eq_with(0, 300.0, -6.0, 0.7), 30.0) + 6.0).abs() < 0.3, "low shelf, under it");
-        assert!(gain_through(&mut eq_with(0, 300.0, -6.0, 0.7), 5_000.0).abs() < 0.3, "low shelf, over it");
-        assert!((gain_through(&mut eq_with(3, 4_000.0, 6.0, 0.7), 16_000.0) - 6.0).abs() < 0.4, "high shelf");
+        assert!(
+            gain_through(&mut eq_with(1, 1_000.0, 6.0, 1.0), 100.0).abs() < 0.3,
+            "far from it"
+        );
+        assert!(
+            (gain_through(&mut eq_with(0, 300.0, -6.0, 0.7), 30.0) + 6.0).abs() < 0.3,
+            "low shelf, under it"
+        );
+        assert!(
+            gain_through(&mut eq_with(0, 300.0, -6.0, 0.7), 5_000.0).abs() < 0.3,
+            "low shelf, over it"
+        );
+        assert!(
+            (gain_through(&mut eq_with(3, 4_000.0, 6.0, 0.7), 16_000.0) - 6.0).abs() < 0.4,
+            "high shelf"
+        );
         assert!(gain_through(&mut eq_with(3, 4_000.0, 6.0, 0.7), 200.0).abs() < 0.3);
     }
 
@@ -2310,7 +2427,13 @@ mod tests {
     #[test]
     fn a_flat_or_off_eq_passes_the_sound_untouched() {
         let sound = tone(-10.0, 0.5);
-        for config in [EqConfig::default(), EqConfig { enabled: true, ..EqConfig::default() }] {
+        for config in [
+            EqConfig::default(),
+            EqConfig {
+                enabled: true,
+                ..EqConfig::default()
+            },
+        ] {
             let mut eq = Eq::default();
             eq.configure(config);
             let out = cut_run(&sound, BLOCK_FRAMES, &[], |b, _| eq.process(b));
@@ -2421,12 +2544,26 @@ mod tests {
         for (hz, least, most) in [(6_500.0, 6.0, 7.0), (10_000.0, 7.4, 8.1)] {
             let s = tone_at(hz, -10.0, 0.5);
             let (out, d) = de_essed(de_esser_at(-35.0), &s);
-            let down = -to_db(f64::from(peak_of(&out[12_000..]) / peak_of(&s[12_000..])), false);
-            assert!((least..most).contains(&down), "{hz} Hz down by {down:.2} dB");
-            assert!((d.reduction_db() - 8.0).abs() < 0.05, "meter {}", d.reduction_db());
+            let down = -to_db(
+                f64::from(peak_of(&out[12_000..]) / peak_of(&s[12_000..])),
+                false,
+            );
+            assert!(
+                (least..most).contains(&down),
+                "{hz} Hz down by {down:.2} dB"
+            );
+            assert!(
+                (d.reduction_db() - 8.0).abs() < 0.05,
+                "meter {}",
+                d.reduction_db()
+            );
         }
         let (_, d) = de_essed(de_esser_at(-35.0), &tone_at(6_500.0, -10.0, 0.5));
-        assert!((d.band_db() + 10.0).abs() < 0.5, "band at its frequency {}", d.band_db());
+        assert!(
+            (d.band_db() + 10.0).abs() < 0.5,
+            "band at its frequency {}",
+            d.band_db()
+        );
     }
 
     /// The voice under it, as loud as the "s", is not touched: its
@@ -2467,7 +2604,12 @@ mod tests {
             }
         }
         assert!(held.0 > 7.0 && held.1 > -14.0, "held: {held:?}");
-        assert!(d.reduction_db() < 0.1 && d.band_db() < -35.0, "now: {} {}", d.reduction_db(), d.band_db());
+        assert!(
+            d.reduction_db() < 0.1 && d.band_db() < -35.0,
+            "now: {} {}",
+            d.reduction_db(),
+            d.band_db()
+        );
     }
 
     /// Switched on mid-sound, a little under its threshold: no dip — its
@@ -2479,7 +2621,8 @@ mod tests {
         // from silence on a sample that loud rings well over it.
         let voice: Vec<Frame> = (0..24_000)
             .map(|i| {
-                let v = (0.316 * (std::f64::consts::TAU * 200.0 * f64::from(i) / RATE).cos()) as f32;
+                let v =
+                    (0.316 * (std::f64::consts::TAU * 200.0 * f64::from(i) / RATE).cos()) as f32;
                 [v, v]
             })
             .collect();
@@ -2522,7 +2665,10 @@ mod tests {
             .zip(s.chunks(48))
             .map(|(o, i)| to_db(f64::from(peak_of(o) / peak_of(i)), false))
             .collect();
-        let step = ms.windows(2).map(|w| (w[1] - w[0]).abs()).fold(0.0, f64::max);
+        let step = ms
+            .windows(2)
+            .map(|w| (w[1] - w[0]).abs())
+            .fold(0.0, f64::max);
         assert!(step < 1.0, "a millisecond's step of {step:.2} dB");
         assert!(ms[300] < -6.0, "on, it was down: {:.1}", ms[300]);
     }
@@ -2564,11 +2710,17 @@ mod tests {
                 [v as f32, (v * 0.7) as f32]
             })
             .collect();
-        for back in (9_600 + 400..9_600 + 700).step_by(37).chain((9_600 + 12_000..9_600 + 16_000).step_by(250)) {
+        for back in (9_600 + 400..9_600 + 700)
+            .step_by(37)
+            .chain((9_600 + 12_000..9_600 + 16_000).step_by(250))
+        {
             let changes = [4_800, 9_600, back];
             let de_esser = |size| {
                 let mut f = DeEsser::default();
-                let mut c = DeEsserConfig { threshold_db: -45.0, ..DeEsserConfig::default() };
+                let mut c = DeEsserConfig {
+                    threshold_db: -45.0,
+                    ..DeEsserConfig::default()
+                };
                 cut_run(&hissed, size, &changes, |b, at| {
                     if at == 4_800 || at == back {
                         c.enabled = true;
@@ -2582,7 +2734,12 @@ mod tests {
             let eq = |size| {
                 let mut f = Eq::default();
                 let mut c = EqConfig::default();
-                c.bands[1] = EqBandConfig { enabled: true, hz: 150.0, gain_db: 12.0, q: 8.0 };
+                c.bands[1] = EqBandConfig {
+                    enabled: true,
+                    hz: 150.0,
+                    gain_db: 12.0,
+                    q: 8.0,
+                };
                 cut_run(&hissed, size, &changes, |b, at| {
                     if at == 4_800 || at == back {
                         c.enabled = true;
@@ -2593,11 +2750,17 @@ mod tests {
                     f.process(b);
                 })
             };
-            for (name, run) in [("de-esser", &de_esser as &dyn Fn(usize) -> Vec<Frame>), ("eq", &eq)] {
+            for (name, run) in [
+                ("de-esser", &de_esser as &dyn Fn(usize) -> Vec<Frame>),
+                ("eq", &eq),
+            ] {
                 let blocks = run(BLOCK_FRAMES);
                 for size in [64, 37] {
                     let d = largest_difference(&run(size), &blocks);
-                    assert!(d < 1e-6, "{name}, back at {back}, in {size}-frame calls: {d}");
+                    assert!(
+                        d < 1e-6,
+                        "{name}, back at {back}, in {size}-frame calls: {d}"
+                    );
                 }
             }
         }
@@ -2614,7 +2777,10 @@ mod tests {
         config.bands[2].gain_db = 99.0;
         let clean = config.sanitized();
         assert!((clean.bands[1].gain_db - 6.0).abs() < 1e-6, "kept");
-        assert!(clean.bands[2].gain_db.abs() < 1e-6 && (clean.bands[2].hz - 3_000.0).abs() < 1e-3, "reset");
+        assert!(
+            clean.bands[2].gain_db.abs() < 1e-6 && (clean.bands[2].hz - 3_000.0).abs() < 1e-3,
+            "reset"
+        );
         assert!(clean.enabled);
     }
 

@@ -871,7 +871,10 @@ mod tests {
                 i64::try_from((index + 1) * BLOCK_FRAMES).unwrap()
             );
         }
-        #[expect(clippy::used_underscore_binding, reason = "Test inspects the graph retained for native filter lifetime")]
+        #[expect(
+            clippy::used_underscore_binding,
+            reason = "Test inspects the graph retained for native filter lifetime"
+        )]
         let graph_description = processor._graph.dump();
         assert!(!graph_description.contains("auto_aresample"));
     }

@@ -271,7 +271,11 @@ fn a_layer_showing_an_input_fills_its_frame_after_the_resolution_changes() {
         app.render_mixer_frame();
     }
     let composite = &app.mixer_ref().channels()[1].composite_texture;
-    assert_eq!((composite.width(), composite.height()), (bigger_w, bigger_h), "resized");
+    assert_eq!(
+        (composite.width(), composite.height()),
+        (bigger_w, bigger_h),
+        "resized"
+    );
     let corner = pixel(app.gpu_context(), composite, 4, 4);
     assert!(
         corner[0] > 0.9 && corner[3] > 0.98,
@@ -510,7 +514,12 @@ fn an_input_moved_and_scaled_is_drawn_in_its_place_in_one_pass() {
     let green = |p: [f32; 4]| p[1] > 0.9 && p[0] < 0.1 && p[2] < 0.1;
     let blue = |p: [f32; 4]| p[2] > 0.9 && p[0] < 0.1 && p[1] < 0.1;
     for (x, y, want, what) in [
-        (0.46, 0.4, red as fn([f32; 4]) -> bool, "red just inside the left edge"),
+        (
+            0.46,
+            0.4,
+            red as fn([f32; 4]) -> bool,
+            "red just inside the left edge",
+        ),
         (0.68, 0.4, red, "red left of the middle"),
         (0.72, 0.4, green, "green right of the middle"),
         (0.94, 0.4, green, "green just inside the right edge"),
@@ -543,9 +552,13 @@ fn an_input_moved_and_scaled_is_drawn_in_its_place_in_one_pass() {
 }
 
 /// Every pixel of an `Rgba16Float` texture, row by row.
-fn frame_pixels(gpu: &varda::renderer::context::GpuContext, texture: &wgpu::Texture) -> Vec<[f32; 4]> {
+fn frame_pixels(
+    gpu: &varda::renderer::context::GpuContext,
+    texture: &wgpu::Texture,
+) -> Vec<[f32; 4]> {
     let (w, h) = (texture.width(), texture.height());
-    let row = (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let row =
+        (w * 8).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: u64::from(row * h),
@@ -746,7 +759,14 @@ fn drawn_in_one_pass_looks_the_same(circle: bool, flip: bool, flattened: bool, d
             .find(|d| d.uuid == layer)
             .unwrap()
             .effects;
-        let uuid_of = |name: &str| effects.iter().find(|e| e.name == name).unwrap().uuid.clone();
+        let uuid_of = |name: &str| {
+            effects
+                .iter()
+                .find(|e| e.name == name)
+                .unwrap()
+                .uuid
+                .clone()
+        };
         let (crop, transform) = (uuid_of("crop"), uuid_of("transform"));
         // Flipped, the crop is off to the left, so a flip done before the
         // crop rather than after it would show.
@@ -840,18 +860,30 @@ fn drawn_in_one_pass_looks_the_same(circle: bool, flip: bool, flattened: bool, d
     } else {
         assert!(one_pass < 0.2, "drawn in its place: {one_pass}");
     }
-    assert_eq!(mixer.channels()[2].drawn_onto, 0, "the old way: a frame of its own");
+    assert_eq!(
+        mixer.channels()[2].drawn_onto,
+        0,
+        "the old way: a frame of its own"
+    );
     assert!(old_way > 0.99, "drawn whole: {old_way}");
 
     let a = frame_pixels(app.gpu_context(), &mixer.channels()[1].composite_texture);
     let b = frame_pixels(app.gpu_context(), &mixer.channels()[2].composite_texture);
-    let off = |p: &[f32; 4], q: &[f32; 4]| p.iter().zip(q).map(|(x, y)| (x - y).abs()).fold(0.0, f32::max);
+    let off = |p: &[f32; 4], q: &[f32; 4]| {
+        p.iter()
+            .zip(q)
+            .map(|(x, y)| (x - y).abs())
+            .fold(0.0, f32::max)
+    };
     let differing = a.iter().zip(&b).filter(|(p, q)| off(p, q) > 0.05).count();
     let ringed = a
         .iter()
         .filter(|p| (0..3).all(|c| (p[c] - linear[c]).abs() < 0.03))
         .count();
-    assert!(ringed > 1000, "the border is drawn: {ringed} pixels of its colour");
+    assert!(
+        ringed > 1000,
+        "the border is drawn: {ringed} pixels of its colour"
+    );
     // The picture covers about a ninth of the frame; its edges and the
     // border's are a few thousand pixels, anti-aliased a little differently.
     let share = differing as f64 / a.len() as f64;
@@ -1000,7 +1032,10 @@ fn an_input_scaled_as_a_layer_keeps_its_edges() {
     // At its own size exactly as it is; a little smaller and enlarged,
     // sharper than one bilinear tap (0.394 and 0.118 at these sizes: the
     // bicubic gives 0.412 and 0.129).
-    assert!((energy[0] - 0.5).abs() < 1e-3, "at its own size: {energy:?}");
+    assert!(
+        (energy[0] - 0.5).abs() < 1e-3,
+        "at its own size: {energy:?}"
+    );
     assert!(energy[1] > 0.403, "a little smaller: {energy:?}");
     assert!(energy[2] > 0.124, "enlarged: {energy:?}");
 }
@@ -1483,7 +1518,10 @@ fn a_captures_picture_has_another_number_with_each_frame() {
     }
     assert_eq!(captures.picture(id), first, "nothing put in: the same");
     let second = another(&mut captures, first);
-    assert!(second.is_some() && second != first, "another frame: another number");
+    assert!(
+        second.is_some() && second != first,
+        "another frame: another number"
+    );
     let third = another(&mut captures, second);
     assert!(
         third.is_some() && third != second && third != first,
@@ -1540,9 +1578,8 @@ fn a_captures_view_as_coded_shows_what_its_view_as_light_does() {
         listed_as: None,
         presentation: None,
     };
-    let mut deck =
-        Deck::new_from_screen_capture(&gpu, state, &target.label, w, h, show.0, show.1)
-            .expect("a screen's input");
+    let mut deck = Deck::new_from_screen_capture(&gpu, state, &target.label, w, h, show.0, show.1)
+        .expect("a screen's input");
     deck.set_scaling_mode(ScalingMode::Fit);
     let mut shows = |coded: Option<&wgpu::TextureView>| {
         deck.external_source_view = Some(light.clone());

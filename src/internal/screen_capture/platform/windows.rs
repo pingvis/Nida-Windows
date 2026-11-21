@@ -431,9 +431,15 @@ pub struct WindowsBackend {
 impl WindowsBackend {
     fn new(target: &CaptureTargetInfo, config: &CaptureConfig) -> Result<Self, CaptureError> {
         let exclusion = match target.kind {
-            CaptureTargetKind::Display if config.exclude_varda => Some(crate::renderer::capture_exclusion::windows::Lease::display()),
+            CaptureTargetKind::Display if config.exclude_varda => {
+                Some(crate::renderer::capture_exclusion::windows::Lease::display())
+            }
             CaptureTargetKind::Display => None,
-            CaptureTargetKind::Window => Some(crate::renderer::capture_exclusion::windows::Lease::window(target.platform_id as usize)),
+            CaptureTargetKind::Window => {
+                Some(crate::renderer::capture_exclusion::windows::Lease::window(
+                    target.platform_id as usize,
+                ))
+            }
         };
         let item = capture_item(target)?;
         let size = item
@@ -766,7 +772,9 @@ impl ScreenCaptureBackend for WindowsBackend {
         }
         let cursor_changed = config.show_cursor != self.config.show_cursor;
         if self.is_display && config.exclude_varda != self.config.exclude_varda {
-            self.exclusion = config.exclude_varda.then(crate::renderer::capture_exclusion::windows::Lease::display);
+            self.exclusion = config
+                .exclude_varda
+                .then(crate::renderer::capture_exclusion::windows::Lease::display);
         }
         self.config = config.clone();
 
@@ -809,22 +817,48 @@ mod tests {
     #[test]
     #[ignore = "Needs an unlocked interactive Windows desktop; briefly shows a small colour fixture"]
     fn native_display_exclusion_toggle_changes_wgc_pixels_and_restores_window_capture() {
-        use super::{enumerate_monitors, ensure_supported, WindowsBackend};
+        use super::{ensure_supported, enumerate_monitors, WindowsBackend};
         use crate::screen_capture::backend::{CaptureConfig, CropRect, ScreenCaptureBackend};
         use windows::core::w;
         use windows::Win32::Foundation::{COLORREF, HWND, RECT};
-        use windows::Win32::Graphics::Gdi::{CreateSolidBrush, DeleteObject, FillRect, GdiFlush, GetDC, GetMonitorInfoW, ReleaseDC, HMONITOR, MONITORINFO};
-        use windows::Win32::UI::WindowsAndMessaging::{CreateWindowExW, DestroyWindow, DispatchMessageW, PeekMessageW, TranslateMessage, MSG, PM_REMOVE, WS_EX_NOACTIVATE, WS_EX_TOPMOST, WS_POPUP, WS_VISIBLE};
-        use windows::Win32::UI::HiDpi::{SetThreadDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, DPI_AWARENESS_CONTEXT};
+        use windows::Win32::Graphics::Gdi::{
+            CreateSolidBrush, DeleteObject, FillRect, GdiFlush, GetDC, GetMonitorInfoW, ReleaseDC,
+            HMONITOR, MONITORINFO,
+        };
+        use windows::Win32::UI::HiDpi::{
+            SetThreadDpiAwarenessContext, DPI_AWARENESS_CONTEXT,
+            DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+        };
+        use windows::Win32::UI::WindowsAndMessaging::{
+            CreateWindowExW, DestroyWindow, DispatchMessageW, PeekMessageW, TranslateMessage, MSG,
+            PM_REMOVE, WS_EX_NOACTIVATE, WS_EX_TOPMOST, WS_POPUP, WS_VISIBLE,
+        };
         struct Dpi(DPI_AWARENESS_CONTEXT);
-        impl Drop for Dpi { fn drop(&mut self) { unsafe { SetThreadDpiAwarenessContext(self.0); } } }
+        impl Drop for Dpi {
+            fn drop(&mut self) {
+                unsafe {
+                    SetThreadDpiAwarenessContext(self.0);
+                }
+            }
+        }
         struct Fixture(HWND);
-        impl Drop for Fixture { fn drop(&mut self) { unsafe { let _ = DestroyWindow(self.0); } } }
+        impl Drop for Fixture {
+            fn drop(&mut self) {
+                unsafe {
+                    let _ = DestroyWindow(self.0);
+                }
+            }
+        }
         fn paint(fixture: HWND) {
             unsafe {
                 let dc = GetDC(Some(fixture));
                 let brush = CreateSolidBrush(COLORREF(0xf7 | (0x0b << 8) | (0xa9 << 16)));
-                let rect = RECT { left: 0, top: 0, right: 96, bottom: 96 };
+                let rect = RECT {
+                    left: 0,
+                    top: 0,
+                    right: 96,
+                    bottom: 96,
+                };
                 assert_ne!(FillRect(dc, &raw const rect, brush), 0);
                 let _ = GdiFlush();
                 ReleaseDC(Some(fixture), dc);
@@ -846,26 +880,81 @@ mod tests {
                 paint(fixture);
                 if let Some(frame) = backend.next_frame() {
                     frames += 1;
-                    last = Some((frame.width, frame.height, frame.data.first_chunk::<4>().copied()));
+                    last = Some((
+                        frame.width,
+                        frame.height,
+                        frame.data.first_chunk::<4>().copied(),
+                    ));
                     // HDR desktops can tone-map GDI colours during WGC readback.
                     // Check the fixture hue, rather than assuming exact SDR bytes.
-                    let pink = frame.data.as_chunks::<4>().0.iter().all(|p| p[2] > 90 && p[1] < 35 && p[0] > 60 && u16::from(p[2]) > u16::from(p[0]) + 20);
-                    if pink == included { return; }
+                    let pink = frame.data.as_chunks::<4>().0.iter().all(|p| {
+                        p[2] > 90
+                            && p[1] < 35
+                            && p[0] > 60
+                            && u16::from(p[2]) > u16::from(p[0]) + 20
+                    });
+                    if pink == included {
+                        return;
+                    }
                 }
                 std::thread::sleep(Duration::from_millis(16));
             }
-            panic!("WGC did not report fixture included={included}; frames={frames}, last={last:?}");
+            panic!(
+                "WGC did not report fixture included={included}; frames={frames}, last={last:?}"
+            );
         }
-        let _dpi = Dpi(unsafe { SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) });
+        let _dpi = Dpi(unsafe {
+            SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+        });
         ensure_supported().unwrap();
-        let (target, monitor) = enumerate_monitors().into_iter().find_map(|target| {
-            let mut info = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
-            let valid = unsafe { GetMonitorInfoW(HMONITOR(target.platform_id as *mut core::ffi::c_void), &raw mut info) }.as_bool();
-            (valid && info.dwFlags & 1 != 0).then_some((target, info.rcMonitor))
-        }).expect("primary monitor");
-        let fixture = Fixture(unsafe { CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, w!("STATIC"), w!("Nida capture test"), WS_POPUP | WS_VISIBLE, monitor.left + 80, monitor.top + 80, 96, 96, None, None, None, None) }.unwrap());
+        let (target, monitor) = enumerate_monitors()
+            .into_iter()
+            .find_map(|target| {
+                let mut info = MONITORINFO {
+                    cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+                    ..Default::default()
+                };
+                let valid = unsafe {
+                    GetMonitorInfoW(
+                        HMONITOR(target.platform_id as *mut core::ffi::c_void),
+                        &raw mut info,
+                    )
+                }
+                .as_bool();
+                (valid && info.dwFlags & 1 != 0).then_some((target, info.rcMonitor))
+            })
+            .expect("primary monitor");
+        let fixture = Fixture(
+            unsafe {
+                CreateWindowExW(
+                    WS_EX_TOPMOST | WS_EX_NOACTIVATE,
+                    w!("STATIC"),
+                    w!("Nida capture test"),
+                    WS_POPUP | WS_VISIBLE,
+                    monitor.left + 80,
+                    monitor.top + 80,
+                    96,
+                    96,
+                    None,
+                    None,
+                    None,
+                    None,
+                )
+            }
+            .unwrap(),
+        );
         paint(fixture.0);
-        let mut config = CaptureConfig { exclude_varda: false, show_cursor: false, crop: CropRect { x: 120.0 / target.width as f32, y: 120.0 / target.height as f32, w: 4.0 / target.width as f32, h: 4.0 / target.height as f32 }, ..Default::default() };
+        let mut config = CaptureConfig {
+            exclude_varda: false,
+            show_cursor: false,
+            crop: CropRect {
+                x: 120.0 / target.width as f32,
+                y: 120.0 / target.height as f32,
+                w: 4.0 / target.width as f32,
+                h: 4.0 / target.height as f32,
+            },
+            ..Default::default()
+        };
         let mut backend = WindowsBackend::new(&target, &config).unwrap();
         wait_for(&mut backend, fixture.0, true);
         config.exclude_varda = true;
@@ -886,19 +975,48 @@ mod tests {
     #[ignore = "Timing diagnostic; run serially without an active compiler"]
     fn native_capture_readback_performance() {
         let (device, context) = create_d3d_device().unwrap();
-        for (width, height, out_w, out_h) in [(3840, 2160, 1920, 1080), (2560, 1440, 1920, 1080), (1920, 1080, 1280, 720)] {
+        for (width, height, out_w, out_h) in [
+            (3840, 2160, 1920, 1080),
+            (2560, 1440, 1920, 1080),
+            (1920, 1080, 1280, 720),
+        ] {
             let pixels = [20u8, 50, 180, 117].repeat(width as usize * height as usize);
             let desc = D3D11_TEXTURE2D_DESC {
-                Width: width, Height: height, MipLevels: 1, ArraySize: 1,
+                Width: width,
+                Height: height,
+                MipLevels: 1,
+                ArraySize: 1,
                 Format: DXGI_FORMAT_B8G8R8A8_UNORM,
-                SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
-                Usage: D3D11_USAGE_DEFAULT, ..Default::default()
+                SampleDesc: DXGI_SAMPLE_DESC {
+                    Count: 1,
+                    Quality: 0,
+                },
+                Usage: D3D11_USAGE_DEFAULT,
+                ..Default::default()
             };
-            let initial = D3D11_SUBRESOURCE_DATA { pSysMem: pixels.as_ptr().cast(), SysMemPitch: width * 4, ..Default::default() };
+            let initial = D3D11_SUBRESOURCE_DATA {
+                pSysMem: pixels.as_ptr().cast(),
+                SysMemPitch: width * 4,
+                ..Default::default()
+            };
             let mut texture = None;
-            unsafe { device.CreateTexture2D(&raw const desc, Some(&raw const initial), Some(&raw mut texture)) }.unwrap();
+            unsafe {
+                device.CreateTexture2D(
+                    &raw const desc,
+                    Some(&raw const initial),
+                    Some(&raw mut texture),
+                )
+            }
+            .unwrap();
             let texture = texture.unwrap();
-            let geometry = Geometry { src_x: 0, src_y: 0, src_w: width, src_h: height, out_w, out_h };
+            let geometry = Geometry {
+                src_x: 0,
+                src_y: 0,
+                src_w: width,
+                src_h: height,
+                out_w,
+                out_h,
+            };
             let mut staging = None;
             let mut times = Vec::new();
             for iteration in 0..12 {
@@ -907,12 +1025,22 @@ mod tests {
                 let elapsed = started.elapsed().as_secs_f64() * 1000.0;
                 assert_eq!((frame.width, frame.height), (out_w, out_h));
                 assert_eq!(frame.data.len(), out_w as usize * out_h as usize * 4);
-                assert!(frame.data.as_chunks::<4>().0.iter().all(|p| *p == [20, 50, 180, 117]));
-                if iteration >= 3 { times.push(elapsed); }
+                assert!(frame
+                    .data
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .all(|p| *p == [20, 50, 180, 117]));
+                if iteration >= 3 {
+                    times.push(elapsed);
+                }
                 std::hint::black_box(frame);
             }
             times.sort_by(f64::total_cmp);
-            eprintln!("CAPTURE_READBACK,{width}x{height},{out_w}x{out_h},median_ms={:.3},max_ms={:.3}", times[4], times[8]);
+            eprintln!(
+                "CAPTURE_READBACK,{width}x{height},{out_w}x{out_h},median_ms={:.3},max_ms={:.3}",
+                times[4], times[8]
+            );
         }
     }
 

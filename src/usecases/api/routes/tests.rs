@@ -18,7 +18,8 @@ mod tests {
         let state = make_test_state();
         let (cmd_tx, mut cmd_rx) =
             tokio::sync::mpsc::unbounded_channel::<crate::engine::CommandEnvelope>();
-        let engine_state = std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
+        let engine_state =
+            std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
 
         // Spawn a background task that processes commands
         tokio::spawn(async move {
@@ -56,7 +57,9 @@ mod tests {
         });
         let shared = SharedState {
             command_tx: cmd_tx,
-            engine_state: std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state)))),
+            engine_state: std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(
+                state,
+            )))),
         };
         (crate::usecases::api::runner::build_router(shared), sent)
     }
@@ -65,7 +68,9 @@ mod tests {
         let state = make_test_state();
         let shared = SharedState {
             command_tx: tokio::sync::mpsc::unbounded_channel().0,
-            engine_state: std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state)))),
+            engine_state: std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(
+                state,
+            )))),
         };
         crate::usecases::api::runner::build_router(shared)
     }
@@ -228,7 +233,9 @@ mod tests {
         };
         let shared = SharedState {
             command_tx: tokio::sync::mpsc::unbounded_channel().0,
-            engine_state: std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state)))),
+            engine_state: std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(
+                state,
+            )))),
         };
         let app = crate::usecases::api::runner::build_router(shared);
 
@@ -3380,7 +3387,8 @@ mod tests {
         let state = make_test_state();
         let (cmd_tx, mut cmd_rx) =
             tokio::sync::mpsc::unbounded_channel::<crate::engine::CommandEnvelope>();
-        let engine_state = std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
+        let engine_state =
+            std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
         tokio::spawn(async move {
             while let Some((_cmd, reply_tx)) = cmd_rx.recv().await {
                 if let Some(tx) = reply_tx {
@@ -3402,7 +3410,8 @@ mod tests {
         let state = make_test_state();
         let (cmd_tx, mut cmd_rx) =
             tokio::sync::mpsc::unbounded_channel::<crate::engine::CommandEnvelope>();
-        let engine_state = std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
+        let engine_state =
+            std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
         tokio::spawn(async move {
             while let Some((_cmd, reply_tx)) = cmd_rx.recv().await {
                 if let Some(tx) = reply_tx {
@@ -3424,7 +3433,8 @@ mod tests {
         let state = make_test_state();
         let (cmd_tx, mut cmd_rx) =
             tokio::sync::mpsc::unbounded_channel::<crate::engine::CommandEnvelope>();
-        let engine_state = std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
+        let engine_state =
+            std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
         tokio::spawn(async move {
             while let Some((_cmd, reply_tx)) = cmd_rx.recv().await {
                 if let Some(tx) = reply_tx {
@@ -3445,7 +3455,8 @@ mod tests {
         let state = make_test_state();
         let (cmd_tx, mut cmd_rx) =
             tokio::sync::mpsc::unbounded_channel::<crate::engine::CommandEnvelope>();
-        let engine_state = std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
+        let engine_state =
+            std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
         tokio::spawn(async move {
             while let Some((_cmd, reply_tx)) = cmd_rx.recv().await {
                 if let Some(tx) = reply_tx {
@@ -3520,7 +3531,8 @@ mod tests {
         let state = make_test_state();
         let (cmd_tx, cmd_rx) =
             tokio::sync::mpsc::unbounded_channel::<crate::engine::CommandEnvelope>();
-        let engine_state = std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
+        let engine_state =
+            std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
         // Drop receiver immediately so sends fail
         drop(cmd_rx);
         let shared = SharedState {
@@ -3789,7 +3801,8 @@ mod tests {
         let state = make_test_state();
         let (cmd_tx, mut cmd_rx) =
             tokio::sync::mpsc::unbounded_channel::<crate::engine::CommandEnvelope>();
-        let engine_state = std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
+        let engine_state =
+            std::sync::Arc::new(std::sync::RwLock::new(Some(std::sync::Arc::new(state))));
         let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let sink = seen.clone();
         tokio::spawn(async move {
@@ -4110,21 +4123,36 @@ mod tests {
                 serde_json::json!({"on": true}),
                 (|c: &C| matches!(c, C::SetAudioSend { on: true, .. })) as fn(&C) -> bool,
             ),
-            (serde_json::json!({"gain_db": -6.0}), |c: &C| {
-                matches!(c, C::SetAudioSendSettings { on: None, gain_db: Some(g), mode: None, .. } if (*g + 6.0).abs() < 1e-6)
-            }),
+            (
+                serde_json::json!({"gain_db": -6.0}),
+                |c: &C| matches!(c, C::SetAudioSendSettings { on: None, gain_db: Some(g), mode: None, .. } if (*g + 6.0).abs() < 1e-6),
+            ),
             (serde_json::json!({"on": false, "mode": "pre"}), |c: &C| {
-                matches!(c, C::SetAudioSendSettings { on: Some(false), gain_db: None, mode: Some(crate::audio_mix::SendMode::Pre), .. })
+                matches!(
+                    c,
+                    C::SetAudioSendSettings {
+                        on: Some(false),
+                        gain_db: None,
+                        mode: Some(crate::audio_mix::SendMode::Pre),
+                        ..
+                    }
+                )
             }),
         ] {
             let (app, sent) = router_recording_commands();
-            let (status, json) = put_json(app, "/api/audio-sources/mic1/sends/bus1", body.clone()).await;
+            let (status, json) =
+                put_json(app, "/api/audio-sources/mic1/sends/bus1", body.clone()).await;
             assert_eq!(status, StatusCode::OK, "{json}");
             let sent = sent.lock().unwrap();
             assert!(sent.len() == 1 && check(&sent[0]), "{body}: {sent:?}");
         }
         let (app, sent) = router_recording_commands();
-        let (status, _) = put_json(app, "/api/audio-buses/bus1/pre-fader", serde_json::json!({"pre_fader": true})).await;
+        let (status, _) = put_json(
+            app,
+            "/api/audio-buses/bus1/pre-fader",
+            serde_json::json!({"pre_fader": true}),
+        )
+        .await;
         assert_eq!(status, StatusCode::OK);
         assert!(matches!(
             &sent.lock().unwrap()[..],
@@ -4308,19 +4336,29 @@ mod tests {
         for (body, picked) in [
             (
                 serde_json::json!({"target": {"kind": "display", "name": "Display 2"}}),
-                T::Display { name: "Display 2".into(), uuid: None },
+                T::Display {
+                    name: "Display 2".into(),
+                    uuid: None,
+                },
             ),
             (
                 serde_json::json!({"target": {"kind": "display", "name": "Display 2", "uuid": "4k"}}),
-                T::Display { name: "Display 2".into(), uuid: Some("4k".into()) },
+                T::Display {
+                    name: "Display 2".into(),
+                    uuid: Some("4k".into()),
+                },
             ),
             (
                 serde_json::json!({"target": {"kind": "window", "app": "com.apple.Keynote", "title": "Opening"}}),
-                T::Window { app: "com.apple.Keynote".into(), title: "Opening".into() },
+                T::Window {
+                    app: "com.apple.Keynote".into(),
+                    title: "Opening".into(),
+                },
             ),
         ] {
             let (app, sent) = router_recording_commands();
-            let (status, json) = put_json(app, "/api/decks/layer1/screen/target", body.clone()).await;
+            let (status, json) =
+                put_json(app, "/api/decks/layer1/screen/target", body.clone()).await;
             assert_eq!(status, StatusCode::OK, "{json}");
             let sent = sent.lock().unwrap();
             assert!(

@@ -769,7 +769,10 @@ pub enum CaptureTargetConfig {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         uuid: Option<String>,
     },
-    Window { app: String, title: String },
+    Window {
+        app: String,
+        title: String,
+    },
 }
 
 impl CaptureTargetConfig {
@@ -2764,7 +2767,10 @@ mod tests {
             } => {
                 assert_eq!(path, "set.mp4");
                 assert_eq!(codec, "H.264");
-                assert_eq!(encoder, crate::engine::value::render::RecordingEncoder::Software);
+                assert_eq!(
+                    encoder,
+                    crate::engine::value::render::RecordingEncoder::Software
+                );
                 assert_eq!(audio_device, None, "legacy scene → video-only");
             }
             _ => panic!("Expected Recording target"),

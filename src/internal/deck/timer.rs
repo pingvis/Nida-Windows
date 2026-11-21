@@ -29,9 +29,9 @@ struct Stopwatch {
 impl Stopwatch {
     fn elapsed_at(&self, now: Instant) -> f64 {
         self.banked
-            + self
-                .since
-                .map_or(0.0, |since| now.saturating_duration_since(since).as_secs_f64())
+            + self.since.map_or(0.0, |since| {
+                now.saturating_duration_since(since).as_secs_f64()
+            })
     }
 
     fn running(&self) -> bool {
@@ -457,7 +457,11 @@ impl Timer {
         let until = Instant::now() + timeout;
         self.tick();
         while Instant::now() < until {
-            if let Ok(painted) = self.painter.done.recv_timeout(std::time::Duration::from_millis(20)) {
+            if let Ok(painted) = self
+                .painter
+                .done
+                .recv_timeout(std::time::Duration::from_millis(20))
+            {
                 let current = self.asked.as_ref() == Some(&painted.0);
                 self.show(painted.1.as_ref());
                 if current {
@@ -591,7 +595,11 @@ fn paint_with(
         (None, None) => guess,
     };
     let inks = [placed, shown, digits];
-    let top = inks.iter().flatten().map(|i| i.top).fold(across.top, f32::min);
+    let top = inks
+        .iter()
+        .flatten()
+        .map(|i| i.top)
+        .fold(across.top, f32::min);
     let bottom = inks
         .iter()
         .flatten()
@@ -662,7 +670,11 @@ fn paint_with(
         }
     };
     let mut pixmap = resvg::tiny_skia::Pixmap::new(wide, high)?;
-    resvg::render(&tree, resvg::tiny_skia::Transform::identity(), &mut pixmap.as_mut());
+    resvg::render(
+        &tree,
+        resvg::tiny_skia::Transform::identity(),
+        &mut pixmap.as_mut(),
+    );
     let mut rgba = image::RgbaImage::new(wide, high);
     for (dst, src) in rgba.pixels_mut().zip(pixmap.pixels()) {
         let c = src.demultiply();
@@ -822,7 +834,12 @@ mod tests {
         let mut captioned = spec("5:00");
         captioned.look.caption = "Back in".into();
         let tall = paint(&captioned, &fonts()).unwrap();
-        assert!(tall.height() > plain.height() + 40, "{} vs {}", tall.height(), plain.height());
+        assert!(
+            tall.height() > plain.height() + 40,
+            "{} vs {}",
+            tall.height(),
+            plain.height()
+        );
     }
 
     #[test]

@@ -29,12 +29,12 @@ use objc2::rc::{autoreleasepool, Retained};
 use objc2::runtime::{AnyObject, Bool, ProtocolObject, Sel};
 use objc2::{define_class, msg_send, sel, AllocAnyThread, ClassType, DefinedClass};
 use objc2_av_foundation::{
-    AVCaptureCenterStageControlMode, AVCaptureSystemUserInterface,
-    AVCaptureConnection, AVCaptureDevice, AVCaptureDeviceDiscoverySession, AVCaptureDeviceFormat,
-    AVCaptureDeviceInput, AVCaptureDevicePosition, AVCaptureDeviceTypeBuiltInWideAngleCamera,
+    AVCaptureCenterStageControlMode, AVCaptureConnection, AVCaptureDevice,
+    AVCaptureDeviceDiscoverySession, AVCaptureDeviceFormat, AVCaptureDeviceInput,
+    AVCaptureDevicePosition, AVCaptureDeviceTypeBuiltInWideAngleCamera,
     AVCaptureDeviceTypeContinuityCamera, AVCaptureDeviceTypeExternal, AVCaptureOutput,
-    AVCaptureSession, AVCaptureVideoDataOutput, AVCaptureVideoDataOutputSampleBufferDelegate,
-    AVMediaTypeVideo,
+    AVCaptureSession, AVCaptureSystemUserInterface, AVCaptureVideoDataOutput,
+    AVCaptureVideoDataOutputSampleBufferDelegate, AVMediaTypeVideo,
 };
 use objc2_core_foundation::CFString;
 use objc2_core_media::{
@@ -116,7 +116,9 @@ pub fn video_effects_on() -> Vec<&'static str> {
     let mut on = Vec::new();
     // SAFETY: plain BOOL class properties, each checked to exist first.
     unsafe {
-        if device_class_has(sel!(isPortraitEffectEnabled)) && AVCaptureDevice::isPortraitEffectEnabled() {
+        if device_class_has(sel!(isPortraitEffectEnabled))
+            && AVCaptureDevice::isPortraitEffectEnabled()
+        {
             on.push("Portrait");
         }
         if device_class_has(sel!(isStudioLightEnabled)) && AVCaptureDevice::isStudioLightEnabled() {
@@ -338,15 +340,17 @@ define_class!(
             let colour = ivars.sink.colour();
             if !ivars.described.swap(true, Ordering::Relaxed) {
                 if let Some(image) = unsafe { sample_buffer.image_buffer() } {
-                    log::info!(
-                        "Camera '{}' frames: {}",
-                        ivars.name,
-                        unsafe { describe(&image, colour) }
-                    );
+                    log::info!("Camera '{}' frames: {}", ivars.name, unsafe {
+                        describe(&image, colour)
+                    });
                 }
             }
             let sink = &ivars.sink;
-            if ivars.looks.fetch_add(1, Ordering::Relaxed).is_multiple_of(SIGNAL_EVERY) {
+            if ivars
+                .looks
+                .fetch_add(1, Ordering::Relaxed)
+                .is_multiple_of(SIGNAL_EVERY)
+            {
                 if let Some(image) = unsafe { sample_buffer.image_buffer() } {
                     if let Some((seen, sampled)) = unsafe { seen_signal(&image, colour) } {
                         sink.note_signal(seen, sampled);
@@ -934,7 +938,11 @@ mod tests {
             ..CameraColour::default()
         };
         let bt601 = read(&tagged(unsafe { kCVImageBufferYCbCrMatrix_ITU_R_601_4 })).0;
-        let forced = read_as(&tagged(unsafe { kCVImageBufferYCbCrMatrix_ITU_R_709_2 }), as_601).0;
+        let forced = read_as(
+            &tagged(unsafe { kCVImageBufferYCbCrMatrix_ITU_R_709_2 }),
+            as_601,
+        )
+        .0;
         assert_eq!(&forced[..4], &bt601[..4]);
     }
 
@@ -944,7 +952,10 @@ mod tests {
     fn a_cameras_frames_are_described_as_read() {
         let buffer = nv12(64, 480, |_, _| None);
         let auto = unsafe { describe(&buffer, CameraColour::default()) };
-        assert_eq!(auto, "'420v' 64×480, matrix Bt601 (untagged), read as limited range");
+        assert_eq!(
+            auto,
+            "'420v' 64×480, matrix Bt601 (untagged), read as limited range"
+        );
         let full = CameraColour {
             range: CameraRange::Full,
             matrix: CameraMatrix::Bt709,

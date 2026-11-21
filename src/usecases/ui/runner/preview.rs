@@ -263,7 +263,11 @@ impl PreviewEncoder {
     }
 
     /// A target of `w`×`h` to encode a preview into.
-    pub(super) fn new_target(device: &wgpu::Device, w: u32, h: u32) -> (wgpu::Texture, wgpu::TextureView) {
+    pub(super) fn new_target(
+        device: &wgpu::Device,
+        w: u32,
+        h: u32,
+    ) -> (wgpu::Texture, wgpu::TextureView) {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Preview Encode Target"),
             size: wgpu::Extent3d {

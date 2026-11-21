@@ -142,7 +142,13 @@ pub struct PlacedPicturePipeline {
 impl PlacedPicturePipeline {
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
         let layout = bind_layout(device);
-        let pipeline = pipeline(device, &layout, format, "fs_main", wgpu::BlendState::REPLACE);
+        let pipeline = pipeline(
+            device,
+            &layout,
+            format,
+            "fs_main",
+            wgpu::BlendState::REPLACE,
+        );
         Self {
             pipeline,
             layout,
@@ -166,7 +172,11 @@ impl PlacedPicturePipeline {
         frame: (u32, u32),
         within: Option<&[Pixels]>,
     ) -> u64 {
-        queue.write_buffer(&self.params, 0, bytemuck::bytes_of(&params_of(placed, frame)));
+        queue.write_buffer(
+            &self.params,
+            0,
+            bytemuck::bytes_of(&params_of(placed, frame)),
+        );
         let parts = parts_of(placed, frame, within);
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -543,7 +553,10 @@ mod tests {
     #[test]
     fn a_picture_read_as_coded_tells_its_shader_so() {
         let light = placed([0.0; 2], [1.0; 2], None);
-        let coded = Placed { coded: true, ..light };
+        let coded = Placed {
+            coded: true,
+            ..light
+        };
         assert_eq!(params_of(&light, (64, 36)).coded, 0.0);
         assert_eq!(params_of(&coded, (64, 36)).coded, 1.0);
     }
@@ -564,14 +577,20 @@ mod tests {
         flipped.flip = [true, false];
         let b = flipped.bounds([0.0; 2]);
         let want = [0.6, 0.0, 0.9, 1.0];
-        assert!(b.iter().zip(want).all(|(a, w)| (a - w).abs() < 1e-5), "{b:?}");
+        assert!(
+            b.iter().zip(want).all(|(a, w)| (a - w).abs() < 1e-5),
+            "{b:?}"
+        );
     }
 
     #[test]
     fn a_picture_is_bounded_by_its_moved_and_scaled_frame() {
         let b = placed([0.2, -0.1], [0.5, 0.5], None).bounds([0.001; 2]);
         let want = [0.45, 0.15, 0.95, 0.65];
-        assert!(b.iter().zip(want).all(|(a, w)| (a - w).abs() < 1e-5), "{b:?}");
+        assert!(
+            b.iter().zip(want).all(|(a, w)| (a - w).abs() < 1e-5),
+            "{b:?}"
+        );
     }
 
     #[test]
@@ -587,7 +606,13 @@ mod tests {
         };
         let b = placed([0.0; 2], [1.0; 2], Some(crop)).bounds([0.001; 2]);
         // Kept from the bottom up to half way: UV 0.5 to 1, running down.
-        assert!((b[0] - 0.248).abs() < 1e-4 && (b[2] - 0.752).abs() < 1e-4, "{b:?}");
-        assert!((b[1] - 0.498).abs() < 1e-4 && (b[3] - 1.0).abs() < 1e-4, "{b:?}");
+        assert!(
+            (b[0] - 0.248).abs() < 1e-4 && (b[2] - 0.752).abs() < 1e-4,
+            "{b:?}"
+        );
+        assert!(
+            (b[1] - 0.498).abs() < 1e-4 && (b[3] - 1.0).abs() < 1e-4,
+            "{b:?}"
+        );
     }
 }

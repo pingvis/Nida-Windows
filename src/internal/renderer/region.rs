@@ -311,8 +311,14 @@ mod tests {
 
     #[test]
     fn a_hole_over_everything_leaves_nothing() {
-        assert_eq!((subtract(&[px(0, 0, 100, 50)], &px(0, 0, 100, 50))).len(), 0);
-        assert_eq!((subtract(&[px(10, 10, 20, 20)], &px(0, 0, 100, 50))).len(), 0);
+        assert_eq!(
+            (subtract(&[px(0, 0, 100, 50)], &px(0, 0, 100, 50))).len(),
+            0
+        );
+        assert_eq!(
+            (subtract(&[px(10, 10, 20, 20)], &px(0, 0, 100, 50))).len(),
+            0
+        );
     }
 
     #[test]

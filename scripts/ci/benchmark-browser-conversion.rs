@@ -10,13 +10,18 @@ fn main() {
         let mut started = None;
         let mut frames = 0u64;
         while let Ok(frame) = protocol::read_message(&mut input) {
-            if frame.error.is_some() { continue; }
+            if frame.error.is_some() {
+                continue;
+            }
             let start = started.get_or_insert_with(Instant::now);
             frames += 1;
             black_box(&frame.pixels);
             if start.elapsed().as_secs_f64() >= 6.0 {
-                println!("{{\"frames\":{frames},\"seconds\":{:.3},\"decoded_fps\":{:.2}}}",
-                    start.elapsed().as_secs_f64(), (frames - 1) as f64 / start.elapsed().as_secs_f64());
+                println!(
+                    "{{\"frames\":{frames},\"seconds\":{:.3},\"decoded_fps\":{:.2}}}",
+                    start.elapsed().as_secs_f64(),
+                    (frames - 1) as f64 / start.elapsed().as_secs_f64()
+                );
                 return;
             }
         }

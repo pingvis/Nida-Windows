@@ -18,6 +18,7 @@ on:
       - 'kittest.toml'
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'rust-toolchain.toml'
       - 'build.rs'
       - 'clippy.toml'
       - '.cargo/**'
@@ -64,6 +65,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: 1.99.1
           components: rustfmt
 
       - name: Check formatting
@@ -181,6 +183,8 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2

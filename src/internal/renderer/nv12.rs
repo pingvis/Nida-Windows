@@ -355,7 +355,13 @@ mod tests {
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         let made = std::time::Instant::now();
-        assert!(converter.encode(&context.device, &context.queue, &mut encoder, &texture, made));
+        assert!(converter.encode(
+            &context.device,
+            &context.queue,
+            &mut encoder,
+            &texture,
+            made
+        ));
         context.submit(std::iter::once(encoder.finish()));
         assert!(
             converter.try_read(&context.device).is_empty(),

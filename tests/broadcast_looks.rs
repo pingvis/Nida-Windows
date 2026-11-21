@@ -393,7 +393,11 @@ fn custom_colours_show_as_picked() {
         return;
     };
     for path in looks() {
-        let name = path.file_stem().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+        let name = path
+            .file_stem()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_string();
         let pixels = render(&ctx, &path, 7.0, |params| {
             params.set_long("palette", 0);
             params.set_float("density", 1.0);
@@ -416,16 +420,25 @@ fn custom_colours_show_as_picked() {
         let corner = pixels[(4 * W + 4) as usize];
         if !name.contains("gradient") {
             assert!(
-                pixels.iter().any(|p| p[0] > 0.1 && p[1] < p[0] * 0.15 && p[2] < p[0] * 0.15),
+                pixels
+                    .iter()
+                    .any(|p| p[0] > 0.1 && p[1] < p[0] * 0.15 && p[2] < p[0] * 0.15),
                 "{name}: the background not as picked (corner {corner:?})"
             );
         }
         if name.contains("vignette") {
             // A plate of one colour: the Background as picked.
             let middle = pixels[(H / 2 * W + W / 2) as usize];
-            assert!(middle[0] > middle[1] * 4.0, "{name}: the plate not red: {middle:?}");
+            assert!(
+                middle[0] > middle[1] * 4.0,
+                "{name}: the plate not red: {middle:?}"
+            );
         } else {
-            assert!(share > 0.005, "{name}: the picked colours hardly show ({:.3}%)", share * 100.0);
+            assert!(
+                share > 0.005,
+                "{name}: the picked colours hardly show ({:.3}%)",
+                share * 100.0
+            );
         }
     }
 }
@@ -439,7 +452,9 @@ fn the_palettes_match_the_looks() {
         .find(|p| p.to_string_lossy().contains("hex_glow"))
         .expect("hex field");
     let text = std::fs::read_to_string(&path).expect("read");
-    let start = text.find("BC_PALETTES[36] = vec3[36](").expect("the palettes");
+    let start = text
+        .find("BC_PALETTES[36] = vec3[36](")
+        .expect("the palettes");
     let end = start + text[start..].find(");").expect("their end");
     let numbers: Vec<f32> = text[start..end]
         .split("vec3(")
@@ -539,7 +554,11 @@ fn no_look_goes_near_black() {
         return;
     };
     for path in looks() {
-        let name = path.file_stem().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+        let name = path
+            .file_stem()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_string();
         let pixels = render(&ctx, &path, 3.0, |params| {
             params.set_long("palette", 0);
             params.set_float("calm", 1.0);
@@ -567,7 +586,10 @@ fn calm_centre_calms_every_look() {
         let mut sum = 0.0;
         let mut n = 0;
         for (i, px) in pixels.iter().enumerate() {
-            let (u, v) = ((i as u32 % W) as f32 / W as f32, (i as u32 / W) as f32 / H as f32);
+            let (u, v) = (
+                (i as u32 % W) as f32 / W as f32,
+                (i as u32 / W) as f32 / H as f32,
+            );
             if (x.0..x.1).contains(&u) && (y.0..y.1).contains(&v) {
                 sum += luma(*px);
                 n += 1;
@@ -576,7 +598,11 @@ fn calm_centre_calms_every_look() {
         sum / n.max(1) as f32
     };
     for path in moving_looks() {
-        let name = path.file_stem().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+        let name = path
+            .file_stem()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_string();
         let at = |calm: f32| {
             render(&ctx, &path, 9.0, |params| {
                 params.set_float("density", 0.8);
@@ -592,7 +618,10 @@ fn calm_centre_calms_every_look() {
         ] {
             let (before, after) = (mean(&open, x, y), mean(&calmed, x, y));
             let drop = 1.0 - after / before.max(1e-6);
-            println!("{name} {place}: {before:.3} -> {after:.3} ({:.0}% dimmer)", drop * 100.0);
+            println!(
+                "{name} {place}: {before:.3} -> {after:.3} ({:.0}% dimmer)",
+                drop * 100.0
+            );
             // A quarter dimmer — or as dim already as the calm plate (near
             // the floor LED panels need, which it does not go under).
             assert!(
@@ -602,11 +631,16 @@ fn calm_centre_calms_every_look() {
             );
         }
         // Never black there: LED panels go patchy near it.
-        assert!(mean(&calmed, (0.38, 0.62), (0.36, 0.58)) > 0.02, "{name}: calmed to black");
+        assert!(
+            mean(&calmed, (0.38, 0.62), (0.36, 0.58)) > 0.02,
+            "{name}: calmed to black"
+        );
         // Calm in full in both: calmed, the lower part comes out as flat as
         // the middle — within a third of it, whatever the look had in each.
-        let (middle, lower) =
-            (mean(&calmed, (0.38, 0.62), (0.36, 0.58)), mean(&calmed, (0.36, 0.64), (0.6, 0.7)));
+        let (middle, lower) = (
+            mean(&calmed, (0.38, 0.62), (0.36, 0.58)),
+            mean(&calmed, (0.36, 0.64), (0.6, 0.7)),
+        );
         assert!(
             (lower / middle - 1.0).abs() < 0.3,
             "{name}: calmed, the lower part at {lower:.3} is not as flat as the middle at {middle:.3}"

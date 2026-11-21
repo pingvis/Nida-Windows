@@ -167,7 +167,9 @@ fn main_is_its_layers_blended_bottom_first() {
         };
         let before = want;
         want = blended(want, input_pixel(&gpu, &mixer, at), level, how);
-        let moved = (0..4).map(|c| (want[c] - before[c]).abs()).fold(0.0, f32::max);
+        let moved = (0..4)
+            .map(|c| (want[c] - before[c]).abs())
+            .fold(0.0, f32::max);
         assert!(moved > 0.05, "each overlay changes the picture: {moved}");
     }
     assert_near(main_pixel(&gpu, &mixer), want, "in one pass");
@@ -214,7 +216,12 @@ fn the_bottom_layer_is_drawn_over_a_clear() {
         mixer.merge_main_passes = merge;
         for frame in 0..4 {
             render(&gpu, &mut mixer);
-            let want = blended([0.0; 4], input_pixel(&gpu, &mixer, overlays[0]), 0.8, How::Over);
+            let want = blended(
+                [0.0; 4],
+                input_pixel(&gpu, &mixer, overlays[0]),
+                0.8,
+                How::Over,
+            );
             assert!(want[3] > 0.3 && want[3] < 0.5, "translucent: {want:?}");
             assert_near(
                 main_pixel(&gpu, &mixer),
@@ -267,5 +274,9 @@ fn a_dissolve_and_what_is_over_it_go_in_one_pass() {
     want = blended(want, input_pixel(&gpu, &mixer, to), 0.4, How::Sum);
     assert_near(want, [0.0, 0.4, 0.6, 1.0], "the dissolve alone");
     want = blended(want, input_pixel(&gpu, &mixer, overlays[0]), 0.8, How::Over);
-    assert_near(main_pixel(&gpu, &mixer), want, "the dissolve and the overlay");
+    assert_near(
+        main_pixel(&gpu, &mixer),
+        want,
+        "the dissolve and the overlay",
+    );
 }

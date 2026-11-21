@@ -1011,7 +1011,11 @@ fn render_latency(ui: &mut egui::Ui, data: &UIData, actions: &mut UIActions) {
     let frame_ms = 1000.0 / data.target_fps.max(1) as f32;
     let choices: &[(&str, u32, &str)] = &[
         ("Low", 1, "Each frame finished before the next starts"),
-        ("Normal", 2, "The next frame prepared while the GPU draws this one"),
+        (
+            "Normal",
+            2,
+            "The next frame prepared while the GPU draws this one",
+        ),
         ("High", 3, "Two frames prepared ahead"),
     ];
     for &(name, frames, what) in choices {

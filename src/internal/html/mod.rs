@@ -51,7 +51,10 @@ type FrameSlot = Arc<Mutex<Option<HtmlFrame>>>;
 /// winit never reaches this module, preserving the "only `Send` data crosses the
 /// thread boundary" contract. Positions are `WebView` **device** pixels. See
 /// `/spec/html-source.md` §4.
-#[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+#[cfg(any(
+    feature = "html",
+    all(target_os = "windows", feature = "windows-browser")
+))]
 #[derive(Debug, Clone)]
 pub enum HtmlInputEvent {
     /// Pointer moved to a `WebView` device-pixel position.
@@ -542,12 +545,16 @@ impl HtmlManager {
 
     /// Forward an interactive-mode input event to the instance at `idx`.
     /// No-op for an unknown index or when no engine has been spawned.
-    #[cfg(any(feature = "html", all(target_os = "windows", feature = "windows-browser")))]
+    #[cfg(any(
+        feature = "html",
+        all(target_os = "windows", feature = "windows-browser")
+    ))]
     pub fn send_input(&self, idx: usize, event: HtmlInputEvent) {
         #[cfg(all(target_os = "windows", feature = "windows-browser"))]
         {
             if let (Some(instance), Some(cef)) = (
-                self.instances.get(idx).and_then(Option::as_ref), self.cef.as_ref(),
+                self.instances.get(idx).and_then(Option::as_ref),
+                self.cef.as_ref(),
             ) {
                 let _ = cef.send(cef_input::command(instance.id, instance.generation, event));
             }

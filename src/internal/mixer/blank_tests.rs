@@ -166,8 +166,7 @@ pub(super) fn settings(motion: LowerThirdMotion, secs: f32) -> LowerThirdSetting
 /// A lower third with a red plate, off, that cuts on and off. (Coming in and
 /// going out are not off: `LowerThird::is_off`'s own test.)
 pub(super) fn cut_lower_third(gpu: &GpuContext) -> Deck {
-    Deck::new_lower_third(gpu, settings(LowerThirdMotion::Cut, 0.0), W, H)
-        .expect("a lower third")
+    Deck::new_lower_third(gpu, settings(LowerThirdMotion::Cut, 0.0), W, H).expect("a lower third")
 }
 
 /// Main: a blue card in `UNDER` taken to it, and `deck`, alone in `OVER`,
@@ -328,11 +327,18 @@ fn a_lower_third_shown_is_drawn_and_hidden_is_left_clear() {
     assert_eq!(drawn(&gpu, &mut mixer, 3), 3, "shown: drawn every frame");
     assert_eq!(mixer.main_layer_channels(), vec![UNDER, OVER], "layered");
     assert_eq!(over(&mixer).composited_deck_count, 1, "its deck put on it");
-    assert!(plate(&main_picture(&gpu, &mixer)) > 5_000, "the plate on Main");
+    assert!(
+        plate(&main_picture(&gpu, &mixer)) > 5_000,
+        "the plate on Main"
+    );
     hide_lower(&mut mixer);
     assert_eq!(drawn(&gpu, &mut mixer, 1), 1, "hidden: drawn clear");
     assert_eq!(over(&mixer).composited_deck_count, 0, "no deck put on it");
-    assert_eq!(plate(&over_picture(&gpu, &mixer)), 0, "none of the plate on it");
+    assert_eq!(
+        plate(&over_picture(&gpu, &mixer)),
+        0,
+        "none of the plate on it"
+    );
     assert_eq!(plate(&main_picture(&gpu, &mixer)), 0, "nor on Main");
     assert_eq!(drawn(&gpu, &mut mixer, 5), 0, "then left");
     assert_eq!(mixer.main_layer_channels(), vec![UNDER], "not layered");
@@ -347,7 +353,11 @@ fn with_the_switch_off_a_blank_input_is_drawn_every_frame() {
     let mut mixer = mixer_with(&gpu, cut_lower_third(&gpu));
     mixer.skip_blank_channels = false;
     assert_eq!(drawn(&gpu, &mut mixer, 5), 5, "off: drawn every frame");
-    assert_eq!(mixer.main_layer_channels(), vec![UNDER, OVER], "and layered");
+    assert_eq!(
+        mixer.main_layer_channels(),
+        vec![UNDER, OVER],
+        "and layered"
+    );
     mixer.skip_blank_channels = true;
     assert_eq!(drawn(&gpu, &mut mixer, 1), 1, "on: drawn clear");
     assert_eq!(drawn(&gpu, &mut mixer, 5), 0, "then left");
@@ -361,7 +371,11 @@ fn a_blank_input_resized_is_drawn_clear_again() {
     let mut mixer = mixer_with(&gpu, cut_lower_third(&gpu));
     assert_eq!(drawn(&gpu, &mut mixer, 2), 1, "drawn clear once, then left");
     mixer.resize(&gpu, W / 2, H / 2);
-    assert_eq!(drawn(&gpu, &mut mixer, 4), 1, "drawn clear again, then left");
+    assert_eq!(
+        drawn(&gpu, &mut mixer, 4),
+        1,
+        "drawn clear again, then left"
+    );
 }
 
 /// An input shown through a tap, not an overlay itself: drawn clear once
@@ -383,7 +397,11 @@ fn a_blank_input_shown_through_a_tap_is_left_clear() {
     show_lower(&gpu, &mut mixer);
     hide_lower(&mut mixer);
     assert_eq!(drawn(&gpu, &mut mixer, 1), 1, "hidden: drawn clear");
-    assert_eq!(plate(&main_picture(&gpu, &mixer)), 0, "the tap shows it clear");
+    assert_eq!(
+        plate(&main_picture(&gpu, &mixer)),
+        0,
+        "the tap shows it clear"
+    );
     assert_eq!(drawn(&gpu, &mut mixer, 5), 0, "then left");
     assert_eq!(plate(&main_picture(&gpu, &mixer)), 0, "still clear");
 }
@@ -403,7 +421,11 @@ fn a_muted_deck_counts_only_when_shown_on_its_own() {
     let lower_uuid = over(&mixer).decks[0].deck.uuid().to_string();
     assert_eq!(drawn(&gpu, &mut mixer, 5), 1, "the card muted: blank");
     mixer.decks_shown_alone = vec![lower_uuid];
-    assert_eq!(drawn(&gpu, &mut mixer, 5), 0, "the lower third alone: still nothing");
+    assert_eq!(
+        drawn(&gpu, &mut mixer, 5),
+        0,
+        "the lower third alone: still nothing"
+    );
     mixer.decks_shown_alone = vec![green_uuid];
     assert_eq!(drawn(&gpu, &mut mixer, 4), 4, "the card alone: drawn");
 }
@@ -507,7 +529,10 @@ fn a_crop_and_a_transform_keep_a_clear_frame_clear() {
 #[test]
 fn a_mask_with_no_shape_keeps_a_clear_frame_clear() {
     let gpu = headless_gpu();
-    assert_eq!(drawn_with(&gpu, vec![effect(&gpu, "cutout")], Vec::new()), 0);
+    assert_eq!(
+        drawn_with(&gpu, vec![effect(&gpu, "cutout")], Vec::new()),
+        0
+    );
 }
 
 /// A crop with its border on draws the border on a clear frame: drawn.
@@ -541,8 +566,16 @@ fn a_text_hidden_is_left_and_shown_is_drawn() {
     let mut settings = text_settings();
     let deck = Deck::new_text(&gpu, settings.clone(), W, H).expect("a text");
     let mut mixer = mixer_with(&gpu, deck);
-    assert_eq!(drawn(&gpu, &mut mixer, 5), 1, "hidden: drawn clear once, then left");
-    assert_eq!(letters(&main_picture(&gpu, &mixer)), 0, "no letters on Main");
+    assert_eq!(
+        drawn(&gpu, &mut mixer, 5),
+        1,
+        "hidden: drawn clear once, then left"
+    );
+    assert_eq!(
+        letters(&main_picture(&gpu, &mixer)),
+        0,
+        "no letters on Main"
+    );
     settings.visible = true;
     text(&mut mixer).set_settings(settings);
     assert!(text(&mut mixer).wait_drawn(Duration::from_secs(5)), "drawn");
@@ -624,7 +657,10 @@ fn an_analyzer_on_the_deck_keeps_its_input_drawn() {
         .deck
         .analyzers
         .release("brightness");
-    assert!(over(&mixer).blank(&mixer.modulation), "stopped: blank again");
+    assert!(
+        over(&mixer).blank(&mixer.modulation),
+        "stopped: blank again"
+    );
     assert_eq!(drawn(&gpu, &mut mixer, 5), 0, "and left");
     let deck = &over(&mixer).decks[0].deck;
     assert!(deck.gpu_error().is_none(), "never faulted");
@@ -638,8 +674,8 @@ fn an_input_that_shows_itself_is_drawn_clear_every_frame() {
     let gpu = headless_gpu();
     let mut mixer = mixer_with(&gpu, cut_lower_third(&gpu));
     let over_uuid = over(&mixer).uuid().to_string();
-    let tap = Deck::new_from_tap(&gpu, TapSource::Channel(over_uuid), "itself", W, H)
-        .expect("a tap");
+    let tap =
+        Deck::new_from_tap(&gpu, TapSource::Channel(over_uuid), "itself", W, H).expect("a tap");
     let index = over_mut(&mut mixer).add_deck(tap);
     over_mut(&mut mixer).decks[index].mute = true;
     render(&gpu, &mut mixer);
@@ -669,7 +705,11 @@ fn a_deck_at_a_low_rate_is_drawn_clear_whatever_its_turn() {
     over_mut(&mut mixer).decks[0].skip_counter = 1;
     hide_lower(&mut mixer);
     assert_eq!(drawn(&gpu, &mut mixer, 1), 1, "hidden: drawn clear");
-    assert_eq!(plate(&deck_picture(&gpu, &mixer)), 0, "its frame drawn clear");
+    assert_eq!(
+        plate(&deck_picture(&gpu, &mixer)),
+        0,
+        "its frame drawn clear"
+    );
     assert_eq!(drawn(&gpu, &mut mixer, 4), 0, "then left");
 }
 
@@ -681,15 +721,25 @@ fn a_muted_deck_shown_on_its_own_later_is_drawn_clear_first() {
     let mut mixer = mixer_with(&gpu, cut_lower_third(&gpu));
     render(&gpu, &mut mixer);
     show_lower(&gpu, &mut mixer);
-    assert!(plate(&deck_picture(&gpu, &mixer)) > 5_000, "the plate in its frame");
+    assert!(
+        plate(&deck_picture(&gpu, &mixer)) > 5_000,
+        "the plate in its frame"
+    );
     over_mut(&mut mixer).decks[0].mute = true;
     render(&gpu, &mut mixer);
     hide_lower(&mut mixer);
     assert_eq!(drawn(&gpu, &mut mixer, 3), 0, "muted: left");
-    assert!(plate(&deck_picture(&gpu, &mixer)) > 5_000, "the plate still in its frame");
+    assert!(
+        plate(&deck_picture(&gpu, &mixer)) > 5_000,
+        "the plate still in its frame"
+    );
     let lower_uuid = over(&mixer).decks[0].deck.uuid().to_string();
     mixer.decks_shown_alone = vec![lower_uuid];
-    assert_eq!(drawn(&gpu, &mut mixer, 1), 1, "shown on its own: drawn clear");
+    assert_eq!(
+        drawn(&gpu, &mut mixer, 1),
+        1,
+        "shown on its own: drawn clear"
+    );
     assert_eq!(plate(&deck_picture(&gpu, &mixer)), 0, "its frame clear");
     assert_eq!(drawn(&gpu, &mut mixer, 3), 0, "then left");
 }
@@ -700,7 +750,11 @@ fn a_blank_input_left_counts_no_deck_drawn() {
     let gpu = headless_gpu();
     let mut mixer = mixer_with(&gpu, cut_lower_third(&gpu));
     render(&gpu, &mut mixer);
-    assert_eq!(over(&mixer).active_deck_count, 1, "drawn clear: its deck drawn");
+    assert_eq!(
+        over(&mixer).active_deck_count,
+        1,
+        "drawn clear: its deck drawn"
+    );
     over_mut(&mut mixer).render_time_ms = 5.0;
     assert_eq!(drawn(&gpu, &mut mixer, 1), 0, "left");
     assert_eq!(over(&mixer).active_deck_count, 0, "no deck drawn");

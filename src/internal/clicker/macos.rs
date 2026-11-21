@@ -8,7 +8,9 @@
 use std::cell::RefCell;
 use std::ffi::c_void;
 
-use objc2_core_foundation::{CFBoolean, CFDictionary, CFNumber, CFRetained, CFRunLoop, CFString, CFType};
+use objc2_core_foundation::{
+    CFBoolean, CFDictionary, CFNumber, CFRetained, CFRunLoop, CFString, CFType,
+};
 
 use super::{Access, DeviceInfo, Reading};
 
@@ -18,10 +20,18 @@ type IOHIDElementRef = *mut c_void;
 type IOHIDDeviceRef = *mut c_void;
 type IOReturn = i32;
 
-type InputValueCallback =
-    extern "C" fn(context: *mut c_void, result: IOReturn, sender: *mut c_void, value: IOHIDValueRef);
-type DeviceCallback =
-    extern "C" fn(context: *mut c_void, result: IOReturn, sender: *mut c_void, device: IOHIDDeviceRef);
+type InputValueCallback = extern "C" fn(
+    context: *mut c_void,
+    result: IOReturn,
+    sender: *mut c_void,
+    value: IOHIDValueRef,
+);
+type DeviceCallback = extern "C" fn(
+    context: *mut c_void,
+    result: IOReturn,
+    sender: *mut c_void,
+    device: IOHIDDeviceRef,
+);
 
 /// `kIOHIDRequestTypeListenEvent`: Input Monitoring.
 const LISTEN_EVENT: u32 = 1;
@@ -323,7 +333,14 @@ pub(super) fn remap(vendor: u32, product: u32, pairs: &[(u32, u32)]) -> bool {
         })
         .collect();
     let set = format!("{{\"UserKeyMapping\":[{}]}}", entries.join(","));
-    let took = hidutil(&["property", "--matching", &matching(vendor, product), "--set", &set]).is_some();
+    let took = hidutil(&[
+        "property",
+        "--matching",
+        &matching(vendor, product),
+        "--set",
+        &set,
+    ])
+    .is_some();
     if !took {
         log::warn!("Clicker: macOS did not take its keys' remap; they reach other apps");
     }
@@ -333,8 +350,14 @@ pub(super) fn remap(vendor: u32, product: u32, pairs: &[(u32, u32)]) -> bool {
 /// Whether every one of the device's services has its keys `pairs` turned
 /// so, as macOS reads them back. Waits for `hidutil`, three seconds at most.
 pub(super) fn remapped(vendor: u32, product: u32, pairs: &[(u32, u32)]) -> bool {
-    hidutil(&["property", "--matching", &matching(vendor, product), "--get", "UserKeyMapping"])
-        .is_some_and(|read| super::turned_on_every_service(&read, pairs))
+    hidutil(&[
+        "property",
+        "--matching",
+        &matching(vendor, product),
+        "--get",
+        "UserKeyMapping",
+    ])
+    .is_some_and(|read| super::turned_on_every_service(&read, pairs))
 }
 
 /// macOS's clock, as key presses carry it.
@@ -403,7 +426,11 @@ fn property<R>(
     let key = CFString::from_str(name);
     // Safety: a device IOKit handed the callback; the property is the
     // device's (not retained here), read before the callback returns.
-    let value = unsafe { IOHIDDeviceGetProperty(device, ptr(&*key)).cast::<CFType>().as_ref() }?;
+    let value = unsafe {
+        IOHIDDeviceGetProperty(device, ptr(&*key))
+            .cast::<CFType>()
+            .as_ref()
+    }?;
     read(value)
 }
 
@@ -414,9 +441,13 @@ fn number_property(device: IOHIDDeviceRef, name: &str) -> Option<u32> {
 }
 
 fn string_property(device: IOHIDDeviceRef, name: &str) -> Option<String> {
-    property(device, name, |v| Some(v.downcast_ref::<CFString>()?.to_string()))
+    property(device, name, |v| {
+        Some(v.downcast_ref::<CFString>()?.to_string())
+    })
 }
 
 fn bool_property(device: IOHIDDeviceRef, name: &str) -> Option<bool> {
-    property(device, name, |v| Some(v.downcast_ref::<CFBoolean>()?.as_bool()))
+    property(device, name, |v| {
+        Some(v.downcast_ref::<CFBoolean>()?.as_bool())
+    })
 }

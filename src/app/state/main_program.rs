@@ -196,10 +196,20 @@ mod tests {
         image::RgbaImage::from_pixel(16, 9, image::Rgba([0, 200, 255, 255]))
             .save(&picture)
             .unwrap();
-        run(&mut app, EngineCommand::SetMixMode { mode: crate::mixer::MixMode::Program });
+        run(
+            &mut app,
+            EngineCommand::SetMixMode {
+                mode: crate::mixer::MixMode::Program,
+            },
+        );
         let state = app.build_engine_state();
         for deck in state.mixer.channels.iter().flat_map(|c| &c.decks) {
-            run(&mut app, EngineCommand::RemoveDeck { deck_uuid: deck.uuid.clone() });
+            run(
+                &mut app,
+                EngineCommand::RemoveDeck {
+                    deck_uuid: deck.uuid.clone(),
+                },
+            );
         }
         while app.build_engine_state().mixer.channels.len() < 2 {
             run(&mut app, EngineCommand::AddChannel);
@@ -257,7 +267,12 @@ mod tests {
                     fade: false,
                 },
             );
-            run(app, EngineCommand::SetMainTransition { transition: MainTransition::Merge });
+            run(
+                app,
+                EngineCommand::SetMainTransition {
+                    transition: MainTransition::Merge,
+                },
+            );
             run(
                 app,
                 EngineCommand::TakeToMain {
@@ -327,10 +342,20 @@ mod tests {
         image::RgbaImage::from_pixel(16, 9, image::Rgba([0, 200, 255, 255]))
             .save(&picture)
             .unwrap();
-        run(&mut app, EngineCommand::SetMixMode { mode: crate::mixer::MixMode::Program });
+        run(
+            &mut app,
+            EngineCommand::SetMixMode {
+                mode: crate::mixer::MixMode::Program,
+            },
+        );
         let state = app.build_engine_state();
         for deck in state.mixer.channels.iter().flat_map(|c| &c.decks) {
-            run(&mut app, EngineCommand::RemoveDeck { deck_uuid: deck.uuid.clone() });
+            run(
+                &mut app,
+                EngineCommand::RemoveDeck {
+                    deck_uuid: deck.uuid.clone(),
+                },
+            );
         }
         while app.build_engine_state().mixer.channels.len() < 2 {
             run(&mut app, EngineCommand::AddChannel);
@@ -363,7 +388,12 @@ mod tests {
                     fade: false,
                 },
             );
-            run(app, EngineCommand::SetMainTransition { transition: MainTransition::Merge });
+            run(
+                app,
+                EngineCommand::SetMainTransition {
+                    transition: MainTransition::Merge,
+                },
+            );
             run(
                 app,
                 EngineCommand::TakeToMain {
@@ -382,7 +412,11 @@ mod tests {
         };
 
         take(&mut app);
-        assert_eq!(said(&app), None, "drawn alike: it moves, and nothing is said");
+        assert_eq!(
+            said(&app),
+            None,
+            "drawn alike: it moves, and nothing is said"
+        );
 
         let crop = app
             .build_engine_state()
@@ -405,7 +439,10 @@ mod tests {
         );
         take(&mut app);
         let message = said(&app).expect("a layer faded across is said");
-        assert!(message.contains("'picture.png': not a live input"), "{message}");
+        assert!(
+            message.contains("'picture.png': not a live input"),
+            "{message}"
+        );
     }
 
     /// A tap not keeping its input's transparency moves all the same — the
@@ -477,10 +514,20 @@ mod tests {
         image::RgbaImage::from_pixel(16, 9, image::Rgba([0, 200, 255, 255]))
             .save(&picture)
             .unwrap();
-        run(&mut app, EngineCommand::SetMixMode { mode: crate::mixer::MixMode::Program });
+        run(
+            &mut app,
+            EngineCommand::SetMixMode {
+                mode: crate::mixer::MixMode::Program,
+            },
+        );
         let state = app.build_engine_state();
         for deck in state.mixer.channels.iter().flat_map(|c| &c.decks) {
-            run(&mut app, EngineCommand::RemoveDeck { deck_uuid: deck.uuid.clone() });
+            run(
+                &mut app,
+                EngineCommand::RemoveDeck {
+                    deck_uuid: deck.uuid.clone(),
+                },
+            );
         }
         while app.build_engine_state().mixer.channels.len() < 3 {
             run(&mut app, EngineCommand::AddChannel);
@@ -519,7 +566,12 @@ mod tests {
                 fade: false,
             },
         );
-        run(&mut app, EngineCommand::SetMainTransition { transition: MainTransition::Merge });
+        run(
+            &mut app,
+            EngineCommand::SetMainTransition {
+                transition: MainTransition::Merge,
+            },
+        );
         run(&mut app, EngineCommand::SetMainFadeTime { secs: 10.0 });
         app.render_mixer_frame();
         let cropped = tap(&mut app, &channels[2]);
@@ -624,15 +676,41 @@ mod tests {
         assert_eq!(app.mixer_ref().merge_frames_kept(), 1, "one pair travels");
         let context = app.gpu_context().clone();
         app.mixer_mut().resize(&context, 1280, 720);
-        assert_eq!(app.mixer_ref().merge_frames_kept(), 0, "dropped at a resize");
+        assert_eq!(
+            app.mixer_ref().merge_frames_kept(),
+            0,
+            "dropped at a resize"
+        );
         hold(&mut app);
-        assert_eq!(app.mixer_ref().merge_frames_kept(), 1, "made again at the new size");
-        run(&mut app, EngineCommand::SetMixMode { mode: crate::mixer::MixMode::Layered });
+        assert_eq!(
+            app.mixer_ref().merge_frames_kept(),
+            1,
+            "made again at the new size"
+        );
+        run(
+            &mut app,
+            EngineCommand::SetMixMode {
+                mode: crate::mixer::MixMode::Layered,
+            },
+        );
         hold(&mut app);
-        assert_eq!(app.mixer_ref().merge_frames_kept(), 0, "nothing draws the merge in the layered mix");
-        run(&mut app, EngineCommand::SetMixMode { mode: crate::mixer::MixMode::Program });
+        assert_eq!(
+            app.mixer_ref().merge_frames_kept(),
+            0,
+            "nothing draws the merge in the layered mix"
+        );
+        run(
+            &mut app,
+            EngineCommand::SetMixMode {
+                mode: crate::mixer::MixMode::Program,
+            },
+        );
         hold(&mut app);
-        assert_eq!(app.mixer_ref().merge_frames_kept(), 1, "drawn again on Main");
+        assert_eq!(
+            app.mixer_ref().merge_frames_kept(),
+            1,
+            "drawn again on Main"
+        );
         // A layer blended as Add: the merge dissolves now, nothing travels.
         let cropped = app
             .build_engine_state()
@@ -653,7 +731,11 @@ mod tests {
         };
         blend(&mut app, crate::channel::BlendMode::Add);
         hold(&mut app);
-        assert_eq!(app.mixer_ref().merge_frames_kept(), 0, "none kept for a dissolve");
+        assert_eq!(
+            app.mixer_ref().merge_frames_kept(),
+            0,
+            "none kept for a dissolve"
+        );
         blend(&mut app, crate::channel::BlendMode::Normal);
         hold(&mut app);
         assert_eq!(app.mixer_ref().merge_frames_kept(), 1, "travelling again");

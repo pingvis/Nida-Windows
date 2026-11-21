@@ -51,7 +51,8 @@ impl Hush {
     /// full after; counted.
     fn shade(&self, block: &mut [Frame], heard: &mut f32) {
         let hushed = self.on.load(Ordering::Relaxed);
-        self.call_frames.store(block.len() as u64, Ordering::Relaxed);
+        self.call_frames
+            .store(block.len() as u64, Ordering::Relaxed);
         // Counted only from a block that starts silent: the fading one is not.
         let silent_through = hushed && *heard == 0.0;
         if hushed || *heard < 1.0 {
@@ -149,7 +150,10 @@ fn pick_config(
         if config.channels() >= wanted {
             return Some(config);
         }
-        if most.as_ref().is_none_or(|m| config.channels() > m.channels()) {
+        if most
+            .as_ref()
+            .is_none_or(|m| config.channels() > m.channels())
+        {
             most = Some(config);
         }
     }
@@ -566,12 +570,18 @@ mod tests {
         let mut heard = 1.0;
         let mut plain = vec![[0.5_f32, -0.5]; 64];
         hush.shade(&mut plain, &mut heard);
-        assert!(plain.iter().all(|f| *f == [0.5, -0.5]), "untouched until hushed");
+        assert!(
+            plain.iter().all(|f| *f == [0.5, -0.5]),
+            "untouched until hushed"
+        );
         hush.on.store(true, std::sync::atomic::Ordering::Relaxed);
         let mut block = vec![[0.5_f32, -0.5]; 600];
         hush.shade(&mut block, &mut heard);
         assert!(block[0][0] > 0.49 && block[240][0] > 0.2, "fading");
-        assert!(block[480..].iter().all(|f| *f == [0.0, 0.0]), "silent from 10 ms");
+        assert!(
+            block[480..].iter().all(|f| *f == [0.0, 0.0]),
+            "silent from 10 ms"
+        );
         let mut more = vec![[0.5_f32, -0.5]; 64];
         hush.shade(&mut more, &mut heard);
         assert!(more.iter().all(|f| *f == [0.0, 0.0]), "and after");
@@ -583,7 +593,10 @@ mod tests {
         hush.on.store(false, std::sync::atomic::Ordering::Relaxed);
         let mut back = vec![[0.5_f32, -0.5]; 600];
         hush.shade(&mut back, &mut heard);
-        assert!(back[0][0] < 0.01 && back[479][0] == 0.5 && back[599][0] == 0.5, "faded in");
+        assert!(
+            back[0][0] < 0.01 && back[479][0] == 0.5 && back[599][0] == 0.5,
+            "faded in"
+        );
         assert_eq!(hush.silent.load(std::sync::atomic::Ordering::Relaxed), 0);
     }
 

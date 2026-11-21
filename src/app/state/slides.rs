@@ -344,7 +344,10 @@ impl VardaApp {
             let missing = matches!(found, Some(None));
             let warnings = found
                 .flatten()
-                .map(|f| self.talk_checks.warnings(shown_path, (f.len, f.modified), aspect))
+                .map(|f| {
+                    self.talk_checks
+                        .warnings(shown_path, (f.len, f.modified), aspect)
+                })
                 .unwrap_or_default();
             let key = super::presentations::talk_key(deck.uuid(), &talk.id, session_path);
             let presentation = (kind == Some(TalkKind::PowerPoint))
@@ -633,7 +636,9 @@ impl WebTalks {
 
     /// Whether `generation` is the opening of page `key` open now.
     fn is_current(&self, key: &str, generation: u64) -> bool {
-        self.pages.get(key).is_some_and(|p| p.generation == generation)
+        self.pages
+            .get(key)
+            .is_some_and(|p| p.generation == generation)
     }
 }
 
@@ -690,7 +695,13 @@ impl VardaApp {
                     continue;
                 }
                 let generation = web.next_number();
-                engine.load(&w.key, generation, std::path::Path::new(&w.path), pixels, w.slide);
+                engine.load(
+                    &w.key,
+                    generation,
+                    std::path::Path::new(&w.path),
+                    pixels,
+                    w.slide,
+                );
                 if muted {
                     engine.set_muted(&w.key, true);
                 }
@@ -796,7 +807,12 @@ impl VardaApp {
                     if !current {
                         continue;
                     }
-                    if let Some(page) = self.web_talks.pages.get_mut(&key).filter(|_| attempt.is_some()) {
+                    if let Some(page) = self
+                        .web_talks
+                        .pages
+                        .get_mut(&key)
+                        .filter(|_| attempt.is_some())
+                    {
                         page.pending = None;
                         page.retry_at = Some(now + CAPTURE_AGAIN);
                     }
@@ -826,8 +842,8 @@ impl VardaApp {
                     }
                     if let Some(w) = wanted.iter().find(|w| w.key == key) {
                         let (talk, path) = (w.talk.clone(), w.path.clone());
-                        let _ = self
-                            .edit_slides(&w.slides, |s| s.set_position(&talk, &path, at, of));
+                        let _ =
+                            self.edit_slides(&w.slides, |s| s.set_position(&talk, &path, at, of));
                     }
                 }
             }
@@ -861,9 +877,12 @@ impl VardaApp {
                     continue;
                 }
                 let since = |at: std::time::Instant| now.saturating_duration_since(at);
-                let under_way = page.pending.is_some_and(|(_, at)| since(at) < CAPTURE_OPENS);
+                let under_way = page
+                    .pending
+                    .is_some_and(|(_, at)| since(at) < CAPTURE_OPENS);
                 let resting = page.retry_at.is_some_and(|at| now < at);
-                let waiting = !page.resized && page.adopted.is_some_and(|at| since(at) < FIRST_PICTURE);
+                let waiting =
+                    !page.resized && page.adopted.is_some_and(|at| since(at) < FIRST_PICTURE);
                 if !under_way && !resting && !waiting {
                     asks.push(key);
                 }

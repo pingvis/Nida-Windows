@@ -22,8 +22,8 @@ use crate::engine::value::playlist::PlaylistTransition;
 use crate::engine::value::presentation::{Go, Screen};
 use crate::engine::value::slides::{ClipPosition, SlidesSettings, Talk, TalkKind, TalkRef};
 use crate::presentation::pdf::{PdfDrawer, PdfEvent};
-use crate::renderer::GpuContext;
 use crate::renderer::playlist_mix::{Mix, PlaylistMixPipeline};
+use crate::renderer::GpuContext;
 
 /// The longest step time takes between two looks: a stall does not jump a
 /// fade.

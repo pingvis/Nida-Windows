@@ -89,7 +89,10 @@ const PICTURES_SETTLED: Duration = Duration::from_secs(3);
 /// with no time known, or a time ahead of this Mac's clock (a stick written
 /// by another clock), is not waited for.
 fn still_settling(modified: Option<std::time::SystemTime>, wall: std::time::SystemTime) -> bool {
-    modified.is_some_and(|at| wall.duration_since(at).is_ok_and(|age| age < PICTURES_SETTLED))
+    modified.is_some_and(|at| {
+        wall.duration_since(at)
+            .is_ok_and(|age| age < PICTURES_SETTLED)
+    })
 }
 
 /// A deck whose pictures could not be made just then — a show on its way
@@ -1001,8 +1004,12 @@ impl VardaApp {
             return;
         }
         let adopted = if fresh {
-            self.screen_capture_manager
-                .adopt_afresh(target, capture, config.clone(), &self.context.device)
+            self.screen_capture_manager.adopt_afresh(
+                target,
+                capture,
+                config.clone(),
+                &self.context.device,
+            )
         } else {
             self.screen_capture_manager
                 .adopt(target, capture, config.clone(), &self.context.device)
@@ -1337,8 +1344,7 @@ impl VardaApp {
             }
             // The file as it is on the disk now: what comes of it is kept
             // for that file.
-            let Some((out, stamp)) = crate::presentation::pictures::pdf_and_file_for(&path)
-            else {
+            let Some((out, stamp)) = crate::presentation::pictures::pdf_and_file_for(&path) else {
                 continue;
             };
             // Asked for: whatever came of it before, by itself too again.
@@ -1351,7 +1357,10 @@ impl VardaApp {
                 continue;
             }
             manager.save_pdf(&path, &out);
-            self.presentations.pictures.asked.insert(path.clone(), (stamp, false));
+            self.presentations
+                .pictures
+                .asked
+                .insert(path.clone(), (stamp, false));
             self.presentations.making.insert(path);
             asked += 1;
         }
@@ -1501,7 +1510,10 @@ impl VardaApp {
                 path.display()
             );
             manager.save_pdf(&path, &out);
-            self.presentations.pictures.asked.insert(path.clone(), (stamp, true));
+            self.presentations
+                .pictures
+                .asked
+                .insert(path.clone(), (stamp, true));
             self.presentations.making.insert(path);
             if on {
                 break;
@@ -1700,6 +1712,9 @@ mod tests {
         assert!(!super::still_settling(ago(3000), wall));
         assert!(!super::still_settling(ago(60_000), wall));
         assert!(!super::still_settling(None, wall));
-        assert!(!super::still_settling(Some(wall + Duration::from_secs(5)), wall));
+        assert!(!super::still_settling(
+            Some(wall + Duration::from_secs(5)),
+            wall
+        ));
     }
 }

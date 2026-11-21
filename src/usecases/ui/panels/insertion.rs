@@ -54,7 +54,9 @@ fn publish(
     }
     let pass = ctx.cumulative_pass_nr();
     ctx.memory_mut(|m| {
-        let stacks = m.data.get_temp_mut_or_default::<Vec<Stack>>(stacks_id(ch_idx));
+        let stacks = m
+            .data
+            .get_temp_mut_or_default::<Vec<Stack>>(stacks_id(ch_idx));
         // A view drawn again (a second pass) replaces what it drew before.
         stacks.retain(|s| s.pass == pass && s.area != area);
         stacks.push(Stack {
@@ -124,7 +126,10 @@ pub(super) fn place_at(
     at: Option<egui::Pos2>,
     on_window: bool,
 ) -> Landing {
-    match at.filter(|_| !on_window).map(|at| insertion_at(ctx, ch_idx, at)) {
+    match at
+        .filter(|_| !on_window)
+        .map(|at| insertion_at(ctx, ch_idx, at))
+    {
         // A marker between the cards: there.
         Some(insertion) if insertion.line.is_some() => Landing::Between(insertion.before),
         _ => Landing::Back,
@@ -276,20 +281,46 @@ mod tests {
     fn a_new_deck_goes_between_the_cards_it_is_dropped_between_else_behind_them() {
         let ctx = egui::Context::default();
         // The cards are front first: deck0 in front, deck2 at the back.
-        publish(&ctx, 0, cards(), column(), false, egui::LayerId::background());
+        publish(
+            &ctx,
+            0,
+            cards(),
+            column(),
+            false,
+            egui::LayerId::background(),
+        );
         assert_eq!(
             place_at(&ctx, 0, Some(at(215.0)), false),
             Landing::Between(Some("deck0".to_string())),
             "between the first two cards"
         );
-        assert_eq!(place_at(&ctx, 0, Some(at(70.0)), false), Landing::Between(None), "the top spot");
+        assert_eq!(
+            place_at(&ctx, 0, Some(at(70.0)), false),
+            Landing::Between(None),
+            "the top spot"
+        );
         let tile = egui::pos2(700.0, 300.0);
-        assert_eq!(place_at(&ctx, 0, Some(tile), false), Landing::Back, "behind them");
-        assert_eq!(place_at(&ctx, 0, Some(at(215.0)), true), Landing::Back, "its settings window");
+        assert_eq!(
+            place_at(&ctx, 0, Some(tile), false),
+            Landing::Back,
+            "behind them"
+        );
+        assert_eq!(
+            place_at(&ctx, 0, Some(at(215.0)), true),
+            Landing::Back,
+            "its settings window"
+        );
         assert_eq!(place_at(&ctx, 0, None, false), Landing::Back, "no pointer");
-        assert_eq!(place_at(&ctx, 1, Some(tile), false), Landing::Back, "an empty channel");
+        assert_eq!(
+            place_at(&ctx, 1, Some(tile), false),
+            Landing::Back,
+            "an empty channel"
+        );
         assert!(deck_place("ch".into(), Landing::Back).back);
-        assert!(!deck_place("ch".into(), Landing::Between(None)).back, "the top spot is in front");
+        assert!(
+            !deck_place("ch".into(), Landing::Between(None)).back,
+            "the top spot is in front"
+        );
     }
 
     /// Front first, as in Premiere: above a card is in front of it, so it
@@ -323,7 +354,10 @@ mod tests {
         let ins = insertion_in(&c, column(), at(400.0));
         assert_eq!(ins.before.as_deref(), Some("deck2"), "behind the last");
         let [from, _] = ins.line.unwrap();
-        assert!(from.y > c[2].1.bottom(), "the line sits under the last card");
+        assert!(
+            from.y > c[2].1.bottom(),
+            "the line sits under the last card"
+        );
     }
 
     /// Dropped on the channel's tile, outside its column of cards — beside
@@ -342,7 +376,10 @@ mod tests {
     fn the_line_sits_in_the_gap_between_cards() {
         let c = cards();
         let [from, to] = insertion_in(&c, column(), at(170.0)).line.unwrap();
-        assert!((from.y - 205.0).abs() < 1e-3, "halfway between 200 and 210: {from:?}");
+        assert!(
+            (from.y - 205.0).abs() < 1e-3,
+            "halfway between 200 and 210: {from:?}"
+        );
         assert_eq!((from.x, to.x), (c[0].1.left(), c[0].1.right()));
         assert_eq!(from.y, to.y);
     }
@@ -357,20 +394,37 @@ mod tests {
                 let left = 200.0 + i as f32 * 150.0;
                 (
                     format!("deck{i}"),
-                    egui::Rect::from_min_max(egui::pos2(left, 20.0), egui::pos2(left + 140.0, 120.0)),
+                    egui::Rect::from_min_max(
+                        egui::pos2(left, 20.0),
+                        egui::pos2(left + 140.0, 120.0),
+                    ),
                 )
             })
             .collect();
         let area = egui::Rect::from_min_max(egui::pos2(190.0, 10.0), egui::pos2(900.0, 130.0));
         let at = |x: f32| egui::pos2(x, 70.0);
-        assert_eq!(insertion_across(&row, area, at(210.0)).before, None, "in front of all");
+        assert_eq!(
+            insertion_across(&row, area, at(210.0)).before,
+            None,
+            "in front of all"
+        );
         let between = insertion_across(&row, area, at(330.0));
         assert_eq!(between.before.as_deref(), Some("deck0"));
         let [from, to] = between.line.unwrap();
-        assert!((from.x - 345.0).abs() < 1e-3, "halfway between 340 and 350: {from:?}");
+        assert!(
+            (from.x - 345.0).abs() < 1e-3,
+            "halfway between 340 and 350: {from:?}"
+        );
         assert_eq!(from.x, to.x);
-        assert_eq!(insertion_across(&row, area, at(800.0)).before.as_deref(), Some("deck2"));
-        assert_eq!(insertion_across(&row, area, egui::pos2(100.0, 70.0)).line, None, "outside");
+        assert_eq!(
+            insertion_across(&row, area, at(800.0)).before.as_deref(),
+            Some("deck2")
+        );
+        assert_eq!(
+            insertion_across(&row, area, egui::pos2(100.0, 70.0)).line,
+            None,
+            "outside"
+        );
     }
 
     /// Two views of one channel (Channels and Layers side by side): a drop
@@ -378,16 +432,44 @@ mod tests {
     #[test]
     fn of_two_views_the_one_the_pointer_is_in_decides() {
         let ctx = egui::Context::default();
-        publish(&ctx, 0, cards(), column(), false, egui::LayerId::background());
+        publish(
+            &ctx,
+            0,
+            cards(),
+            column(),
+            false,
+            egui::LayerId::background(),
+        );
         let row: Cards = vec![
-            ("deck0".into(), egui::Rect::from_min_max(egui::pos2(400.0, 20.0), egui::pos2(500.0, 80.0))),
-            ("deck1".into(), egui::Rect::from_min_max(egui::pos2(510.0, 20.0), egui::pos2(610.0, 80.0))),
+            (
+                "deck0".into(),
+                egui::Rect::from_min_max(egui::pos2(400.0, 20.0), egui::pos2(500.0, 80.0)),
+            ),
+            (
+                "deck1".into(),
+                egui::Rect::from_min_max(egui::pos2(510.0, 20.0), egui::pos2(610.0, 80.0)),
+            ),
         ];
         let strip = egui::Rect::from_min_max(egui::pos2(390.0, 10.0), egui::pos2(900.0, 90.0));
         publish(&ctx, 0, row, strip, true, egui::LayerId::background());
-        assert_eq!(insertion_at(&ctx, 0, egui::pos2(540.0, 50.0)).before.as_deref(), Some("deck0"));
-        assert_eq!(insertion_at(&ctx, 0, egui::pos2(100.0, 215.0)).before.as_deref(), Some("deck0"));
-        assert_eq!(insertion_at(&ctx, 0, egui::pos2(100.0, 400.0)).before.as_deref(), Some("deck2"));
+        assert_eq!(
+            insertion_at(&ctx, 0, egui::pos2(540.0, 50.0))
+                .before
+                .as_deref(),
+            Some("deck0")
+        );
+        assert_eq!(
+            insertion_at(&ctx, 0, egui::pos2(100.0, 215.0))
+                .before
+                .as_deref(),
+            Some("deck0")
+        );
+        assert_eq!(
+            insertion_at(&ctx, 0, egui::pos2(100.0, 400.0))
+                .before
+                .as_deref(),
+            Some("deck2")
+        );
     }
 
     #[test]

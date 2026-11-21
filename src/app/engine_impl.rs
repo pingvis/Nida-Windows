@@ -34,7 +34,10 @@ fn goes_on(now: &ParamValue, value: &ParamValue) -> bool {
     matches!(
         (now, value),
         (ParamValue::Float(_), ParamValue::Float(_))
-            | (ParamValue::Long(_), ParamValue::Long(_) | ParamValue::Float(_))
+            | (
+                ParamValue::Long(_),
+                ParamValue::Long(_) | ParamValue::Float(_)
+            )
             | (
                 ParamValue::Bool(_),
                 ParamValue::Bool(_) | ParamValue::Long(_) | ParamValue::Float(_)
@@ -94,7 +97,9 @@ impl VardaApp {
         };
         let uuid = match carrier {
             Some(uuid) => uuid,
-            None => self.add_effect(EffectTarget::Deck(deck_uuid.to_string()), LAYER_MASK_EFFECT)?,
+            None => {
+                self.add_effect(EffectTarget::Deck(deck_uuid.to_string()), LAYER_MASK_EFFECT)?
+            }
         };
         let location = self.resolve_effect(&uuid)?;
         if let Some(effect) = self.mixer.effect_at_mut(location) {
@@ -131,7 +136,11 @@ impl VardaApp {
     /// has the same; what was left as it came is the new frame's own.
     ///
     /// [`EngineCommand::SetLayerFrame`]: crate::engine::EngineCommand::SetLayerFrame
-    pub(crate) fn set_layer_frame(&mut self, deck_uuid: &str, frame: Option<&str>) -> Result<String> {
+    pub(crate) fn set_layer_frame(
+        &mut self,
+        deck_uuid: &str,
+        frame: Option<&str>,
+    ) -> Result<String> {
         use crate::engine::value::frame::is_frame;
         let (ch, dk) = self.resolve_deck(deck_uuid)?;
         if let Some(name) = frame {
@@ -139,7 +148,9 @@ impl VardaApp {
             // leaves the layer as it was.
             let known = is_frame(name) && self.registry.filters().iter().any(|s| s.name() == name);
             if !known {
-                anyhow::bail!("'{name}' is not a frame: GET /api/state/registry lists them (`frames`)");
+                anyhow::bail!(
+                    "'{name}' is not a frame: GET /api/state/registry lists them (`frames`)"
+                );
             }
         }
         // The frames it has — one, unless a show was put together by hand —
@@ -152,7 +163,11 @@ impl VardaApp {
             for effect in slot.deck.effects.iter().filter(|e| is_frame(&e.name())) {
                 if had.is_empty() {
                     for (name, value) in &effect.params.values {
-                        let as_it_came = effect.params.definitions.get(name).map(ParamValue::from_isf_input);
+                        let as_it_came = effect
+                            .params
+                            .definitions
+                            .get(name)
+                            .map(ParamValue::from_isf_input);
                         if !as_it_came.is_some_and(|came| same_setting(&came, value)) {
                             changed.push((name.clone(), *value));
                         }
@@ -176,13 +191,18 @@ impl VardaApp {
         };
         // Added last (before the layer's own mask): moved to just before
         // the layer's Transform.
-        let places = self.mixer.channels().get(ch).and_then(|c| c.decks.get(dk)).map(|slot| {
-            let effects = &slot.deck.effects;
-            (
-                effects.iter().position(|e| e.uuid() == uuid),
-                effects.iter().position(|e| e.shader.name() == "transform"),
-            )
-        });
+        let places = self
+            .mixer
+            .channels()
+            .get(ch)
+            .and_then(|c| c.decks.get(dk))
+            .map(|slot| {
+                let effects = &slot.deck.effects;
+                (
+                    effects.iter().position(|e| e.uuid() == uuid),
+                    effects.iter().position(|e| e.shader.name() == "transform"),
+                )
+            });
         if let Some((Some(from), Some(to))) = places {
             if to < from {
                 self.move_effect(target, from, to)?;
@@ -191,7 +211,11 @@ impl VardaApp {
         let location = self.resolve_effect(&uuid)?;
         if let Some(effect) = self.mixer.effect_at_mut(location) {
             for (name, value) in changed {
-                let kept = effect.params.values.get(&name).is_some_and(|now| goes_on(now, &value));
+                let kept = effect
+                    .params
+                    .values
+                    .get(&name)
+                    .is_some_and(|now| goes_on(now, &value));
                 if kept {
                     effect.params.set(&name, value);
                 }
@@ -2222,13 +2246,28 @@ mod tests {
         let colour = ParamValue::Color([0.0, 1.0, 0.0, 1.0]);
         assert!(goes_on(&ParamValue::Float(0.86), &ParamValue::Float(0.7)));
         assert!(goes_on(&ParamValue::Long(0), &ParamValue::Long(3)));
-        assert!(goes_on(&ParamValue::Long(0), &ParamValue::Float(3.0)), "a saved choice");
-        assert!(goes_on(&ParamValue::Bool(false), &ParamValue::Float(1.0)), "a saved switch");
+        assert!(
+            goes_on(&ParamValue::Long(0), &ParamValue::Float(3.0)),
+            "a saved choice"
+        );
+        assert!(
+            goes_on(&ParamValue::Bool(false), &ParamValue::Float(1.0)),
+            "a saved switch"
+        );
         assert!(goes_on(&ParamValue::Bool(false), &ParamValue::Bool(true)));
         assert!(goes_on(&colour, &colour));
-        assert!(!goes_on(&ParamValue::Float(0.5), &colour), "no colour for a number");
-        assert!(!goes_on(&colour, &ParamValue::Float(0.5)), "no number for a colour");
-        assert!(!goes_on(&ParamValue::Float(0.5), &ParamValue::Long(2)), "no choice for a size");
+        assert!(
+            !goes_on(&ParamValue::Float(0.5), &colour),
+            "no colour for a number"
+        );
+        assert!(
+            !goes_on(&colour, &ParamValue::Float(0.5)),
+            "no number for a colour"
+        );
+        assert!(
+            !goes_on(&ParamValue::Float(0.5), &ParamValue::Long(2)),
+            "no choice for a size"
+        );
     }
 
     fn headless_app() -> Option<super::super::VardaApp> {
